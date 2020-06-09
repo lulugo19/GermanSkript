@@ -1,25 +1,24 @@
-definiere weiblich Person mit Plural Personen:
+definiere die Person mit Plural Personen:
     Nachname, Vorname als Zeichenfolge
     Alter als Zahl.
 
-definiere weiblich Person stelleVor stellDichVor! mit Rückgabe Zeichenfolge:
-    zurück verbinde "Mein Name ist ",mein Vorname, " ", mein Nachname " und ich bin ", mein Alter, " Jahre alt."!
+definiere Person StellDichVor! mit Rückgabe Zeichenfolge:
+    zurück "Mein Name ist " + mein Vorname + " " + mein Nachname + " und ich bin " + mein Alter " + Jahre alt."
 
-definiere Student|Studentin|Studi ist Person mit Plural Studenten:
+definiere Student/Studentin/Studi als Person mit Plural Studenten:
     Studiengang als Zeichenfolge,
     Semester als Zahl.
 
-definiere Student überschreibe stelleVor stellDichVor!:
-    verbinde stellDichVor meine Basis!, "Ich studiere ", mein Studiengang, " im ", mein Semester als Zeichenfolge, ". Fachsemester."!
-
+definiere Student stellDichVor! mit Rückgabe Zeichenfolge:
+    zurück meine Basis! + " Ich studiere " + mein Studiengang " + im " + mein Semester als Zeichenfolge " Fachsemester."!
 
 der Student Max mit
-    Nachname ist "Mustermann",
-    Vorname ist "Max",
-    Alter ist 22,
-    Studiengang ist "Informatik",
-    Semester ist 8.
+    Nachname "Mustermann",
+    Vorname "Max",
+    Alter 22,
+    Studiengang "Informatik",
+    Semester 8.
 
 die Person ist Max
 
-stellDichVor Person! // Mein Name ist Lukas Gobelet und ich bin 22 Jahre alt. Ich studiere Informatik im 8. Fachsemester.
+Person stellDichVor! // Mein Name ist Max Mustermann und ich bin 22 Jahre alt. Ich studiere Informatik im 8. Fachsemester.
