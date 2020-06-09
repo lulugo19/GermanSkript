@@ -1,0 +1,24 @@
+// Fizzbuzz in GermanScript
+für jede Zahl von 1 bis 100:
+    eine Ausgabe ist ""
+    
+    wenn Zahl rest 3 gleich 0:
+        Ausgabe ist Ausgabe + "Fizz"
+    sonst wenn Zahl rest 5 gleich 0:
+        Ausgabe ist Ausgabe + "Buzz".
+
+    drucke wenn (Ausgabe leer?) dann Zahl sonst Ausgabe.
+    
+
+/*
+Fizzbuzz in Javascript
+for (let i = 1; i <= 100; i++) {
+    let output = ""
+    if (i % 3 === 0)
+        output += "Fizz"
+    if (i % 5 === 0)
+        output += "Buzz"
+    console.log(output || i)
+}
+*/
+

@@ -1,0 +1,2 @@
+definiere fakultät mit Rückgabe Zahl, Zahl:
+    zurück wenn Zahl gleich 0 dann 1 sonst Zahl mal fakultät Zahl minus 1.
