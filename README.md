@@ -214,3 +214,6 @@ Zeichenfolgen werden innerhalb der Anführungszeichen `""` geschrieben.
 Booleans habe zwei Werte `wahr` oder `falsch`.
 
 ### Listen
+Beispiel:
+
+`die Studenten sind Personen Person mit Name="Lukas", Nachname="Test", Person mit Name="Finn", Nachname="XXX"`
