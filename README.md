@@ -59,8 +59,8 @@ Umso höher die Bindungskraft, umso mehr bindet der Operator seine Operanden.
 | Funktion | Symbol | Text | Assoziativität | Priorität |
 | -------- | ------ | ---- | -------------- | --------- |
 | Logisches Nicht | `!` | `nicht` | rechts | 7 |
-| Negativ | `-` | `negativ` | `rechst` | 7 |
-| Positiv | `+` | `positiv` | `rechts` | 7 |
+| Negativ | `-` | `negativ` | rechst | 7 |
+| Positiv | `+` | `positiv` | rechts | 7 |
 
 Alle Operatoren außer der Zuweisung `=` können für jede Klasse definiert werden. 
 Dazu muss einfach nur eine Methode mit der Textrepräsentation des Operators und den geeigneten Parametern implementiert werden.
