@@ -1,4 +1,4 @@
-import java.lang.Exception
+import kotlin.Exception
 
 enum class Geschlecht {
     MÄNNLICH,
@@ -11,7 +11,22 @@ enum class Operator {
     MINUS,
     MAL,
     GETEILT,
-    GLEICH
+    GLEICH,
+    HOCH,
+    UND,
+    ODER,
+    KLEINER,
+    GRÖßER,
+    KLEINER_GLEICH,
+    GRÖßER_GLEICH,
+    NEGATION,
+    UNGLEICH,
+}
+
+enum class Anzahl {
+    SINGULAR,
+    PLURAL,
+    BEIDES,
 }
 
 class Token(val typ: TokenTyp, wert: String, anfang: Pair<Int, Int>, ende: Pair<Int, Int>)
@@ -28,11 +43,13 @@ sealed class TokenTyp() {
     object DANN: TokenTyp()
     object SONST: TokenTyp()
     object FÜR: TokenTyp()
+    object ALS: TokenTyp()
     object VON: TokenTyp()
     object BIS: TokenTyp()
+    object DEN: TokenTyp()
     data class JEDE(val geschlecht: Geschlecht): TokenTyp()
     data class GESCHLECHT(val geschlecht: Geschlecht): TokenTyp()
-    data class ZUWEISUNG(val plural: Boolean): TokenTyp()
+    data class ZUWEISUNG(val anzahl: Anzahl): TokenTyp()
     data class ARTIKEL(val bestimmt: Boolean, val geschlecht: Geschlecht, val anderesGeschlecht: Geschlecht? = null): TokenTyp() // ein, eine, der, die, das
 
     //Symbole
@@ -41,7 +58,6 @@ sealed class TokenTyp() {
     object KOMMA: TokenTyp()
     object PUNKT: TokenTyp()
     object DOPPELPUNKT: TokenTyp()
-    object AUSRUFEZEICHEN: TokenTyp()
     object TRENNER: TokenTyp() // Semikolon
     object NEUE_ZEILE: TokenTyp()
     object PIPE: TokenTyp()
@@ -65,38 +81,46 @@ private val ZEICHEN_MAPPING = mapOf<Char, TokenTyp>(
         ',' to TokenTyp.KOMMA,
         '.' to TokenTyp.PUNKT,
         ':' to TokenTyp.DOPPELPUNKT,
-        '!' to TokenTyp.AUSRUFEZEICHEN,
+        '!' to TokenTyp.OPERATOR(Operator.NEGATION),
         ';' to TokenTyp.TRENNER,
-        '|' to TokenTyp.PIPE,
         '+' to TokenTyp.OPERATOR(Operator.PLUS),
         '-' to TokenTyp.OPERATOR(Operator.MINUS),
         '*' to TokenTyp.OPERATOR(Operator.MAL),
-        '/' to TokenTyp.OPERATOR(Operator.GETEILT)
+        '/' to TokenTyp.OPERATOR(Operator.GETEILT),
+        '^' to TokenTyp.OPERATOR(Operator.HOCH),
+        '=' to TokenTyp.ZUWEISUNG(Anzahl.BEIDES),
+        '>' to TokenTyp.OPERATOR(Operator.GRÖßER),
+        '<' to TokenTyp.OPERATOR(Operator.KLEINER)
 )
 
 private val WORT_MAPPING = mapOf<String, TokenTyp>(
         "mit" to TokenTyp.MIT,
         "definiere" to TokenTyp.DEFINIERE,
-        "rückgabe" to TokenTyp.RÜCKGABE,
+        "Rückgabe" to TokenTyp.RÜCKGABE,
         "zurück" to TokenTyp.ZURÜCK,
         "wenn" to TokenTyp.WENN,
         "dann" to TokenTyp.DANN,
         "sonst" to TokenTyp.SONST,
-        "ist" to TokenTyp.ZUWEISUNG(false),
-        "sind" to TokenTyp.ZUWEISUNG(true),
+        "als" to TokenTyp.ALS,
+        "ist" to TokenTyp.ZUWEISUNG(Anzahl.SINGULAR),
+        "sind" to TokenTyp.ZUWEISUNG(Anzahl.PLURAL),
         "der" to TokenTyp.ARTIKEL(true, Geschlecht.MÄNNLICH),
         "die" to TokenTyp.ARTIKEL(true, Geschlecht.WEIBLICH),
         "das" to TokenTyp.ARTIKEL(true, Geschlecht.NEUTRAL),
+        "den" to TokenTyp.DEN,
         "ein" to TokenTyp.ARTIKEL(false, Geschlecht.MÄNNLICH, Geschlecht.NEUTRAL),
         "eine" to TokenTyp.ARTIKEL(false, Geschlecht.WEIBLICH),
         "gleich" to TokenTyp.OPERATOR(Operator.GLEICH),
+        "ungleich" to TokenTyp.OPERATOR(Operator.UNGLEICH),
+        "und" to TokenTyp.OPERATOR(Operator.UND),
+        "oder" to TokenTyp.OPERATOR(Operator.ODER),
+        "kleiner" to TokenTyp.OPERATOR(Operator.KLEINER),
+        "größer" to TokenTyp.OPERATOR(Operator.GRÖßER),
         "plus" to TokenTyp.OPERATOR(Operator.PLUS),
         "minus" to TokenTyp.OPERATOR(Operator.MINUS),
         "mal" to TokenTyp.OPERATOR(Operator.MAL),
         "geteilt" to TokenTyp.OPERATOR(Operator.GETEILT),
-        "weiblich" to TokenTyp.GESCHLECHT(Geschlecht.WEIBLICH),
-        "männlich" to TokenTyp.GESCHLECHT(Geschlecht.MÄNNLICH),
-        "neutral" to TokenTyp.GESCHLECHT(Geschlecht.NEUTRAL),
+        "hoch" to TokenTyp.OPERATOR(Operator.HOCH),
         "wahr" to TokenTyp.BOOLEAN(true),
         "falsch" to TokenTyp.BOOLEAN(false),
         "für" to TokenTyp.FÜR,
@@ -120,7 +144,7 @@ fun tokeniziere(quellcode: String) : Sequence<TokenTyp> = sequence {
         val iterator = Peekable(zeile.iterator())
         while (iterator.peek() != null) {
             val zeichen = iterator.next()!!
-            // ignore comments
+            // ignoriere Kommentare
             if (inMehrZeilenKommentar) {
                 if (zeichen == '*' && iterator.peek() == '/') {
                     iterator.next()
@@ -144,7 +168,9 @@ fun tokeniziere(quellcode: String) : Sequence<TokenTyp> = sequence {
                 continue
             }
             when {
-                ZEICHEN_MAPPING.containsKey(zeichen) -> ZEICHEN_MAPPING.getValue(zeichen).also { kannWortLesen = true }
+                ZEICHEN_MAPPING.containsKey(zeichen) -> symbol(iterator, zeichen).also { kannWortLesen = true }
+                zeichen == '|' && iterator.peek() == '|' -> TokenTyp.OPERATOR(Operator.ODER).also { iterator.next() }
+                zeichen == '&' && iterator.peek() == '&' -> TokenTyp.OPERATOR(Operator.UND).also { iterator.next() }
                 zeichen.isDigit() -> zahl(iterator, zeichen).also { kannWortLesen = false }
                 zeichen == '"' -> zeichenfolge(iterator).also { kannWortLesen = false }
                 kannWortLesen -> wort(iterator, zeichen).also { kannWortLesen = false }
@@ -160,8 +186,26 @@ fun tokeniziere(quellcode: String) : Sequence<TokenTyp> = sequence {
     }
 }
 
-private val NOMEN_PATTERN = """[A-Z]\w*""".toRegex()
-private val VERB_PATTERN = """[a-z]\w*[\?!]?""".toRegex()
+
+private fun symbol(iterator: Peekable<Char>, erstesZeichen: Char) : TokenTyp {
+    return when (erstesZeichen) {
+        '>', '<', '!' -> {
+            if (iterator.peek() == '=') {
+                iterator.next()
+                when (erstesZeichen) {
+                    '>' -> TokenTyp.OPERATOR(Operator.GRÖßER_GLEICH)
+                    '<' -> TokenTyp.OPERATOR(Operator.KLEINER_GLEICH)
+                    '!' -> TokenTyp.OPERATOR(Operator.UNGLEICH)
+                    else -> throw Exception("Dieser FAll wird nie ausgeführt")
+                }
+            } else {
+                ZEICHEN_MAPPING.getValue(erstesZeichen)
+            }
+        }
+        else -> ZEICHEN_MAPPING.getValue(erstesZeichen)
+    }
+}
+
 private val ZAHLEN_PATTERN = """(0|[1-9]\d?\d?(\.\d{3})+|[1-9]\d*)(\,\d+)?""".toRegex()
 
 private fun zahl(iterator: Peekable<Char>, ersteZiffer: Char): TokenTyp {
@@ -197,27 +241,62 @@ private fun zeichenfolge(iterator: Peekable<Char>): TokenTyp {
     return TokenTyp.ZEICHENFOLGE(zeichenfolge)
 }
 
-private fun wort(iterator: Peekable<Char>, erstesZeichen: Char): TokenTyp {
+private val NOMEN_PATTERN = """[A-Z]\w*""".toRegex()
+private val VERB_PATTERN = """[a-z]\w*[\?!]?""".toRegex()
+
+private fun wort(iterator: Peekable<Char>, zeichen: Char) : TokenTyp {
+    return teilWort(iterator, zeichen).let { wort ->
+        when {
+            WORT_MAPPING.containsKey(wort) -> when (wort) {
+                "größer", "kleiner" -> {
+                    while (iterator.peek() == ' ') iterator.next()
+                    val nächstesZeichen = iterator.peek()
+                    val nächstesIstWort = !(ZEICHEN_MAPPING.containsKey(nächstesZeichen) ||
+                            nächstesZeichen == '&' ||
+                            nächstesZeichen == '|' ||
+                            nächstesZeichen == '"' ||
+                            nächstesZeichen?.isDigit() == true)
+                    if (nächstesIstWort && teilWort(iterator, iterator.next()!!) == "gleich") {
+                        when (wort) {
+                            "größer" -> TokenTyp.OPERATOR(Operator.GRÖßER_GLEICH)
+                            "kleiner" -> TokenTyp.OPERATOR(Operator.KLEINER_GLEICH)
+                            else -> throw Exception("Diser Fall wird nie ausgeführt")
+                        }
+                    } else {
+                        WORT_MAPPING.getValue(wort)
+                    }
+                }
+                else -> WORT_MAPPING.getValue(wort)
+            }
+            NOMEN_PATTERN.matches(wort) -> TokenTyp.NOMEN(wort)
+            VERB_PATTERN.matches(wort) -> TokenTyp.VERB(wort)
+            else -> throw Exception("Ungültiges Wort $wort")
+        }
+    }
+}
+
+private fun teilWort(iterator: Peekable<Char>, erstesZeichen: Char): String {
     var wort = erstesZeichen.toString()
     while (iterator.peek() != null) {
         var nächstesZeiches = iterator.peek()!!
-        if (nächstesZeiches == ' ' || ZEICHEN_MAPPING.containsKey(nächstesZeiches))  {
+        if (nächstesZeiches == ' ' ||
+            (nächstesZeiches != '!' && nächstesZeiches != '?' && ZEICHEN_MAPPING.containsKey(nächstesZeiches))) {
             break
         }
         wort += iterator.next()!!
     }
 
-    return when {
-        WORT_MAPPING.containsKey(wort) -> WORT_MAPPING.getValue(wort)
-        NOMEN_PATTERN.matches(wort) -> TokenTyp.NOMEN(wort)
-        VERB_PATTERN.matches(wort) -> TokenTyp.VERB(wort)
-        else -> throw Exception("Ungültiges Token $wort")
-    }
+    return wort
 }
 
 
 
 fun main() {
+
+    fun outputTokens(code: String) {
+        tokeniziere(code).takeWhile { typ -> typ != TokenTyp.EOF }.forEach(::println)
+    }
+
     val code = """
         // Fizzbuzz in GermanScript
 
@@ -245,5 +324,9 @@ fun main() {
         */
     """.trimIndent()
 
-    tokeniziere(code).takeWhile { typ -> typ != TokenTyp.EOF }.forEach(::println)
+    val test = """
+        A = "String" und B kleiner gleich 4 oder C ungleich 3 && D || E ungleich "Hallo"
+    """.trimIndent()
+
+    outputTokens(test)
 }
