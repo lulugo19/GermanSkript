@@ -35,19 +35,35 @@ Folgendes sind Ausdrücke:
 
 ### Operatoren
 Jeder Operator hat neben einem Symbol auch noch eine Textrepräsentation, die stattdessen verwendet werden kann.
-- Zuweisungsoperator: `=` oder `ist`
-- Vergleichsoperator: `==` oder `gleich`
-- Größer-Operator: `>` oder `größer`
-- Kleiner-Operator: `<` oder `kleiner`
-- Größer-Gleich-Operator: `>=` oder `größer gleich`
-- Kleiner-Gleich-Operator: `<=` oder `kleiner gleich`
-- Plus: `+` oder `plus`
-- Minus: `-` oder `minus`
-- Mal: `*` oder `mal`
-- Durch: `/` oder `durch`
-- Hoch: `^` oder `hoch`
+Umso höher die Bindungskraft, umso mehr bindet der Operator seine Operanden.
 
-Alle Operatoren außer dem Zuweisungsoperator können für jede Klasse definiert werden. Siehe Überladung von Operatoren.
+#### Binäre Operatoren
+| Funktion | Symbol | Text | Assoziativität | Bindungskraft |
+| -------- | ------ | ---- | -------------- | --------- |
+| Zuweisung | `=` | `ist` | rechts | 0 |
+| Logisches Oder | `\|\|` | `oder` | links | 1 |
+| Logisches Und | `&&` | `und` | links | 2 |
+| Gleichheit | `==` | `gleich` | links | 3 |
+| Ungleichheit | `!=` | `ungleich` | links | 3 |
+| Größer | `>` | `größer` | links | 3 |
+| Kleiner | `<` | `kleiner` | links | 3 |
+| Größer-Gleich | `>=` | `größer gleich` | links | 3 |
+| Kleiner-Gleich | `<=` | `kleiner gleich` | links | 3 |
+| Plus | `+` | `plus` | links | 4 |
+| Minus | `-` | `minus` | links | 4 |
+| Mal | `*` | `mal` | links | 5 |
+| Geteilt | `/` | `durch` | links | 5 |
+| Hoch | `^` | `hoch` | rechts | 6 |
+
+#### Unäre Operatoren
+| Funktion | Symbol | Text | Assoziativität | Priorität |
+| -------- | ------ | ---- | -------------- | --------- |
+| Logisches Nicht | `!` | `nicht` | rechts | 7 |
+| Negativ | `-` | `negativ` | `rechst` | 7 |
+| Positiv | `+` | `positiv` | `rechts` | 7 |
+
+Alle Operatoren außer der Zuweisung `=` können für jede Klasse definiert werden. 
+Dazu muss einfach nur eine Methode mit der Textrepräsentation des Operators und den geeigneten Parametern implementiert werden.
 
 ### Deklaration von Variablen
 `Artikel [Typ] Nomen Zuweisungsoperator Ausdruck`
@@ -148,6 +164,13 @@ Beispiel:
 
 `die Person Donald ist Person mit Vorname "Donald", Nachname "Duck"`
 
+### Zufriff auf Felder eines Objekts
+`Feld von Objekt`
+
+Beispiel:
+
+`Name von Person`
+
 ### Definieren einer Methode
 ```
 definiere Verb für Typ [mit [Rückgabe Typ | Typ [Nomen]] {,Typ [Nomen]}]: 
@@ -169,17 +192,25 @@ Beispiel:
 
 `Person stellDichVor`
 
-
-`Verb Objekt [mit Parameter]!`
-
-Beispiel:
-
-`Sortiere Liste! `
-
-### Überladen eines Operators
-
 ### Definieren einer Schnittstelle
 `definiere Schnittstelle Nomen: {Verb [Verb!] [mit [Rückgabe Typ | Typ [Nomen]] {,Typ [Nomen]}]}`
 
 Eine Schnittstellendefinition besteht aus Methodensignaturen. Eine Schnittstelle wird automatisch für eine Klasse
-implementiert, wenn sie alle Methoden definiert.
+implementiert, wenn sie alle Methoden definiert. Eine Schnittstelle hat das Geschlecht `neutral`.
+
+## Typen
+GermanScript verfügt vorab über folgende Typen:
+
+### Zahlen
+Zahlen werden in der deutschen Schreibweise für Zahlen geschrieben. Das heißt vor dem `,` steht die Ganzzeil und nach
+dem Komma die Teilzahl. Außerdem kann man bei der Ganzahl Punkte als Abtrennung der tausender Stellen verwenden.
+
+Beispiel: `898.100.234,129123879`
+
+### Zeichenfolgen
+Zeichenfolgen werden innerhalb der Anführungszeichen `""` geschrieben.
+
+### Booleans
+Booleans habe zwei Werte `wahr` oder `falsch`.
+
+### Listen
