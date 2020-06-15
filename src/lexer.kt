@@ -173,7 +173,9 @@ fun tokeniziere(quellcode: String) : Sequence<TokenTyp> = sequence {
                 zeichen == '&' && iterator.peek() == '&' -> TokenTyp.OPERATOR(Operator.UND).also { iterator.next() }
                 zeichen.isDigit() -> zahl(iterator, zeichen).also { kannWortLesen = false }
                 zeichen == '"' -> zeichenfolge(iterator).also { kannWortLesen = false }
-                kannWortLesen -> wort(iterator, zeichen).also { kannWortLesen = false }
+                kannWortLesen -> wort(iterator, zeichen)
+                        .also { kannWortLesen = false; if (it.second != null) yield(it.first) }
+                        .let { if (it.second != null) it.second!! else it.first }
                 else -> throw Exception("Unerwartetes Zeichen $zeichen")
             }.let { yield(it); letzterTokenTyp = it }
         }
@@ -244,7 +246,7 @@ private fun zeichenfolge(iterator: Peekable<Char>): TokenTyp {
 private val NOMEN_PATTERN = """[A-Z]\w*""".toRegex()
 private val VERB_PATTERN = """[a-z]\w*[\?!]?""".toRegex()
 
-private fun wort(iterator: Peekable<Char>, zeichen: Char) : TokenTyp {
+private fun wort(iterator: Peekable<Char>, zeichen: Char) : Pair<TokenTyp, TokenTyp?> {
     return teilWort(iterator, zeichen).let { wort ->
         when {
             WORT_MAPPING.containsKey(wort) -> when (wort) {
@@ -256,20 +258,32 @@ private fun wort(iterator: Peekable<Char>, zeichen: Char) : TokenTyp {
                             nächstesZeichen == '|' ||
                             nächstesZeichen == '"' ||
                             nächstesZeichen?.isDigit() == true)
-                    if (nächstesIstWort && teilWort(iterator, iterator.next()!!) == "gleich") {
-                        when (wort) {
-                            "größer" -> TokenTyp.OPERATOR(Operator.GRÖßER_GLEICH)
-                            "kleiner" -> TokenTyp.OPERATOR(Operator.KLEINER_GLEICH)
-                            else -> throw Exception("Diser Fall wird nie ausgeführt")
+                    if (nächstesIstWort) {
+                        val nächstesWort = teilWort(iterator, iterator.next()!!)
+                        if (nächstesWort == "gleich") {
+                            when (wort) {
+                                "größer" -> TokenTyp.OPERATOR(Operator.GRÖßER_GLEICH) to null
+                                "kleiner" -> TokenTyp.OPERATOR(Operator.KLEINER_GLEICH) to null
+                                else -> throw Exception("Diser Fall wird nie ausgeführt")
+                            }
+                        } else {
+                            WORT_MAPPING.getValue(wort) to WORT_MAPPING.getOrElse(nächstesWort, {
+                                when {
+                                    NOMEN_PATTERN.matches(nächstesWort) -> TokenTyp.NOMEN(nächstesWort)
+                                    VERB_PATTERN.matches(nächstesWort) -> TokenTyp.VERB(nächstesWort)
+                                    else -> throw Exception("Ungültiges Wort $nächstesWort")
+                                }
+                            })
                         }
-                    } else {
-                        WORT_MAPPING.getValue(wort)
+                    }
+                    else {
+                        WORT_MAPPING.getValue(wort) to null
                     }
                 }
-                else -> WORT_MAPPING.getValue(wort)
+                else -> WORT_MAPPING.getValue(wort) to null
             }
-            NOMEN_PATTERN.matches(wort) -> TokenTyp.NOMEN(wort)
-            VERB_PATTERN.matches(wort) -> TokenTyp.VERB(wort)
+            NOMEN_PATTERN.matches(wort) -> TokenTyp.NOMEN(wort) to null
+            VERB_PATTERN.matches(wort) -> TokenTyp.VERB(wort) to null
             else -> throw Exception("Ungültiges Wort $wort")
         }
     }
@@ -325,7 +339,7 @@ fun main() {
     """.trimIndent()
 
     val test = """
-        A = "String" und B kleiner gleich 4 oder C ungleich 3 && D || E ungleich "Hallo"
+        A größer gleich "String" und B kleiner Hallo oder C ungleich 3 && D || E ungleich "Hallo"
     """.trimIndent()
 
     outputTokens(test)
