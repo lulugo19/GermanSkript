@@ -29,7 +29,7 @@ enum class Anzahl {
     BEIDES,
 }
 
-class Token(val typ: TokenTyp, wert: String, anfang: Pair<Int, Int>, ende: Pair<Int, Int>)
+data class Token(val typ: TokenTyp, val wert: String, val anfang: Pair<Int, Int>, val ende: Pair<Int, Int>)
 
 sealed class TokenTyp() {
     override fun toString(): String = javaClass.simpleName
@@ -72,6 +72,8 @@ sealed class TokenTyp() {
     data class BOOLEAN(val boolean: Boolean): TokenTyp() // richtig | falsch
     data class ZAHL(val zahl: Double): TokenTyp()
     data class ZEICHENFOLGE(val zeichenfolge: String): TokenTyp()
+
+    object UNDEFINIERT: TokenTyp()
 }
 
 
@@ -90,7 +92,9 @@ private val ZEICHEN_MAPPING = mapOf<Char, TokenTyp>(
         '^' to TokenTyp.OPERATOR(Operator.HOCH),
         '=' to TokenTyp.ZUWEISUNG(Anzahl.BEIDES),
         '>' to TokenTyp.OPERATOR(Operator.GRÖßER),
-        '<' to TokenTyp.OPERATOR(Operator.KLEINER)
+        '<' to TokenTyp.OPERATOR(Operator.KLEINER),
+        '&' to TokenTyp.UNDEFINIERT,
+        '|' to TokenTyp.UNDEFINIERT
 )
 
 private val WORT_MAPPING = mapOf<String, TokenTyp>(
@@ -131,12 +135,9 @@ private val WORT_MAPPING = mapOf<String, TokenTyp>(
         "jedes" to TokenTyp.JEDE(Geschlecht.NEUTRAL)
 )
 
-fun tokeniziere(quellcode: String) : Sequence<TokenTyp> = sequence {
+fun tokeniziere(quellcode: String) : Sequence<Token> = sequence {
     var inMehrZeilenKommentar = false
-    var amEndeEinesKommentars = false
-    var letzterTokenTyp: TokenTyp? = null
     for ((zeilenIndex, zeile) in quellcode.lines().map(String::trim).withIndex()) {
-        amEndeEinesKommentars = false
         var kannWortLesen = true
         if (zeile == "") {
             continue
@@ -148,14 +149,12 @@ fun tokeniziere(quellcode: String) : Sequence<TokenTyp> = sequence {
             if (inMehrZeilenKommentar) {
                 if (zeichen == '*' && iterator.peek() == '/') {
                     iterator.next()
-                    amEndeEinesKommentars = true
                     inMehrZeilenKommentar = false
                 }
                 break
             }
             if (zeichen == '/' && iterator.peek() == '/') {
                 iterator.next()
-                amEndeEinesKommentars = true
                 break
             }
             if (zeichen == '/' && iterator.peek() == '*') {
@@ -167,50 +166,59 @@ fun tokeniziere(quellcode: String) : Sequence<TokenTyp> = sequence {
                 kannWortLesen = true
                 continue
             }
-            when {
-                ZEICHEN_MAPPING.containsKey(zeichen) -> symbol(iterator, zeichen).also { kannWortLesen = true }
-                zeichen == '|' && iterator.peek() == '|' -> TokenTyp.OPERATOR(Operator.ODER).also { iterator.next() }
-                zeichen == '&' && iterator.peek() == '&' -> TokenTyp.OPERATOR(Operator.UND).also { iterator.next() }
-                zeichen.isDigit() -> zahl(iterator, zeichen).also { kannWortLesen = false }
-                zeichen == '"' -> zeichenfolge(iterator).also { kannWortLesen = false }
-                kannWortLesen -> wort(iterator, zeichen)
-                        .also { kannWortLesen = false; if (it.second != null) yield(it.first) }
-                        .let { if (it.second != null) it.second!! else it.first }
+            yieldAll(when {
+                ZEICHEN_MAPPING.containsKey(zeichen) -> symbol(iterator, zeichen, zeilenIndex).also { kannWortLesen = true }
+                zeichen.isDigit() -> zahl(iterator, zeichen, zeilenIndex).also { kannWortLesen = false }
+                zeichen == '"' -> zeichenfolge(iterator, zeilenIndex).also { kannWortLesen = false }
+                kannWortLesen -> wort(iterator, zeichen, zeilenIndex).also { kannWortLesen = false }
                 else -> throw Exception("Unerwartetes Zeichen $zeichen")
-            }.let { yield(it); letzterTokenTyp = it }
+            })
         }
 
-        if (!amEndeEinesKommentars && letzterTokenTyp !== TokenTyp.NEUE_ZEILE)
-                TokenTyp.NEUE_ZEILE.let { yield(it); letzterTokenTyp = it }
+        yield(Token(TokenTyp.NEUE_ZEILE, "\\n", zeilenIndex to iterator.index, zeilenIndex to iterator.index + 1))
     }
     while (true) {
-        yield(TokenTyp.EOF)
+        yield(Token(TokenTyp.EOF, "EOF", -1 to -1, -1 to -1))
     }
 }
 
-
-private fun symbol(iterator: Peekable<Char>, erstesZeichen: Char) : TokenTyp {
-    return when (erstesZeichen) {
+private fun symbol(iterator: Peekable<Char>, erstesZeichen: Char, zeilenIndex: Int) : Sequence<Token> = sequence {
+    val startPos = zeilenIndex to iterator.index - 1
+    var symbolString = erstesZeichen.toString()
+    val tokenTyp = (when (erstesZeichen) {
         '>', '<', '!' -> {
             if (iterator.peek() == '=') {
-                iterator.next()
+                symbolString += iterator.next()
                 when (erstesZeichen) {
                     '>' -> TokenTyp.OPERATOR(Operator.GRÖßER_GLEICH)
                     '<' -> TokenTyp.OPERATOR(Operator.KLEINER_GLEICH)
                     '!' -> TokenTyp.OPERATOR(Operator.UNGLEICH)
-                    else -> throw Exception("Dieser FAll wird nie ausgeführt")
+                    else -> throw Exception("Dieser Fall wird nie ausgeführt")
                 }
             } else {
-                ZEICHEN_MAPPING.getValue(erstesZeichen)
+                when (val token = ZEICHEN_MAPPING.getValue(erstesZeichen)) {
+                    TokenTyp.UNDEFINIERT -> throw Exception("Ungültiges Zeichen $erstesZeichen")
+                    else -> token
+                }
             }
         }
-        else -> ZEICHEN_MAPPING.getValue(erstesZeichen)
-    }
+        else -> when {
+            erstesZeichen == '&' && iterator.peek() == '&' -> TokenTyp.OPERATOR(Operator.UND).also { symbolString += iterator.next()}
+            erstesZeichen == '|' && iterator.peek() == '|' -> TokenTyp.OPERATOR(Operator.ODER).also { symbolString += iterator.next() }
+            else -> when (val token = ZEICHEN_MAPPING.getValue(erstesZeichen)) {
+                TokenTyp.UNDEFINIERT -> throw Exception("Ungültiges Zeichen $erstesZeichen")
+                else -> token
+            }
+        }
+    })
+    val endPos = zeilenIndex to iterator.index
+    yield(Token(tokenTyp, symbolString, startPos, endPos))
 }
 
 private val ZAHLEN_PATTERN = """(0|[1-9]\d?\d?(\.\d{3})+|[1-9]\d*)(\,\d+)?""".toRegex()
 
-private fun zahl(iterator: Peekable<Char>, ersteZiffer: Char): TokenTyp {
+private fun zahl(iterator: Peekable<Char>, ersteZiffer: Char, zeilenIndex: Int): Sequence<Token> = sequence {
+    val startPos = zeilenIndex to iterator.index - 1
     var zahlenString = ersteZiffer.toString()
     var hinternKomma = false
     while (iterator.peek() != null) {
@@ -228,11 +236,13 @@ private fun zahl(iterator: Peekable<Char>, ersteZiffer: Char): TokenTyp {
     if (!zahlenString.matches(ZAHLEN_PATTERN)) {
         throw Exception("Ungültige Zahl")
     }
+    val endPos = zeilenIndex to iterator.index
     val zahl = zahlenString.replace(".", "").replace(',', '.').toDouble()
-    return TokenTyp.ZAHL(zahl)
+    yield(Token(TokenTyp.ZAHL(zahl), zahlenString, startPos, endPos))
 }
 
-private fun zeichenfolge(iterator: Peekable<Char>): TokenTyp {
+private fun zeichenfolge(iterator: Peekable<Char>, zeilenIndex: Int): Sequence<Token> = sequence {
+    val startPos = zeilenIndex to iterator.index - 1
     var zeichenfolge = ""
     while (iterator.peek() != null && iterator.peek() != '"') {
         zeichenfolge += iterator.next()
@@ -240,52 +250,62 @@ private fun zeichenfolge(iterator: Peekable<Char>): TokenTyp {
     if (iterator.next() != '"') {
         throw Exception("Ungeschlossene Zeichenfolge. Erwarte \".")
     }
-    return TokenTyp.ZEICHENFOLGE(zeichenfolge)
+    val endPos = zeilenIndex to iterator.index
+    yield(Token(TokenTyp.ZEICHENFOLGE(zeichenfolge), '"' + zeichenfolge + '"', startPos, endPos))
 }
 
 private val NOMEN_PATTERN = """[A-Z]\w*""".toRegex()
 private val VERB_PATTERN = """[a-z]\w*[\?!]?""".toRegex()
 
-private fun wort(iterator: Peekable<Char>, zeichen: Char) : Pair<TokenTyp, TokenTyp?> {
-    return teilWort(iterator, zeichen).let { wort ->
-        when {
-            WORT_MAPPING.containsKey(wort) -> when (wort) {
-                "größer", "kleiner" -> {
-                    while (iterator.peek() == ' ') iterator.next()
-                    val nächstesZeichen = iterator.peek()
-                    val nächstesIstWort = !(ZEICHEN_MAPPING.containsKey(nächstesZeichen) ||
-                            nächstesZeichen == '&' ||
-                            nächstesZeichen == '|' ||
-                            nächstesZeichen == '"' ||
-                            nächstesZeichen?.isDigit() == true)
-                    if (nächstesIstWort) {
-                        val nächstesWort = teilWort(iterator, iterator.next()!!)
-                        if (nächstesWort == "gleich") {
-                            when (wort) {
-                                "größer" -> TokenTyp.OPERATOR(Operator.GRÖßER_GLEICH) to null
-                                "kleiner" -> TokenTyp.OPERATOR(Operator.KLEINER_GLEICH) to null
-                                else -> throw Exception("Diser Fall wird nie ausgeführt")
-                            }
-                        } else {
-                            WORT_MAPPING.getValue(wort) to WORT_MAPPING.getOrElse(nächstesWort, {
-                                when {
-                                    NOMEN_PATTERN.matches(nächstesWort) -> TokenTyp.NOMEN(nächstesWort)
-                                    VERB_PATTERN.matches(nächstesWort) -> TokenTyp.VERB(nächstesWort)
-                                    else -> throw Exception("Ungültiges Wort $nächstesWort")
-                                }
-                            })
+private fun wort(iterator: Peekable<Char>, zeichen: Char, zeilenIndex: Int) : Sequence<Token> = sequence {
+    val firstWordStartPos = zeilenIndex to iterator.index - 1
+    val erstesWort = teilWort(iterator, zeichen)
+    val firstWordEndPos = zeilenIndex to iterator.index
+    var spaceBetweenWords = ""
+    when {
+        WORT_MAPPING.containsKey(erstesWort) -> when (erstesWort) {
+            "größer", "kleiner" -> {
+                while (iterator.peek() == ' ') {
+                    spaceBetweenWords += iterator.next()
+                }
+                val nächstesZeichen = iterator.peek()
+                val nächstesIstWort = !(ZEICHEN_MAPPING.containsKey(nächstesZeichen) ||
+                        nächstesZeichen == '&' ||
+                        nächstesZeichen == '|' ||
+                        nächstesZeichen == '"' ||
+                        nächstesZeichen?.isDigit() == true)
+                if (nächstesIstWort) {
+                    val nextWordStartPos = zeilenIndex to iterator.index
+                    val nächstesWort = teilWort(iterator, iterator.next()!!)
+                    val nextWordEndPos = zeilenIndex to iterator.index
+                    if (nächstesWort == "gleich") {
+                        val tokenTyp = when (erstesWort) {
+                            "größer" -> TokenTyp.OPERATOR(Operator.GRÖßER_GLEICH)
+                            "kleiner" -> TokenTyp.OPERATOR(Operator.KLEINER_GLEICH)
+                            else -> throw Exception("Diser Fall wird nie ausgeführt")
                         }
-                    }
-                    else {
-                        WORT_MAPPING.getValue(wort) to null
+                        yield(Token(tokenTyp, erstesWort + spaceBetweenWords + nächstesWort, firstWordStartPos, nextWordEndPos))
+                    } else {
+                        yield(Token(WORT_MAPPING.getValue(erstesWort), erstesWort, firstWordStartPos, firstWordEndPos))
+                        val tokenTyp = (WORT_MAPPING.getOrElse(nächstesWort, {
+                            when {
+                                NOMEN_PATTERN.matches(nächstesWort) -> TokenTyp.NOMEN(nächstesWort)
+                                VERB_PATTERN.matches(nächstesWort) -> TokenTyp.VERB(nächstesWort)
+                                else -> throw Exception("Ungültiges Wort $nächstesWort")
+                            }
+                        }))
+                        yield(Token(tokenTyp, nächstesWort, nextWordStartPos, nextWordEndPos))
                     }
                 }
-                else -> WORT_MAPPING.getValue(wort) to null
+                else {
+                    yield(Token(WORT_MAPPING.getValue(erstesWort), erstesWort, firstWordStartPos, firstWordEndPos))
+                }
             }
-            NOMEN_PATTERN.matches(wort) -> TokenTyp.NOMEN(wort) to null
-            VERB_PATTERN.matches(wort) -> TokenTyp.VERB(wort) to null
-            else -> throw Exception("Ungültiges Wort $wort")
+            else -> yield(Token(WORT_MAPPING.getValue(erstesWort), erstesWort, firstWordStartPos, firstWordEndPos))
         }
+        NOMEN_PATTERN.matches(erstesWort) -> yield(Token(TokenTyp.NOMEN(erstesWort), erstesWort, firstWordStartPos, firstWordEndPos))
+        VERB_PATTERN.matches(erstesWort) -> yield(Token(TokenTyp.VERB(erstesWort), erstesWort, firstWordStartPos, firstWordEndPos))
+        else -> throw Exception("Ungültiges Wort $erstesWort")
     }
 }
 
@@ -299,7 +319,6 @@ private fun teilWort(iterator: Peekable<Char>, erstesZeichen: Char): String {
         }
         wort += iterator.next()!!
     }
-
     return wort
 }
 
@@ -307,8 +326,8 @@ private fun teilWort(iterator: Peekable<Char>, erstesZeichen: Char): String {
 
 fun main() {
 
-    fun outputTokens(code: String) {
-        tokeniziere(code).takeWhile { typ -> typ != TokenTyp.EOF }.forEach(::println)
+    fun outputTokenTypes(code: String) {
+        tokeniziere(code).takeWhile { token -> token.typ != TokenTyp.EOF }.forEach { println(it) }
     }
 
     val code = """
@@ -342,5 +361,5 @@ fun main() {
         A größer gleich "String" und B kleiner Hallo oder C ungleich 3 && D || E ungleich "Hallo"
     """.trimIndent()
 
-    outputTokens(test)
+    outputTokenTypes(test)
 }
