@@ -6,21 +6,26 @@ enum class Geschlecht {
     NEUTRAL,
 }
 
-enum class Operator {
-    PLUS,
-    MINUS,
-    MAL,
-    GETEILT,
-    GLEICH,
-    HOCH,
-    UND,
-    ODER,
-    KLEINER,
-    GRÖßER,
-    KLEINER_GLEICH,
-    GRÖßER_GLEICH,
-    NEGATION,
-    UNGLEICH,
+enum class Assoziativität {
+    LINKS,
+    RECHTS,
+}
+
+enum class Operator(val bindungsKraft: Int, val assoziativität: Assoziativität) {
+    PLUS(4, Assoziativität.LINKS),
+    MINUS(4, Assoziativität.LINKS),
+    MAL(5, Assoziativität.LINKS),
+    GETEILT(5, Assoziativität.LINKS),
+    HOCH(6, Assoziativität.RECHTS),
+    GLEICH(3, Assoziativität.LINKS),
+    UND(2, Assoziativität.LINKS),
+    ODER(1, Assoziativität.LINKS),
+    KLEINER(3, Assoziativität.LINKS),
+    GRÖßER(3, Assoziativität.LINKS),
+    KLEINER_GLEICH(3, Assoziativität.LINKS),
+    GRÖßER_GLEICH(3, Assoziativität.LINKS),
+    NEGATION(3, Assoziativität.RECHTS),
+    UNGLEICH(3, Assoziativität.LINKS),
 }
 
 enum class Anzahl {
@@ -29,7 +34,10 @@ enum class Anzahl {
     BEIDES,
 }
 
-data class Token(val typ: TokenTyp, val wert: String, val anfang: Pair<Int, Int>, val ende: Pair<Int, Int>)
+data class Token(val typ: TokenTyp, val wert: String, val anfang: Pair<Int, Int>, val ende: Pair<Int, Int>) {
+    // um die Ausgabe zu vereinfachen
+    override fun toString(): String = typ.toString()
+}
 
 sealed class TokenTyp() {
     override fun toString(): String = javaClass.simpleName
@@ -42,11 +50,14 @@ sealed class TokenTyp() {
     object WENN: TokenTyp()
     object DANN: TokenTyp()
     object SONST: TokenTyp()
+    object SOLANGE: TokenTyp()
     object FÜR: TokenTyp()
     object ALS: TokenTyp()
     object VON: TokenTyp()
     object BIS: TokenTyp()
     object DEN: TokenTyp()
+    object FORTFAHREN: TokenTyp()
+    object ABBRECHEN: TokenTyp()
     data class JEDE(val geschlecht: Geschlecht): TokenTyp()
     data class GESCHLECHT(val geschlecht: Geschlecht): TokenTyp()
     data class ZUWEISUNG(val anzahl: Anzahl): TokenTyp()
@@ -60,7 +71,6 @@ sealed class TokenTyp() {
     object DOPPELPUNKT: TokenTyp()
     object TRENNER: TokenTyp() // Semikolon
     object NEUE_ZEILE: TokenTyp()
-    object PIPE: TokenTyp()
     object EOF: TokenTyp()
     data class OPERATOR(val operator: Operator): TokenTyp()
 
@@ -81,6 +91,7 @@ private val ZEICHEN_MAPPING = mapOf<Char, TokenTyp>(
         '(' to TokenTyp.OFFENE_KLAMMER,
         ')' to TokenTyp.GESCHLOSSENE_KLAMMER,
         ',' to TokenTyp.KOMMA,
+        ';' to TokenTyp.TRENNER,
         '.' to TokenTyp.PUNKT,
         ':' to TokenTyp.DOPPELPUNKT,
         '!' to TokenTyp.OPERATOR(Operator.NEGATION),
@@ -105,6 +116,9 @@ private val WORT_MAPPING = mapOf<String, TokenTyp>(
         "wenn" to TokenTyp.WENN,
         "dann" to TokenTyp.DANN,
         "sonst" to TokenTyp.SONST,
+        "solange" to TokenTyp.SOLANGE,
+        "fortfahren" to TokenTyp.FORTFAHREN,
+        "abbrechen" to TokenTyp.ABBRECHEN,
         "als" to TokenTyp.ALS,
         "ist" to TokenTyp.ZUWEISUNG(Anzahl.SINGULAR),
         "sind" to TokenTyp.ZUWEISUNG(Anzahl.PLURAL),
@@ -123,7 +137,7 @@ private val WORT_MAPPING = mapOf<String, TokenTyp>(
         "plus" to TokenTyp.OPERATOR(Operator.PLUS),
         "minus" to TokenTyp.OPERATOR(Operator.MINUS),
         "mal" to TokenTyp.OPERATOR(Operator.MAL),
-        "geteilt" to TokenTyp.OPERATOR(Operator.GETEILT),
+        "durch" to TokenTyp.OPERATOR(Operator.GETEILT),
         "hoch" to TokenTyp.OPERATOR(Operator.HOCH),
         "wahr" to TokenTyp.BOOLEAN(true),
         "falsch" to TokenTyp.BOOLEAN(false),
