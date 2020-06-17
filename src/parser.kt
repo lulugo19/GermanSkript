@@ -82,35 +82,39 @@ class Parser(val code: String) {
     return Definition.Typ(geschlecht, typName, elternTyp, listenName, felder)
   }
 
-  private fun parseFunktion(): Definition.Funktion {
-
-    val verb = expect<TokenTyp.VERB>("Verb")
+  private fun parseRückgabeTypUndParameterListe(): Pair<Token?, List<NameUndTyp>> {
     var rückgabeTyp: Token? = null
     val parameterListe = mutableListOf<NameUndTyp>()
-     if (tokens.peek()!!.typ is TokenTyp.MIT){
-       tokens.next()
-       if (tokens.peek()!!.typ is TokenTyp.RÜCKGABE){
-         tokens.next()
-         rückgabeTyp = expect<TokenTyp.NOMEN>("Nomen")
-       }else{
-         val typ = expect<TokenTyp.NOMEN>("Nomen")
-         var name = typ
-         if (tokens.peek()!!.typ is TokenTyp.NOMEN){
-           name = tokens.next()!!
-         }
-         parameterListe += NameUndTyp(name, typ)
-       }
-       while (tokens.peek()!!.typ is TokenTyp.KOMMA){
-         tokens.next()
-         val typ = expect<TokenTyp.NOMEN>("Nomen")
-         var name = typ
-         if (tokens.peek()!!.typ is TokenTyp.NOMEN){
-           name = tokens.next()!!
-         }
-         parameterListe += NameUndTyp(name, typ)
-       }
-     }
+    if (tokens.peek()!!.typ is TokenTyp.MIT){
+      tokens.next()
+      if (tokens.peek()!!.typ is TokenTyp.RÜCKGABE){
+        tokens.next()
+        rückgabeTyp = expect<TokenTyp.NOMEN>("Nomen")
+      }else{
+        val typ = expect<TokenTyp.NOMEN>("Nomen")
+        var name = typ
+        if (tokens.peek()!!.typ is TokenTyp.NOMEN){
+          name = tokens.next()!!
+        }
+        parameterListe += NameUndTyp(name, typ)
+      }
+      while (tokens.peek()!!.typ is TokenTyp.KOMMA){
+        tokens.next()
+        val typ = expect<TokenTyp.NOMEN>("Nomen")
+        var name = typ
+        if (tokens.peek()!!.typ is TokenTyp.NOMEN){
+          name = tokens.next()!!
+        }
+        parameterListe += NameUndTyp(name, typ)
+      }
+    }
     expect<TokenTyp.DOPPELPUNKT>(":")
+    return Pair(rückgabeTyp, parameterListe)
+  }
+
+  private fun parseFunktion(): Definition.Funktion {
+    val funktionsName = expect<TokenTyp.VERB>("Verb")
+    val (rückgabeTyp, parameterListe) = parseRückgabeTypUndParameterListe()
     val sätze = parseSätze(false)
     var rückgabeWert: Ausdruck? = null
     if (rückgabeTyp != null) {
@@ -118,11 +122,27 @@ class Parser(val code: String) {
       rückgabeWert = parseAusdruck()
     }
     expect<TokenTyp.PUNKT>(".")
-    return Definition.Funktion(verb, rückgabeTyp, parameterListe, sätze, rückgabeWert)
+    return Definition.Funktion(funktionsName, rückgabeTyp, parameterListe, sätze, rückgabeWert)
   }
 
   private fun parseMethode(): Definition.Methode {
-    TODO("Not yet implemented")
+    /*
+    definiere Verb für Typ [mit [Rückgabe Typ | Typ [Nomen]] {,Typ [Nomen]}]:
+  Sätze
+  [zurück Ausdruck].
+     */
+    val methodenName = expect<TokenTyp.VERB>("Verb")
+    expect<TokenTyp.FÜR>("für")
+    val typ = expect<TokenTyp.NOMEN>("Nomen")
+    val (rückgabeTyp, parameterListe) = parseRückgabeTypUndParameterListe()
+    val sätze = parseSätze(false)
+    var rückgabeWert: Ausdruck? = null
+    if (rückgabeTyp != null) {
+      expect<TokenTyp.ZURÜCK>("zurück")
+      rückgabeWert = parseAusdruck()
+    }
+    expect<TokenTyp.PUNKT>(".")
+    return Definition.Methode(methodenName, typ, rückgabeTyp, parameterListe, sätze, rückgabeWert)
   }
 
   private fun parseSätze(inSchleife: Boolean): List<Satz> {
@@ -259,6 +279,8 @@ fun main() {
 
   val funktionDefinition = "definiere addieren mit Rückgabe Zahl , Zahl , Zahl X: zurück Zahl + X."
 
-  val parser = Parser(funktionDefinition)
+  val methodenDefinition = """definiere hallo für Student mit Rückgabe Zeichenfolge: zurück "Hallo!"."""
+
+  val parser = Parser(methodenDefinition)
   println(parser.parse())
 }

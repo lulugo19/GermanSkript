@@ -69,10 +69,11 @@ sealed class Definition {
 
   data class Methode(
     val name: Token,
-    val objekt: Token,
+    val typ: Token,
     val rückgabe: Token?,
     val parameter: List<NameUndTyp>,
-    val körper: List<Satz>
+    val körper: List<Satz>,
+    val rückgabeWert: Ausdruck?
   ): Definition()
 
   data class Typ(
