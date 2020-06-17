@@ -21,6 +21,7 @@ Folgendes sind Sätze:
 - Funktionsaufrufe
 - Methodenaufrufe
 - Schlüsselwörter wie `abbrechen` oder `fortfahren`
+- `zurück`-Anweisung in Funktionen oder Methoden
 Wenn nachfolgend in der Syntax `Sätze` steht, sind damit keiner, ein Satz oder meherere Sätze gemeint.
 
 ### Ausdrücke
@@ -135,8 +136,7 @@ Das Schlüsselwort `fortfahren` springt zu nächsten Schleifen-Iteration.
 ### Definieren einer Funktion
 ```
 definiere Verb [mit [Rückgabe Typ | Typ [Nomen]] {,Typ [Nomen]}]: 
-  Sätze
-  [zurück Ausdruck]
+  Sätze.
 ```
 Beispiel:
 ```
@@ -189,8 +189,7 @@ Beispiel:
 ### Definieren einer Methode
 ```
 definiere Verb für Typ [mit [Rückgabe Typ | Typ [Nomen]] {,Typ [Nomen]}]: 
-  Sätze
-  [zurück Ausdruck].
+  Sätze.
 ```
 
 ### Methodenaufruf

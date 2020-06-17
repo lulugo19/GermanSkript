@@ -20,10 +20,12 @@ sealed class Satz {
   data class FunktionsaufrufSatz(val funktionsaufruf: Funktionsaufruf): Satz()
   data class MethodenaufrufSatz(val methodenaufruf: Methodenaufruf): Satz()
 
-
   data class Bedingung(val wennBedingung: BedingteSätze, val wennSonstBedingungen: List<BedingteSätze>?, val sonstBedingung: Satz?): Satz()
   data class SolangeSchleife(val bedingteSätze: BedingteSätze): Satz()
   data class FürJedeSchleife(val jede: Token, val binder: Token, val ausdruck: Ausdruck, val sätze: List<Satz>): Satz()
+
+  // nur in einer Methoden oder Funktionsdefinition mit Rückgabetyp erlaubt
+  data class Zurück(val wert: Ausdruck): Satz()
 
   // nur in einer Schleife erlaubt
   data class Forfahren(val wort: Token): Satz()
@@ -67,15 +69,13 @@ data class Signatur(
 sealed class Definition {
   data class Funktion(
     val signatur: Signatur,
-    val körper: List<Satz>,
-    val rückgabeWert: Ausdruck?
+    val körper: List<Satz>
   ): Definition()
 
   data class Methode(
     val signatur: Signatur,
     val typ: Token,
-    val körper: List<Satz>,
-    val rückgabeWert: Ausdruck?
+    val körper: List<Satz>
   ): Definition()
 
   data class Typ(

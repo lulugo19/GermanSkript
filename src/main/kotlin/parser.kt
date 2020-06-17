@@ -1,5 +1,5 @@
 class SyntaxError(token: Token, erwartet: String? = null, nachricht: String? = null) :
-        Exception("Unerwartetes ${token.wert} in Zeile ${token.anfang.first} und Spalte ${token.anfang.second}. Erwartet wird $erwartet")
+        Exception("Unerwartetes '${token.wert}' in (${token.anfang.first}, ${token.anfang.second}). Erwartet wird $erwartet. $nachricht")
 
 class Parser(code: String) {
   private val tokens = Peekable(tokeniziere(code).iterator())
@@ -9,6 +9,8 @@ class Parser(code: String) {
     Bedingung("Bedingung"),
     MethodenDefinition("Methodendefinition"),
     FunktionsDefinition("Funktionsdefinition"),
+    MethodenDefinition_R("Methodendefinition"),
+    FunktionsDefinition_R("Funktionsdefinition")
   }
 
   fun parse(): Programm {
@@ -121,14 +123,12 @@ class Parser(code: String) {
   private fun parseFunktion(): Definition.Funktion {
     val funktionsName = expect<TokenTyp.VERB>("Verb")
     val signatur = parseSignatur(funktionsName)
-    val sätze = parseSätze(listOf(Bereich.FunktionsDefinition))
-    var rückgabeWert: Ausdruck? = null
-    if (signatur.rückgabeTyp != null) {
-      expect<TokenTyp.ZURÜCK>("zurück")
-      rückgabeWert = parseAusdruck()
+    val sätze = parseSätze(listOf(if (signatur.rückgabeTyp != null) Bereich.FunktionsDefinition_R else Bereich.FunktionsDefinition))
+    if (signatur.rückgabeTyp != null && !sätze.any {it is Satz.Zurück}) {
+      throw SyntaxError(tokens.next()!!, "zurück", "Eine Funktion mit einem Rückgabetypen muss mindestens eine zurück-Anweisung haben")
     }
     expect<TokenTyp.PUNKT>(".")
-    return Definition.Funktion(signatur, sätze, rückgabeWert)
+    return Definition.Funktion(signatur, sätze)
   }
 
   private fun parseMethode(): Definition.Methode {
@@ -136,14 +136,12 @@ class Parser(code: String) {
     expect<TokenTyp.FÜR>("für")
     val typ = expect<TokenTyp.NOMEN>("Nomen")
     val signatur = parseSignatur(methodenName)
-    val sätze = parseSätze(listOf(Bereich.MethodenDefinition))
-    var rückgabeWert: Ausdruck? = null
-    if (signatur.rückgabeTyp != null) {
-      expect<TokenTyp.ZURÜCK>("zurück")
-      rückgabeWert = parseAusdruck()
+    val sätze = parseSätze(listOf(if (signatur.rückgabeTyp != null) Bereich.MethodenDefinition_R else Bereich.MethodenDefinition))
+    if (signatur.rückgabeTyp != null && !sätze.any {it is Satz.Zurück}) {
+      throw SyntaxError(tokens.next()!!, "zurück", "Eine Methode mit einem Rückgabetypen muss mindestens eine zurück-Anweisung haben.")
     }
     expect<TokenTyp.PUNKT>(".")
-    return Definition.Methode(signatur, typ, sätze, rückgabeWert)
+    return Definition.Methode(signatur, typ, sätze)
   }
 
   private fun parseSchnittstelle(): Definition.Schnittstelle {
@@ -176,8 +174,13 @@ class Parser(code: String) {
         break
       }
       if (nächsterTokenTyp is TokenTyp.ZURÜCK) {
-        if (kontext.isEmpty() || kontext[0] != Bereich.MethodenDefinition && kontext[0] != Bereich.FunktionsDefinition) {
+        if (kontext.isEmpty() || kontext[0] != Bereich.MethodenDefinition_R && kontext[0] != Bereich.FunktionsDefinition_R) {
           throw SyntaxError(tokens.next()!!, null, "Das Schlüsselwort 'zurück' kann nur in einer Funktions- oder Methodendefinition verwendet werden.")
+        }
+      }
+      if (nächsterTokenTyp is TokenTyp.PUNKT) {
+        if (kontext.isEmpty()) {
+          throw SyntaxError(tokens.next()!!, "")
         }
         break
       }
@@ -213,8 +216,17 @@ class Parser(code: String) {
           }
         } else {
           val token =  tokens.next()!!
-          throw Exception("${token.wert} kann nur in einer Schleife verwendet werden")
+          throw SyntaxError(token, null,"${token.wert} kann nur in einer Schleife verwendet werden")
         }
+      is TokenTyp.ZURÜCK -> {
+        if (kontext[0] != Bereich.FunktionsDefinition_R && kontext[0] != Bereich.MethodenDefinition_R) {
+          throw SyntaxError(tokens.next()!!, null,
+                  "Zurück kann nicht verwendet werden, da diese ${kontext[0].anzeigeName} keinen Rückgabetypen hat")
+        } else {
+          tokens.next()
+          Satz.Zurück(parseAusdruck())
+        }
+      }
       else -> throw SyntaxError(tokens.next()!!)
     }
   }
