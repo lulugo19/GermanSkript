@@ -2,8 +2,8 @@ class SyntaxError(token: Token, erwartet: String? = null, nachricht: String? = n
         Exception("Unerwartetes ${token.wert} in Zeile ${token.anfang.first} und Spalte ${token.anfang.second}. Erwartet wird $erwartet")
 
 
-class Parser(val code: String) {
-  val tokens = Peekable(tokeniziere(code).iterator())
+class Parser(code: String) {
+  private val tokens = Peekable(tokeniziere(code).iterator())
 
   fun parse(): Programm {
     val definitionen = mutableListOf<Definition>()
@@ -44,7 +44,7 @@ class Parser(val code: String) {
   private fun parseTyp(): Definition.Typ {
     // der Artikel muss ein bestimmter sein: der, die, das, aber statt der muss den genommen werden
     val geschlechtToken = tokens.next()!!
-    var geschlecht : Geschlecht = when(val tokenTyp = geschlechtToken.typ) {
+    val geschlecht : Geschlecht = when(val tokenTyp = geschlechtToken.typ) {
       is TokenTyp.ARTIKEL ->
         if (tokenTyp.geschlecht == Geschlecht.MÄNNLICH) throw SyntaxError(tokens.next()!!, "den")
         else tokenTyp.geschlecht
@@ -72,9 +72,9 @@ class Parser(val code: String) {
 
       while (tokens.peek()!!.typ is TokenTyp.KOMMA) {
         tokens.next()
-        var name = expect<TokenTyp.NOMEN>("Nomen")
+        name = expect<TokenTyp.NOMEN>("Nomen")
         expect<TokenTyp.ALS>("als")
-        var typ = expect<TokenTyp.NOMEN>("Nomen")
+        typ = expect<TokenTyp.NOMEN>("Nomen")
         felder += NameUndTyp(name, typ)
       }
     }
@@ -232,7 +232,7 @@ class Parser(val code: String) {
     TODO()
   }
 
-  public fun parseAusdruck() = parseBinärerAusdruck(0.0)
+  private fun parseAusdruck() = parseBinärerAusdruck(0.0)
 
   // pratt parsing: https://matklad.github.io/2020/04/13/simple-but-powerful-pratt-parsing.html
   private fun parseBinärerAusdruck(minBindungskraft: Double) : Ausdruck {
@@ -243,9 +243,9 @@ class Parser(val code: String) {
         is TokenTyp.OPERATOR -> token.operator
         else -> break@loop
       }
-      val bindungsKraft = operator.bindungsKraft;
-      val linkeBindungsKraft = bindungsKraft + if (operator.assoziativität == Assoziativität.RECHTS) 0.1 else 0.0;
-      val rechteBindungsKraft = bindungsKraft + if (operator.assoziativität == Assoziativität.LINKS) 0.1 else 0.0;
+      val bindungsKraft = operator.bindungsKraft
+      val linkeBindungsKraft = bindungsKraft + if (operator.assoziativität == Assoziativität.RECHTS) 0.1 else 0.0
+      val rechteBindungsKraft = bindungsKraft + if (operator.assoziativität == Assoziativität.LINKS) 0.1 else 0.0
       if (linkeBindungsKraft < minBindungskraft) {
         break
       }
