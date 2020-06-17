@@ -42,7 +42,6 @@ class Parser(val code: String) {
   }
 
   private fun parseTyp(): Definition.Typ {
-    println("PARSE TYP!!")
     // der Artikel muss ein bestimmter sein: der, die, das, aber statt der muss den genommen werden
     val geschlechtToken = tokens.next()!!
     var geschlecht : Geschlecht = when(val tokenTyp = geschlechtToken.typ) {
@@ -84,7 +83,42 @@ class Parser(val code: String) {
   }
 
   private fun parseFunktion(): Definition.Funktion {
-    TODO("Not yet implemented")
+
+    val verb = expect<TokenTyp.VERB>("Verb")
+    var rückgabeTyp: Token? = null
+    val parameterListe = mutableListOf<NameUndTyp>()
+     if (tokens.peek()!!.typ is TokenTyp.MIT){
+       tokens.next()
+       if (tokens.peek()!!.typ is TokenTyp.RÜCKGABE){
+         tokens.next()
+         rückgabeTyp = expect<TokenTyp.NOMEN>("Nomen")
+       }else{
+         val typ = expect<TokenTyp.NOMEN>("Nomen")
+         var name = typ
+         if (tokens.peek()!!.typ is TokenTyp.NOMEN){
+           name = tokens.next()!!
+         }
+         parameterListe += NameUndTyp(name, typ)
+       }
+       while (tokens.peek()!!.typ is TokenTyp.KOMMA){
+         tokens.next()
+         val typ = expect<TokenTyp.NOMEN>("Nomen")
+         var name = typ
+         if (tokens.peek()!!.typ is TokenTyp.NOMEN){
+           name = tokens.next()!!
+         }
+         parameterListe += NameUndTyp(name, typ)
+       }
+     }
+    expect<TokenTyp.DOPPELPUNKT>(":")
+    val sätze = parseSätze(false)
+    var rückgabeWert: Ausdruck? = null
+    if (rückgabeTyp != null) {
+      expect<TokenTyp.ZURÜCK>("zurück")
+      rückgabeWert = parseAusdruck()
+    }
+    expect<TokenTyp.PUNKT>(".")
+    return Definition.Funktion(verb, rückgabeTyp, parameterListe, sätze, rückgabeWert)
   }
 
   private fun parseMethode(): Definition.Methode {
@@ -98,7 +132,7 @@ class Parser(val code: String) {
         tokens.next()
       }
       val nächsterTokenTyp = tokens.peek()!!.typ
-      if (nächsterTokenTyp is TokenTyp.DEFINIERE || nächsterTokenTyp is TokenTyp.EOF) {
+      if (nächsterTokenTyp is TokenTyp.DEFINIERE || nächsterTokenTyp is TokenTyp.EOF || nächsterTokenTyp is TokenTyp.ZURÜCK) {
         break
       }
       when (tokens.peek()!!.typ) {
@@ -223,6 +257,8 @@ fun main() {
 
   val typDefinition = "definiere den Student als Person mit Plural Studenten: Vorname als Zeichenfolge, Nachname als Zeichenfolge, Alter als Zahl."
 
-  val parser = Parser(typDefinition)
+  val funktionDefinition = "definiere addieren mit Rückgabe Zahl , Zahl , Zahl X: zurück Zahl + X."
+
+  val parser = Parser(funktionDefinition)
   println(parser.parse())
 }
