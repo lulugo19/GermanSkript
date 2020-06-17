@@ -186,7 +186,15 @@ class Parser(val code: String) {
   }
 
   private fun parseSolangeSchleife(): Satz.SolangeSchleife {
-    TODO("Not yet implemented")
+    expect<TokenTyp.SOLANGE>("solange")
+    val bedingung = parseAusdruck()
+    expect<TokenTyp.DOPPELPUNKT>(":")
+    var sätze = emptyList<Satz>()
+    if (tokens.peek()!!.typ !is TokenTyp.PUNKT) {
+      sätze = parseSätze(true)
+    }
+    expect<TokenTyp.PUNKT>(".")
+    return Satz.SolangeSchleife(Pair(bedingung, sätze))
   }
 
   private fun parseBedingung(): Satz.Bedingung {
@@ -294,6 +302,8 @@ fun main() {
 
   val fürJedeSchleife = "für jede Zahl in Zahlen:."
 
-  val parser = Parser(fürJedeSchleife)
+  val solangeSchleife = "solange X > 5:."
+
+  val parser = Parser(solangeSchleife)
   println(parser.parse())
 }
