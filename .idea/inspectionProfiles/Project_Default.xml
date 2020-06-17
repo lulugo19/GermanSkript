@@ -1,16 +1,46 @@
 <component name="InspectionProjectProfileManager">
   <profile version="1.0">
     <option name="myName" value="Project Default" />
+    <inspection_tool class="ClassName" enabled="true" level="WEAK WARNING" enabled_by_default="true">
+      <option name="namePattern" value="[A-ZÄÖÜ][A-ZÄÖÜa-zäöüß\d]*" />
+    </inspection_tool>
+    <inspection_tool class="ConstPropertyName" enabled="true" level="WEAK WARNING" enabled_by_default="true">
+      <option name="namePattern" value="[A-ZÄÖÜ][_A-ZÄÖÜ\d]*" />
+    </inspection_tool>
+    <inspection_tool class="EnumEntryName" enabled="true" level="WEAK WARNING" enabled_by_default="true">
+      <option name="namePattern" value="[A-ZÄÖÜ]([A-ZÄÖÜa-zäöüß\d]*|[A-ZÄÖÜ_\d]*)" />
+    </inspection_tool>
+    <inspection_tool class="FunctionName" enabled="true" level="WEAK WARNING" enabled_by_default="true">
+      <option name="namePattern" value="[a-zäöüß][A-ZÄÖÜa-zäöüß\d]*" />
+    </inspection_tool>
     <inspection_tool class="GrazieInspection" enabled="false" level="TYPO" enabled_by_default="false" />
     <inspection_tool class="JSNonASCIINames" enabled="false" level="WARNING" enabled_by_default="false" />
     <inspection_tool class="LanguageDetectionInspection" enabled="false" level="WARNING" enabled_by_default="false" />
+    <inspection_tool class="LocalVariableName" enabled="true" level="WEAK WARNING" enabled_by_default="true">
+      <option name="namePattern" value="[a-zöäüß][A-ZÖÄÜa-zöäüß\d]*" />
+    </inspection_tool>
     <inspection_tool class="NonAsciiCharacters" enabled="false" level="WARNING" enabled_by_default="false">
       <option name="CHECK_FOR_NOT_ASCII_IDENTIFIER_NAME" value="false" />
+    </inspection_tool>
+    <inspection_tool class="ObjectPropertyName" enabled="true" level="WEAK WARNING" enabled_by_default="true">
+      <option name="namePattern" value="[A-ZÄÖÜa-zäöüß][_A-ZÄÖÜa-zäöüß\d]*" />
+    </inspection_tool>
+    <inspection_tool class="PackageName" enabled="true" level="WEAK WARNING" enabled_by_default="true">
+      <option name="namePattern" value="[a-zäöüß_][a-zäöüßA-ZÄÖÜ\d_]*(\.[a-zäöüß_][a-zäöüßA-ZÄÖÜ\d_]*)*" />
+    </inspection_tool>
+    <inspection_tool class="PrivatePropertyName" enabled="true" level="WEAK WARNING" enabled_by_default="true">
+      <option name="namePattern" value="_?[a-zäöüß][A-ZÄÖÜa-zaäöüß\d]*" />
+    </inspection_tool>
+    <inspection_tool class="PropertyName" enabled="true" level="WEAK WARNING" enabled_by_default="true">
+      <option name="namePattern" value="[a-zäöüß][A-ZÄÖÜa-zäöüß\d]*" />
     </inspection_tool>
     <inspection_tool class="SpellCheckingInspection" enabled="false" level="TYPO" enabled_by_default="false">
       <option name="processCode" value="true" />
       <option name="processLiterals" value="true" />
       <option name="processComments" value="true" />
+    </inspection_tool>
+    <inspection_tool class="TestFunctionName" enabled="true" level="WEAK WARNING" enabled_by_default="true">
+      <option name="namePattern" value="[a-zäöüß][A-ZÄÖÜa-zaöüß_\d]*" />
     </inspection_tool>
   </profile>
 </component>
