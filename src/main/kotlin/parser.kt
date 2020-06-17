@@ -1,9 +1,15 @@
 class SyntaxError(token: Token, erwartet: String? = null, nachricht: String? = null) :
         Exception("Unerwartetes ${token.wert} in Zeile ${token.anfang.first} und Spalte ${token.anfang.second}. Erwartet wird $erwartet")
 
-
 class Parser(code: String) {
   private val tokens = Peekable(tokeniziere(code).iterator())
+
+  private enum class Bereich(val anzeigeName: String) {
+    Schleife("Schleife"),
+    Bedingung("Bedingung"),
+    MethodenDefinition("Methodendefinition"),
+    FunktionsDefinition("Funktionsdefinition"),
+  }
 
   fun parse(): Programm {
     val definitionen = mutableListOf<Definition>()
@@ -12,7 +18,7 @@ class Parser(code: String) {
       when (tokens.peek()!!.typ) {
         is TokenTyp.EOF -> break@loop
         is TokenTyp.DEFINIERE -> definitionen += parseDefinition()
-        else -> sätze += parseSätze(false)
+        else -> sätze += parseSätze(emptyList())
       }
     }
     return Programm(definitionen, sätze)
@@ -82,7 +88,7 @@ class Parser(code: String) {
     return Definition.Typ(geschlecht, typName, elternTyp, listenName, felder)
   }
 
-  private fun parseRückgabeTypUndParameterListe(): Pair<Token?, List<NameUndTyp>> {
+  private fun parseSignatur(signaturName: Token): Signatur {
     var rückgabeTyp: Token? = null
     val parameterListe = mutableListOf<NameUndTyp>()
     if (tokens.peek()!!.typ is TokenTyp.MIT){
@@ -109,58 +115,78 @@ class Parser(code: String) {
       }
     }
     expect<TokenTyp.DOPPELPUNKT>(":")
-    return Pair(rückgabeTyp, parameterListe)
+    return Signatur(signaturName, rückgabeTyp, parameterListe)
   }
 
   private fun parseFunktion(): Definition.Funktion {
     val funktionsName = expect<TokenTyp.VERB>("Verb")
-    val (rückgabeTyp, parameterListe) = parseRückgabeTypUndParameterListe()
-    val sätze = parseSätze(false)
+    val signatur = parseSignatur(funktionsName)
+    val sätze = parseSätze(listOf(Bereich.FunktionsDefinition))
     var rückgabeWert: Ausdruck? = null
-    if (rückgabeTyp != null) {
+    if (signatur.rückgabeTyp != null) {
       expect<TokenTyp.ZURÜCK>("zurück")
       rückgabeWert = parseAusdruck()
     }
     expect<TokenTyp.PUNKT>(".")
-    return Definition.Funktion(funktionsName, rückgabeTyp, parameterListe, sätze, rückgabeWert)
+    return Definition.Funktion(signatur, sätze, rückgabeWert)
   }
 
   private fun parseMethode(): Definition.Methode {
-    /*
-    definiere Verb für Typ [mit [Rückgabe Typ | Typ [Nomen]] {,Typ [Nomen]}]:
-  Sätze
-  [zurück Ausdruck].
-     */
     val methodenName = expect<TokenTyp.VERB>("Verb")
     expect<TokenTyp.FÜR>("für")
     val typ = expect<TokenTyp.NOMEN>("Nomen")
-    val (rückgabeTyp, parameterListe) = parseRückgabeTypUndParameterListe()
-    val sätze = parseSätze(false)
+    val signatur = parseSignatur(methodenName)
+    val sätze = parseSätze(listOf(Bereich.MethodenDefinition))
     var rückgabeWert: Ausdruck? = null
-    if (rückgabeTyp != null) {
+    if (signatur.rückgabeTyp != null) {
       expect<TokenTyp.ZURÜCK>("zurück")
       rückgabeWert = parseAusdruck()
     }
     expect<TokenTyp.PUNKT>(".")
-    return Definition.Methode(methodenName, typ, rückgabeTyp, parameterListe, sätze, rückgabeWert)
+    return Definition.Methode(signatur, typ, sätze, rückgabeWert)
   }
 
-  private fun parseSätze(inSchleife: Boolean): List<Satz> {
+  private fun parseSchnittstelle(): Definition.Schnittstelle {
+    TODO("für Finn")
+  }
+
+  private fun parseAlias(): Definition.Alias {
+    TODO("für Finn")
+  }
+  
+  private fun parseSätze(kontext: List<Bereich>): List<Satz> {
     val sätze = mutableListOf<Satz>()
     while (true) {
       while (tokens.peek()!!.typ is TokenTyp.NEUE_ZEILE) {
         tokens.next()
       }
       val nächsterTokenTyp = tokens.peek()!!.typ
-      if (nächsterTokenTyp is TokenTyp.DEFINIERE || nächsterTokenTyp is TokenTyp.EOF || nächsterTokenTyp is TokenTyp.ZURÜCK) {
+      if (nächsterTokenTyp is TokenTyp.DEFINIERE || nächsterTokenTyp is TokenTyp.EOF || nächsterTokenTyp is TokenTyp.ALIAS) {
+        if (kontext.isNotEmpty()) {
+          val äußersterBereich = kontext.first()
+          val innersterBereich = kontext.last()
+          val fehlerNachricht = when(nächsterTokenTyp) {
+            is TokenTyp.DEFINIERE -> "Definitionen können nur außerhalb von einer ${äußersterBereich.anzeigeName} gemacht werden."
+            is TokenTyp.ALIAS -> "Aliase können nur außerhalb von einer ${äußersterBereich.anzeigeName} gemacht werden."
+            is TokenTyp.EOF -> "${innersterBereich.anzeigeName} muss mit einem Punkt geschlossen werden."
+            else -> throw Exception("Dieser Fall sollte nie ausgeführt werden")
+          }
+          throw SyntaxError(tokens.next()!!, null, fehlerNachricht)
+        }
+        break
+      }
+      if (nächsterTokenTyp is TokenTyp.ZURÜCK) {
+        if (kontext.isEmpty() || kontext[0] != Bereich.MethodenDefinition && kontext[0] != Bereich.FunktionsDefinition) {
+          throw SyntaxError(tokens.next()!!, null, "Das Schlüsselwort 'zurück' kann nur in einer Funktions- oder Methodendefinition verwendet werden.")
+        }
         break
       }
       when (tokens.peek()!!.typ) {
-        is TokenTyp.WENN -> sätze += parseBedingung()
-        is TokenTyp.SOLANGE -> sätze += parseSolangeSchleife()
-        is TokenTyp.FÜR -> sätze += parseFürJedeSchleife()
+        is TokenTyp.WENN -> sätze += parseBedingung(kontext)
+        is TokenTyp.SOLANGE -> sätze += parseSolangeSchleife(kontext)
+        is TokenTyp.FÜR -> sätze += parseFürJedeSchleife(kontext)
         else -> {
-          sätze += parseSatz(inSchleife)
+          sätze += parseSatz(kontext)
           if (tokens.peek()!!.typ is TokenTyp.TRENNER) {
             tokens.next()
           }
@@ -170,38 +196,7 @@ class Parser(code: String) {
     return sätze
   }
 
-  private fun parseFürJedeSchleife(): Satz.FürJedeSchleife {
-    expect<TokenTyp.FÜR>("für")
-    val jede = expect<TokenTyp.JEDE>("jeder/jede/jedes")
-    val binder = expect<TokenTyp.NOMEN>("Nomen")
-    expect<TokenTyp.IN>("in")
-    val ausdruck = parseAusdruck()
-    expect<TokenTyp.DOPPELPUNKT>(":")
-    var sätze = emptyList<Satz>()
-    if (tokens.peek()!!.typ !is TokenTyp.PUNKT) {
-      sätze = parseSätze(true)
-    }
-    expect<TokenTyp.PUNKT>(".")
-    return Satz.FürJedeSchleife(jede, binder, ausdruck, sätze)
-  }
-
-  private fun parseSolangeSchleife(): Satz.SolangeSchleife {
-    expect<TokenTyp.SOLANGE>("solange")
-    val bedingung = parseAusdruck()
-    expect<TokenTyp.DOPPELPUNKT>(":")
-    var sätze = emptyList<Satz>()
-    if (tokens.peek()!!.typ !is TokenTyp.PUNKT) {
-      sätze = parseSätze(true)
-    }
-    expect<TokenTyp.PUNKT>(".")
-    return Satz.SolangeSchleife(Pair(bedingung, sätze))
-  }
-
-  private fun parseBedingung(): Satz.Bedingung {
-    TODO("Not yet implemented")
-  }
-
-  private fun parseSatz(inSchleife: Boolean): Satz {
+  private fun parseSatz(kontext: List<Bereich>): Satz {
     return when (val typ = tokens.peek()!!.typ) {
       is TokenTyp.ARTIKEL -> parseVariablenDeklaration()
       is TokenTyp.NOMEN -> when (tokens.peekDouble()!!.typ) {
@@ -210,7 +205,7 @@ class Parser(code: String) {
         else -> throw SyntaxError(tokens.next()!!)
       }
       is TokenTyp.FORTFAHREN, TokenTyp.ABBRECHEN ->
-        if (inSchleife) {
+        if (kontext.contains(Bereich.Schleife)) {
           when (typ) {
             is TokenTyp.FORTFAHREN -> Satz.Forfahren(tokens.next()!!)
             is TokenTyp.ABBRECHEN -> Satz.Abbrechen(tokens.next()!!)
@@ -224,12 +219,43 @@ class Parser(code: String) {
     }
   }
 
+  private fun parseFürJedeSchleife(kontext: List<Bereich>): Satz.FürJedeSchleife {
+    expect<TokenTyp.FÜR>("für")
+    val jede = expect<TokenTyp.JEDE>("jeder/jede/jedes")
+    val binder = expect<TokenTyp.NOMEN>("Nomen")
+    expect<TokenTyp.IN>("in")
+    val ausdruck = parseAusdruck()
+    expect<TokenTyp.DOPPELPUNKT>(":")
+    var sätze = emptyList<Satz>()
+    if (tokens.peek()!!.typ !is TokenTyp.PUNKT) {
+      sätze = parseSätze(kontext + Bereich.Schleife)
+    }
+    expect<TokenTyp.PUNKT>(".")
+    return Satz.FürJedeSchleife(jede, binder, ausdruck, sätze)
+  }
+
+  private fun parseSolangeSchleife(kontext: List<Bereich>): Satz.SolangeSchleife {
+    expect<TokenTyp.SOLANGE>("solange")
+    val bedingung = parseAusdruck()
+    expect<TokenTyp.DOPPELPUNKT>(":")
+    var sätze = emptyList<Satz>()
+    if (tokens.peek()!!.typ !is TokenTyp.PUNKT) {
+      sätze = parseSätze(kontext + Bereich.Schleife)
+    }
+    expect<TokenTyp.PUNKT>(".")
+    return Satz.SolangeSchleife(Pair(bedingung, sätze))
+  }
+
+  private fun parseBedingung(kontext: List<Bereich>): Satz.Bedingung {
+    TODO("für Lukas")
+  }
+
   private fun parseVariablenDeklaration(): Satz.Variablendeklaration {
-    TODO()
+    TODO("für Finn")
   }
 
   private fun parseVariablenZuweisung(): Satz.Variablenzuweisung {
-    TODO()
+    TODO("für Finn")
   }
 
   private fun parseAusdruck() = parseBinärerAusdruck(0.0)
@@ -279,15 +305,15 @@ class Parser(code: String) {
   }
 
   private fun parseFunktionsAufruf(): Funktionsaufruf {
-    TODO()
+    TODO("für Finn")
   }
 
   private fun parseMethodenAufruf(): Methodenaufruf {
-    TODO()
+    TODO("für Finn")
   }
 
   private fun parseWennDannSonstAusdruck(): Ausdruck.WennDannSonst {
-    TODO()
+    TODO("für Lukas")
   }
 }
 

@@ -60,6 +60,7 @@ sealed class TokenTyp() {
     object DEN: TokenTyp()
     object FORTFAHREN: TokenTyp()
     object ABBRECHEN: TokenTyp()
+    object ALIAS: TokenTyp()
     data class JEDE(val geschlecht: Geschlecht): TokenTyp()
     data class GESCHLECHT(val geschlecht: Geschlecht): TokenTyp()
     data class ZUWEISUNG(val anzahl: Anzahl): TokenTyp()
@@ -113,6 +114,7 @@ private val ZEICHEN_MAPPING = mapOf<Char, TokenTyp>(
 private val WORT_MAPPING = mapOf<String, TokenTyp>(
         "mit" to TokenTyp.MIT,
         "definiere" to TokenTyp.DEFINIERE,
+        "alias" to TokenTyp.ALIAS,
         "Rückgabe" to TokenTyp.RÜCKGABE,
         "zurück" to TokenTyp.ZURÜCK,
         "wenn" to TokenTyp.WENN,
@@ -330,7 +332,7 @@ private fun wort(iterator: Peekable<Char>, zeichen: Char, zeilenIndex: Int) : Se
 private fun teilWort(iterator: Peekable<Char>, erstesZeichen: Char): String {
     var wort = erstesZeichen.toString()
     while (iterator.peek() != null) {
-        var nächstesZeiches = iterator.peek()!!
+        val nächstesZeiches = iterator.peek()!!
         if (nächstesZeiches == ' ' ||
             (nächstesZeiches != '!' && nächstesZeiches != '?' && ZEICHEN_MAPPING.containsKey(nächstesZeiches))) {
             break

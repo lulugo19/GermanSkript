@@ -10,8 +10,8 @@ kann ein oder mehrmals wiederholt werden `{Wiederholung}`.
 ### Groß- und Kleinschreibung
 Groß- und Kleinschreibung ist wichtig bei GermanScript. Namen die festgelegt werden können, unterteilen sich in `Nomen`,
 die **groß** und `Verben` die **klein** geschrieben werden.
-`Nomen` werden bei [Variablendeklarationen](###Deklaration-von-Variablen) und [Klassendefinitionen](###Definition-von-Klassen)
-und `Verben` bei der Definition von [Funktionen](###Definition-von-Funktionen) und Methoden verwendet.
+`Nomen` werden bei [Variablendeklarationen](###Deklaration-von-Variablen) und [Typdefinitionen](###Definieren-eines-Typs)
+und `Verben` bei der Definition von [Funktionen](###Definieren-einer-Funktion) und Methoden verwendet.
 
 ### Sätze
 Ein GermanScript-Programm besteht aus mehreren Sätzen (im Programmierspachen-Jargon auch Statements genannt).
@@ -208,10 +208,18 @@ Beispiel:
 `Person stellDichVor`
 
 ### Definieren einer Schnittstelle
-`definiere Schnittstelle Nomen: {Verb [Verb!] [mit [Rückgabe Typ | Typ [Nomen]] {,Typ [Nomen]}]}`
+`definiere Schnittstelle Nomen: {Verb [mit [Rückgabe Typ | Typ [Nomen]] {,Typ [Nomen]}]}.`
 
-Eine Schnittstellendefinition besteht aus Methodensignaturen. Eine Schnittstelle wird automatisch für eine Klasse
+Eine Schnittstellendefinition besteht aus Methodensignaturen. Eine Schnittstelle wird automatisch für einen Typ
 implementiert, wenn sie alle Methoden definiert. Eine Schnittstelle hat das Geschlecht `neutral`.
+
+Beispiel:
+
+```
+definiere Schnittstelle Zeichenbares:
+    zeichne mit Farbe
+    skaliere mit Rückgabe Zahl.
+```
 
 ### Typ-Alias
 `alias Artikel Nomen ist Nomen`

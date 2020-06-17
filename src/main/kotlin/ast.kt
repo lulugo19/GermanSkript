@@ -58,20 +58,22 @@ sealed class Ausdruck {
 
 data class NameUndTyp(val name: Token, val typ: Token)
 
+data class Signatur(
+  val name: Token,
+  val rückgabeTyp: Token?,
+  val parameter: List<NameUndTyp>
+)
+
 sealed class Definition {
   data class Funktion(
-    val name: Token,
-    val rückgabe: Token?,
-    val parameter: List<NameUndTyp>,
+    val signatur: Signatur,
     val körper: List<Satz>,
     val rückgabeWert: Ausdruck?
   ): Definition()
 
   data class Methode(
-    val name: Token,
+    val signatur: Signatur,
     val typ: Token,
-    val rückgabe: Token?,
-    val parameter: List<NameUndTyp>,
     val körper: List<Satz>,
     val rückgabeWert: Ausdruck?
   ): Definition()
@@ -82,5 +84,16 @@ sealed class Definition {
     val elternTyp: Token?,
     val plural: Token,
     val felder: List<NameUndTyp>
+  ): Definition()
+
+  data class Schnittstelle(
+    val name: Token,
+    val signaturen: List<Signatur>
+  ): Definition()
+
+  data class Alias(
+    val geschlecht: Geschlecht,
+    val aliasTypName: Token,
+    val typName: Token
   ): Definition()
 }
