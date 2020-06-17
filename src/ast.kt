@@ -56,13 +56,13 @@ sealed class Ausdruck {
   data class UnärerAusdruck(val operator: Token, val ausdruck: Ausdruck): Ausdruck()
 }
 
-typealias TypUndName = Pair<TokenTyp.NOMEN, TokenTyp.NOMEN>
+data class NameUndTyp(val name: Token, val typ: Token)
 
 sealed class Definition {
   data class Funktion(
     val name: Token,
     val rückgabe: Token?,
-    val parameter: List<TypUndName>,
+    val parameter: List<NameUndTyp>,
     val körper: List<Satz>
   ): Definition()
 
@@ -70,15 +70,15 @@ sealed class Definition {
     val name: Token,
     val objekt: Token,
     val rückgabe: Token?,
-    val parameter: List<TypUndName>,
+    val parameter: List<NameUndTyp>,
     val körper: List<Satz>
   ): Definition()
 
   data class Typ(
     val geschlecht: Geschlecht,
     val name: Token,
-    val überTyp: Token,
+    val elternTyp: Token?,
     val plural: Token,
-    val felder: List<TypUndName>
+    val felder: List<NameUndTyp>
   ): Definition()
 }

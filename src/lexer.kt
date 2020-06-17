@@ -55,6 +55,7 @@ sealed class TokenTyp() {
     object ALS: TokenTyp()
     object VON: TokenTyp()
     object BIS: TokenTyp()
+    object PLURAL: TokenTyp()
     object DEN: TokenTyp()
     object FORTFAHREN: TokenTyp()
     object ABBRECHEN: TokenTyp()
@@ -146,7 +147,8 @@ private val WORT_MAPPING = mapOf<String, TokenTyp>(
         "bis" to TokenTyp.BIS,
         "jede" to TokenTyp.JEDE(Geschlecht.WEIBLICH),
         "jeden" to TokenTyp.JEDE(Geschlecht.MÄNNLICH),
-        "jedes" to TokenTyp.JEDE(Geschlecht.NEUTRAL)
+        "jedes" to TokenTyp.JEDE(Geschlecht.NEUTRAL),
+        "Plural" to TokenTyp.PLURAL
 )
 
 fun tokeniziere(quellcode: String) : Sequence<Token> = sequence {

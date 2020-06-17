@@ -1,5 +1,5 @@
 class SyntaxError(token: Token, erwartet: String? = null, nachricht: String? = null) :
-        Exception("Unerwartetes ${token.wert} in Zeile ${token.anfang.first} und Spalte ${token.anfang.second}")
+        Exception("Unerwartetes ${token.wert} in Zeile ${token.anfang.first} und Spalte ${token.anfang.second}. Erwartet wird $erwartet")
 
 
 class Parser(val code: String) {
@@ -42,7 +42,45 @@ class Parser(val code: String) {
   }
 
   private fun parseTyp(): Definition.Typ {
-    TODO("Not yet implemented")
+    println("PARSE TYP!!")
+    // der Artikel muss ein bestimmter sein: der, die, das, aber statt der muss den genommen werden
+    val geschlechtToken = tokens.next()!!
+    var geschlecht : Geschlecht = when(val tokenTyp = geschlechtToken.typ) {
+      is TokenTyp.ARTIKEL ->
+        if (tokenTyp.geschlecht == Geschlecht.MÄNNLICH) throw SyntaxError(tokens.next()!!, "den")
+        else tokenTyp.geschlecht
+      is TokenTyp.DEN -> Geschlecht.MÄNNLICH
+      else -> throw SyntaxError(geschlechtToken, "den/die/das")
+    }
+    val typName = expect<TokenTyp.NOMEN>("Nomen")
+    var elternTyp: Token? = null
+    if (tokens.peek()!!.typ is TokenTyp.ALS) {
+      tokens.next()
+      elternTyp = expect<TokenTyp.NOMEN>("Nomen")
+    }
+    expect<TokenTyp.MIT>("mit")
+    expect<TokenTyp.PLURAL>("Plural")
+    val listenName = expect<TokenTyp.NOMEN>("Nomen")
+
+    expect<TokenTyp.DOPPELPUNKT>(":")
+
+    val felder = mutableListOf<NameUndTyp>()
+    if (tokens.peek()!!.typ !is TokenTyp.PUNKT) {
+      var name = expect<TokenTyp.NOMEN>("Nomen")
+      expect<TokenTyp.ALS>("als")
+      var typ = expect<TokenTyp.NOMEN>("Nomen")
+      felder += NameUndTyp(name, typ)
+
+      while (tokens.peek()!!.typ is TokenTyp.KOMMA) {
+        tokens.next()
+        var name = expect<TokenTyp.NOMEN>("Nomen")
+        expect<TokenTyp.ALS>("als")
+        var typ = expect<TokenTyp.NOMEN>("Nomen")
+        felder += NameUndTyp(name, typ)
+      }
+    }
+    expect<TokenTyp.PUNKT>(".")
+    return Definition.Typ(geschlecht, typName, elternTyp, listenName, felder)
   }
 
   private fun parseFunktion(): Definition.Funktion {
@@ -182,7 +220,9 @@ class Parser(val code: String) {
 
 fun main() {
   val code = "-A * B hoch C minus (-6 durch 56)"
-  val parser = Parser(code)
 
-  println(parser.parseAusdruck())
+  val typDefinition = "definiere den Student als Person mit Plural Studenten: Vorname als Zeichenfolge, Nachname als Zeichenfolge, Alter als Zahl."
+
+  val parser = Parser(typDefinition)
+  println(parser.parse())
 }
