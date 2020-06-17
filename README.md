@@ -115,7 +115,7 @@ Solange die Bedingung zutrifft, werden die Sätze ausgeführt.
 
 ### für jede Schleife
 ```
-für (jeder | jede | jedes) Nomen von Ausdruck:
+für (jeder | jede | jedes) Nomen in Ausdruck:
   Sätze .
 ```
 Für jedes Element in dem iterierbaren Objekt, wird die Schleife einmal ausgeführt, wobei
@@ -144,7 +144,19 @@ definiere fakultät mit Rückgabe Zahl, Zahl:
     zurück wenn Zahl gleich 0 dann 1 sonst Zahl mal fakultät Zahl minus 1.
 ```
 
-### Definieren einer Klasse
+### Funktionsaufruf
+```
+Parameter können entweder als Ausdrücke, wo dann die Reihenfolge die Bindung bestimmt (Reihenfolgen-Form) 
+übergeben werden oder als eine Liste von Zuweisungen (Namensform). 
+Es kann auch gemischt sein, wobei dann die Reihenfolgen-Form zuerst kommen muss
+und dann die Namens-Form.
+
+Parameter: `(Ausdruck {, Ausdruck}) | (Nomen Zuweisungsoperator Ausdruck {, Nomen Zuweisungsoperator Ausdruck})`
+
+Funktionsaufruf: `Verb [Parameter]`
+```
+
+### Definieren eines Typs
 `definiere (Artikel Nomen | Nomen/Nomen[/Nomen]) [als Typ] mit Plural Nomen: [Nomen als Typ {,Nomen als Typ}.]`
 Beispiel:
 ```
@@ -157,14 +169,14 @@ definiere Student/Studentin/Studi als Person mit Plural Studenten:
     Semester als Zahl.
 ```
 
-### Instanziieren eines Objekts einer Klasse
+### Instanziieren eines Objekts eines Typs
 `Person [mit Nomen Ausdruck {, Nomen Ausdruck}]`
 
 Beispiel:
 
 `die Person Donald ist Person mit Vorname "Donald", Nachname "Duck"`
 
-### Zufriff auf Felder eines Objekts
+### Zugriff auf Felder eines Objekts
 `Feld von Objekt`
 
 Beispiel:
@@ -184,7 +196,7 @@ Parameter können entweder als Ausdrücke, wo dann die Reihenfolge die Bindung b
 Es kann auch gemischt sein, wobei dann die Reihenfolgen-Form zuerst kommen muss
 und dann die Namens-Form.
 
-Parameter: `[Ausdruck {, Ausdruck}][Nomen Zuweisungsoperator Ausdruck {, Nomen Zuweisungsoperator Ausdruck}]`
+Parameter: `(Ausdruck {, Ausdruck}) | (Nomen Zuweisungsoperator Ausdruck {, Nomen Zuweisungsoperator Ausdruck})`
 
 Methodenaufruf: `Objekt Verb [mit Parameter]
 
@@ -197,6 +209,21 @@ Beispiel:
 
 Eine Schnittstellendefinition besteht aus Methodensignaturen. Eine Schnittstelle wird automatisch für eine Klasse
 implementiert, wenn sie alle Methoden definiert. Eine Schnittstelle hat das Geschlecht `neutral`.
+
+### Typ-Alias
+`alias Nomen ist Nomen`
+
+Beispiel:
+
+`alias Alter ist Zahl`
+
+### destrukturierende Zuweisung
+Beispiel:
+```
+die Person ist Person mit Nachname="Peterson", Vorname="Hans",Alter=42
+der Nachname, der Vorname, das Alter von Person
+drucke Nachname, Vorname, Alter // Peterson Hans 42
+```
 
 ## Typen
 GermanScript verfügt vorab über folgende Typen:
