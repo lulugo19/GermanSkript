@@ -1,4 +1,4 @@
-class ParseException(token: Token, erwartet: String? = null, nachricht: String? = null) :
+class SyntaxError(token: Token, erwartet: String? = null, nachricht: String? = null) :
         Exception("Unerwartetes ${token.wert} in Zeile ${token.anfang.first} und Spalte ${token.anfang.second}")
 
 
@@ -23,7 +23,7 @@ class Parser(val code: String) {
     if (nextToken.typ is T) {
       return nextToken
     } else {
-      throw ParseException(nextToken, erwartet)
+      throw SyntaxError(nextToken, erwartet)
     }
   }
 
@@ -37,7 +37,7 @@ class Parser(val code: String) {
         }
       }
       is TokenTyp.ARTIKEL, TokenTyp.DEN -> parseTyp()
-      else -> throw ParseException(tokens.next()!!)
+      else -> throw SyntaxError(tokens.next()!!)
     }
   }
 
@@ -96,7 +96,7 @@ class Parser(val code: String) {
       is TokenTyp.NOMEN -> when (tokens.peekDouble()!!.typ) {
         is TokenTyp.VERB -> Satz.MethodenaufrufSatz(parseMethodenAufruf())
         is TokenTyp.ZUWEISUNG -> parseVariablenZuweisung()
-        else -> throw ParseException(tokens.next()!!)
+        else -> throw SyntaxError(tokens.next()!!)
       }
       is TokenTyp.FORTFAHREN, TokenTyp.ABBRECHEN ->
         if (inSchleife) {
@@ -109,7 +109,7 @@ class Parser(val code: String) {
           val token =  tokens.next()!!
           throw Exception("${token.wert} kann nur in einer Schleife verwendet werden")
         }
-      else -> throw ParseException(tokens.next()!!)
+      else -> throw SyntaxError(tokens.next()!!)
     }
   }
 
@@ -154,7 +154,7 @@ class Parser(val code: String) {
       }
       is TokenTyp.OPERATOR -> when (token.operator) {
         Operator.PLUS, Operator.MINUS, Operator.NEGATION -> Ausdruck.UnärerAusdruck(tokens.next()!!, parseEinzelnerAusdruck())
-        else -> throw ParseException(tokens.next()!!, "Unärer Operator")
+        else -> throw SyntaxError(tokens.next()!!, "Unärer Operator")
       }
       is TokenTyp.BOOLEAN, is TokenTyp.ZAHL, is TokenTyp.ZEICHENFOLGE -> Ausdruck.Literal(tokens.next()!!)
       is TokenTyp.NOMEN -> when(tokens.peekDouble()!!.typ) {
@@ -163,7 +163,7 @@ class Parser(val code: String) {
       }
       is TokenTyp.VERB -> Ausdruck.FunktionsaufrufAusdruck(parseFunktionsAufruf())
       is TokenTyp.WENN -> parseWennDannSonstAusdruck()
-      else -> throw ParseException(tokens.next()!!)
+      else -> throw SyntaxError(tokens.next()!!)
     }
   }
 
