@@ -157,7 +157,10 @@ Funktionsaufruf: `Verb [Parameter]`
 ```
 
 ### Definieren eines Typs
-`definiere (Artikel Nomen | Nomen/Nomen[/Nomen]) [als Typ] mit Plural Nomen: [Nomen als Typ {,Nomen als Typ}.]`
+```
+definiere (Artikel Nomen | Nomen/Nomen[/Nomen]) [als Typ] mit Plural Nomen: 
+  [Nomen {, Nomen} als Typ {Nomen {, Nomen} als Typ}].
+```
 Beispiel:
 ```
 definiere die Person mit Plural Personen:
@@ -165,7 +168,7 @@ definiere die Person mit Plural Personen:
     Alter als Zahl.
     
 definiere Student/Studentin/Studi als Person mit Plural Studenten:
-    Studiengang als Zeichenfolge,
+    Studiengang als Zeichenfolge
     Semester als Zahl.
 ```
 
@@ -211,11 +214,11 @@ Eine Schnittstellendefinition besteht aus Methodensignaturen. Eine Schnittstelle
 implementiert, wenn sie alle Methoden definiert. Eine Schnittstelle hat das Geschlecht `neutral`.
 
 ### Typ-Alias
-`alias Nomen ist Nomen`
+`alias Artikel Nomen ist Nomen`
 
 Beispiel:
 
-`alias Alter ist Zahl`
+`alias das Alter ist Zahl`
 
 ### destrukturierende Zuweisung
 Beispiel:
