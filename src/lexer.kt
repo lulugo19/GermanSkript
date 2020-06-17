@@ -52,6 +52,7 @@ sealed class TokenTyp() {
     object SONST: TokenTyp()
     object SOLANGE: TokenTyp()
     object FÜR: TokenTyp()
+    object IN: TokenTyp()
     object ALS: TokenTyp()
     object VON: TokenTyp()
     object BIS: TokenTyp()
@@ -143,6 +144,7 @@ private val WORT_MAPPING = mapOf<String, TokenTyp>(
         "wahr" to TokenTyp.BOOLEAN(true),
         "falsch" to TokenTyp.BOOLEAN(false),
         "für" to TokenTyp.FÜR,
+        "in" to TokenTyp.IN,
         "von" to TokenTyp.VON,
         "bis" to TokenTyp.BIS,
         "jede" to TokenTyp.JEDE(Geschlecht.WEIBLICH),

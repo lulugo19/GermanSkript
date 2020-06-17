@@ -170,15 +170,26 @@ class Parser(val code: String) {
     return sätze
   }
 
-  private fun parseFürJedeSchleife(): Satz {
+  private fun parseFürJedeSchleife(): Satz.FürJedeSchleife {
+    expect<TokenTyp.FÜR>("für")
+    val jede = expect<TokenTyp.JEDE>("jeder/jede/jedes")
+    val binder = expect<TokenTyp.NOMEN>("Nomen")
+    expect<TokenTyp.IN>("in")
+    val ausdruck = parseAusdruck()
+    expect<TokenTyp.DOPPELPUNKT>(":")
+    var sätze = emptyList<Satz>()
+    if (tokens.peek()!!.typ !is TokenTyp.PUNKT) {
+      sätze = parseSätze(true)
+    }
+    expect<TokenTyp.PUNKT>(".")
+    return Satz.FürJedeSchleife(jede, binder, ausdruck, sätze)
+  }
+
+  private fun parseSolangeSchleife(): Satz.SolangeSchleife {
     TODO("Not yet implemented")
   }
 
-  private fun parseSolangeSchleife(): Satz {
-    TODO("Not yet implemented")
-  }
-
-  private fun parseBedingung(): Satz {
+  private fun parseBedingung(): Satz.Bedingung {
     TODO("Not yet implemented")
   }
 
@@ -281,6 +292,8 @@ fun main() {
 
   val methodenDefinition = """definiere hallo für Student mit Rückgabe Zeichenfolge: zurück "Hallo!"."""
 
-  val parser = Parser(methodenDefinition)
+  val fürJedeSchleife = "für jede Zahl in Zahlen:."
+
+  val parser = Parser(fürJedeSchleife)
   println(parser.parse())
 }
