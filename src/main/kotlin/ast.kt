@@ -1,6 +1,6 @@
-typealias BedingteSätze = Pair<Ausdruck, List<Satz>>
-
 data class Programm(val definitionen: List<Definition>, val sätze: List<Satz>)
+
+data class BedingteSätze(val bedingung: Ausdruck, val sätze: List<Satz>)
 
 // ein Statement
 sealed class Satz {
@@ -20,7 +20,7 @@ sealed class Satz {
   data class FunktionsaufrufSatz(val funktionsaufruf: Funktionsaufruf): Satz()
   data class MethodenaufrufSatz(val methodenaufruf: Methodenaufruf): Satz()
 
-  data class Bedingung(val wennBedingung: BedingteSätze, val wennSonstBedingungen: List<BedingteSätze>?, val sonstBedingung: Satz?): Satz()
+  data class Bedingung(val wennBedingung: BedingteSätze, val wennSonstBedingungen: List<BedingteSätze>?, val sonstBedingung: List<Satz>?): Satz()
   data class SolangeSchleife(val bedingteSätze: BedingteSätze): Satz()
   data class FürJedeSchleife(val jede: Token, val binder: Token, val ausdruck: Ausdruck, val sätze: List<Satz>): Satz()
 
@@ -67,6 +67,12 @@ data class Signatur(
 )
 
 sealed class Definition {
+
+  data class Modul(
+          val name: String,
+          val definitionen: List<Definition>
+  ) : Definition()
+
   data class Funktion(
     val signatur: Signatur,
     val körper: List<Satz>
@@ -79,11 +85,11 @@ sealed class Definition {
   ): Definition()
 
   data class Typ(
-    val geschlecht: Geschlecht,
-    val name: Token,
-    val elternTyp: Token?,
-    val plural: Token,
-    val felder: List<NameUndTyp>
+          val artikel: Token,
+          val name: Token,
+          val elternTyp: Token?,
+          val plural: Token,
+          val felder: List<NameUndTyp>
   ): Definition()
 
   data class Schnittstelle(
@@ -92,8 +98,8 @@ sealed class Definition {
   ): Definition()
 
   data class Alias(
-    val geschlecht: Geschlecht,
-    val aliasTypName: Token,
-    val typName: Token
+          val artikel: Token,
+          val aliasTypName: Token,
+          val typName: Token
   ): Definition()
 }

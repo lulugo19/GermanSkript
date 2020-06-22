@@ -51,14 +51,7 @@ class Parser(code: String) {
 
   private fun parseTyp(): Definition.Typ {
     // der Artikel muss ein bestimmter sein: der, die, das, aber statt der muss den genommen werden
-    val geschlechtToken = tokens.next()!!
-    val geschlecht : Geschlecht = when(val tokenTyp = geschlechtToken.typ) {
-      is TokenTyp.ARTIKEL ->
-        if (tokenTyp.geschlecht == Geschlecht.MÄNNLICH) throw SyntaxError(tokens.next()!!, "den")
-        else tokenTyp.geschlecht
-      is TokenTyp.DEN -> Geschlecht.MÄNNLICH
-      else -> throw SyntaxError(geschlechtToken, "den/die/das")
-    }
+    val artikel = expect<TokenTyp.ARTIKEL>("Artikel")
     val typName = expect<TokenTyp.NOMEN>("Nomen")
     var elternTyp: Token? = null
     if (tokens.peek()!!.typ is TokenTyp.ALS) {
@@ -87,7 +80,7 @@ class Parser(code: String) {
       }
     }
     expect<TokenTyp.PUNKT>(".")
-    return Definition.Typ(geschlecht, typName, elternTyp, listenName, felder)
+    return Definition.Typ(artikel, typName, elternTyp, listenName, felder)
   }
 
   private fun parseSignatur(signaturName: Token): Signatur {
@@ -255,7 +248,7 @@ class Parser(code: String) {
       sätze = parseSätze(kontext + Bereich.Schleife)
     }
     expect<TokenTyp.PUNKT>(".")
-    return Satz.SolangeSchleife(Pair(bedingung, sätze))
+    return Satz.SolangeSchleife(BedingteSätze(bedingung, sätze))
   }
 
   private fun parseBedingung(kontext: List<Bereich>): Satz.Bedingung {

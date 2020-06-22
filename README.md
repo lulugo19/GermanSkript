@@ -1,5 +1,5 @@
 # GermanScript
-Eine objektorientierte, streng typisierte Programmiersprache, die die deutsche Grammatik nachahmt.
+Eine objektorientierte, streng typisierte Programmiersprache, die sich wie die deutsche Sprache schreibt.
 
 ## Syntax und Semantik
 Die Syntax wird in einer Abwandlung der erweiterten Backus-Naur-Form beschrieben:
@@ -13,17 +13,18 @@ die **groß** und `Verben` die **klein** geschrieben werden.
 `Nomen` werden bei [Variablendeklarationen](###Deklaration-von-Variablen) und [Typdefinitionen](###Definieren-eines-Typs)
 und `Verben` bei der Definition von [Funktionen](###Definieren-einer-Funktion) und Methoden verwendet.
 
-### Geschlechter und Grammatik
-Bei GermanScript spielt das Geschlecht eines Typs eine wichtige Rolle. Wenn Artikel verwendet werden, müssen diese mit dem Geschlecht des Typen übereinstimmen.
+### Grammatik
+Da GermanScript ein Teil der deutschen Grammatik beinhaltet, spielt der Genus (das Geschlecht) eines Typs eine wichtige Rolle. 
+Wenn Artikel verwendet werden, müssen diese mit dem Genus des Typs übereinstimmen.
 Außerdem ist auch noch die Form des Artikels wichtig, jenachdem in welchem Kontext das Nomen verwendet wird.
 
-| Form       | bestimmt / unbestimmt | Syntax-Abkürzung | Verwendung bei | Maskulinum | Femininum | Neutrum |
-| ---------- | -------- | ---------------- | -------------- | ---------- | --------- | ------- |
-| Nominativ  | bestimmt | `ArtikelNb` | unveränderbare Variablendeklaration | der | die | das |
+| Form       | bestimmt / unbestimmt | Syntax-Abkürzung | Verwendung bei | Maskulinum | Femininum | Neutrum | Plural |
+| ---------- | --------------------- | ---------------- | -------------- | ---------- | --------- | ------- | ------ |
+| Nominativ  | bestimmt | `ArtikelNb` | unveränderbare Variablendeklaration | der | die | das | die |
 | Nominativ | unbestimmt | `ArtikelNu` | veränderbare Variablendeklaration | ein | eine | ein |
-| Akkusativ  | bestimmt | `ArtikelAb` | Typdefinition, Alias, Eigenschaftsdefinition | den | die | das |
-| Genitiv | bestimmt | `ArtikelGb` | Feldzugriff/Destrukturierung bei unveränderbaren Variablen | des | der | des |
-| Genitiv | unbestimmt | `ArtikelGu` | Feldzugriff/Destrukturierung bei veränderbarer Variable | eines | einer | eines |
+| Akkusativ  | bestimmt | `ArtikelAb` | Typdefinition, Alias, Eigenschaftsdefinition | den | die | das | die |
+| Genitiv | bestimmt | `ArtikelGb` | Feldzugriff/Destrukturierung bei unveränderbaren Variablen | des | der | des | der |
+| Genitiv | unbestimmt | `ArtikelGu` | Feldzugriff/Destrukturierung bei veränderbarer Variable | eines | einer | eines | der |
 
 ### Bereiche
 
@@ -37,22 +38,6 @@ Abschnitt:
     // ...
 .
 ```
-Bereiche werden verwendet, um Typen, Funktionen und Methoden zu definieren.
-Dann gibt es noch spezielle Arten von Bereichen, die sich Kontrollstruktur nennen und mit denen die Programmlogik gesteuert wird.
-
-Da wären:
-- [Bedingungen](###Bedingungen)
-- Schleifen
-     - [Solange-Schleife](###Solange-Schleife)
-     - [Für-Jede-Schleife](###Für-Jede-Schleife)
-     
-Außerdem gibt es noch einen anderen speziellen Bereich, nämlich das [Modul](###Modul), das als Behälter für Definitionen dient.
-
-Schließlich gibt es da auch noch den globalen Bereich. Das ist der Bereich der ganz außen ist. 
-In diesem dürfen Definitionen, sowohl als auch [Sätze](###Sätze) geschrieben werden.
-
-Alle anderen Bereiche mit Ausnahme des globalen Bereichs und des Modul-Bereichs sind songenannte innere Bereiche,
-in denen keine Definitionen stehen können. Im folgenden wird in der Syntax ein innerer Bereich mit der Syntax `IBereich` abgekürzt.
 
 ### Sätze
 Ein GermanScript-Programm besteht aus mehreren Sätzen (im Programmierspachen-Jargon auch Statements genannt).
@@ -64,89 +49,37 @@ Folgendes sind Sätze:
 - Schlüsselwörter wie `abbrechen` oder `fortfahren`
 - `zurück`-Anweisung in Funktionen oder Methoden
 
+Außerdem gibt es noch Kontrollstrukturen, die auch zu den Sätzen zählen. Sie werden aber nicht mit `;` getrennt, 
+sondern beginnen jeweils einen neuen Bereich.
+Da wären:
+- [Bedingungen](###Bedingungen)
+- Schleifen
+     - [Solange-Schleife](###Solange-Schleife)
+     - [Für-Jede-Schleife](###Für-Jede-Schleife)
+
 ### Ausdrücke
 Ein Ausdruck ist alles was einer Variablen zugewiesen werden kann. Ausdrücke werden außerdem als Argumente bei
 eine Funktionsaufruf übergeben.
 Folgendes sind Ausdrücke:
-- Literale: Zeichenfolge, Zahlen, Listen, Boolsche Werte
+- Literale: Zeichenfolge, Zahlen, Listen, Boolsche Werte, Lambdas
 - Variablen
 - Funktions- oder Methodenaufrufe, die einen Rückgabewert haben
 - wenn-dann-sonst-Ausdrücke
+
 
 ### Abbrechen oder Fortfahren einer Schleife
 Das Schlüsselwort `abbrechen` dient zur sofortigen Beendigung einer Schleife.
 Das Schlüsselwort `fortfahren` springt zu nächsten Schleifen-Iteration.
 
-### Modul
-`Modul Nomen MBereich`
-Ein Modul ist ein Behälter für Definitionen. In Ihm können Typen, Funktionen, Methoden und Konstanten definiert werden.
-Ein Modul ist dafür da Code zu organisieren und Namenskollisionen zu verhindern. Der Name des Moduls wird nämlich Teil des vollen Namen einer Definition.
-Module können ineinander verschachtelt werden, aber ein Modul kann nur in dem globalen Bereich oder in anderen Modulen definiert werden. Um auf einen in einem Modul definierten Typen zu verweisen wird dann der doppelte Doppelpunkt `::` nach dem Modulnamen verwendet.
-
-Beispiel:
-```
-Modul Zoo:
-    definiere das Gehege mit Plural Gehege:.
-
-    Modul Tiere:
-        definiere das Tier mit Plural Tiere:.
-        
-        Modul Säuger:
-            definiere das Pferd als Tier mit Plural Pferde:.
-        .
-
-        Modul Amphibien:
-            definiere das Krokodil als Tier mit Plural Krokodile:.
-        .
-    .
-.
-
-das Gehege ist Zoo::Gehege
-das Pferd ist Zoo::Tiere::Säuger::Pferd
-```
-Um aber nicht immer den ganzen Namen verwenden zu müssen kann das `verwende`-Schlüsselwort verwendet werden um innerhalb eines Modulnamens zu gehen.
-
-Beispiele:
-```
-verwende Zoo
-das Gehege ist Gehege
-das Pferd ist Tiere::Säuger::Pferd
-```
-
-```
-verwende Zoo::Tiere::Säuger
-verwende Zoo::Tiere::Amphibien
-
-das Pferd ist Pferd
-das Krokodil ist Krokodil
-```
-
-Auf Methoden und Funktionen eines Moduls wird anders verwiesen. 
-Hier wird nicht `::` verwendet sondern die `von`-Syntax. Es kann aber immer auch noch `verwende` benutzt werden,
-um direkt auf die Funktions zuzugreifen.
-
-Beispiel:
-```
-Modul Mathe:
-    definiere addiere mit Rückgabe Zahl, Zahl A, Zahl B: zurück A + B.
-    
-    Modul Simpel:
-        definiere subtrahiere mit Rückgabe Zahl, Zahl A, Zahl B: zurück A - B.
-    .
-.
-
-eine Zahl Neun ist addiere von Mathe 4 5
-eine Zahl Zwei ist (subtrahiere von Mathe::Simpel) 9 7
-
-verwende Mathe
-
-Neun ist addiere 4 5
-Zwei ist (subtrahiere von Simpel) 9 7
-```
 
 ### Operatoren
 Jeder Operator hat neben einem Symbol auch noch eine Textrepräsentation, die stattdessen verwendet werden kann.
-Umso höher die Bindungskraft, umso mehr bindet der Operator seine Operanden.
+
+Umso höher die Bindungskraft, desto mehr bindet der Operator seine Operanden.
+
+Die Operatoren Gleichheit `==` und Ungleichheit `!=` können bei allen Typen verwendet werden, um die Gleichheit
+zu überprüfen. Alle anderen Operatoren können nur bei den Inbuild-Typen `Zahl`, `Liste`, `Boolean` verwendet werden.
+Das Überladen von Operatoren ist voerst nicht vorgesehen.
 
 #### Binäre Operatoren
 | Funktion | Symbol | Text | Assoziativität | Bindungskraft |
@@ -173,10 +106,10 @@ Umso höher die Bindungskraft, umso mehr bindet der Operator seine Operanden.
 | Negativ | `-` | `negativ` | rechst | 7 |
 | Positiv | `+` | `positiv` | rechts | 7 |
 
-Alle Operatoren außer der Zuweisung `=` können für jede Klasse definiert werden. Siehe Operator-Überladung.
 
 ### Deklaration von Variablen
 Für eine unveränderbare Variable: `ArtikelNb [Typ] Nomen Zuweisungsoperator Ausdruck`
+
 Für eine veränderbare Variable: `ArtikelNu [Typ] Nomen Zuweisungsoperator Ausdruck`
 
 Variablen können auf zwei Art und Weisen deklariert werden. Für Variablen, die nicht erneut zugewiesen werden können
@@ -189,6 +122,12 @@ Beispiele:
 - `eine Zahl X ist 100`
 - `die Summe ist X + 5`
 - `die Zeichenfolge Beschreibung ist "dunkel, groß und blau"`
+
+Die Deklaration von Variablen, die Listen enthalten ist ein Spezialfall. 
+Bei einer Liste, die nicht erneut zugewiesen werden kann wird der Artikel `die` verwendet.
+Beispiel: `die Zahlen sind Zahlen[1,2,3,4]`. Bei einer veränderbaren Variable, wird der Artikel komplett weggelassen.
+Beispiel: `Wörter sind Zeichenfolgen["Hallo", "Test", "Kiste", "Fluch"]`.
+Außerden wird statt dem Zuweisungswort `ist`, `sind` verwendet.
 
 ### Bedingungen
 ```
@@ -212,7 +151,7 @@ sonst drucke X .
 Solange die Bedingung zutrifft, werden die Sätze ausgeführt.
 
 ### Für-Jede-Schleife
-`für (jeder | jede | jedes) Nomen in Ausdruck IBereich`
+`für (jeder | jede | jedes) (Nomen | Destrukturierung) in Ausdruck IBereich`
 
 Für jedes Element in dem iterierbaren Objekt, wird die Schleife einmal ausgeführt, wobei
 das Element an den Namen gebunden wird.
@@ -293,12 +232,24 @@ Beispiel:
 `Name (ArtikelGb | ArtikelGu) Person`
 
 ### Destrukturierende Zuweisung
+
+#### Destrukturierung von Objekten
 Beispiel:
 ```
 die Person ist Person mit Nachname="Peterson", Vorname="Hans", Alter=42
 (der Nachname, ein Alter Geburtstagsalter) der Person
 Alter ist Alter + 1
 drucke Nachname, Alter // Peterson 43
+```
+
+#### Destrukturierung von Listen
+```
+[die Person1, die Person2, RestlichePersonen...] sind Personen[p1, p2, p3, p4, p5]
+/*
+Person1 = p1
+Person2 = p2
+RestlichePersonen = [p3, p4, p5]
+*/
 ```
 
 ### Definieren einer Methode
@@ -349,6 +300,55 @@ definiere Schnittstelle Zeichenbares:
 Beispiel:
 
 `alias das Alter ist Zahl mit Plural Alter, Genitiv Alters`
+
+### Definieren eines Moduls
+`Modul Nomen: Definitionen.`
+Ein Modul ist ein Behälter für Definitionen. In Ihm können Typen, Funktionen, Methoden, Konstanten und wiederum Module definiert werden.
+Ein Modul ist dafür da Code zu organisieren und Namenskollisionen zu verhindern. Der Name des Moduls wird nämlich Teil des vollen Namen einer Definition.
+Module können ineinander verschachtelt werden, aber ein Modul kann nur in dem globalen Bereich oder in anderen Modulen definiert werden. Um auf einen in einem Modul definierten Typen zu verweisen wird dann der doppelte Doppelpunkt `::` nach dem Modulnamen verwendet.
+
+Beispiel:
+```
+Modul Zoo:
+    definiere das Gehege mit Plural Gehege:.
+
+    Modul Tiere:
+
+        definiere fütter mit Tier: drucke "Fütter " + Tier als Zeichenfolge.
+        
+        definiere das Tier mit Plural Tiere:.
+        
+        Modul Säuger:
+            definiere das Pferd als Tier mit Plural Pferde:.
+        .
+
+        Modul Amphibien:
+            definiere das Krokodil als Tier mit Plural Krokodile:.
+        .
+    .
+.
+
+das Gehege ist Zoo::Gehege
+das Pferd ist Zoo::Tiere::Säuger::Pferd
+
+Zoo::Tiere::fütter Pferd
+```
+Um aber nicht immer den ganzen Namen verwenden zu müssen kann das `verwende`-Schlüsselwort verwendet werden um innerhalb eines Modulnamens zu gehen.
+
+Beispiele:
+```
+verwende Zoo
+das Gehege ist Gehege
+das Pferd ist Tiere::Säuger::Pferd
+```
+
+```
+verwende Zoo::Tiere::Säuger
+verwende Zoo::Tiere::Amphibien
+
+das Pferd ist Pferd
+das Krokodil ist Krokodil
+```
 
 ## Typen
 GermanScript verfügt vorab über folgende Typen:

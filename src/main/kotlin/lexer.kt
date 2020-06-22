@@ -1,10 +1,5 @@
+import java.util.*
 import kotlin.Exception
-
-enum class Geschlecht {
-    MÄNNLICH,
-    WEIBLICH,
-    NEUTRAL,
-}
 
 enum class Assoziativität {
     LINKS,
@@ -28,11 +23,29 @@ enum class Operator(val bindungsKraft: Int, val assoziativität: Assoziativität
     UNGLEICH(3, Assoziativität.LINKS),
 }
 
-enum class Anzahl {
+// Genus (Geschlecht)
+enum class Genus {
+    MASKULINUM,
+    FEMININUM,
+    NEUTRUM,
+}
+
+// Kasus (Fall)
+enum class Kasus {
+    Nominativ,
+    Akkusativ,
+    Dativ,
+    Genitiv,
+}
+
+// Numerus (Anzahl)
+enum class Numerus {
     SINGULAR,
     PLURAL,
-    BEIDES,
+    BEIDE,
 }
+
+data class Form(val bestimmt: Boolean, val genus: Genus?, val kasus: Kasus, val numerus: Numerus)
 
 data class Token(val typ: TokenTyp, val wert: String, val anfang: Pair<Int, Int>, val ende: Pair<Int, Int>) {
     // um die Ausgabe zu vereinfachen
@@ -61,11 +74,10 @@ sealed class TokenTyp() {
     object FORTFAHREN: TokenTyp()
     object ABBRECHEN: TokenTyp()
     object ALIAS: TokenTyp()
-    data class JEDE(val geschlecht: Geschlecht): TokenTyp()
-    data class GESCHLECHT(val geschlecht: Geschlecht): TokenTyp()
-    data class ZUWEISUNG(val anzahl: Anzahl): TokenTyp()
-    data class ARTIKEL(val bestimmt: Boolean, val geschlecht: Geschlecht, val anderesGeschlecht: Geschlecht? = null): TokenTyp() // ein, eine, der, die, das
-
+    data class JEDE(val genus: Genus): TokenTyp()
+    data class GESCHLECHT(val genus: Genus): TokenTyp()
+    data class ZUWEISUNG(val anzahl: Numerus): TokenTyp()
+    data class ARTIKEL(val formen: List<Form>): TokenTyp() // ein, eine, der, die, das
     //Symbole
     object OFFENE_KLAMMER: TokenTyp()
     object GESCHLOSSENE_KLAMMER: TokenTyp()
@@ -104,7 +116,7 @@ private val ZEICHEN_MAPPING = mapOf<Char, TokenTyp>(
         '*' to TokenTyp.OPERATOR(Operator.MAL),
         '/' to TokenTyp.OPERATOR(Operator.GETEILT),
         '^' to TokenTyp.OPERATOR(Operator.HOCH),
-        '=' to TokenTyp.ZUWEISUNG(Anzahl.BEIDES),
+        '=' to TokenTyp.ZUWEISUNG(Numerus.BEIDE),
         '>' to TokenTyp.OPERATOR(Operator.GRÖßER),
         '<' to TokenTyp.OPERATOR(Operator.KLEINER),
         '&' to TokenTyp.UNDEFINIERT,
@@ -124,14 +136,41 @@ private val WORT_MAPPING = mapOf<String, TokenTyp>(
         "fortfahren" to TokenTyp.FORTFAHREN,
         "abbrechen" to TokenTyp.ABBRECHEN,
         "als" to TokenTyp.ALS,
-        "ist" to TokenTyp.ZUWEISUNG(Anzahl.SINGULAR),
-        "sind" to TokenTyp.ZUWEISUNG(Anzahl.PLURAL),
-        "der" to TokenTyp.ARTIKEL(true, Geschlecht.MÄNNLICH),
-        "die" to TokenTyp.ARTIKEL(true, Geschlecht.WEIBLICH),
-        "das" to TokenTyp.ARTIKEL(true, Geschlecht.NEUTRAL),
-        "den" to TokenTyp.DEN,
-        "ein" to TokenTyp.ARTIKEL(false, Geschlecht.MÄNNLICH, Geschlecht.NEUTRAL),
-        "eine" to TokenTyp.ARTIKEL(false, Geschlecht.WEIBLICH),
+        "ist" to TokenTyp.ZUWEISUNG(Numerus.SINGULAR),
+        "sind" to TokenTyp.ZUWEISUNG(Numerus.PLURAL),
+        "der" to TokenTyp.ARTIKEL(listOf(
+                Form(true, Genus.MASKULINUM, Kasus.Nominativ, Numerus.SINGULAR),
+                Form(true, Genus.FEMININUM, Kasus.Genitiv, Numerus.SINGULAR),
+                Form(true,null, Kasus.Genitiv, Numerus.PLURAL),
+                Form(false, null, Kasus.Genitiv, Numerus.PLURAL)
+        )),
+        "die" to TokenTyp.ARTIKEL(listOf(
+                Form(true, Genus.FEMININUM, Kasus.Nominativ, Numerus.SINGULAR),
+                Form(true, Genus.FEMININUM, Kasus.Nominativ, Numerus.PLURAL),
+                Form(true, Genus.FEMININUM, Kasus.Akkusativ, Numerus.SINGULAR),
+                Form(true, null, Kasus.Genitiv, Numerus.PLURAL)
+        )),
+        "das" to TokenTyp.ARTIKEL(listOf(
+                Form(true, Genus.NEUTRUM, Kasus.Nominativ, Numerus.SINGULAR),
+                Form(true, Genus.NEUTRUM, Kasus.Akkusativ, Numerus.SINGULAR)
+        )),
+        "den" to TokenTyp.ARTIKEL(listOf(
+                Form(true, Genus.MASKULINUM, Kasus.Nominativ, Numerus.SINGULAR)
+        )),
+        "ein" to TokenTyp.ARTIKEL(listOf(
+                Form(false, Genus.MASKULINUM, Kasus.Nominativ, Numerus.SINGULAR),
+                Form(false, Genus.NEUTRUM, Kasus.Nominativ, Numerus.SINGULAR)
+        )),
+        "eine" to TokenTyp.ARTIKEL(listOf(
+                Form(false, Genus.FEMININUM, Kasus.Nominativ, Numerus.SINGULAR)
+        ) ),
+        "eines" to TokenTyp.ARTIKEL(listOf(
+                Form(false, Genus.MASKULINUM, Kasus.Genitiv, Numerus.SINGULAR),
+                Form(false, Genus.NEUTRUM, Kasus.Genitiv, Numerus.SINGULAR)
+        )),
+        "einer" to TokenTyp.ARTIKEL(listOf(
+                Form(false, Genus.FEMININUM, Kasus.Genitiv, Numerus.SINGULAR)
+        )),
         "gleich" to TokenTyp.OPERATOR(Operator.GLEICH),
         "ungleich" to TokenTyp.OPERATOR(Operator.UNGLEICH),
         "und" to TokenTyp.OPERATOR(Operator.UND),
@@ -149,9 +188,9 @@ private val WORT_MAPPING = mapOf<String, TokenTyp>(
         "in" to TokenTyp.IN,
         "von" to TokenTyp.VON,
         "bis" to TokenTyp.BIS,
-        "jede" to TokenTyp.JEDE(Geschlecht.WEIBLICH),
-        "jeden" to TokenTyp.JEDE(Geschlecht.MÄNNLICH),
-        "jedes" to TokenTyp.JEDE(Geschlecht.NEUTRAL),
+        "jede" to TokenTyp.JEDE(Genus.FEMININUM),
+        "jeden" to TokenTyp.JEDE(Genus.MASKULINUM),
+        "jedes" to TokenTyp.JEDE(Genus.NEUTRUM),
         "Plural" to TokenTyp.PLURAL
 )
 
