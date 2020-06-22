@@ -5,7 +5,8 @@ data class Programm(val definitionen: List<Definition>, val sätze: List<Satz>)
 // ein Statement
 sealed class Satz {
   data class Variablendeklaration(
-    val geschlecht: Token,
+    val bestimmt: Boolean,
+    val geschlecht: Geschlecht,
     val name: Token,
     val zuweisung: Token,
     val ausdruck: Ausdruck

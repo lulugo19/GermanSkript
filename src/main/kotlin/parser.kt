@@ -45,6 +45,7 @@ class Parser(code: String) {
         }
       }
       is TokenTyp.ARTIKEL, TokenTyp.DEN -> parseTyp()
+      is TokenTyp.NOMEN -> parseSchnittstelle()
       else -> throw SyntaxError(tokens.next()!!)
     }
   }
@@ -145,10 +146,51 @@ class Parser(code: String) {
   }
 
   private fun parseSchnittstelle(): Definition.Schnittstelle {
-    TODO("für Finn")
+    tokens.next()
+    val name = expect<TokenTyp.NOMEN>("Nomen")
+    val signaturen = mutableListOf<Signatur>()
+    expect<TokenTyp.DOPPELPUNKT>("Doppelpunkt")
+    if (tokens.peek()!!.typ !is TokenTyp.PUNKT){
+      while(tokens.peek()!!.typ is TokenTyp.VERB){
+        val verb = expect<TokenTyp.VERB>("Verb")
+        var rückgabeTyp: Token? = null
+        val parameter = mutableListOf<NameUndTyp>()
+
+        if (tokens.peek()!!.typ is TokenTyp.MIT){
+          tokens.next()
+
+          if (tokens.peek()!!.typ is TokenTyp.RÜCKGABE){
+            tokens.next()
+            rückgabeTyp = expect<TokenTyp.NOMEN>("Nomen")
+          }else{
+            val parameterTyp = expect<TokenTyp.NOMEN>("Nomen")
+            var parameterName = parameterTyp
+            if (tokens.peek()!!.typ is TokenTyp.NOMEN){
+              parameterName = expect<TokenTyp.NOMEN>("Nomen")
+            }
+            parameter.add(NameUndTyp(parameterName, parameterTyp))
+          }
+
+          while (tokens.peek()!!.typ is TokenTyp.KOMMA){
+            val parameterTyp = expect<TokenTyp.NOMEN>("Nomen")
+            var parameterName = parameterTyp
+            if (tokens.peek()!!.typ is TokenTyp.NOMEN){
+             parameterName = expect<TokenTyp.NOMEN>("Nomen")
+            }
+            parameter.add(NameUndTyp(parameterName, parameterTyp))
+          }
+        }
+        signaturen.add(Signatur(verb, rückgabeTyp, parameter))
+      }
+    }
+    expect<TokenTyp.PUNKT>("Punkt")
+    return Definition.Schnittstelle(name,signaturen)
   }
 
   private fun parseAlias(): Definition.Alias {
+//    alias Artikel Nomen ist Nomen mit Plural Nomen, Genitiv Nomen
+
+//    alias das Alter ist Zahl mit Plural Alter, Genitiv Alters
     TODO("für Finn")
   }
   
@@ -263,7 +305,25 @@ class Parser(code: String) {
   }
 
   private fun parseVariablenDeklaration(): Satz.Variablendeklaration {
-    TODO("für Finn")
+    val artikel = expect<TokenTyp.ARTIKEL>("Artikel")
+    if (artikel.typ is TokenTyp.ARTIKEL) {
+      val bestimmt = artikel.typ.bestimmt
+      val geschlecht = artikel.typ.geschlecht
+
+
+      if (tokens.peek()!!.typ is TokenTyp.NOMEN && tokens.peekDouble()!!.typ is TokenTyp.NOMEN) {
+        expect<TokenTyp.NOMEN>("Typ")
+      }
+
+      val name = expect<TokenTyp.NOMEN>("Nomen")
+
+      val zuweisung = expect<TokenTyp.ZUWEISUNG>("Zuweisungsoperator")
+      val ausdruck = parseAusdruck()
+
+      return Satz.Variablendeklaration(bestimmt, geschlecht, name, zuweisung, ausdruck)
+    }else{
+      throw SyntaxError(artikel, "Artikel")
+    }
   }
 
   private fun parseVariablenZuweisung(): Satz.Variablenzuweisung {
@@ -342,6 +402,10 @@ fun main() {
 
   val solangeSchleife = "solange X > 5:."
 
-  val parser = Parser(solangeSchleife)
+  val variablenDeklaration = """ein Wort ist "Hallo!""""
+
+  val schnitstellenDefinition = """definiere Schnittstelle Zeichenbares: zeichne mit Farbe skaliere mit Rückgabe Zahl."""
+
+  val parser = Parser(schnitstellenDefinition)
   println(parser.parse())
 }
