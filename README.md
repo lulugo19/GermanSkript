@@ -21,10 +21,10 @@ Außerdem ist auch noch die Form des Artikels wichtig, jenachdem in welchem Kont
 | Form       | bestimmt / unbestimmt | Syntax-Abkürzung | Verwendung bei | Maskulinum | Femininum | Neutrum | Plural |
 | ---------- | --------------------- | ---------------- | -------------- | ---------- | --------- | ------- | ------ |
 | Nominativ  | bestimmt | `ArtikelNb` | unveränderbare Variablendeklaration | der | die | das | die |
-| Nominativ | unbestimmt | `ArtikelNu` | veränderbare Variablendeklaration | ein | eine | ein |
+| Nominativ | unbestimmt | `ArtikelNu` | veränderbare Variablendeklaration | ein | eine | ein | einige |
 | Akkusativ  | bestimmt | `ArtikelAb` | Typdefinition, Alias, Eigenschaftsdefinition | den | die | das | die |
 | Genitiv | bestimmt | `ArtikelGb` | Feldzugriff/Destrukturierung bei unveränderbaren Variablen | des | der | des | der |
-| Genitiv | unbestimmt | `ArtikelGu` | Feldzugriff/Destrukturierung bei veränderbarer Variable | eines | einer | eines | der |
+| Genitiv | unbestimmt | `ArtikelGu` | Feldzugriff/Destrukturierung bei veränderbarer Variable | eines | einer | eines | einiger |
 
 ### Bereiche
 
@@ -114,7 +114,7 @@ Für eine veränderbare Variable: `ArtikelNu [Typ] Nomen Zuweisungsoperator Ausd
 
 Variablen können auf zwei Art und Weisen deklariert werden. Für Variablen, die nicht erneut zugewiesen werden können
 werden die bestimmten Artikel `der, die, das` verwendet. Und für Variablen die erneut zugewiesen werden können, werden
-die unbestimmten Artikel `ein, eine` verwendet. Der Artikel muss außerdem mit dem Geschlecht des Ausdrucks übereinstimmen.
+die unbestimmten Artikel `ein, eine, einige` verwendet. Der Artikel muss außerdem mit dem Genus und dem Numerus des Ausdrucks übereinstimmen.
 Der Typ kann bei der Deklaration weggelassen werden und wird dann aus dem Ausdruck ermittelt.
 
 Beispiele:
@@ -123,11 +123,6 @@ Beispiele:
 - `die Summe ist X + 5`
 - `die Zeichenfolge Beschreibung ist "dunkel, groß und blau"`
 
-Die Deklaration von Variablen, die Listen enthalten ist ein Spezialfall. 
-Bei einer Liste, die nicht erneut zugewiesen werden kann wird der Artikel `die` verwendet.
-Beispiel: `die Zahlen sind Zahlen[1,2,3,4]`. Bei einer veränderbaren Variable, wird der Artikel komplett weggelassen.
-Beispiel: `Wörter sind Zeichenfolgen["Hallo", "Test", "Kiste", "Fluch"]`.
-Außerden wird statt dem Zuweisungswort `ist`, `sind` verwendet.
 
 ### Bedingungen
 ```
@@ -295,11 +290,11 @@ definiere Schnittstelle Zeichenbares:
 ```
 
 ### Typ-Alias
-`alias Artikel Nomen ist Nomen mit Plural Nomen, Genitiv Nomen`
+`alias Artikel Nomen mit Plural Nomen, Genitiv Nomen ist Nomen`
 
 Beispiel:
 
-`alias das Alter ist Zahl mit Plural Alter, Genitiv Alters`
+`alias das Alter mit Plural Alter, Genitiv Alters ist Zahl`
 
 ### Definieren eines Moduls
 `Modul Nomen: Definitionen.`

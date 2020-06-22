@@ -5,10 +5,11 @@ data class BedingteSätze(val bedingung: Ausdruck, val sätze: List<Satz>)
 // ein Statement
 sealed class Satz {
   data class Variablendeklaration(
-    val geschlecht: Token,
-    val name: Token,
-    val zuweisung: Token,
-    val ausdruck: Ausdruck
+          val artikel: Token,
+          val typ: Token,
+          val name: Token,
+          val zuweisung: Token,
+          val ausdruck: Ausdruck
   ): Satz()
 
   data class Variablenzuweisung(
@@ -35,13 +36,13 @@ sealed class Satz {
 data class Funktionsaufruf(
         val funktionsName: Token,
         val argumentListe: List<Argument>
-) : Satz()
+)
 
 data class Methodenaufruf(
         val objekt: Token,
         val methodenNamen: Token,
         val argumentListe: List<Argument>
-) : Satz()
+)
 
 sealed class Argument {
   data class StellenArgument(val index: Int, val ausdruck: Ausdruck): Argument()
@@ -69,7 +70,7 @@ data class Signatur(
 sealed class Definition {
 
   data class Modul(
-          val name: String,
+          val name: Token,
           val definitionen: List<Definition>
   ) : Definition()
 
@@ -89,6 +90,7 @@ sealed class Definition {
           val name: Token,
           val elternTyp: Token?,
           val plural: Token,
+          val genitiv: Token,
           val felder: List<NameUndTyp>
   ): Definition()
 
@@ -100,6 +102,8 @@ sealed class Definition {
   data class Alias(
           val artikel: Token,
           val aliasTypName: Token,
+          val plural: Token,
+          val genitiv: Token,
           val typName: Token
   ): Definition()
 }

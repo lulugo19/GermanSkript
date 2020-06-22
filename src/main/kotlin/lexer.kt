@@ -67,25 +67,27 @@ sealed class TokenTyp() {
     object FÜR: TokenTyp()
     object IN: TokenTyp()
     object ALS: TokenTyp()
-    object VON: TokenTyp()
-    object BIS: TokenTyp()
     object PLURAL: TokenTyp()
-    object DEN: TokenTyp()
+    object GENITIV: TokenTyp()
     object FORTFAHREN: TokenTyp()
     object ABBRECHEN: TokenTyp()
     object ALIAS: TokenTyp()
+    object MODUL: TokenTyp()
     data class JEDE(val genus: Genus): TokenTyp()
     data class GESCHLECHT(val genus: Genus): TokenTyp()
     data class ZUWEISUNG(val anzahl: Numerus): TokenTyp()
-    data class ARTIKEL(val formen: List<Form>): TokenTyp() // ein, eine, der, die, das
+    data class ARTIKEL(val formen: List<Form>): TokenTyp() {} // ein, eine, eines, der, die, das, den
+
     //Symbole
     object OFFENE_KLAMMER: TokenTyp()
     object GESCHLOSSENE_KLAMMER: TokenTyp()
     object KOMMA: TokenTyp()
     object PUNKT: TokenTyp()
     object DOPPELPUNKT: TokenTyp()
+    object DOPPEL_DOPPELPUNKT: TokenTyp()
     object TRENNER: TokenTyp() // Semikolon
     object NEUE_ZEILE: TokenTyp()
+    object BACKSLASH: TokenTyp()
     object EOF: TokenTyp()
     data class OPERATOR(val operator: Operator): TokenTyp()
 
@@ -120,7 +122,8 @@ private val ZEICHEN_MAPPING = mapOf<Char, TokenTyp>(
         '>' to TokenTyp.OPERATOR(Operator.GRÖßER),
         '<' to TokenTyp.OPERATOR(Operator.KLEINER),
         '&' to TokenTyp.UNDEFINIERT,
-        '|' to TokenTyp.UNDEFINIERT
+        '|' to TokenTyp.UNDEFINIERT,
+        '\\' to TokenTyp.BACKSLASH
 )
 
 private val WORT_MAPPING = mapOf<String, TokenTyp>(
@@ -171,6 +174,12 @@ private val WORT_MAPPING = mapOf<String, TokenTyp>(
         "einer" to TokenTyp.ARTIKEL(listOf(
                 Form(false, Genus.FEMININUM, Kasus.Genitiv, Numerus.SINGULAR)
         )),
+        "einige" to TokenTyp.ARTIKEL(listOf(
+            Form(false, null, Kasus.Nominativ, Numerus.PLURAL)
+        )),
+        "einiger" to TokenTyp.ARTIKEL(listOf(
+            Form(false, null, Kasus.Genitiv, Numerus.PLURAL)
+        )),
         "gleich" to TokenTyp.OPERATOR(Operator.GLEICH),
         "ungleich" to TokenTyp.OPERATOR(Operator.UNGLEICH),
         "und" to TokenTyp.OPERATOR(Operator.UND),
@@ -186,12 +195,12 @@ private val WORT_MAPPING = mapOf<String, TokenTyp>(
         "falsch" to TokenTyp.BOOLEAN(false),
         "für" to TokenTyp.FÜR,
         "in" to TokenTyp.IN,
-        "von" to TokenTyp.VON,
-        "bis" to TokenTyp.BIS,
         "jede" to TokenTyp.JEDE(Genus.FEMININUM),
         "jeden" to TokenTyp.JEDE(Genus.MASKULINUM),
         "jedes" to TokenTyp.JEDE(Genus.NEUTRUM),
-        "Plural" to TokenTyp.PLURAL
+        "Plural" to TokenTyp.PLURAL,
+        "Genitiv" to TokenTyp.GENITIV,
+        "Modul" to TokenTyp.MODUL
 )
 
 fun tokeniziere(quellcode: String) : Sequence<Token> = sequence {
@@ -264,6 +273,7 @@ private fun symbol(iterator: Peekable<Char>, erstesZeichen: Char, zeilenIndex: I
         else -> when {
             erstesZeichen == '&' && iterator.peek() == '&' -> TokenTyp.OPERATOR(Operator.UND).also { symbolString += iterator.next()}
             erstesZeichen == '|' && iterator.peek() == '|' -> TokenTyp.OPERATOR(Operator.ODER).also { symbolString += iterator.next() }
+            erstesZeichen == ':' && iterator.peek() == ':' -> TokenTyp.DOPPEL_DOPPELPUNKT
             else -> when (val token = ZEICHEN_MAPPING.getValue(erstesZeichen)) {
                 TokenTyp.UNDEFINIERT -> throw Exception("Ungültiges Zeichen $erstesZeichen")
                 else -> token

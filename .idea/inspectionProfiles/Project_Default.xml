@@ -2,7 +2,7 @@
   <profile version="1.0">
     <option name="myName" value="Project Default" />
     <inspection_tool class="ClassName" enabled="true" level="WEAK WARNING" enabled_by_default="true">
-      <option name="namePattern" value="[A-ZÄÖÜ][A-ZÄÖÜa-zäöüß\d]*" />
+      <option name="namePattern" value="[A-ZÄÖÜ][A-ZÄÖÜa-zäöüß\d_]*" />
     </inspection_tool>
     <inspection_tool class="ConstPropertyName" enabled="true" level="WEAK WARNING" enabled_by_default="true">
       <option name="namePattern" value="[A-ZÄÖÜ][_A-ZÄÖÜ\d]*" />

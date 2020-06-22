@@ -1,5 +1,5 @@
 class SyntaxError(token: Token, erwartet: String? = null, nachricht: String? = null) :
-        Exception("Unerwartetes '${token.wert}' in (${token.anfang.first}, ${token.anfang.second}). Erwartet wird $erwartet. $nachricht")
+        Exception("Unerwartetes '${token.wert}' in (${token.anfang.first}, ${token.anfang.second}). ${if (erwartet != null) "Erwarte wird '${erwartet}'." else ""}${nachricht.orEmpty()}")
 
 class Parser(code: String) {
   private val tokens = Peekable(tokeniziere(code).iterator())
@@ -19,11 +19,17 @@ class Parser(code: String) {
     loop@ while (true) {
       when (tokens.peek()!!.typ) {
         is TokenTyp.EOF -> break@loop
-        is TokenTyp.DEFINIERE -> definitionen += parseDefinition()
+        is TokenTyp.DEFINIERE, TokenTyp.ALIAS, TokenTyp.MODUL -> definitionen += parseDefinition()
         else -> sätze += parseSätze(emptyList())
       }
     }
     return Programm(definitionen, sätze)
+  }
+
+  fun überspringeLeereZeilen() {
+    while (tokens.peek()!!.typ is TokenTyp.NEUE_ZEILE) {
+      tokens.next()
+    }
   }
 
   private inline fun <reified T : TokenTyp>expect(erwartet: String): Token {
@@ -36,15 +42,23 @@ class Parser(code: String) {
   }
 
   private fun parseDefinition(): Definition {
-    expect<TokenTyp.DEFINIERE>("definiere")
     return when (tokens.peek()!!.typ) {
-      is TokenTyp.VERB -> {
-        when (tokens.peekDouble()!!.typ) {
-          is TokenTyp.FÜR -> parseMethode()
-          else -> parseFunktion()
+      is TokenTyp.DEFINIERE -> {
+        tokens.next()
+        when (tokens.peek()!!.typ) {
+          is TokenTyp.VERB -> {
+            when (tokens.peekDouble()!!.typ) {
+              is TokenTyp.FÜR -> parseMethode()
+              else -> parseFunktion()
+            }
+          }
+          is TokenTyp.ARTIKEL -> parseTyp()
+          is TokenTyp.NOMEN -> parseSchnittstelle()
+          else -> throw Exception("Dieser Fall tritt nie ein")
         }
       }
-      is TokenTyp.ARTIKEL, TokenTyp.DEN -> parseTyp()
+      is TokenTyp.ALIAS -> parseAlias()
+      is TokenTyp.MODUL -> parseModul()
       else -> throw SyntaxError(tokens.next()!!)
     }
   }
@@ -60,8 +74,10 @@ class Parser(code: String) {
     }
     expect<TokenTyp.MIT>("mit")
     expect<TokenTyp.PLURAL>("Plural")
-    val listenName = expect<TokenTyp.NOMEN>("Nomen")
-
+    val plural = expect<TokenTyp.NOMEN>("Nomen")
+    expect<TokenTyp.KOMMA>(",")
+    expect<TokenTyp.GENITIV>("Genitiv")
+    val genitiv = expect<TokenTyp.NOMEN>("Nomen")
     expect<TokenTyp.DOPPELPUNKT>(":")
 
     val felder = mutableListOf<NameUndTyp>()
@@ -80,7 +96,7 @@ class Parser(code: String) {
       }
     }
     expect<TokenTyp.PUNKT>(".")
-    return Definition.Typ(artikel, typName, elternTyp, listenName, felder)
+    return Definition.Typ(artikel, typName, elternTyp, plural, genitiv, felder)
   }
 
   private fun parseSignatur(signaturName: Token): Signatur {
@@ -138,19 +154,80 @@ class Parser(code: String) {
   }
 
   private fun parseSchnittstelle(): Definition.Schnittstelle {
-    TODO("für Finn")
+    tokens.next()
+    val name = expect<TokenTyp.NOMEN>("Nomen")
+    val signaturen = mutableListOf<Signatur>()
+    expect<TokenTyp.DOPPELPUNKT>("Doppelpunkt")
+    if (tokens.peek()!!.typ !is TokenTyp.PUNKT){
+      while(tokens.peek()!!.typ is TokenTyp.VERB){
+        val verb = expect<TokenTyp.VERB>("Verb")
+        var rückgabeTyp: Token? = null
+        val parameter = mutableListOf<NameUndTyp>()
+
+        if (tokens.peek()!!.typ is TokenTyp.MIT){
+          tokens.next()
+
+          if (tokens.peek()!!.typ is TokenTyp.RÜCKGABE){
+            tokens.next()
+            rückgabeTyp = expect<TokenTyp.NOMEN>("Nomen")
+          }else{
+            val parameterTyp = expect<TokenTyp.NOMEN>("Nomen")
+            var parameterName = parameterTyp
+            if (tokens.peek()!!.typ is TokenTyp.NOMEN){
+              parameterName = expect<TokenTyp.NOMEN>("Nomen")
+            }
+            parameter.add(NameUndTyp(parameterName, parameterTyp))
+          }
+
+          while (tokens.peek()!!.typ is TokenTyp.KOMMA){
+            val parameterTyp = expect<TokenTyp.NOMEN>("Nomen")
+            var parameterName = parameterTyp
+            if (tokens.peek()!!.typ is TokenTyp.NOMEN){
+             parameterName = expect<TokenTyp.NOMEN>("Nomen")
+            }
+            parameter.add(NameUndTyp(parameterName, parameterTyp))
+          }
+        }
+        signaturen.add(Signatur(verb, rückgabeTyp, parameter))
+      }
+    }
+    expect<TokenTyp.PUNKT>("Punkt")
+    return Definition.Schnittstelle(name,signaturen)
   }
 
   private fun parseAlias(): Definition.Alias {
-    TODO("für Finn")
+    expect<TokenTyp.ALIAS>("alias")
+    val artikel = expect<TokenTyp.ARTIKEL>("Artikel")
+    val name = expect<TokenTyp.NOMEN>("Nomen")
+    expect<TokenTyp.MIT>("mit")
+    expect<TokenTyp.PLURAL>("Plural")
+    val plural = expect<TokenTyp.NOMEN>("Nomen")
+    expect<TokenTyp.KOMMA>("Komma")
+    expect<TokenTyp.GENITIV>("Genitiv")
+    val genitiv = expect<TokenTyp.NOMEN>("Nomen")
+    expect<TokenTyp.ZUWEISUNG>("ist")
+    val fürTyp = expect<TokenTyp.NOMEN>("Nomen")
+    return Definition.Alias(artikel, name, plural, genitiv, fürTyp)
+  }
+
+  private fun parseModul(): Definition.Modul {
+    expect<TokenTyp.MODUL>("Modul")
+    val name = expect<TokenTyp.NOMEN>("Nomen")
+    expect<TokenTyp.DOPPELPUNKT>(":")
+    val definitionen = mutableListOf<Definition>()
+    überspringeLeereZeilen()
+    while (tokens.peek()!!.typ !is TokenTyp.PUNKT) {
+      definitionen += parseDefinition()
+      überspringeLeereZeilen()
+    }
+    expect<TokenTyp.PUNKT>(".")
+    return Definition.Modul(name, definitionen)
   }
   
   private fun parseSätze(kontext: List<Bereich>): List<Satz> {
     val sätze = mutableListOf<Satz>()
     while (true) {
-      while (tokens.peek()!!.typ is TokenTyp.NEUE_ZEILE) {
-        tokens.next()
-      }
+      überspringeLeereZeilen()
       val nächsterTokenTyp = tokens.peek()!!.typ
       if (nächsterTokenTyp is TokenTyp.DEFINIERE || nächsterTokenTyp is TokenTyp.EOF || nächsterTokenTyp is TokenTyp.ALIAS) {
         if (kontext.isNotEmpty()) {
@@ -173,7 +250,7 @@ class Parser(code: String) {
       }
       if (nächsterTokenTyp is TokenTyp.PUNKT) {
         if (kontext.isEmpty()) {
-          throw SyntaxError(tokens.next()!!, "")
+          throw SyntaxError(tokens.next()!!)
         }
         break
       }
@@ -183,8 +260,9 @@ class Parser(code: String) {
         is TokenTyp.FÜR -> sätze += parseFürJedeSchleife(kontext)
         else -> {
           sätze += parseSatz(kontext)
-          if (tokens.peek()!!.typ is TokenTyp.TRENNER) {
-            tokens.next()
+          when (tokens.peek()!!.typ) {
+            is TokenTyp.TRENNER, TokenTyp.NEUE_ZEILE, TokenTyp.EOF -> tokens.next()
+            else -> throw SyntaxError(tokens.next()!!, "Satzende", "Ein Satz muss mit neuen Zeilen oder ';' abgetrennt werden.")
           }
         }
       }
@@ -256,7 +334,16 @@ class Parser(code: String) {
   }
 
   private fun parseVariablenDeklaration(): Satz.Variablendeklaration {
-    TODO("für Finn")
+    val artikel = expect<TokenTyp.ARTIKEL>("Artikel")
+    val typ = expect<TokenTyp.NOMEN>("Nomen")
+    var name = typ
+    if (tokens.peek()!!.typ is TokenTyp.NOMEN) {
+      name = expect<TokenTyp.NOMEN>("Nomen")
+    }
+    val zuweisung = expect<TokenTyp.ZUWEISUNG>("Zuweisungsoperator")
+    val ausdruck = parseAusdruck()
+
+    return Satz.Variablendeklaration(artikel, typ, name, zuweisung, ausdruck)
   }
 
   private fun parseVariablenZuweisung(): Satz.Variablenzuweisung {
@@ -299,11 +386,14 @@ class Parser(code: String) {
         else -> throw SyntaxError(tokens.next()!!, "Unärer Operator")
       }
       is TokenTyp.BOOLEAN, is TokenTyp.ZAHL, is TokenTyp.ZEICHENFOLGE -> Ausdruck.Literal(tokens.next()!!)
-      is TokenTyp.NOMEN -> when(tokens.peekDouble()!!.typ) {
-        is TokenTyp.VERB -> Ausdruck.MethodenaufrufAusdruck(parseMethodenAufruf())
-        else -> Ausdruck.Variable(tokens.next()!!)
+      is TokenTyp.NOMEN -> Ausdruck.Variable(tokens.next()!!)
+      is TokenTyp.VERB -> when (val typ = tokens.peekDouble()!!.typ) {
+        is TokenTyp.MIT -> Ausdruck.MethodenaufrufAusdruck(parseMethodenAufruf())
+        is TokenTyp.OPERATOR ->
+          if (typ.operator == Operator.NEGATION) Ausdruck.MethodenaufrufAusdruck(parseMethodenAufruf())
+          else Ausdruck.FunktionsaufrufAusdruck(parseFunktionsAufruf())
+        else -> Ausdruck.FunktionsaufrufAusdruck(parseFunktionsAufruf())
       }
-      is TokenTyp.VERB -> Ausdruck.FunktionsaufrufAusdruck(parseFunktionsAufruf())
       is TokenTyp.WENN -> parseWennDannSonstAusdruck()
       else -> throw SyntaxError(tokens.next()!!)
     }
@@ -325,7 +415,7 @@ class Parser(code: String) {
 fun main() {
   val code = "-A * B hoch C minus (-6 durch 56)"
 
-  val typDefinition = "definiere den Student als Person mit Plural Studenten: Vorname als Zeichenfolge, Nachname als Zeichenfolge, Alter als Zahl."
+  val typDefinition = "definiere den Student als Person mit Plural Studenten, Genitiv Students: Vorname als Zeichenfolge, Nachname als Zeichenfolge, Alter als Zahl."
 
   val funktionDefinition = "definiere addieren mit Rückgabe Zahl , Zahl , Zahl X: zurück Zahl + X."
 
@@ -335,6 +425,19 @@ fun main() {
 
   val solangeSchleife = "solange X > 5:."
 
-  val parser = Parser(solangeSchleife)
+  val variablenDeklaration = """ein Wort ist "Hallo!""""
+
+  val schnittstellenDefinition = "definiere Schnittstelle Zeichenbares: zeichne mit Farbe skaliere mit Rückgabe Zahl."
+
+  val aliasDefinition = "alias das Alter ist Zahl mit Plural Alter, Genitiv Alters"
+
+  val modulDefinition = """
+    Modul Zoo:
+      definiere das Gehege mit Plural Gehege, Genitiv Gehege:.
+      Modul Tiere:.
+    .
+  """.trimIndent()
+
+  val parser = Parser(modulDefinition)
   println(parser.parse())
 }
