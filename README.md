@@ -380,7 +380,7 @@ die Personen sind Personen[Person1, Person2, Person3]
 ```
 
 ### Funktionen
-```\{Nomen}:Sätze.```
+```\{Nomen} IBereich.```
 
 Beispiel:
 ```
@@ -400,3 +400,17 @@ eine Vergleichsfunktion ist \(Alter A), (Alter B):
 sortiere Personen mit Vergleichsfunktion!
 ```
 
+### Typ-Umwandlung (Casting)
+
+#### implizit
+Ein vererbter Typ lässt sich immer einer Variable mit dem Typ des Elterntyps zuweisen.
+
+#### explizit
+`Ausdruck als Typ`
+
+Beispiel:
+`"42" als Zahl`
+
+Es kann eine Typumwandlung von einem Typ zu einem anderen Typ für jeden Typen definiert werden:
+
+Syntax: `definiere als Typ1 für Typ2 mit Rückgabe Typ1 IBereich`
