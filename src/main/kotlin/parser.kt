@@ -1,3 +1,5 @@
+import kotlin.math.exp
+
 class SyntaxError(token: Token, erwartet: String? = null, nachricht: String? = null) :
         Exception("Unerwartetes '${token.wert}' in (${token.anfang.first}, ${token.anfang.second}). Erwartet wird $erwartet. $nachricht")
 
@@ -45,6 +47,7 @@ class Parser(code: String) {
         }
       }
       is TokenTyp.ARTIKEL, TokenTyp.DEN -> parseTyp()
+      is TokenTyp.ALIAS -> parseAlias()
       is TokenTyp.NOMEN -> parseSchnittstelle()
       else -> throw SyntaxError(tokens.next()!!)
     }
@@ -188,10 +191,23 @@ class Parser(code: String) {
   }
 
   private fun parseAlias(): Definition.Alias {
-//    alias Artikel Nomen ist Nomen mit Plural Nomen, Genitiv Nomen
+    expect<TokenTyp.ALIAS>("Alias")
+    val artikel = expect<TokenTyp.ARTIKEL>("Artikel")
+    var geschlecht :Geschlecht = Geschlecht.NEUTRAL
+    if (artikel.typ is TokenTyp.ARTIKEL){
+      geschlecht = artikel.typ.geschlecht
+    }
+    val name = expect<TokenTyp.NOMEN>("Nomen")
+    tokens.next()
+    val typ = expect<TokenTyp.NOMEN>("Nomen")
+    expect<TokenTyp.MIT>("mit")
+    expect<TokenTyp.PLURAL>("Plural")
+    expect<TokenTyp.NOMEN>("Nomen")
+    expect<TokenTyp.KOMMA>("Komma")
+    tokens.next()
+    expect<TokenTyp.NOMEN>("Nomen")
 
-//    alias das Alter ist Zahl mit Plural Alter, Genitiv Alters
-    TODO("für Finn")
+    return Definition.Alias(geschlecht, name, typ)
   }
   
   private fun parseSätze(kontext: List<Bereich>): List<Satz> {
@@ -404,8 +420,10 @@ fun main() {
 
   val variablenDeklaration = """ein Wort ist "Hallo!""""
 
-  val schnitstellenDefinition = """definiere Schnittstelle Zeichenbares: zeichne mit Farbe skaliere mit Rückgabe Zahl."""
+  val schnitstellenDefinition = "definiere Schnittstelle Zeichenbares: zeichne mit Farbe skaliere mit Rückgabe Zahl."
 
-  val parser = Parser(schnitstellenDefinition)
+  val aliasDefinition = "definiere alias das Alter ist Zahl mit Plural Alter, Genitiv Alters"
+
+  val parser = Parser(aliasDefinition)
   println(parser.parse())
 }
