@@ -354,7 +354,10 @@ class Parser(code: String) {
   }
 
   private fun parseVariablenZuweisung(): Satz.Variablenzuweisung {
-    TODO("für Finn")
+    val name = expect<TokenTyp.NOMEN>("Nomen")
+    val zuweisung = expect<TokenTyp.ZUWEISUNG>("Zuweisungsoperator")
+    val ausdruck = parseAusdruck()
+    return Satz.Variablenzuweisung(name, zuweisung, ausdruck)
   }
 
   private fun parseAusdruck() = parseBinärerAusdruck(0.0)
@@ -498,6 +501,7 @@ fun main() {
   val solangeSchleife = "solange X > 5:."
 
   val variablenDeklaration = """ein Wort ist "Hallo!""""
+  val varaiblenZuweisung = """Wort ist "Tschüss!""""
 
   val schnittstellenDefinition = """
         definiere Schnittstelle Zeichenbares:
@@ -514,6 +518,6 @@ fun main() {
     .
   """.trimIndent()
 
-  val parser = Parser(methodenAufruf)
+  val parser = Parser(varaiblenZuweisung)
   println(parser.parse())
 }
