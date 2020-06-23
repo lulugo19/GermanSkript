@@ -1,4 +1,3 @@
-import java.util.*
 import kotlin.Exception
 
 enum class Assoziativität {
@@ -85,6 +84,7 @@ sealed class TokenTyp() {
     object PUNKT: TokenTyp()
     object DOPPELPUNKT: TokenTyp()
     object DOPPEL_DOPPELPUNKT: TokenTyp()
+    object PFEIL: TokenTyp()
     object TRENNER: TokenTyp() // Semikolon
     object NEUE_ZEILE: TokenTyp()
     object BACKSLASH: TokenTyp()
@@ -104,7 +104,7 @@ sealed class TokenTyp() {
 }
 
 
-private val ZEICHEN_MAPPING = mapOf<Char, TokenTyp>(
+private val SYMBOL_MAPPING = mapOf<Char, TokenTyp>(
         '(' to TokenTyp.OFFENE_KLAMMER,
         ')' to TokenTyp.GESCHLOSSENE_KLAMMER,
         ',' to TokenTyp.KOMMA,
@@ -121,10 +121,22 @@ private val ZEICHEN_MAPPING = mapOf<Char, TokenTyp>(
         '=' to TokenTyp.ZUWEISUNG(Numerus.BEIDE),
         '>' to TokenTyp.OPERATOR(Operator.GRÖßER),
         '<' to TokenTyp.OPERATOR(Operator.KLEINER),
+        '\\' to TokenTyp.BACKSLASH,
         '&' to TokenTyp.UNDEFINIERT,
-        '|' to TokenTyp.UNDEFINIERT,
-        '\\' to TokenTyp.BACKSLASH
+        '|' to TokenTyp.UNDEFINIERT
 )
+
+private val DOPPEL_SYMBOL_MAPPING = mapOf<String, TokenTyp>(
+    "==" to TokenTyp.OPERATOR(Operator.GLEICH),
+    "!=" to TokenTyp.OPERATOR(Operator.UNGLEICH),
+    ">=" to TokenTyp.OPERATOR(Operator.GRÖßER_GLEICH),
+    "<=" to TokenTyp.OPERATOR(Operator.KLEINER_GLEICH),
+    "&&" to TokenTyp.OPERATOR(Operator.UND),
+    "||" to TokenTyp.OPERATOR(Operator.ODER),
+    "::" to TokenTyp.DOPPEL_DOPPELPUNKT,
+    "->" to TokenTyp.PFEIL
+)
+
 
 private val WORT_MAPPING = mapOf<String, TokenTyp>(
         "mit" to TokenTyp.MIT,
@@ -235,7 +247,7 @@ fun tokeniziere(quellcode: String) : Sequence<Token> = sequence {
                 continue
             }
             yieldAll(when {
-                ZEICHEN_MAPPING.containsKey(zeichen) -> symbol(iterator, zeichen, zeilenIndex).also { kannWortLesen = true }
+                SYMBOL_MAPPING.containsKey(zeichen) -> symbol(iterator, zeichen, zeilenIndex).also { kannWortLesen = true }
                 zeichen.isDigit() -> zahl(iterator, zeichen, zeilenIndex).also { kannWortLesen = false }
                 zeichen == '"' -> zeichenfolge(iterator, zeilenIndex).also { kannWortLesen = false }
                 kannWortLesen -> wort(iterator, zeichen, zeilenIndex).also { kannWortLesen = false }
@@ -253,35 +265,22 @@ fun tokeniziere(quellcode: String) : Sequence<Token> = sequence {
 private fun symbol(iterator: Peekable<Char>, erstesZeichen: Char, zeilenIndex: Int) : Sequence<Token> = sequence {
     val startPos = zeilenIndex to iterator.index - 1
     var symbolString = erstesZeichen.toString()
-    val tokenTyp = (when (erstesZeichen) {
-        '>', '<', '!' -> {
-            if (iterator.peek() == '=') {
-                symbolString += iterator.next()
-                when (erstesZeichen) {
-                    '>' -> TokenTyp.OPERATOR(Operator.GRÖßER_GLEICH)
-                    '<' -> TokenTyp.OPERATOR(Operator.KLEINER_GLEICH)
-                    '!' -> TokenTyp.OPERATOR(Operator.UNGLEICH)
-                    else -> throw Exception("Dieser Fall wird nie ausgeführt")
-                }
-            } else {
-                when (val token = ZEICHEN_MAPPING.getValue(erstesZeichen)) {
-                    TokenTyp.UNDEFINIERT -> throw Exception("Ungültiges Zeichen $erstesZeichen")
-                    else -> token
-                }
-            }
-        }
-        else -> when {
-            erstesZeichen == '&' && iterator.peek() == '&' -> TokenTyp.OPERATOR(Operator.UND).also { symbolString += iterator.next()}
-            erstesZeichen == '|' && iterator.peek() == '|' -> TokenTyp.OPERATOR(Operator.ODER).also { symbolString += iterator.next() }
-            erstesZeichen == ':' && iterator.peek() == ':' -> TokenTyp.DOPPEL_DOPPELPUNKT
-            else -> when (val token = ZEICHEN_MAPPING.getValue(erstesZeichen)) {
-                TokenTyp.UNDEFINIERT -> throw Exception("Ungültiges Zeichen $erstesZeichen")
-                else -> token
-            }
-        }
-    })
+    val potenziellesDoppelSymbol = erstesZeichen.toString() + iterator.peek()!!.toString()
+    val tokenTyp = if (DOPPEL_SYMBOL_MAPPING.containsKey(potenziellesDoppelSymbol)) {
+        iterator.next()
+        symbolString = potenziellesDoppelSymbol
+        DOPPEL_SYMBOL_MAPPING.getValue(potenziellesDoppelSymbol)
+    } else if (SYMBOL_MAPPING.containsKey(erstesZeichen)) {
+        SYMBOL_MAPPING.getValue(erstesZeichen)
+    } else {
+        TokenTyp.UNDEFINIERT
+    }
     val endPos = zeilenIndex to iterator.index
-    yield(Token(tokenTyp, symbolString, startPos, endPos))
+    val token = Token(tokenTyp, symbolString, startPos, endPos)
+    if (tokenTyp is TokenTyp.UNDEFINIERT) {
+        throw SyntaxError(token, null)
+    }
+    yield(token)
 }
 
 private val ZAHLEN_PATTERN = """(0|[1-9]\d?\d?(\.\d{3})+|[1-9]\d*)(\,\d+)?""".toRegex()
@@ -338,7 +337,7 @@ private fun wort(iterator: Peekable<Char>, zeichen: Char, zeilenIndex: Int) : Se
                     spaceBetweenWords += iterator.next()
                 }
                 val nächstesZeichen = iterator.peek()
-                val nächstesIstWort = !(ZEICHEN_MAPPING.containsKey(nächstesZeichen) ||
+                val nächstesIstWort = !(SYMBOL_MAPPING.containsKey(nächstesZeichen) ||
                         nächstesZeichen == '&' ||
                         nächstesZeichen == '|' ||
                         nächstesZeichen == '"' ||
@@ -383,7 +382,7 @@ private fun teilWort(iterator: Peekable<Char>, erstesZeichen: Char): String {
     while (iterator.peek() != null) {
         val nächstesZeiches = iterator.peek()!!
         if (nächstesZeiches == ' ' ||
-            (nächstesZeiches != '!' && nächstesZeiches != '?' && ZEICHEN_MAPPING.containsKey(nächstesZeiches))) {
+            (nächstesZeiches != '!' && nächstesZeiches != '?' && SYMBOL_MAPPING.containsKey(nächstesZeiches))) {
             break
         }
         wort += iterator.next()!!
