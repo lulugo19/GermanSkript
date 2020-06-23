@@ -280,7 +280,11 @@ class Parser(code: String) {
         is TokenTyp.ZUWEISUNG -> parseVariablenZuweisung()
         else -> throw SyntaxError(tokens.next()!!)
       }
-      is TokenTyp.VERB -> Satz.FunktionsaufrufSatz(parseFunktionsAufruf())
+      is TokenTyp.VERB -> if (tokens.peekDouble()!!.typ is TokenTyp.OFFENE_KLAMMER){
+        Satz.FunktionsaufrufSatz(parseFunktionsAufruf())
+      }else{
+        Satz.MethodenaufrufSatz(parseMethodenAufruf())
+      }
       is TokenTyp.FORTFAHREN, TokenTyp.ABBRECHEN ->
         if (kontext.contains(Bereich.Schleife)) {
           when (typ) {
@@ -438,7 +442,39 @@ class Parser(code: String) {
   }
 
   private fun parseMethodenAufruf(): Methodenaufruf {
-    TODO("für Finn")
+    val methodenNamen = expect<TokenTyp.VERB>("Verb")
+    val methodenObjekt = parseAusdruck()
+    val argumentListe = mutableListOf<Argument>()
+    if (tokens.peek()!!.typ is TokenTyp.MIT){
+      tokens.next()
+      expect<TokenTyp.OFFENE_KLAMMER>("(")
+      if (tokens.peek()!!.typ !is TokenTyp.NOMEN || tokens.peekDouble()!!.typ !is TokenTyp.ZUWEISUNG){
+        argumentListe.add(Argument.StellenArgument(0,parseAusdruck()))
+        var stelle = 1
+        loop@ while (tokens.peek()!!.typ is TokenTyp.KOMMA){
+          tokens.next()
+          if (tokens.peek()!!.typ is TokenTyp.NOMEN && tokens.peekDouble()!!.typ is TokenTyp.ZUWEISUNG){
+            break@loop
+          }
+          argumentListe.add(Argument.StellenArgument(stelle,parseAusdruck()))
+          stelle++
+        }
+      }
+      if (tokens.peek()!!.typ !is TokenTyp.GESCHLOSSENE_KLAMMER){
+        var argumentName = expect<TokenTyp.NOMEN>("Nomen").wert
+        expect<TokenTyp.ZUWEISUNG>("ist")
+        argumentListe.add(Argument.NamenArgument(argumentName, parseAusdruck()))
+        while (tokens.peek()!!.typ is TokenTyp.KOMMA) {
+          tokens.next()
+          argumentName = expect<TokenTyp.NOMEN>("Nomen").wert
+          expect<TokenTyp.ZUWEISUNG>("=")
+          argumentListe.add(Argument.NamenArgument(argumentName, parseAusdruck()))
+        }
+      }
+      expect<TokenTyp.GESCHLOSSENE_KLAMMER>(")")
+    }
+
+    return Methodenaufruf(methodenObjekt, methodenNamen, argumentListe)
   }
 
   private fun parseWennDannSonstAusdruck(): Ausdruck.WennDannSonst {
@@ -455,6 +491,7 @@ fun main() {
   val funktionsAufruf = "addieren (5, Drei, 7, B ist 6, Y ist Nichts)"
 
   val methodenDefinition = """definiere hallo für Student mit Rückgabe Zeichenfolge: zurück "Hallo!"."""
+  val methodenAufruf = "addiere Student mit (5, Drei, 7, B ist 6, Y ist Nichts)"
 
   val fürJedeSchleife = "für jede Zahl in Zahlen:."
 
@@ -477,6 +514,6 @@ fun main() {
     .
   """.trimIndent()
 
-  val parser = Parser(funktionsAufruf)
+  val parser = Parser(methodenAufruf)
   println(parser.parse())
 }
