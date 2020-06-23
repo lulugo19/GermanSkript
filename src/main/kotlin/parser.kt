@@ -104,6 +104,7 @@ class Parser(code: String) {
     val parameterListe = mutableListOf<NameUndTyp>()
     if (tokens.peek()!!.typ is TokenTyp.MIT){
       tokens.next()
+      überspringeLeereZeilen()
       if (tokens.peek()!!.typ is TokenTyp.RÜCKGABE){
         tokens.next()
         rückgabeTyp = expect<TokenTyp.NOMEN>("Nomen")
@@ -115,6 +116,7 @@ class Parser(code: String) {
         }
         parameterListe += NameUndTyp(name, typ)
       }
+      überspringeLeereZeilen()
       while (tokens.peek()!!.typ is TokenTyp.KOMMA){
         tokens.next()
         val typ = expect<TokenTyp.NOMEN>("Nomen")
@@ -123,6 +125,7 @@ class Parser(code: String) {
           name = tokens.next()!!
         }
         parameterListe += NameUndTyp(name, typ)
+        überspringeLeereZeilen()
       }
     }
     expect<TokenTyp.DOPPELPUNKT>(":")
@@ -395,8 +398,13 @@ class Parser(code: String) {
         else -> Ausdruck.FunktionsaufrufAusdruck(parseFunktionsAufruf())
       }
       is TokenTyp.WENN -> parseWennDannSonstAusdruck()
+      is TokenTyp.BACKSLASH -> parseLambda()
       else -> throw SyntaxError(tokens.next()!!)
     }
+  }
+
+  private fun parseLambda(): Ausdruck {
+    TODO()
   }
 
   private fun parseFunktionsAufruf(): Funktionsaufruf {
@@ -439,5 +447,6 @@ fun main() {
   """.trimIndent()
 
   val parser = Parser(modulDefinition)
+
   println(parser.parse())
 }

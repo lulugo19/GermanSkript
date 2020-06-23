@@ -51,12 +51,22 @@ sealed class Argument {
 
 sealed class Ausdruck {
   data class Literal(val literal: Token): Ausdruck()
+  data class Zahl(val zahl: Token): Ausdruck()
+  data class Zeichenfolge(val zeichenfole: Token): Ausdruck()
+  data class Boolean(val boolean: Token): Ausdruck()
+  data class Liste(val elemente: List<Ausdruck>)
+  data class Lambda(val binder: List<String>, val körper: List<Satz>)
   data class Variable(val name: Token): Ausdruck()
   data class FunktionsaufrufAusdruck(val funktionsaufruf: Funktionsaufruf): Ausdruck()
   data class MethodenaufrufAusdruck(val methodenaufruf: Methodenaufruf): Ausdruck()
   data class WennDannSonst(val bedingung : Ausdruck, val dannAusdruck: Ausdruck, val sonstAusdruck: Ausdruck): Ausdruck()
   data class BinärerAusdruck(val operator: Token, val links: Ausdruck, val rechts: Ausdruck): Ausdruck()
   data class UnärerAusdruck(val operator: Token, val ausdruck: Ausdruck): Ausdruck()
+}
+
+sealed class Typ {
+  data class Einfach(val name: List<Token>): Typ()
+  data class Lambda(val arguments: List<Typ>, val returnType: Typ): Typ()
 }
 
 data class NameUndTyp(val name: Token, val typ: Token)

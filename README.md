@@ -374,22 +374,24 @@ die Person3 ist Person mit Name="Egon", Alter=72
 die Personen sind Personen[Person1, Person2, Person3]
 ```
 
-### Funktionen
+### Lambdas
 ```\{Nomen} IBereich.```
 
 Beispiel:
 ```
+definiere sortiere! für Liste mit (Boolean, Boolean) -> Zahl Vergleichsfunktion:... 
+
 // sortiere die Personen nach Alter aufsteigend
 die Personen sind Personen[Person1, Person2, Person3]
 
 // erstelle Vergleichsfunktion
-eine Vergleichsfunktion ist \PersonA, PersonB: 
-    zurück wenn Alter der PersonA < Alter der PersonB dann -1 sonst wenn Alter der PersonA > Alter der PersonB dann 1 sonst 0.
+eine Vergleichsfunktion ist \A, B: 
+    zurück wenn Alter der Person A < Alter der Person B dann -1 sonst wenn Alter der Person A > Alter der Person B dann 1 sonst 0.
 
 sortiere Personen mit Vergleichsfunktion!
 
 // Vergleichsfunktion kann durch  Dekstrukturierung verbessert werden
-eine Vergleichsfunktion ist \(Alter A), (Alter B): 
+Vergleichsfunktion ist \(Alter A), (Alter B): 
     zurück wenn A < B dann -1 sonst wenn A > B dann 1 sonst 0.
 
 sortiere Personen mit Vergleichsfunktion!
