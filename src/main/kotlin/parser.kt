@@ -158,6 +158,7 @@ class Parser(code: String) {
     val name = expect<TokenTyp.NOMEN>("Nomen")
     val signaturen = mutableListOf<Signatur>()
     expect<TokenTyp.DOPPELPUNKT>("Doppelpunkt")
+    überspringeLeereZeilen()
     if (tokens.peek()!!.typ !is TokenTyp.PUNKT){
       while(tokens.peek()!!.typ is TokenTyp.VERB){
         val verb = expect<TokenTyp.VERB>("Verb")
@@ -189,6 +190,7 @@ class Parser(code: String) {
           }
         }
         signaturen.add(Signatur(verb, rückgabeTyp, parameter))
+        überspringeLeereZeilen()
       }
     }
     expect<TokenTyp.PUNKT>("Punkt")
@@ -278,6 +280,7 @@ class Parser(code: String) {
         is TokenTyp.ZUWEISUNG -> parseVariablenZuweisung()
         else -> throw SyntaxError(tokens.next()!!)
       }
+      is TokenTyp.VERB -> Satz.FunktionsaufrufSatz(parseFunktionsAufruf())
       is TokenTyp.FORTFAHREN, TokenTyp.ABBRECHEN ->
         if (kontext.contains(Bereich.Schleife)) {
           when (typ) {
@@ -400,7 +403,38 @@ class Parser(code: String) {
   }
 
   private fun parseFunktionsAufruf(): Funktionsaufruf {
-    TODO("für Finn")
+    val funktionsName = expect<TokenTyp.VERB>("Verb")
+    val argumentListe = mutableListOf<Argument>()
+    if (tokens.peek()!!.typ is TokenTyp.OFFENE_KLAMMER){
+      tokens.next()
+
+      if (tokens.peek()!!.typ !is TokenTyp.NOMEN || tokens.peekDouble()!!.typ !is TokenTyp.ZUWEISUNG){
+        argumentListe.add(Argument.StellenArgument(0,parseAusdruck()))
+        var stelle = 1
+        loop@ while (tokens.peek()!!.typ is TokenTyp.KOMMA){
+          tokens.next()
+          if (tokens.peek()!!.typ is TokenTyp.NOMEN && tokens.peekDouble()!!.typ is TokenTyp.ZUWEISUNG){
+            break@loop
+          }
+          argumentListe.add(Argument.StellenArgument(stelle,parseAusdruck()))
+          stelle++
+        }
+      }
+      if (tokens.peek()!!.typ !is TokenTyp.GESCHLOSSENE_KLAMMER){
+        var argumentName = expect<TokenTyp.NOMEN>("Nomen").wert
+        expect<TokenTyp.ZUWEISUNG>("ist")
+        argumentListe.add(Argument.NamenArgument(argumentName, parseAusdruck()))
+        while (tokens.peek()!!.typ is TokenTyp.KOMMA) {
+          tokens.next()
+          argumentName = expect<TokenTyp.NOMEN>("Nomen").wert
+          expect<TokenTyp.ZUWEISUNG>("=")
+          argumentListe.add(Argument.NamenArgument(argumentName, parseAusdruck()))
+        }
+      }
+      expect<TokenTyp.GESCHLOSSENE_KLAMMER>(")")
+    }
+
+    return Funktionsaufruf(funktionsName, argumentListe)
   }
 
   private fun parseMethodenAufruf(): Methodenaufruf {
@@ -418,6 +452,7 @@ fun main() {
   val typDefinition = "definiere den Student als Person mit Plural Studenten, Genitiv Students: Vorname als Zeichenfolge, Nachname als Zeichenfolge, Alter als Zahl."
 
   val funktionDefinition = "definiere addieren mit Rückgabe Zahl , Zahl , Zahl X: zurück Zahl + X."
+  val funktionsAufruf = "addieren (5, Drei, 7, B ist 6, Y ist Nichts)"
 
   val methodenDefinition = """definiere hallo für Student mit Rückgabe Zeichenfolge: zurück "Hallo!"."""
 
@@ -427,7 +462,11 @@ fun main() {
 
   val variablenDeklaration = """ein Wort ist "Hallo!""""
 
-  val schnittstellenDefinition = "definiere Schnittstelle Zeichenbares: zeichne mit Farbe skaliere mit Rückgabe Zahl."
+  val schnittstellenDefinition = """
+        definiere Schnittstelle Zeichenbares:
+            zeichne mit Farbe
+            skaliere mit Rückgabe Zahl.
+        """.trimIndent()
 
   val aliasDefinition = "alias das Alter ist Zahl mit Plural Alter, Genitiv Alters"
 
@@ -438,6 +477,6 @@ fun main() {
     .
   """.trimIndent()
 
-  val parser = Parser(modulDefinition)
+  val parser = Parser(funktionsAufruf)
   println(parser.parse())
 }
