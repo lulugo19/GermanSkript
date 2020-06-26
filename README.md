@@ -5,39 +5,73 @@ Eine objektorientierte, streng typisierte Programmiersprache, die sich wie die d
 Die Syntax wird in einer Abwandlung der erweiterten Backus-Naur-Form beschrieben:
 
 Syntax in eckigen Klammern ist optional `[Optional]` und Syntax in geschweiften Klammern 
-kann ein oder mehrmals wiederholt werden `{Wiederholung}`.
+kann ein oder mehrmals wiederholt werden `{Wiederholung}`. 
+Außerdem ist die Komma-seperierte Kommaliste eine häufige Syntax in unserer Sprache.
+Das Pattern Dafür ist `Ding {, Ding}`. Hierfür verwenden wir die Abkürzung `Kommaliste(Ding)`.
 
 ### Groß- und Kleinschreibung
-Groß- und Kleinschreibung ist wichtig bei GermanScript. Namen die festgelegt werden können, unterteilen sich in `Nomen`,
-die **groß** und `Verben` die **klein** geschrieben werden.
-`Nomen` werden bei [Variablendeklarationen](###Deklaration-von-Variablen) und [Typdefinitionen](###Definieren-eines-Typs)
-und `Verben` bei der Definition von [Funktionen](###Definieren-einer-Funktion) und Methoden verwendet.
+Groß- und Kleinschreibung ist wichtig bei GermanScript. Namen die festgelegt werden können, sogenannte Bezeichner können groß oder klein geschrieben werden.
+Für große Bezeichner verwenden wir die Syntax `Bezeichner` und für kleine Bezeichner die Syntax `bezeichner`.
+Nomen werden bei der [Variablendeklarationen](###Deklaration-von-Variablen) und der [Typdefinitionen](###Definieren-eines-Typs)
+Verben bei der Definition von [Funktionen](###Definieren-einer-Funktion) und [Methoden](###Definieren-einer-Methode) verwendet 
+und Adjektive bei der Definition von [Schnittstellen](###Definieren-einer-Schnittstelle) verwendet.
 
-### Grammatik
-Da GermanScript ein Teil der deutschen Grammatik beinhaltet, spielt der Genus (das Geschlecht) eines Typs eine wichtige Rolle. 
-Wenn Artikel verwendet werden, müssen diese mit dem Genus des Typs übereinstimmen.
-Außerdem ist auch noch die Form des Artikels wichtig, jenachdem in welchem Kontext das Nomen verwendet wird.
+#### Bezeichner
+Bezeichner, also großgeschriebene Wörter werden in GermanScript für Klassen- und Variablenbezeichner verwendet.
+Die Bezeichner müssen aber vorher mit den 4 Fällen in Singular und Plural bekannt sein, damit diese verwendet werden können.
 
-| Form       | bestimmt / unbestimmt | Syntax-Abkürzung | Verwendung bei | Maskulinum | Femininum | Neutrum | Plural |
-| ---------- | --------------------- | ---------------- | -------------- | ---------- | --------- | ------- | ------ |
-| Nominativ  | bestimmt | `ArtikelNb` | unveränderbare Variablendeklaration | der | die | das | die |
-| Nominativ | unbestimmt | `ArtikelNu` | veränderbare Variablendeklaration | ein | eine | ein | einige |
-| Akkusativ  | bestimmt | `ArtikelAb` | Typdefinition, Alias, Eigenschaftsdefinition | den | die | das | die |
-| Genitiv | bestimmt | `ArtikelGb` | Feldzugriff/Destrukturierung bei unveränderbaren Variablen | des | der | des | der |
-| Genitiv | unbestimmt | `ArtikelGu` | Feldzugriff/Destrukturierung bei veränderbarer Variable | eines | einer | eines | einiger |
+Die Form der Bezeichner is je nach Fall entscheidend. Im Folgendem wird folgende Syntax-Abkürzungen verwendet 
+um die Form des Bezeichners anzugeben.
+
+| Kasus (Fall) | Singular oder Plural | Singular | Plural |
+| ------------ | -------- | ------ | -------------------- |
+| Nominativ    | `BezeichnerN` | `BezeichnerNS` | `BezeichnerNP` |
+| Genitiv      | `BezeichnerG` | `BezeichnerGS` | `BezeichnerGP` |
+| Dativ | `BezeichnerD` | `BezeichnerDS` | `BezeichnerDP` |
+| Akkusativ | `BezeichnerA` | `BezeichnerAS` | `BezeichnerAP` |
+
+Um einen Bezeichner bekannt zu machen (zu deklinieren) wird folgende Syntax verwendet:
+
+`Deklination Singular(BezeichnerNS, BezeichnerGS, BezeichnerDS, BezeichnerAS) Plural(BezeichnerNP, BezeichnerGP, BezeichnerDP, BezeichnerAP)`.
+
+Beispiel für `Kind`:
+
+`Deklination Singular(Kind, Kindes, Kind, Kind) Plura(Kinder, Kinder, Kindern, Kindern)`
+
+Da es aber aufwendig werden kann, jeden Bezeichner selber zu deklinieren, kann auch automatisch im [Online-Duden]((https://www.duden.de/woerterbuch))
+nachgeschaut werden. Dann wird folgende Syntax verwendet:
+
+`Deklination Duden(BezeichnerN)`
+
+Beispiel für `Kind`:
+
+`Deklination Duden(Kind)`
+
+
+Es gibt aber auch Bezeichner die diese 4 Fälle **nicht** brauchen. Diese werden für die Bezeichnung von [Modulen](###Definieren-von-Modulen)
+und [Konstanten](###Definieren-von-Konstanten) und [Einheiten](###Einheiten) verwendet und müssen nicht deklaniert werden.
+
+
+### Artikel
+Da GermanScript ein Teil der deutschen Grammatik beinhaltet, spielt der Genus (das Geschlecht) eines Typs eine wichtige Rolle.
+Außerdem ist auch noch die Form des Artikels wichtig, jenachdem in welchem Fall das Nomen verwendet wird.
+
+| Kasus (Fall) | bestimmt / unbestimmt | Syntax-Abkürzung | Verwendung bei | Maskulinum | Femininum | Neutrum | Plural |
+| ------------ | --------------------- | ---------------- | -------------- | ---------- | --------- | ------- | ------ |
+| Nominativ  | bestimmt | `ArtikelNb` | Variablendeklaration bestimmt | der | die | das | die |
+| Nominativ | unbestimmt | `ArtikelNu` | Variablendeklaration unbestimmt | ein | eine | ein | einige |
+| Genitiv | bestimmt | `ArtikelGb` | Feldzugriff, Destrukturierung | des | der | des | der |
+| Genitiv | unbestimmt | `ArtikelGu` |  | eines | einer | eines | einiger |
+| Dativ  | bestimmt | `ArtikelDb` | Feldzugriff, Destrukturierung, Konstruktor, Argumente | dem | der | dem | den |
+| Dativ  | unbestimmt | `ArtikelDu` |  | einem | einer | einem | einigen |
+| Akkusativ  | bestimmt | `ArtikelAb` | Eigenschaftsdefinition, Aufzählungsdefinition, Methodenaufruf | den | die | das | die |
+| Akkusativ  | unbestimmt | `ArtikelAu` | Typdefinition, Alias, Eigenschaftsdefinition, Aufzählungsdefinition, Methodenaufruf | einen | eine | ein | einige |
+
 
 ### Bereiche
-
 Ein GermanScript-Programm besteht aus mehreren Bereichen. Innere Bereiche können auf den Inhalt von äußeren Bereichen zugreifen, aber
 äußere Bereiche können nicht auf den Inhalt von inneren Bereichen zugreifen.
-Ein Bereich startet mit `:` und endet mit `.`. Einen einfachen Bereich kann man auch einen Namen geben, indem man einen Namen vor dem `:` schreibt.
-Beispiel:
-```
-Abschnitt:
-    // Bereichsinhalt
-    // ...
-.
-```
+Ein Bereich startet mit `:` und endet mit `.`.
 
 ### Sätze
 Ein GermanScript-Programm besteht aus mehreren Sätzen (im Programmierspachen-Jargon auch Statements genannt).
@@ -47,7 +81,7 @@ Folgendes sind Sätze:
 - Funktionsaufrufe
 - Methodenaufrufe
 - Schlüsselwörter wie `abbrechen` oder `fortfahren`
-- `zurück`-Anweisung in Funktionen oder Methoden
+- `gebe zurück`-Anweisung in Funktionen oder Methoden
 
 Außerdem gibt es noch Kontrollstrukturen, die auch zu den Sätzen zählen. Sie werden aber nicht mit `;` getrennt, 
 sondern beginnen jeweils einen neuen Bereich.
@@ -56,16 +90,20 @@ Da wären:
 - Schleifen
      - [Solange-Schleife](###Solange-Schleife)
      - [Für-Jede-Schleife](###Für-Jede-Schleife)
+     
+In der Syntax wird für keinen, einen oder mehrere Sätze, die Syntax `Sätze` verwendet.
 
 ### Ausdrücke
 Ein Ausdruck ist alles was einer Variablen zugewiesen werden kann. Ausdrücke werden außerdem als Argumente bei
-eine Funktionsaufruf übergeben.
+einem Funktions- oder Methodenaufruf übergeben. Im 
 Folgendes sind Ausdrücke:
-- Literale: Zeichenfolge, Zahlen, Listen, Boolsche Werte, Lambdas
+- Literale: Zeichenfolge, Zahlen, Boolsche Werte, Listen, Objekt
+- Binäre Ausdrücke
 - Variablen
-- Funktions- oder Methodenaufrufe, die einen Rückgabewert haben
-- wenn-dann-sonst-Ausdrücke
 
+die Ausdrücke gliedern sich in zwei Klassen, die bedeutend sind bei Funktions- und Methodenaufrufen sowie
+
+ArtikelAb BezeichnerA1 (Variable | Literal) | ArtikelAu (Liste | Objektinstanziierung)
 
 ### Abbrechen oder Fortfahren einer Schleife
 Das Schlüsselwort `abbrechen` dient zur sofortigen Beendigung einer Schleife.
@@ -78,51 +116,104 @@ Jeder Operator hat neben einem Symbol auch noch eine Textrepräsentation, die st
 Umso höher die Bindungskraft, desto mehr bindet der Operator seine Operanden.
 
 Die Operatoren Gleichheit `==` und Ungleichheit `!=` können bei allen Typen verwendet werden, um die Gleichheit
-zu überprüfen. Alle anderen Operatoren können nur bei den Inbuild-Typen `Zahl`, `Liste`, `Boolean` verwendet werden.
+zu überprüfen. Alle anderen Operatoren können nur bei den Inbuild-Typen `Zahl`, `Kommaliste`, `Boolean` verwendet werden.
 Das Überladen von Operatoren ist voerst nicht vorgesehen.
 
+
 #### Binäre Operatoren
-| Funktion | Symbol | Text | Assoziativität | Bindungskraft |
-| -------- | ------ | ---- | -------------- | --------- |
-| Zuweisung | `=` | `ist` | rechts | 0 |
-| Logisches Oder | `\|\|` | `oder` | links | 1 |
-| Logisches Und | `&&` | `und` | links | 2 |
-| Gleichheit | `==` | `gleich` | links | 3 |
-| Ungleichheit | `!=` | `ungleich` | links | 3 |
-| Größer | `>` | `größer` | links | 3 |
-| Kleiner | `<` | `kleiner` | links | 3 |
-| Größer-Gleich | `>=` | `größer gleich` | links | 3 |
-| Kleiner-Gleich | `<=` | `kleiner gleich` | links | 3 |
-| Plus | `+` | `plus` | links | 4 |
-| Minus | `-` | `minus` | links | 4 |
-| Mal | `*` | `mal` | links | 5 |
-| Geteilt | `/` | `durch` | links | 5 |
-| Hoch | `^` | `hoch` | rechts | 6 |
+| Funktion | Symbol | Text | Assoziativität | Bindungskraft | Kasus des rechten Operanden |
+| -------- | ------ | ---- | -------------- | ------------- | ---- |
+| Zuweisung | `=` | `ist` | rechts | 0 | Nominativ |
+| Logisches Oder | <code>&#124;&#124;</code> | `oder `| links | 1 | Akkusativ |
+| Logisches Und | `&&` | `und` | links | 2 | Akkusativ | 
+| Gleichheit | `==` | `gleich` | links | 3 | Dativ |
+| Ungleichheit | `!=` | `ungleich` | links | 3 | Dativ |
+| Größer | `>` | `größer` | links | 3 | Dativ |
+| Kleiner | `<` | `kleiner` | links | 3 | Dativ |
+| Größer-Gleich | `>=` | `größer gleich` | links | 3 | Dativ |
+| Kleiner-Gleich | `<=` | `kleiner gleich` | links | 3 | Dativ |
+| Plus | `+` | `plus` | links | 4 | Akkusativ |
+| Minus | `-` | `minus` | links | 4 | Akkusativ |
+| Mal | `*` | `mal` | links | 5 | Akkusativ |
+| Geteilt | `/` | `durch` | links | 5 | Akkusativ |
+| Modulo | `mod` | `modulo` | links 5 | Akkusativ |
+| Hoch | `^` | `hoch` | rechts | 6 | Akkusativ |
 
 #### Unäre Operatoren
-| Funktion | Symbol | Text | Assoziativität | Priorität |
-| -------- | ------ | ---- | -------------- | --------- |
-| Logisches Nicht | `!` | `nicht` | rechts | 7 |
-| Negativ | `-` | `negativ` | rechst | 7 |
-| Positiv | `+` | `positiv` | rechts | 7 |
+
+##### Der Operator `nicht`:
+
+`nicht` kann vor folgenden Operatoren verwendet werden, um diese umzukehren: `gleich`, `ungleich`, `größer`, `kleiner`, `größer gleich`, `kleiner gleich`.
+
+```
+nicht gleich => ungleich
+nicht ungleich => gleich
+nicht größer => kleiner gleich
+nicht kleiner => größer gleich
+nicht größer gleich => kleiner
+nicht kleiner gleich => größer
+```
+
+##### Der Operator `minus`:
+
+`minus` oder das Symbol `-` kann vor einer Zahl stehen, um diese zu negieren.
+Bei Variablen muss nach dem `minus` der Akkusativ kommen.
 
 
-### Deklaration von Variablen
-Für eine unveränderbare Variable: `ArtikelNb [Typ] Nomen Zuweisungsoperator Ausdruck`
+### Variablen
 
-Für eine veränderbare Variable: `ArtikelNu [Typ] Nomen Zuweisungsoperator Ausdruck`
+#### Deklaration von Variablen
+Für eine unveränderbare Variable: `ArtikelNb [Typ] BezeichnerN Zuweisungsoperator AusdruckN`
+
+Für eine veränderbare Variable: `ArtikelNu [Typ] BezeichnerN Zuweisungsoperator AusdruckN`
 
 Variablen können auf zwei Art und Weisen deklariert werden. Für Variablen, die nicht erneut zugewiesen werden können
 werden die bestimmten Artikel `der, die, das` verwendet. Und für Variablen die erneut zugewiesen werden können, werden
 die unbestimmten Artikel `ein, eine, einige` verwendet. Der Artikel muss außerdem mit dem Genus und dem Numerus des Ausdrucks übereinstimmen.
 Der Typ kann bei der Deklaration weggelassen werden und wird dann aus dem Ausdruck ermittelt.
 
+
+#### Neuzuweisung von Variablen
+
+`ArtikelNu BezeichnerN Zuweisungsoperator AusdruckN`
+
+#### Verweis auf Variable
+Um auf eine Variable zu verweisen, muss der bestimmte Artikel gefolgt von dem Namen der Variablen werden.
+Dabei müssen Artikel und Name je nach dem Fall in der richtigen Form stehen.
+
 Beispiele:
 
-- `eine Zahl X ist 100`
-- `die Summe ist X + 5`
-- `die Zeichenfolge Beschreibung ist "dunkel, groß und blau"`
+```
+eine Zahl ist 100
+die Summe ist die Zahl + 5
+eine Zahl ist 100 + 10 // Neuzuweisung
+die Summe ist 42 // Fehler, kann nicht neu zugewiesen werden
 
+die Zeichenfolge Beschreibung ist "dunkel, groß und blau"
+```
+
+#### Shadowing von Variablen
+In einem inneren Bereich kann eine neue Variable mit dem selben Namen, wie die äußere Variable erstellt werden, 
+wobei sie die äußere Variable überschattet. Auf die äußere Variable kann jetzt nicht mehr zugregriffen werden.
+```
+die Zahl ist 5
+:
+    die Zahl ist 30 // kein Fehler
+    schreibe die Zeichenfolge Zahl als Zeichenfolge // 30
+.
+schreibe die Zeichenfolge Zahl als Zeichenfolge // 5
+```
+
+Um eine veränderbare Variablen mit dem selben Namen in einem inneren Bereich neu zu erstellen gibt es das `neue` Schlüsselwort.
+```
+eine Zahl ist 5
+:
+    eine Zahl ist 12        // verändere die äußere Variable
+    eine neue Zahl ist 30   // erstelle eine neue innere veränderbare Variable
+    
+    die Zahl ist 10         // Fehler: der Name Zahl ist schon in Gebrauch
+.
+```
 
 ### Bedingungen
 ```
@@ -131,22 +222,25 @@ wenn Bedingung:
 {sonst wenn Bedingung: Sätze}
 [sonst: Sätze] .
 ```
+
+Bei Bedingungen ist das Besondere, dass bei den Vergleichsoperatoren `gleich`, `ungleich`, `kleiner`, `größer`, `kleiner gleich` danach immer ein `ist` kommen muss.
+
 Beispiel:
 ```
-wenn X gleich 3:
-  drucke "Alle guten Dinge sind drei!"
-sonst wenn X gleich 42:
-  drucke "Die Antwort auf alles."
-sonst drucke X .
+wenn die Zahl gleich 3 ist:
+  drucke die Zeichenfolge "Alle guten Dinge sind drei!".
+sonst wenn die Zahl gleich 42 ist:
+  drucke die Zeichenfolge "Die Antwort auf alles.".
+sonst drucke die Zeichenfolge die Zahl als Zeichenfolge.
 ```
 
 ### Solange-Schleife
-`solange Bedingung IBereich`
+`solange Bedingung: Sätze.`
 
 Solange die Bedingung zutrifft, werden die Sätze ausgeführt.
 
 ### Für-Jede-Schleife
-`für (jeder | jede | jedes) (Nomen | Destrukturierung) in Ausdruck IBereich`
+`für (jeden | jede | jedes) BezeichnerA in AusdruckAP: Sätze.`
 
 Für jedes Element in dem iterierbaren Objekt, wird die Schleife einmal ausgeführt, wobei
 das Element an den Namen gebunden wird.
@@ -154,92 +248,312 @@ das Element an den Namen gebunden wird.
 Beispiel:
 
 ```
-für jede Zahl von 1 bis 10:
-  drucke Zahl.
+für jede Primzahl in einigen Zahlen [2, 3, 5, 7, 11, 13, 17, 19, 23]:
+    schreibe Zeichenfolge Primzahl als Zeichenfolge
+.
 ```
 
-### Wenn-Dann-Sonst-Ausdruck
-`wenn Bedingung dann Ausdruck sonst Ausdruck`
+Vorschlag: syntaktischer Zucker
 
-Beispiel:
-
-`wenn X gleich 42 dann "Die Antwort auf alles" sonst "etwas anderes"`
-
-Wenn die Bedingung zutrifft dann wird der erste Ausdruck zurückgegeben, sonst der zweite Ausdruck.
-Es ist wichtig, dass die Typen der beiden Ausdrücke übereinstimmen.
-
-### Definieren einer Konstante
-`Nomen ist Literal`
-
-Konstanten sind unveränderbar und können nur einmal zugewiesen werden. Nur Zahlen-, Zeichenfolgen- oder Boolean-Literale können einer Konstante zugewiesen werden.
-
-Beispiel: `PI ist 3.14159265359`
+```
+:
+    das Iterierbare ist AusdruckAP
+    Iterierbare:
+        solange weiter:
+            ArtikelPb BezeichnerA ist nächstes
+            Sätze
+        .
+    !
+.
+```
 
 ### Definieren einer Funktion
-`definiere Verb [mit [Rückgabe Typ | Typ [Nomen]] {,Typ [Nomen]}] IBereich`
+`Verb[(Rückgabetyp)] bezeichner Parameter [Suffix]: Sätze.`
 
-Beispiel:
+Parameter: `[Objekt] [Kommaliste(Präposition)]`
+
+Objekte: `ArtikelA Typ [NomenA]`
+
+Präposition: `(PräpG | PräpD | PräpA | PräpAD) Kommaliste((ArtikelG | ArtikelD | ArtikelA) (TypG | TypD | TypA) [BezeichnerP])`
+
+PräpG: `angesichts, anhand, anlässlich, anstatt, anstelle, aufgrund, 
+außerhalb, beiderseits, bezüglich, diesseits, infolge, innerhalb, 
+jenseits, längs, links, mithilfe, oberhalb, rechts, unterhalb, statt, südlich, 
+trotz, ungeachtet, unweit, während, wegen, westlich`
+
+PräpD: `aus, außer, bei, binnen, entgegen, entsprechend, gegenüber, gemäß, mit, nach, nahe, samt, seit, zu, zufolge, zuliebe`
+
+PräpA: `für, um, durch, entlang, gegen, ohne, wider`
+
+PräpAD: `an, auf, hinter, in, neben, über, unter, vor, zwischen`
+
+Die Präposition muss mit der Form des Artikels und des Typen übereinstimmen.
+
+Beispiele:
 ```
-definiere fakultät mit Rückgabe Zahl, Zahl:
-    zurück wenn Zahl gleich 0 dann 1 sonst Zahl mal fakultät Zahl minus 1.
+Verb(Zahl) fakultät von der Zahl:
+    wenn die Zahl gleich 0 ist: gebe die Zahl zurück. 
+    sonst: gebe die Zahl mal die Zahl - 1 zurück.
+```
+
+```
+alias Begrüßung ist Zeichenfolge
+
+Verb begrüße die Person mit der Begrüßung:
+     die Begrüßung + " " + der Name der Person.
+
+Verb begrüße mit dem Namen nach der Uhrzeit:.
+```
+
+```
+Verb stelle den Gegenstand her:
+     "stelle " + Name des Gegenstands + " her...".
 ```
 
 ### Funktionsaufruf
-```
-Parameter können entweder als Ausdrücke, wo dann die Reihenfolge die Bindung bestimmt (Reihenfolgen-Form) 
-übergeben werden oder als eine Liste von Zuweisungen (Namensform). 
-Es kann auch gemischt sein, wobei dann die Reihenfolgen-Form zuerst kommen muss
-und dann die Namens-Form.
+`Verb [Argumente] [Suffix]`
 
-Parameter: `(Ausdruck {, Ausdruck}) | (Nomen Zuweisungsoperator Ausdruck {, Nomen Zuweisungsoperator Ausdruck})`
+Argumente: `[Kommaliste(Objekt)] [Kommaliste(Präposition)]`
 
-Funktionsaufruf: `Verb [Parameter]`
+Objekt: `ArtikelAb BezeichnerA1 (Variable | Literal) | ArtikelAu (Liste | Objektinstanziierung)`
+
+Variable: `BezeichnerA2`
+
+Literal: `Zahl | Zeichenfolge | Boolean`
+
+Liste: siehe [Liste](###Listen)
+
+Objektinstanziierung: siehe [Objektinstanziierung](###Instanziieren-eines Objekts-einer-Klasse)
+
+Präposition: `PräpGDA Kommaliste(ArtikelGDAb BezeichnerA1 [BezeicherA2 | Zahl |])`
+
+1. `BezeichnerA1` muss ungleich `BezeichnerA2` sein
+2. `BezeichnerA1` muss mit dem `BezeichnerA`
+
+Beispiele:
+```
+fakultät von 3
+
+begrüße die Person mit der Begrüßung "Hey, wie geht's "
+
+die Person Kumpel ist eine Person mit dem Namen="Fred"
+die Begrüßung ist "Alter, was läuft?!"
+begrüße den Kumpel mit der Begrüßung
+
+begrüße eine Person mit dem Namen "Josuah" mit der Begrüßung "Hey, Josuah!"
+
+
+der Tisch ist Gegenstand mit Name="Tisch".
+stelle den Gegenstand Tisch her
 ```
 
-### Definieren eines Typs
-```
-definiere (ArtikelAb Nomen) [als Typ] mit Plural Nomen, Genitiv Nomen: 
-  [Nomen {, Nomen} als Typ {Nomen {, Nomen} als Typ}].
-```
+### Definieren einer Klasse
+
+`Nomen BezeichnerP [als TypP] [mit Felder]: Konstruktor.`
+
+Felder: `Kommaliste(ArtikelD TypD [BezeichnerP])`
+
+#### Konstruktor
+
+Konstruktor: `Sätze`
+
+Der Konstruktor ist dafür da das Objekt zu initialisieren.
+In dem Konstruktor können die Demonstativpronomen `diese` oder `jene`
+verwendet werden um Felder zu erstellen, auf die man von außen nicht zugreifen kann.
+
+Der Konstruktor ist eine spezielle [Methode](###Definieren-einer-Methoden) und es gelten
+die Regeln für Methoden.
+
 Beispiel:
 ```
-definiere die Person mit Plural Personen, Genitiv Person:
-    Nachname, Vorname als Zeichenfolge
-    Alter als Zahl.
+alias Name ist Zeichenfolge
+alias Alter ist Zahl
+
+Nomen Person mit
+    dem Namen Vorname,
+    dem Namen Nachname,
+    einem Alter:
+
+    dieser VollerName ist Vorname + " " + Nachname
+    // jener VollerName ist Vorname + " " + Nachname
+.
+
+alias Studiengang ist Zeichenfolge
+alias Semester ist Zahl
     
-definiere den Student als Person mit Plural Studenten, Genitiv Students:
-    Studiengang als Zeichenfolge
-    Semester als Zahl.
+Nomen Student mit 
+    einem Studiengang,
+    einem Semester:.
 ```
 
-### Instanziieren eines Objekts eines Typs
-`Person [mit Nomen Ausdruck {, Nomen Ausdruck}]`
+Vorschlag:
+
+Es wäre cool wenn man anstatt die Fälle selbst anzugeben den Duden verwenden könnte.
+Man würde eine HTTP-Anfrage an den Duden senden.
+
+### Instanziieren eines Objekts einer Klasse
+`Bezeichner [mit Kommaliste(ArtikelDb BezeichnerD [AusdruckD])`]
+
+Die Felder können in beliebiger Reihenfolge stehen.
 
 Beispiel:
 
-`die Person Donald ist Person mit Vorname "Donald", Nachname "Duck"`
+`die Person Donald ist eine Person mit dem Vornamen "Donald", dem Nachnamen "Duck", dem Alter 42`
 
 ### Zugriff auf Felder eines Objekts
-`Feld Genitiv-Artikel Objekt`
+mit dem Genitiv: `Feld ArtikelGb AusdruckG`
+
+Beispiel: `Name des Lukas`
+
+mit dem Dativ `Feld von ArtikelDb AusdruckD`
+
+Beispiel: `Name von dem Lukas`
+
+### Definieren einer Methode
+
+`Verb[(Typ)] für Typ Verb [mir|mich] Parameter [Suffix]`
+
+Das Verb einer Methode sollte im Imperativ stehen. Außerdem kann das Verb optional noch einen Suffix bekommen,
+der dann bei dem Methodenaufruf am Ende stehen muss.
+
+Innerhalb einer Methode kann man direkt ohne Methodenblock auf eigene Methoden zugreifen.
+
+Beispiel:
+```
+Verb(Zeichenfolge) für Person stelle mich mit der Zeichenfolge Begrüßung, der Zeichenfolge LetzterSatz vor:
+    zurück Begrüßung + ", " + "mein Name ist " + mein Name " und ich bin " + mein Alter " Jahre alt." + LetzterSatz.
+```
+
+### Methodenblock
+
+`Bezeichner: Sätze!`
+
+Um eine Methode aufzurufen gibt es den songenannten Methodenblock. Man startet einen neuen Block mit dem Bezeichner
+des Objekts, auf den man die Methode/n aufrufen möchte. Innerhalb des Blocks kann man jetzt die Methoden ganz normal wie Funktionen
+aufrufen. Hat eine Funktion die gleiche Signatur wie eine Methode, wird die Funktion überschattet. Der Block endet diesmal nicht
+mit einem `.` sondern einem `!`.
+
+In Methodenblöcken kann auf Felder des Objekts mit `dein` zugegriffen werden. Wenn das Objekt eine Liste ist wird stattdessen `eure` verwendet.
+
+Wenn in einer Methodendefinition `mir` (Dativ) oder `mich` (Akkusativ) verwendet wurde, wird diese bei allen Objekten mit `dir`
+oder `dich` und bei Listen mit `euch` oder `euren` ersetzt.
 
 Beispiel:
 
-`Name (ArtikelGb | ArtikelGu) Person`
+```
+Person Rick ist Person mit Vorname="Rick", Nachname="Sanchez", Alter=70
+Rick: stelle dich mit der Zeichenfolge "Woooobeeewoobeedubdub!", der Zeichenfolge "Rülps!" vor!
+```
+
+```
+Verb(Verbindung) für Client verbinde mich:.
+Verb für Client sende die Nachricht mit dem Flag:.
+
+der Client ist Client mit ...
+Client: verbinde dich!
+        sende die Nachricht "Hallo Welt" mit dem Flag "X"!
+```
+
+### Definieren einer Schnittstelle
+`Adjektiv bezeichner: {Verb(TypP) Methode}.`
+
+Eine Schnittstellendefinition besteht aus Methodensignaturen. Eine Schnittstelle wird automatisch für einen Typ
+implementiert, wenn sie alle Methoden definiert. Der Name einer Schnittstelle ist ein Adjektiv oder Partizip.
+Eine Schnittstelle hat alle Geschlechter. Bei der Variablendeklaration wird das Adjektiv oder Partizip nominalisiert, wenn
+der selbe Typname verwendet wird.
+
+Beispiel:
+
+```
+Adjektiv zeichenbar:
+    zeichne mich mit der Farbe
+    skaliere mich mit der Zahl.
+```
+
+| Kasus (Fall) | Singular | Plural |
+| ------------ | -------- | ------ |
+| Nominativ    | Zeichenbare | Zeichenbaren |
+| Genitiv      | Zeichenbarens | Zeichenbaren |
+| Dativ | Zeichenbaren | Zeichenbaren |
+
+```
+// Funktion
+Verb zeichne das Zeichenbare: 
+    Zeichenbar: zeichne mich mit der Farbe "rot"
+.
+
+// Methoden: implementiere zeichne von Zeichenbar
+Verb für Dreieck zeichne mich:
+     "zeichne Dreieck"
+.
+
+// Methoden: implementiere skaliere von Zeichenbar
+Verb für Dreieck skaliere mich:
+     "skaliere Dreieck"
+.
+
+das Dreieck ist ein Dreieck
+
+zeichne das zeichenbare Dreieck.
+```
+
+
+### Definieren einer Konstante
+`Konstante BezeichnerF ist Literal`
+
+Konstanten sind unveränderbar und können nur einmal zugewiesen werden. Nur Zahlen-, Zeichenfolgen- oder Boolean-Literale können einer Konstante zugewiesen werden.
+
+Beispiel: `Konstante PI ist 3.14159265359`
+
+### Alias
+
+`alias BezeichnerP ist Typ`
+
+oder über den Duden:
+
+`alias Duden(Nomen) ist Typ`
+
+Beispiel:
+
+`alias Alter ist Zahl`
+
+### Definieren einer Aufzählung
+
+Beispiel:
+
+```
+alias Duden(Name) ist Zeichenfolge
+
+Aufzählung Duden(Ereignis) mit dem Namen:
+    Weihnachten mit dem Namen="Weihnachten",
+    Ostern mit dem Namen="Ostern",
+    Haloween mit dem Namen="Haloween",
+    Geburtstag mit dem Namen="Geburstag",
+.
+
+das Ereignis ist das Ereignis Weihnachten
+schreibe die Zeichenfolge der Name des Ereignisses // "Weihnachten"
+```
 
 ### Destrukturierende Zuweisung
+
+<strong>Kommt höchst wahrscheinlich nicht in die Sprache!!!</strong>
 
 #### Destrukturierung von Objekten
 Beispiel:
 ```
-die Person ist Person mit Nachname="Peterson", Vorname="Hans", Alter=42
-(der Nachname, ein Alter Geburtstagsalter) der Person
-Alter ist Alter + 1
-drucke Nachname, Alter // Peterson 43
+die Person ist Person mit dem Nachname="Peterson", dem Vorname="Hans", der Alter=42, der Adresse (Adresse mit Straße="Bla", Ort="Blub")
+(der Nachname, ein Alter Geburtstagsalter, (der Straße) der Adresse) der Person
+// der Nachname ist der Nachname der Person
+// ein Alter Geburtstagalter ist das Alter der Person
+// die Straße ist die Straße der Adresse der Person
+das Alter ist das Alter + 1
+ den Nachname, das Alter // Peterson 43
 ```
 
 #### Destrukturierung von Listen
 ```
-[die Person1, die Person2, RestlichePersonen...] sind Personen[p1, p2, p3, p4, p5]
+[die Person1, die Person2, einige RestlichePersonen...] sind die Personen[p1, p2, p3, p4, p5]
 /*
 Person1 = p1
 Person2 = p2
@@ -247,57 +561,8 @@ RestlichePersonen = [p3, p4, p5]
 */
 ```
 
-### Definieren einer Methode
-`definiere Verb für Typ [mit [Rückgabe Typ | Typ [Nomen]] {,Typ [Nomen]}] IBereich`
-
-Das Verb einer Methode sollte möglichst im Imperativ stehen.
-
-Beispiel:
-```
-definiere stellDichVor für Person mit Rückgabe Zeichenfolge, Zeichenfolge Begrüßung, Zeichenfolge LetzterSatz:
-    zurück Begrüßung + ", " + "mein Name ist " + mein Name " und ich bin " + mein Alter " Jahre alt." + LetzterSatz.
-```
-
-### Methodenaufruf
-Parameter können entweder als Ausdrücke, wo dann die Reihenfolge die Bindung bestimmt (Reihenfolgen-Form) 
-übergeben werden oder als eine Liste von Zuweisungen (Namensform). 
-Es kann auch gemischt sein, wobei dann die Reihenfolgen-Form zuerst kommen muss
-und dann die Namens-Form.
-
-Parameter: `(Ausdruck {, Ausdruck}) | (Nomen Zuweisungsoperator Ausdruck {, Nomen Zuweisungsoperator Ausdruck})`
-
-Methodenaufruf: `Verb Ausdruck [mit Parameter]!`
-
-Beispiel:
-
-```
-Person Rick ist Person mit Vorname="Rick", Nachname="Sanchez", Alter=70
-stellDichVor Rick mit Begrüßung="Woooobeeewoobeedubdub!", LetzerSatz="Rülps!"!
-```
-
-### Definieren einer Schnittstelle
-`definiere Schnittstelle Nomen: {Verb [mit [Rückgabe Typ | Typ [Nomen]] {,Typ [Nomen]}]}.`
-
-Eine Schnittstellendefinition besteht aus Methodensignaturen. Eine Schnittstelle wird automatisch für einen Typ
-implementiert, wenn sie alle Methoden definiert. Eine Schnittstelle hat automatisch immer das Geschlecht `Neutrum`.
-
-Beispiel:
-
-```
-definiere Schnittstelle Zeichenbares:
-    zeichne mit Farbe
-    skaliere mit Rückgabe Zahl.
-```
-
-### Typ-Alias
-`alias Artikel Nomen mit Plural Nomen, Genitiv Nomen ist Nomen`
-
-Beispiel:
-
-`alias das Alter mit Plural Alter, Genitiv Alters ist Zahl`
-
 ### Definieren eines Moduls
-`Modul Nomen: Definitionen.`
+`Modul BezeichnerF: Definitionen.`
 Ein Modul ist ein Behälter für Definitionen. In Ihm können Typen, Funktionen, Methoden, Konstanten und wiederum Module definiert werden.
 Ein Modul ist dafür da Code zu organisieren und Namenskollisionen zu verhindern. Der Name des Moduls wird nämlich Teil des vollen Namen einer Definition.
 Module können ineinander verschachtelt werden, aber ein Modul kann nur in dem globalen Bereich oder in anderen Modulen definiert werden. Um auf einen in einem Modul definierten Typen zu verweisen wird dann der doppelte Doppelpunkt `::` nach dem Modulnamen verwendet.
@@ -305,20 +570,20 @@ Module können ineinander verschachtelt werden, aber ein Modul kann nur in dem g
 Beispiel:
 ```
 Modul Zoo:
-    definiere das Gehege mit Plural Gehege:.
+    Nomen Duden(Gehege):.
 
     Modul Tiere:
 
-        definiere fütter mit Tier: drucke "Fütter " + Tier als Zeichenfolge.
+        Verb fütter das Tier: drucke die Zeichenfolge "Fütter " + das Tier als Zeichenfolge.
         
-        definiere das Tier mit Plural Tiere:.
+        Nomen Tier:.
         
         Modul Säuger:
-            definiere das Pferd als Tier mit Plural Pferde:.
+            Nomen Duden(Pferd) als Tier:.
         .
 
         Modul Amphibien:
-            definiere das Krokodil als Tier mit Plural Krokodile:.
+            Nomen Duden(Krokodil) als Tier:.
         .
     .
 .
@@ -349,10 +614,138 @@ das Krokodil ist Krokodil
 GermanScript verfügt vorab über folgende Typen:
 
 ### Zahlen
+
+`Zahl [Zahlenname | Prozent]`
+
 Zahlen werden in der deutschen Schreibweise für Zahlen geschrieben. Das heißt vor dem `,` steht die Ganzzeil und nach
-dem Komma die Teilzahl. Außerdem kann man bei der Ganzahl Punkte als Abtrennung der tausender Stellen verwenden.
+dem Komma die Teilzahl. Außerdem kann man bei der Ganzahl Punkte als Abtrennung der Tausender-Stellen verwendet werden.
 
 Beispiel: `898.100.234,129123879`
+
+
+#### Zahlendekorierer
+
+Hinter einer Zahl kann ein Zahlendekorierer kommen, der der Zahl eine neue Bedeutung gibt.
+
+##### Zahlenname
+
+[Zahlennamen]([https://de.wikipedia.org/wiki/Zahlennamen]) stehen als Suffix hinter der Zahl und erhöhen die Zahl um eine bestimmte Zehnerpotenz.
+Die Regel ist das die Zahl kleiner als die Zehnerpotenz hoch 10 sein muss. Wir nehmen nicht alle Zahlennamen rein sondern starten bei `Hundert`
+und enden bei `Dezilliarde` (10^63).
+
+```
+200 Hundert => geht nicht
+100 Tausend => funktioniert
+1,8 Milliarden
+```
+
+##### Prozent
+
+`Prozent` oder das Symbol `%` dekoriert eine Zahl und wandelt diese von Prozent in Dezimalschreibweise um.
+
+```
+10% gleich 0,1
+0,35 Prozent gleich 0,0035
+120,4 Prozent gleich 1,204
+```
+
+Vorschlag: eine Zahl kann in direkt in Prozent ausgegeben werden.
+
+```
+die Zahl ist 12,3%
+schreibe die Zahl // 0.123
+schreibe die Zahl als Prozent // spezielle Umwandlung in String
+```
+
+### Einheiten
+
+`Zahl [Zahlenname] [Einheit]`
+
+#### Einheitsdefintion
+
+`Einheit(BezeichnerF, Symbol, Operationen)`
+
+Eine Einheit gepaart mit einer Zahl bildet einen neuen Typen. 
+Nur die Rechenoperationen, die bei der Einheitsdefinition
+
+z.B.
+
+```
+Einheit(Meter, m)
+
+die Strecke ist 22,5 km
+die Streke ist 
+```
+
+Ein `Symbol` ist ein Zeichen oder eine kurze kleingeschriebene Zeichenfolge
+
+Für Einheiten gibt es zwei Schreibwesen:
+1. die lange Form wo der `BezeicherF` verwendet wird z.B. `Kilometer`
+2. die kurze Form wo das `Symbol` verwendet wird z.B. `km`
+
+Die Einheiten können jetzt mit den [SI-Präfixen](https://de.wikipedia.org/wiki/Vors%C3%A4tze_f%C3%BCr_Ma%C3%9Feinheiten)
+verwendet werden, um die Zahl in eine bestimmte 10er-Potenz umzuwandeln.
+
+```
+1 km gleich 1000 m
+70 mg gleich 0,03 g
+
+die Erdmasse ist 5,9722 Zetatonnen
+```
+
+Vorschlag: Quadrat- und Kubik- auch noch reinnehmen.
+
+```
+156 cm^2 gleich 0,0156 m^2
+
+die Erdmasse ist 1,0833 * 10^12 Kubikkilometer
+```
+
+Vorschlag: Einheiten auf Basis anderer Einheiten
+
+```
+Einheit(Minute, min) ist 60 Sekunden
+```
+
+mit Umrechnung:
+
+```
+Einheit(Celsius, C)
+Einheit(Fahrenheit, F) ist C * 1.8 + 32 
+
+// wird dann automatisch die Umkehrfunktion gemacht???
+die Temperatur ist 10C
+schreibe die Temperatur in Fahrenheit als Zeichenfolge // 50 C
+```
+
+Vorschlag: Zahlen als Einheit drucken
+```
+die Strecke ist 1,5 km
+schreibe die Strecke als Zeichenfolge // 1,5 km
+schreibe die Strecke in m als Zeichenfolge // 1,5 km
+```
+
+Vorschlag: arithmetische Operation auf Einheiten
+```
+1km + 100m gleich 1,1 km
+100m * 100m gleich 10.000 m^2
+
+// da `+` links assosiativ ist, wird die Einheit des linken Operanden übernommen
+schreibe die Zeichenfolge 1min + 30s als Zeichenfolge // 1,5 min
+schreibe die Zeichenfolge 30s + 1min als Zeichenfolge // 90s
+```
+
+Zahl+Einheit bilden einen neuen Typen! Sie sind keine Zahlen, sondern eine Zahl und eine Einheit.
+Nicht alle arithmetischen Operationen sind bei allen Einheiten erlaubt und arithemetische Operationen sind nur
+auf Einheiten erlaubt die ineinander umgerechnet werden können.
+
+Wenn man eine Einheit definiert, müsste noch angegeben werden welche arithmetischen Operationen erlaubt sind:
+
+```
+Einheit(Celsius, C, +-)`
+```
+
+Die Operatoren gelten jedoch nicht für die Umrechnung. Da sind alle Rechenoperatoren erlaubt.
 
 ### Zeichenfolgen
 Zeichenfolgen werden innerhalb der Anführungszeichen `""` geschrieben.
@@ -361,53 +754,98 @@ Zeichenfolgen werden innerhalb der Anführungszeichen `""` geschrieben.
 Booleans habe zwei Werte `wahr` oder `falsch`.
 
 ### Listen
-```NomenPlural[\[{Ausdruck}\]]```
+```BezeichnungPGDA [\[{Ausdruck}\]]```
 
 Beispiel:
 
 `die Primzahlen sind Zahlen[2, 3, 5, 7, 11, 13]`
 
 ```
-die Person1 ist Person mit Name=John", Alter=42
-die Person2 ist Person mit Name="Susan", Alter=19
-die Person3 ist Person mit Name="Egon", Alter=72
-die Personen sind Personen[Person1, Person2, Person3]
-```
-
-### Lambdas
-```\{Nomen} IBereich.```
-
-Beispiel:
-```
-definiere sortiere! für Liste mit (Boolean, Boolean) -> Zahl Vergleichsfunktion:... 
-
-// sortiere die Personen nach Alter aufsteigend
+die Person1 ist Person mit dem Namen=John", dem Alter=42
+die Person2 ist Person mit dem Namen="Susan", dem Alter=19
+die Person3 ist Person mit dem Namen="Egon", dem Alter=72
 die Personen sind Personen[Person1, Person2, Person3]
 
-// erstelle Vergleichsfunktion
-eine Vergleichsfunktion ist \A, B: 
-    zurück wenn Alter der Person A < Alter der Person B dann -1 sonst wenn Alter der Person A > Alter der Person B dann 1 sonst 0.
-
-sortiere Personen mit Vergleichsfunktion!
-
-// Vergleichsfunktion kann durch  Dekstrukturierung verbessert werden
-Vergleichsfunktion ist \(Alter A), (Alter B): 
-    zurück wenn A < B dann -1 sonst wenn A > B dann 1 sonst 0.
-
-sortiere Personen mit Vergleichsfunktion!
+Personen: füge Person mit dem Namen="Test", dem Alter=23 hinzu
 ```
+
+
+Listen fangen in GermanCcript mit dem Index 1 an.
+
+Zugriff auf Element per Liste:
+
+`ArtikelAb Index. Singular [AusdruckGP | AusdruckDP]`
+
+```
+die Person Erste ist die 1. Person der Personen
+eine Person ist die 2. Person einiger Personen
+```
+
 
 ### Typ-Umwandlung (Casting)
 
 #### implizit
 Ein vererbter Typ lässt sich immer einer Variable mit dem Typ des Elterntyps zuweisen.
 
+```
+Nomen Person:.
+
+Nomen Student als Person:.
+
+die Person Lukas ist Student.
+```
+
 #### explizit
 `Ausdruck als Typ`
 
 Beispiel:
-`"42" als Zahl`
+`die Zahl ZweiUndVierzig ist "42" als Zahl`
 
 Es kann eine Typumwandlung von einem Typ zu einem anderen Typ für jeden Typen definiert werden:
 
-Syntax: `definiere als Typ1 für Typ2 mit Rückgabe Typ1 IBereich`
+Syntax: 
+
+```
+alias Vorname ist Zeichenfolge
+alias Nachname ist Zeichenfolge
+
+Nomen Person mit dem Vornamen, dem Nachnamen:.
+
+Als Zeichenfolge für Person:
+    gebe meinen Namen Vorname + " " + meinen Namen Nachname zurück
+.
+
+die Person Lukas ist eine Person mit dem "Lukas", dem Nachnamen "Gobelet"
+drucke die Zeichenfolge Lukas als Zeichenfolge // Lukas Gobelet
+```
+
+## Todo
+
+Was wollen wir erstmal in der Sprache haben:
+
+- alias
+- Sätze:
+    - Variablendeklaration
+    - Variablen Neuzuweisung
+    - Bedingung
+    - Solange Schleife
+    - For-Schleife
+    - Methodenaufruf
+    - Funktionsaufruf
+- Definitionen:
+    - Klasse
+    - Methode
+    - Funktion
+- Typen:
+    - Zahlen
+    - Zeichenfolgen
+    - Listen
+    - Boolean
+    
+Schritte:
+1. Lexer überarbeiten <--- wir sind hier
+2. Parser überarbeiten <--- und hier
+    1. AST überarbeiten
+    2. Parser
+3. Checker schreiben
+4. Interpreter schreiben

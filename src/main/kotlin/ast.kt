@@ -1,119 +1,106 @@
-data class Programm(val definitionen: List<Definition>, val sätze: List<Satz>)
+import java.util.*
 
-data class BedingteSätze(val bedingung: Ausdruck, val sätze: List<Satz>)
+sealed class AST {
 
-// ein Statement
-sealed class Satz {
-  data class Variablendeklaration(
-          val artikel: Token,
-          val typ: Token,
-          val name: Token,
-          val zuweisung: Token,
-          val ausdruck: Ausdruck
-  ): Satz()
+  // visit implementation for all the leaf nodes
+  open fun visit(visitor: (AST) -> Unit) {
+    visitor(this)
+  }
 
-  data class Variablenzuweisung(
-          val name: Token,
-          val zuweisung: Token,
-          val ausdruck: Ausdruck
-  ): Satz()
+  // Wurzelknoten
+  data class Programm(val definitionen: List<Definition>, val sätze: List<Satz>): AST() {
+    override fun visit(visitor: (AST) -> Unit) {
+      super.visit(visitor)
+      definitionen.forEach{it.visit(visitor)}
+      sätze.forEach{it.visit(visitor)}
+    }
+  }
+  
+  // region Blattknoten
+  data class Nomen(val bezeichner: TypedToken<TokenTyp.BEZEICHNER_GROSS>): AST()
+  data class Verb(val bezeichner: TypedToken<TokenTyp.BEZEICHNER_KLEIN>): AST()
+  data class Adjektiv(val bezeichner: TypedToken<TokenTyp.BEZEICHNER_KLEIN>): AST()
+  data class Präposition(val präposition: TypedToken<TokenTyp.BEZEICHNER_KLEIN>): AST() {
+    val kasus = präpositionsFälle
+        .getOrElse(präposition.wert) {
+          throw GermanScriptFehler.SyntaxFehler.ParseFehler(präposition.toUntyped(), "Präposition")
+        }
+  }
+  // endregion
 
-  data class FunktionsaufrufSatz(val funktionsaufruf: Funktionsaufruf): Satz()
-  data class MethodenaufrufSatz(val methodenaufruf: Methodenaufruf): Satz()
+  sealed class Definition: AST() {
+    data class Parameter(
+        val artikel: TypedToken<TokenTyp.ARTIKEL>,
+        val typ: Nomen,
+        val name: Nomen
+    ): Definition() {
+      override fun visit(visitor: (AST) -> Unit) {
+        super.visit(visitor)
+        typ.visit(visitor)
+        name.visit(visitor)
+      }
+    }
 
-  data class Bedingung(val wennBedingung: BedingteSätze, val wennSonstBedingungen: List<BedingteSätze>?, val sonstBedingung: List<Satz>?): Satz()
-  data class SolangeSchleife(val bedingteSätze: BedingteSätze): Satz()
-  data class FürJedeSchleife(val jede: Token, val binder: Token, val ausdruck: Ausdruck, val sätze: List<Satz>): Satz()
+    data class Präposition(
+        val präposition: TypedToken<TokenTyp.PRÄPOSITION>,
+        val parameter: List<Parameter>
+    ) : Definition() {
+      override fun visit(visitor: (AST) -> Unit) {
+        super.visit(visitor)
+        parameter.forEach{it.visit(visitor)}
+      }
+    }
+    
+    data class Funktion(
+        val rückgabeTyp: TypedToken<TokenTyp.BEZEICHNER_GROSS>,
+        val name: TypedToken<TokenTyp.BEZEICHNER_KLEIN>,
+        val objekt: Parameter,
+        val präpositionen: List<Präposition>
+    ): Definition() {
+      override fun visit(visitor: (AST) -> Unit) {
+        super.visit(visitor)
+        
+      }
+    }
+  }
 
-  // nur in einer Methoden oder Funktionsdefinition mit Rückgabetyp erlaubt
-  data class Zurück(val wert: Ausdruck): Satz()
+  sealed class Satz: AST()  {
+    data class Variablendeklaration(
+        val artikel: TypedToken<TokenTyp.ARTIKEL>,
+        val typ: Nomen,
+        val name: Nomen,
+        val zuweisungsOperator: TypedToken<TokenTyp.ZUWEISUNG>
+    ) : AST() {
+      override fun visit(visitor: (AST) -> Unit) {
+        super.visit(visitor)
+        typ.visit(visitor)
+        name.visit(visitor)
+      }
+    }
+  }
 
-  // nur in einer Schleife erlaubt
-  data class Forfahren(val wort: Token): Satz()
-  data class Abbrechen(val wort: Token): Satz()
-}
+  sealed class Ausdruck: AST() {
+    data class Zeichenfolge(val zeichenfolge: TypedToken<TokenTyp.ZEICHENFOLGE>): Ausdruck()
 
-data class Funktionsaufruf(
-        val funktionsName: Token,
-        val argumentListe: List<Argument>
-)
+    data class Zahl(val zahl: TypedToken<TokenTyp.ZAHL>): Ausdruck()
 
-data class Methodenaufruf(
-        val objekt: Ausdruck,
-        val methodenNamen: Token,
-        val argumentListe: List<Argument>
-)
+    data class Boolean(val boolean: TypedToken<TokenTyp.BOOLEAN>): Ausdruck()
 
-sealed class Argument {
-  data class StellenArgument(val index: Int, val ausdruck: Ausdruck): Argument()
-  data class NamenArgument(val name: String, val ausdruck: Ausdruck): Argument()
-}
+    data class Variable(val artikel: TypedToken<TokenTyp.ARTIKEL>, val name: TypedToken<TokenTyp.BEZEICHNER_GROSS>) : Ausdruck()
 
-sealed class Ausdruck {
-  data class Literal(val literal: Token): Ausdruck()
-  data class Zahl(val zahl: Token): Ausdruck()
-  data class Zeichenfolge(val zeichenfole: Token): Ausdruck()
-  data class Boolean(val boolean: Token): Ausdruck()
-  data class Liste(val elemente: List<Ausdruck>)
-  data class Lambda(val binder: List<String>, val körper: List<Satz>)
-  data class Variable(val name: Token): Ausdruck()
-  data class FunktionsaufrufAusdruck(val funktionsaufruf: Funktionsaufruf): Ausdruck()
-  data class MethodenaufrufAusdruck(val methodenaufruf: Methodenaufruf): Ausdruck()
-  data class WennDannSonst(val bedingung : Ausdruck, val dannAusdruck: Ausdruck, val sonstAusdruck: Ausdruck): Ausdruck()
-  data class BinärerAusdruck(val operator: Token, val links: Ausdruck, val rechts: Ausdruck): Ausdruck()
-  data class UnärerAusdruck(val operator: Token, val ausdruck: Ausdruck): Ausdruck()
-}
+    data class BinärerAusdruck(val operator: TypedToken<TokenTyp.OPERATOR>, val links: Ausdruck, val rechts: Ausdruck): Ausdruck() {
+      override fun visit(visitor: (AST) -> Unit) {
+        super.visit(visitor)
+        links.visit(visitor)
+        rechts.visit(visitor)
+      }
+    }
 
-sealed class Typ {
-  data class Einfach(val name: List<Token>): Typ()
-  data class Lambda(val arguments: List<Typ>, val returnType: Typ): Typ()
-}
-
-data class NameUndTyp(val name: Token, val typ: Token)
-
-data class Signatur(
-  val name: Token,
-  val rückgabeTyp: Token?,
-  val parameter: List<NameUndTyp>
-)
-
-sealed class Definition {
-
-  data class Modul(
-          val name: Token,
-          val definitionen: List<Definition>
-  ) : Definition()
-
-  data class Funktion(
-    val signatur: Signatur,
-    val körper: List<Satz>
-  ): Definition()
-
-  data class Methode(
-    val signatur: Signatur,
-    val typ: Token,
-    val körper: List<Satz>
-  ): Definition()
-
-  data class Typ(
-          val artikel: Token,
-          val name: Token,
-          val elternTyp: Token?,
-          val plural: Token,
-          val genitiv: Token,
-          val felder: List<NameUndTyp>
-  ): Definition()
-
-  data class Schnittstelle(
-    val name: Token,
-    val signaturen: List<Signatur>
-  ): Definition()
-
-  data class Alias(
-          val artikel: Token,
-          val aliasTypName: Token,
-          val plural: Token,
-          val genitiv: Token,
-          val typName: Token
-  ): Definition()
+    data class Minus(val ausdruck: Ausdruck): Ausdruck() {
+      override fun visit(visitor: (AST) -> Unit) {
+        super.visit(visitor)
+        ausdruck.visit(visitor)
+      }
+    }
+  }
 }
