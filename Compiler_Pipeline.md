@@ -6,9 +6,9 @@ durchläuft. Bei GermanScript besteht die Pipeline aus 8 Komponenten:
 2. [Parser](##Parser)
 3. [Deklanierer](##Deklanierer)
 4. [Bezeichner](##Bezeichner)
-4. [Grammatik-Checker](##Grammatik Prüfer)
+4. [Grammatik-Checker](##Grammatik-Prüfer)
 5. [Definierer](##Definierer)
-6. [Type-Checker](##Typ Prüfer)
+6. [Type-Checker](##Typ-Prüfer)
 7. [Interpreter](##Interpreter)
 
 Der GermanScript-Code wird dann in dieser Reihenfolge durch die Pipeline geschickt.
