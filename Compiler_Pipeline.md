@@ -2,14 +2,14 @@
 
 Die Pipeline definiert welche Schritte das Programm vom Programm-Code bis zum interpretierten Programm
 durchläuft. Bei GermanScript besteht die Pipeline aus 8 Komponenten:
-1. [Lexer](##lexer)
-2. [Parser](##parser)
-3. [Deklanierer](##deklanierer)
-4. [Bezeichner](##bezeichner)
-4. [Grammatik-Checker](##grammatik-prüfer)
-5. [Definierer](##definierer)
-6. [Type-Checker](##typ-prüfer)
-7. [Interpreter](##interpreter)
+1. [Lexer](#lexer)
+2. [Parser](#parser)
+3. [Deklanierer](#deklanierer)
+4. [Bezeichner](#bezeichner)
+4. [Grammatik-Checker](#grammatik-prüfer)
+5. [Definierer](#definierer)
+6. [Type-Checker](#typ-prüfer)
+7. [Interpreter](#interpreter)
 
 Der GermanScript-Code wird dann in dieser Reihenfolge durch die Pipeline geschickt.
 
