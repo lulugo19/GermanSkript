@@ -39,7 +39,7 @@ data class Funktionsaufruf(
 )
 
 data class Methodenaufruf(
-        val objekt: Token,
+        val objekt: Ausdruck,
         val methodenNamen: Token,
         val argumentListe: List<Argument>
 )
