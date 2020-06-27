@@ -143,7 +143,7 @@ Der Rückgabetyp gehört **nicht** zum vollständigen Namen der Funktion.
 Beispiele:
 
 | Funktions-/Methodendefinition | Signatur | Typ-Liste |
-| ----------------------------- | -------- | |
+| ----------------------------- | -------- | --------- |
 | `Verb schreibe die Zeichenfolge Zeile` | `schreibe die Zeile` | Zeichenfolge |
 | `Verb schreibe die Zeichenfolge` | `schreibe die Zeichenfolge`| Zeichenfolge |
 | `Verb(Verbindung) für Sockel verbinde mich mit der Zeichenfolge IP über die Zahl Port` | `für Sockel: verbinde mich mit der IP über den Port` | Zeichenfolge, Zahl |
