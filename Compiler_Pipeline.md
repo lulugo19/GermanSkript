@@ -62,7 +62,7 @@ Es müssen alle Deklinations-Anweisungen durchlaufen werden.
 Die Deklinationen müssen dem Wörterbuch hinzugefügt werden.
 Falls `Duden(Wort)` verwendet wurde, muss im Online-Duden nachgeschaut werden.
 
-Für Interfaces müssen die `Adjektive` auch als Nomen deklariert werden. Dafür gibt es feste [Regeln](https://deutsch.lingolia.com/de/grammatik/adjektive/deklination).
+Für Interfaces müssen die `Adjektive` auch als Nomen deklaniert werden. Dafür gibt es feste [Regeln](https://deutsch.lingolia.com/de/grammatik/adjektive/deklination).
 
 #### Wie sieht die Datenstruktur `Wörterbuch` aus?
 Die Daten werden nach dem NominativS sortiert in einer Tabelle gespeichert.
@@ -82,9 +82,9 @@ Die Laufzeit von binärer Suche beträgt: `O(log(n))` was gut genug ist.
 suche Nomen Bäume:
 min = 0, max = 5
 avg = (min + max) / 2 = 2
-Dose < Bäume => max = avg
+Dose > Bäume => max = avg
 avg = (min + max) / 2 = 1
-Baumhaus < Bäume => max = avg
+Baumhaus > Bäume => max = avg
 avg = (min + max) / 2 = 0
 *Bäum*e passt
 ```
@@ -99,7 +99,7 @@ suche Nomen Baumhaus:
 ```
 ## Bezeichner
 ### Endergebnis:
-Allen Bezeichnern (außer den freien Bezeichnern für Module und Konstanten) wurde die grammatische From (Genus,Fälle,Singular/Plural) zugeordnet.
+Allen Bezeichnern (außer den freien Bezeichnern für Module und Konstanten) wurde die grammatische Form (Genus,Fälle,Singular/Plural) zugeordnet.
 Außerdem sind alle Bezeichner normalisiert (nominativiert) indem bei jedem Bezeichner der Nominativ (im Singular oder im Plural) dabeisteht.
 ### Fehler:
 #### Unbekanntes Wort
