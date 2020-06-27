@@ -1,1 +1,0 @@
-die Zahl X ist 5
