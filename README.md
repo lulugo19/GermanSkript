@@ -36,7 +36,7 @@ Um einen Bezeichner bekannt zu machen (zu deklinieren) wird folgende Syntax verw
 
 Beispiel für `Kind`:
 
-`Deklination Singular(Kind, Kindes, Kind, Kind) Plura(Kinder, Kinder, Kindern, Kindern)`
+`Deklination Singular(Kind, Kindes, Kind, Kind) Plural(Kinder, Kinder, Kindern, Kindern)`
 
 Da es aber aufwendig werden kann, jeden Bezeichner selber zu deklinieren, kann auch automatisch im [Online-Duden]((https://www.duden.de/woerterbuch))
 nachgeschaut werden. Dann wird folgende Syntax verwendet:
@@ -116,7 +116,7 @@ Jeder Operator hat neben einem Symbol auch noch eine Textrepräsentation, die st
 Umso höher die Bindungskraft, desto mehr bindet der Operator seine Operanden.
 
 Die Operatoren Gleichheit `==` und Ungleichheit `!=` können bei allen Typen verwendet werden, um die Gleichheit
-zu überprüfen. Alle anderen Operatoren können nur bei den Inbuild-Typen `Zahl`, `Kommaliste`, `Boolean` verwendet werden.
+zu überprüfen. Alle anderen Operatoren können nur bei den Inbuild-Typen `Zahl`, `Liste`, `Boolean` verwendet werden.
 Das Überladen von Operatoren ist voerst nicht vorgesehen.
 
 
@@ -228,10 +228,10 @@ Bei Bedingungen ist das Besondere, dass bei den Vergleichsoperatoren `gleich`, `
 Beispiel:
 ```
 wenn die Zahl gleich 3 ist:
-  drucke die Zeichenfolge "Alle guten Dinge sind drei!".
+  schreibe die Zeile "Alle guten Dinge sind drei!".
 sonst wenn die Zahl gleich 42 ist:
-  drucke die Zeichenfolge "Die Antwort auf alles.".
-sonst drucke die Zeichenfolge die Zahl als Zeichenfolge.
+  schreibe die Zeile "Die Antwort auf alles.".
+sonst schreibe die Zahl
 ```
 
 ### Solange-Schleife
@@ -249,7 +249,7 @@ Beispiel:
 
 ```
 für jede Primzahl in einigen Zahlen [2, 3, 5, 7, 11, 13, 17, 19, 23]:
-    schreibe Zeichenfolge Primzahl als Zeichenfolge
+    schreibe die Zahl Primzahl
 .
 ```
 
@@ -297,10 +297,8 @@ Verb(Zahl) fakultät von der Zahl:
 ```
 
 ```
-alias Begrüßung ist Zeichenfolge
-
-Verb begrüße die Person mit der Begrüßung:
-     die Begrüßung + " " + der Name der Person.
+Verb begrüße die Person mit der Zeichenfolge Begrüßung:
+     schreibe die Zeile die Begrüßung + " " + der Name der Person.
 
 Verb begrüße mit dem Namen nach der Uhrzeit:.
 ```
@@ -366,24 +364,18 @@ die Regeln für Methoden.
 
 Beispiel:
 ```
-alias Name ist Zeichenfolge
-alias Alter ist Zahl
-
 Nomen Person mit
-    dem Namen Vorname,
-    dem Namen Nachname,
-    einem Alter:
+    der Zeichenfolge Vorname,
+    der Zeichenfolge Nachname,
+    der Zahl Alter:
 
     dieser VollerName ist Vorname + " " + Nachname
     // jener VollerName ist Vorname + " " + Nachname
 .
 
-alias Studiengang ist Zeichenfolge
-alias Semester ist Zahl
-    
 Nomen Student mit 
-    einem Studiengang,
-    einem Semester:.
+    einer Zeichenfolge Studiengang,
+    einer Zahl Semester:.
 ```
 
 Vorschlag:
@@ -428,7 +420,7 @@ Verb(Zeichenfolge) für Person stelle mich mit der Zeichenfolge Begrüßung, der
 
 `Bezeichner: Sätze!`
 
-Um eine Methode aufzurufen gibt es den songenannten Methodenblock. Man startet einen neuen Block mit dem Bezeichner
+Um eine Methode aufzurufen gibt es den sogenannten Methodenblock. Man startet einen neuen Block mit dem Bezeichner
 des Objekts, auf den man die Methode/n aufrufen möchte. Innerhalb des Blocks kann man jetzt die Methoden ganz normal wie Funktionen
 aufrufen. Hat eine Funktion die gleiche Signatur wie eine Methode, wird die Funktion überschattet. Der Block endet diesmal nicht
 mit einem `.` sondern einem `!`.
@@ -441,8 +433,8 @@ oder `dich` und bei Listen mit `euch` oder `euren` ersetzt.
 Beispiel:
 
 ```
-Person Rick ist Person mit Vorname="Rick", Nachname="Sanchez", Alter=70
-Rick: stelle dich mit der Zeichenfolge "Woooobeeewoobeedubdub!", der Zeichenfolge "Rülps!" vor!
+die Person Rick ist eine Person mit dem Vornamen "Rick", dem Nachnamen "Sanchez", dem Alter 70
+Rick: stelle dich mit der Begrüßung "Woooobeeewoobeedubdub!", dem Nachwort "Rülps!" vor!
 ```
 
 ```
