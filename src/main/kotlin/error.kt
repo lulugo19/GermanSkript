@@ -21,7 +21,6 @@ sealed class GermanScriptFehler(val token: Token): Error() {
   }
 
   sealed class DudenFehler(token: Token, protected val wort: String): GermanScriptFehler(token) {
-
     class WortNichtGefundenFehler(token: Token, wort: String) : DudenFehler(token, wort) {
       override val nachricht: String?
         get() = "Das Wort '$wort' konnte im Duden nicht gefunden werden."
@@ -32,4 +31,10 @@ sealed class GermanScriptFehler(val token: Token): Error() {
         get() = "Das wort '$wort' konnte nicht im Duden nachgeschaut werden, da keine Netzwerk-Verbindung zum Online-Duden besteht."
     }
   }
+
+  class UnbekanntesWort(token: Token): GermanScriptFehler(token) {
+    override val nachricht: String?
+      get() = "Das Wort ${token.wert} ist unbekannt. Füge eine Deklinationsanweisung für das Wort hinzu!"
+  }
+
 }

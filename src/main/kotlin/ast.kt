@@ -1,5 +1,3 @@
-import java.util.*
-
 sealed class AST {
 
   // visit implementation for all the leaf nodes
@@ -36,17 +34,7 @@ sealed class AST {
 
   sealed class Definition: AST() {
 
-    data class Deklination(
-        val genus: Genus,
-        val nominativS: TypedToken<TokenTyp.BEZEICHNER_GROSS>,
-        val genitivS: TypedToken<TokenTyp.BEZEICHNER_GROSS>,
-        val dativS: TypedToken<TokenTyp.BEZEICHNER_GROSS>,
-        val akkusativS: TypedToken<TokenTyp.BEZEICHNER_GROSS>,
-        val nominativP: TypedToken<TokenTyp.BEZEICHNER_GROSS>,
-        val genitivP: TypedToken<TokenTyp.BEZEICHNER_GROSS>,
-        val dativP: TypedToken<TokenTyp.BEZEICHNER_GROSS>,
-        val akkusativP: TypedToken<TokenTyp.BEZEICHNER_GROSS>
-    ) : Definition()
+    data class DeklinationsDefinition(val deklination: Deklination) : Definition()
 
     data class Parameter(
         val artikel: TypedToken<TokenTyp.ARTIKEL>,
