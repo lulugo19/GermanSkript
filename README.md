@@ -32,11 +32,11 @@ um die Form des Bezeichners anzugeben.
 
 Um einen Bezeichner bekannt zu machen (zu deklinieren) wird folgende Syntax verwendet:
 
-`Deklination Singular(BezeichnerNS, BezeichnerGS, BezeichnerDS, BezeichnerAS) Plural(BezeichnerNP, BezeichnerGP, BezeichnerDP, BezeichnerAP)`.
+`Deklination Genus Singular(BezeichnerNS, BezeichnerGS, BezeichnerDS, BezeichnerAS) Plural(BezeichnerNP, BezeichnerGP, BezeichnerDP, BezeichnerAP)`.
 
 Beispiel für `Kind`:
 
-`Deklination Singular(Kind, Kindes, Kind, Kind) Plural(Kinder, Kinder, Kindern, Kindern)`
+`Deklination Neutrum Singular(Kind, Kindes, Kind, Kind) Plural(Kinder, Kinder, Kindern, Kindern)`
 
 Da es aber aufwendig werden kann, jeden Bezeichner selber zu deklinieren, kann auch automatisch im [Online-Duden]((https://www.duden.de/woerterbuch))
 nachgeschaut werden. Dann wird folgende Syntax verwendet:
