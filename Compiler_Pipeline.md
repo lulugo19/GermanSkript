@@ -18,6 +18,8 @@ Der GermanScript-Code wird dann in dieser Reihenfolge durch die Pipeline geschic
 Für jede dieser Komponenten wird anschließend beschrieben, welches Endergebnis erwartet wird, welche Anforderungen es gibt,
 welche Fehler geworfen werden können und Hinweise für die Implementierung.
 
+Außerdem ist [hier](#bewertung-der-komplexität-der-komponenten) eine grobe Schätzung der Komplexität der Komponenten.
+
 ## Lexer
 ### Endergebnis:
 Der German-Script Code ist in Tokens zerlegt.
@@ -131,6 +133,8 @@ Alle Definitionen sind registiert.
 #### Doppelte Definition:
 Wenn der selbe Typ (Nomen), Funktionen/Methoden (Verb), Interface (Adjektiv) oder Alias schon definiert sind.
 ### Implementierungs Hinweise:
+#### Die Typen der Parameter werden der Reihenfolge nach in einer Liste gespeichert
+
 #### Wann gilt eine Funktion als doppelt definiert?
 Über den vollständigen Namen einer Funktion, kann sie eindeutig identifiziert werden. 
 Der vollständige Name besteht aus: `[für Typ:] Verb [Artikel + Parametername] [Präpositionen mit Artikel + Parametername] [Suffix]`.
@@ -138,12 +142,12 @@ Der Rückgabetyp gehört **nicht** zum vollständigen Namen der Funktion.
 
 Beispiele:
 
-| Funktions-/Methodendefinition | Signatur |
-| ----------------------------- | -------- |
-| `Verb schreibe die Zeichenfolge Zeile` | `schreibe die Zeile` |
-| `Verb schreibe die Zeichenfolge` | `schreibe die Zeichenfolge`|
-| `Verb(Verbindung) für Sockel verbinde mich mit der Zeichenfolge IP über die Zahl Port` | `für Sockel: verbinde mich mit der IP über den Port` |
-| `Verb für Liste füge das Element hinzu` | `für Liste: füge das Element hinzu` |
+| Funktions-/Methodendefinition | Signatur | Typ-Liste |
+| ----------------------------- | -------- | |
+| `Verb schreibe die Zeichenfolge Zeile` | `schreibe die Zeile` | Zeichenfolge |
+| `Verb schreibe die Zeichenfolge` | `schreibe die Zeichenfolge`| Zeichenfolge |
+| `Verb(Verbindung) für Sockel verbinde mich mit der Zeichenfolge IP über die Zahl Port` | `für Sockel: verbinde mich mit der IP über den Port` | Zeichenfolge, Zahl |
+| `Verb für Liste füge das Element hinzu` | `für Liste: füge das Element hinzu` | Element |
 
 ## Typ Prüfer
 ### Endergebnis:
@@ -168,3 +172,17 @@ Das Programm ist ausgeführt wurden.
 #### Index Out of Bounce
 ### Implementierungs-Hinweise:
 Alle Sätze müssen ausgeführt werden...
+
+## Bewertung der Komplexität der Komponenten
+
+Bewertung: 0 bis 5 Plusse `+`
+
+0. Sprachspezifikation(++) -> Lukas
+1. Lexer () -> Lukas
+2. Parser (+++) -> Finn
+3. Deklanierer und Online-Duden (++++) -> Lukas
+4. Bezeichner (+) -> Finn
+5. Grammatik-Prüfer (++) -> Finn
+6. Definierer (++) -> Lukas
+7. Typ-Prüfer (+++) -> Finn
+8. Interpreter (+++) -> Lukas
