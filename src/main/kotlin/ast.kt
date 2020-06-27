@@ -17,7 +17,13 @@ sealed class AST {
   }
   
   // region Blattknoten
-  data class Nomen(val bezeichner: TypedToken<TokenTyp.BEZEICHNER_GROSS>): AST()
+  data class Nomen(
+      val bezeichner: TypedToken<TokenTyp.BEZEICHNER_GROSS>,
+      var form: Form? = null,
+      var nominativ: String? = null,
+      var numerus: Numerus? = null
+  ): AST()
+
   data class Verb(val bezeichner: TypedToken<TokenTyp.BEZEICHNER_KLEIN>): AST()
   data class Adjektiv(val bezeichner: TypedToken<TokenTyp.BEZEICHNER_KLEIN>): AST()
   data class Präposition(val präposition: TypedToken<TokenTyp.BEZEICHNER_KLEIN>): AST() {
@@ -29,6 +35,19 @@ sealed class AST {
   // endregion
 
   sealed class Definition: AST() {
+
+    data class Deklination(
+        val genus: Genus,
+        val nominativS: TypedToken<TokenTyp.BEZEICHNER_GROSS>,
+        val genitivS: TypedToken<TokenTyp.BEZEICHNER_GROSS>,
+        val dativS: TypedToken<TokenTyp.BEZEICHNER_GROSS>,
+        val akkusativS: TypedToken<TokenTyp.BEZEICHNER_GROSS>,
+        val nominativP: TypedToken<TokenTyp.BEZEICHNER_GROSS>,
+        val genitivP: TypedToken<TokenTyp.BEZEICHNER_GROSS>,
+        val dativP: TypedToken<TokenTyp.BEZEICHNER_GROSS>,
+        val akkusativP: TypedToken<TokenTyp.BEZEICHNER_GROSS>
+    ) : Definition()
+
     data class Parameter(
         val artikel: TypedToken<TokenTyp.ARTIKEL>,
         val typ: Nomen,
@@ -59,7 +78,8 @@ sealed class AST {
     ): Definition() {
       override fun visit(visitor: (AST) -> Unit) {
         super.visit(visitor)
-        
+        objekt.visit(visitor)
+        präpositionen.forEach{it.visit(visitor)}
       }
     }
   }
@@ -70,7 +90,7 @@ sealed class AST {
         val typ: Nomen,
         val name: Nomen,
         val zuweisungsOperator: TypedToken<TokenTyp.ZUWEISUNG>
-    ) : AST() {
+    ) : Satz() {
       override fun visit(visitor: (AST) -> Unit) {
         super.visit(visitor)
         typ.visit(visitor)

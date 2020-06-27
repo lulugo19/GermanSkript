@@ -6,6 +6,12 @@ class Parser(code: String) {
   private fun peek(): Token = tokens.peek()!!
   private fun peekType(): TokenTyp = tokens.peek()!!.typ
   private fun peekDouble(): Token = tokens.peekDouble()!!
+  private fun peekDoubleType(): TokenTyp = tokens.peekDouble()!!.typ
+
+  enum class Bereiche {
+    Schleife,
+    Bedingung,
+  }
 
   private inline fun <reified T : TokenTyp>expect(erwartet: String): TypedToken<T> {
     val nextToken = next()
