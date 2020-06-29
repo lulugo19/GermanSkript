@@ -4,22 +4,29 @@ enum class Assoziativität {
     RECHTS,
 }
 
-enum class Operator(val bindungsKraft: Int, val assoziativität: Assoziativität) {
-    PLUS(4, Assoziativität.LINKS),
-    MINUS(4, Assoziativität.LINKS),
-    MAL(5, Assoziativität.LINKS),
-    GETEILT(5, Assoziativität.LINKS),
-    MODULO(5, Assoziativität.LINKS),
-    HOCH(6, Assoziativität.RECHTS),
-    GLEICH(3, Assoziativität.LINKS),
-    UND(2, Assoziativität.LINKS),
-    ODER(1, Assoziativität.LINKS),
-    KLEINER(3, Assoziativität.LINKS),
-    GRÖßER(3, Assoziativität.LINKS),
-    KLEINER_GLEICH(3, Assoziativität.LINKS),
-    GRÖSSER_GLEICH(3, Assoziativität.LINKS),
-    NEGATION(3, Assoziativität.RECHTS),
-    UNGLEICH(3, Assoziativität.LINKS),
+enum class OperatorKlasse(kasus: Kasus) {
+    ARITHMETISCH(Kasus.AKKUSATIV),
+    VERGLEICH(Kasus.DATIV),
+    LOGISCH(Kasus.AKKUSATIV),
+}
+
+enum class Operator(val bindungsKraft: Int, val assoziativität: Assoziativität, klasse: OperatorKlasse) {
+    ODER(1, Assoziativität.LINKS, OperatorKlasse.LOGISCH),
+    UND(2, Assoziativität.LINKS, OperatorKlasse.LOGISCH),
+    GLEICH(3, Assoziativität.LINKS, OperatorKlasse.ARITHMETISCH),
+    UNGLEICH(3, Assoziativität.LINKS, OperatorKlasse.VERGLEICH),
+    GRÖßER(3, Assoziativität.LINKS, OperatorKlasse.VERGLEICH),
+    KLEINER(3, Assoziativität.LINKS, OperatorKlasse.LOGISCH),
+    GRÖSSER_GLEICH(3, Assoziativität.LINKS, OperatorKlasse.VERGLEICH),
+    KLEINER_GLEICH(3, Assoziativität.LINKS, OperatorKlasse.VERGLEICH),
+    PLUS(4, Assoziativität.LINKS, OperatorKlasse.ARITHMETISCH),
+    MINUS(4, Assoziativität.LINKS, OperatorKlasse.ARITHMETISCH),
+    MAL(5, Assoziativität.LINKS, OperatorKlasse.ARITHMETISCH),
+    GETEILT(5, Assoziativität.LINKS, OperatorKlasse.ARITHMETISCH),
+    MODULO(5, Assoziativität.LINKS, OperatorKlasse.ARITHMETISCH),
+    HOCH(6, Assoziativität.RECHTS, OperatorKlasse.ARITHMETISCH),
+
+    NEGATION(3, Assoziativität.RECHTS, OperatorKlasse.ARITHMETISCH),
 }
 
 // Genus (Geschlecht)

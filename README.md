@@ -119,25 +119,37 @@ Die Operatoren Gleichheit `==` und Ungleichheit `!=` können bei allen Typen ver
 zu überprüfen. Alle anderen Operatoren können nur bei den Inbuild-Typen `Zahl`, `Liste`, `Boolean` verwendet werden.
 Das Überladen von Operatoren ist voerst nicht vorgesehen.
 
+Die Operatoren bilden folgende Klassen:
+
+| Klasse | Verwendung | Kasus (Fall) |
+| ------ | ------------ | ------------ |
+| Arithemetisch | mathematische Operatoren | Akkusativ |
+| Logisch | um Booleans miteinander zu verketten | Akkusativ |
+| Vergleich | Werte vergleichen | Dativ |
+
+Der Kasus (Fall) ist bei Operatoren auch wichtig. 
+Der erste Operand hat immer den Fall Nominativ und die Fälle der restliche Operanden 
+sind je nach Klasse (siehe Tabelle).
+
 
 #### Binäre Operatoren
-| Funktion | Symbol | Text | Assoziativität | Bindungskraft | Kasus des rechten Operanden |
-| -------- | ------ | ---- | -------------- | ------------- | ---- |
-| Zuweisung | `=` | `ist` | rechts | 0 | Nominativ |
-| Logisches Oder | <code>&#124;&#124;</code> | `oder `| links | 1 | Akkusativ |
-| Logisches Und | `&&` | `und` | links | 2 | Akkusativ | 
-| Gleichheit | `==` | `gleich` | links | 3 | Dativ |
-| Ungleichheit | `!=` | `ungleich` | links | 3 | Dativ |
-| Größer | `>` | `größer` | links | 3 | Dativ |
-| Kleiner | `<` | `kleiner` | links | 3 | Dativ |
-| Größer-Gleich | `>=` | `größer gleich` | links | 3 | Dativ |
-| Kleiner-Gleich | `<=` | `kleiner gleich` | links | 3 | Dativ |
-| Plus | `+` | `plus` | links | 4 | Akkusativ |
-| Minus | `-` | `minus` | links | 4 | Akkusativ |
-| Mal | `*` | `mal` | links | 5 | Akkusativ |
-| Geteilt | `/` | `durch` | links | 5 | Akkusativ |
-| Modulo | `mod` | `modulo` | links 5 | Akkusativ |
-| Hoch | `^` | `hoch` | rechts | 6 | Akkusativ |
+| Funktion | Symbol | Text | Assoziativität | Bindungskraft | Klasse |
+| -------- | ------ | ---- | -------------- | ------------- | ------ |
+| Zuweisung | `=` | `ist` | rechts | 0 | Zuweisung | Nominativ |
+| Logisches Oder | <code>&#124;&#124;</code> | `oder `| links | 1 | Logisch |
+| Logisches Und | `&&` | `und` | links | 2 | Logisch |
+| Gleichheit | `==` | `gleich` | links | 3 | Vergleich |
+| Ungleichheit | `!=` | `ungleich` | links | 3 | Vergleich |
+| Größer | `>` | `größer` | links | 3 | Vergleich |
+| Kleiner | `<` | `kleiner` | links | 3 | Vergleich |
+| Größer-Gleich | `>=` | `größer gleich` | links | 3 | Vergleich |
+| Kleiner-Gleich | `<=` | `kleiner gleich` | links | 3 | Vergleich |
+| Plus | `+` | `plus` | links | 4 | Arithmetisch |
+| Minus | `-` | `minus` | links | 4 | Arithmetisch |
+| Mal | `*` | `mal` | links | 5 | Arithmetisch |
+| Geteilt | `/` | `durch` | links | 5 | Arithmetisch |
+| Modulo | `mod` | `modulo` | links | 5 | Arithmetisch |
+| Hoch | `^` | `hoch` | rechts | 6 | Arithmetisch |
 
 #### Unäre Operatoren
 
