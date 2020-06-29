@@ -1,11 +1,10 @@
 # Die Compiler Pipeline
 
 Die Pipeline definiert welche Schritte das Programm vom Programm-Code bis zum interpretierten Programm
-durchläuft. Bei GermanScript besteht die Pipeline aus 8 Komponenten:
+durchläuft. Bei GermanScript besteht die Pipeline aus 7 Komponenten:
 1. [Lexer](#lexer)
 2. [Parser](#parser)
 3. [Deklanierer](#deklanierer)
-4. [Bezeichner](#bezeichner)
 4. [Grammatik-Checker](#grammatik-prüfer)
 5. [Definierer](#definierer)
 6. [Type-Checker](#typ-prüfer)
@@ -13,7 +12,7 @@ durchläuft. Bei GermanScript besteht die Pipeline aus 8 Komponenten:
 
 Der GermanScript-Code wird dann in dieser Reihenfolge durch die Pipeline geschickt.
 
-`Code -> Lexer -> Parser -> Deklanierer -> Bezeichner -> Grammatik-Checker -> Definierer -> Type-Checker -> Interpreter`
+`Code -> Lexer -> Parser -> Deklanierer -> Grammatik-Checker -> Definierer -> Type-Checker -> Interpreter`
 
 Für jede dieser Komponenten wird anschließend beschrieben, welches Endergebnis erwartet wird, welche Anforderungen es gibt,
 welche Fehler geworfen werden können und Hinweise für die Implementierung.
@@ -99,21 +98,14 @@ suche Nomen Baumhaus:
 *Baum*haus passt aber es gibt keinen Eintrag für Baumhaus
 => Baumhaus muss hinter Baum kommen, also setze min = avg
 ```
-## Bezeichner
-### Endergebnis:
-Allen Bezeichnern (außer den freien Bezeichnern für Module und Konstanten) wurde die grammatische Form (Genus,Fälle,Singular/Plural) zugeordnet.
-Außerdem sind alle Bezeichner normalisiert (nominativiert) indem bei jedem Bezeichner der Nominativ (im Singular oder im Plural) dabeisteht.
-### Fehler:
-#### Unbekanntes Wort
-Wenn ein Bezeichner nicht im `Wörterbuch` ist, wird dieser Fehler ausgelöst. Der Benutzer wird aufgefordert das Wort
-mit der Deklinationsanweisung `Deklination ...` zu deklinieren.
-### Implementierungs-Hinweise:
-Besuche alle Bezeichner des ASTs, setze die Variable `form`, die Variable `nominativ` und die Variable `numerus` des Bezeichners, indem
-das Wort im `Wörterbuch` nachgeschlagen wird. Speicher schon bekannte Formen in einer Hashmap zwischen, sodass das `Wörterbuch` nur abgefragt
-werden muss, wenn die Form des Wortes noch nicht bekannt ist.
+
 ## Grammatik Prüfer
 ### Endergebnis:
-Die deutsche Grammatik aller Anweisungen ist geprüft.
+Die deutsche Grammatik aller Anweisungen ist geprüft und bei allen Nomen wird folgendes ergänzt:
+- die Nominativform
+- der Numerus (Singular oder Plural)
+- dar Genus (Maskulinum, Femininum, Neutrum)
+- der Artikel
 ### Fehler:
 #### Grammatik-Fehler:
 Wenn die Grammatik falsch ist, wird ein Fehler geworfen. In der Fehlermeldung ist enthalten, wie es richtig heißen würde.
@@ -126,6 +118,7 @@ Prüfe alle:
   - der Artikel mit dem Objekt muss im Akksuativ stehen und der Genus des Artikels muss übereinstimmen
   - Präpositionen: der Artikel mit dem Typ muss zur Präposition passen und der Genus des Artikels muss übereinstimmen
 - ...
+
 ## Definierer
 ### Endergebnis:
 Alle Definitionen sind registiert.
@@ -179,10 +172,9 @@ Bewertung: 0 bis 5 Plusse `+`
 
 0. Sprachspezifikation(++) -> Lukas
 1. Lexer () -> Lukas
-2. Parser (+++) -> Finn
+2. Parser (+++) -> Lukas
 3. Deklanierer und Online-Duden (++++) -> Lukas
-4. Bezeichner (+) -> Finn
-5. Grammatik-Prüfer (++) -> Finn
-6. Definierer (++) -> Lukas
-7. Typ-Prüfer (+++) -> Finn
-8. Interpreter (+++) -> Lukas
+4. Grammatik-Prüfer (++) -> Finn
+5. Definierer (++) -> Lukas
+6. Typ-Prüfer (+++) -> Finn
+7. Interpreter (+++) -> Lukas

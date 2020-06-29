@@ -1,6 +1,9 @@
+data class FunktionsDefinition(val vollerName: String, val parameterTypen: List<String>, val rückgabe: String? = null)
+
 class Definierer(quellCode: String) {
   val grammatikPrüfer = GrammatikPrüfer(quellCode)
   val ast = grammatikPrüfer.ast
+  val funktionen = hashMapOf<String, FunktionsDefinition>()
 
   fun definiere() {
     grammatikPrüfer.prüfe()
@@ -12,6 +15,10 @@ class Definierer(quellCode: String) {
         }
       }
     }
+  }
+
+  fun definiereFunktion(funktionsDefinition: AST.Definition.Funktion) {
+
   }
 
 }

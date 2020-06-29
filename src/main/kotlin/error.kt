@@ -37,4 +37,16 @@ sealed class GermanScriptFehler(val token: Token): Error() {
       get() = "Das Wort ${token.wert} ist unbekannt. Füge eine Deklinationsanweisung für das Wort hinzu!"
   }
 
+  sealed class GrammatikFehler(token: Token, protected val kasus: Kasus, protected val numerus: Numerus): GermanScriptFehler(token) {
+    class FalscherArtikel(token: Token, kasus: Kasus, numerus: Numerus, private val richtigerArtikel: String): GrammatikFehler(token, kasus, numerus) {
+      override val nachricht: String?
+        get() = "Falscher Artikel '${token.wert}'. Der richtige Artikel für ${kasus.anzeigeName} ${numerus.anzeigeName} ist '$richtigerArtikel'."
+    }
+
+    class FalscheForm(token: Token, kasus: Kasus, numerus: Numerus, private val richtigeForm: String): GrammatikFehler(token, kasus, numerus) {
+      override val nachricht: String?
+        get() = "Falsche Form des Nomens '${token.wert}'. Die richtige Form des Nomens im ${kasus.anzeigeName} ${numerus.anzeigeName} ist '$richtigeForm'."
+    }
+  }
+
 }

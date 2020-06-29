@@ -6,25 +6,24 @@ sealed class AST {
   }
 
   // Wurzelknoten
-  data class Programm(val definitionen: List<Definition>, val sätze: List<Satz>): AST() {
+  data class Programm(val definitionen: List<Definition>, val sätze: List<Satz>) : AST() {
     override fun visit(visitor: (AST) -> Unit) {
       super.visit(visitor)
-      definitionen.forEach{it.visit(visitor)}
-      sätze.forEach{it.visit(visitor)}
+      definitionen.forEach { it.visit(visitor) }
+      sätze.forEach { it.visit(visitor) }
     }
   }
-  
+
   // region Blattknoten
   data class Nomen(
       val bezeichner: TypedToken<TokenTyp.BEZEICHNER_GROSS>,
-      var form: Form? = null,
       var nominativ: String? = null,
+      var artikel: String? = null,
+      var genus: Genus? = null,
       var numerus: Numerus? = null
-  ): AST()
+  ) : AST()
 
-  data class Verb(val bezeichner: TypedToken<TokenTyp.BEZEICHNER_KLEIN>): AST()
-  data class Adjektiv(val bezeichner: TypedToken<TokenTyp.BEZEICHNER_KLEIN>): AST()
-  data class Präposition(val präposition: TypedToken<TokenTyp.BEZEICHNER_KLEIN>): AST() {
+  data class Präposition(val präposition: TypedToken<TokenTyp.BEZEICHNER_KLEIN>) : AST() {
     val kasus = präpositionsFälle
         .getOrElse(präposition.wert) {
           throw GermanScriptFehler.SyntaxFehler.ParseFehler(präposition.toUntyped(), "Präposition")
@@ -32,47 +31,32 @@ sealed class AST {
   }
   // endregion
 
-  sealed class Definition: AST() {
+  sealed class Definition : AST() {
 
     data class DeklinationsDefinition(val deklination: Deklination) : Definition()
 
     data class Parameter(
         val artikel: TypedToken<TokenTyp.ARTIKEL>,
         val typ: Nomen,
-        val name: Nomen
-    ): Definition() {
-      override fun visit(visitor: (AST) -> Unit) {
-        super.visit(visitor)
-        typ.visit(visitor)
-        name.visit(visitor)
-      }
-    }
+        val name: Nomen?
+    )
 
     data class Präposition(
-        val präposition: TypedToken<TokenTyp.PRÄPOSITION>,
+        val präposition: AST.Präposition,
         val parameter: List<Parameter>
-    ) : Definition() {
-      override fun visit(visitor: (AST) -> Unit) {
-        super.visit(visitor)
-        parameter.forEach{it.visit(visitor)}
-      }
-    }
-    
+    )
+
     data class Funktion(
         val rückgabeTyp: TypedToken<TokenTyp.BEZEICHNER_GROSS>,
         val name: TypedToken<TokenTyp.BEZEICHNER_KLEIN>,
-        val objekt: Parameter,
-        val präpositionen: List<Präposition>
-    ): Definition() {
-      override fun visit(visitor: (AST) -> Unit) {
-        super.visit(visitor)
-        objekt.visit(visitor)
-        präpositionen.forEach{it.visit(visitor)}
-      }
-    }
+        val objekt: Parameter?,
+        val präpositionen: List<Präposition>,
+        val suffix: TypedToken<TokenTyp.BEZEICHNER_KLEIN>
+    ) : Definition()
+
   }
 
-  sealed class Satz: AST()  {
+  sealed class Satz : AST() {
     data class Variablendeklaration(
         val artikel: TypedToken<TokenTyp.ARTIKEL>,
         val typ: Nomen,
@@ -87,16 +71,17 @@ sealed class AST {
     }
   }
 
-  sealed class Ausdruck: AST() {
-    data class Zeichenfolge(val zeichenfolge: TypedToken<TokenTyp.ZEICHENFOLGE>): Ausdruck()
 
-    data class Zahl(val zahl: TypedToken<TokenTyp.ZAHL>): Ausdruck()
+  sealed class Ausdruck : AST() {
+    data class Zeichenfolge(val zeichenfolge: TypedToken<TokenTyp.ZEICHENFOLGE>) : Ausdruck()
 
-    data class Boolean(val boolean: TypedToken<TokenTyp.BOOLEAN>): Ausdruck()
+    data class Zahl(val zahl: TypedToken<TokenTyp.ZAHL>) : Ausdruck()
+
+    data class Boolean(val boolean: TypedToken<TokenTyp.BOOLEAN>) : Ausdruck()
 
     data class Variable(val artikel: TypedToken<TokenTyp.ARTIKEL>, val name: TypedToken<TokenTyp.BEZEICHNER_GROSS>) : Ausdruck()
 
-    data class BinärerAusdruck(val operator: TypedToken<TokenTyp.OPERATOR>, val links: Ausdruck, val rechts: Ausdruck): Ausdruck() {
+    data class BinärerAusdruck(val operator: TypedToken<TokenTyp.OPERATOR>, val links: Ausdruck, val rechts: Ausdruck) : Ausdruck() {
       override fun visit(visitor: (AST) -> Unit) {
         super.visit(visitor)
         links.visit(visitor)
@@ -104,7 +89,7 @@ sealed class AST {
       }
     }
 
-    data class Minus(val ausdruck: Ausdruck): Ausdruck() {
+    data class Minus(val ausdruck: Ausdruck) : Ausdruck() {
       override fun visit(visitor: (AST) -> Unit) {
         super.visit(visitor)
         ausdruck.visit(visitor)

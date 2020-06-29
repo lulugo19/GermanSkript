@@ -12,6 +12,14 @@ data class Deklination(
     return fälle[index]
   }
 
+  fun getNumerus(wort: String): Numerus {
+    val index = fälle.indexOf(wort)
+    if (index == -1) {
+      throw Wörterbuch.WortNichtGefunden(wort)
+    }
+    return if (index < 3) Numerus.SINGULAR else Numerus.PLURAL
+  }
+
   val fallSequenz get() = fälle.asSequence()
 
   override fun equals(other: Any?): Boolean {
@@ -59,7 +67,7 @@ class Wörterbuch {
   class WortNichtGefunden(wort: String): Error("Wort '$wort' nicht gefunden!")
   class DoppelteDeklinationFehler(deklination: Deklination): Error("Doppelte Deklination: $deklination!")
   
-  private val tabelle = MutableList<Deklination>(0) {Deklination(Genus.NEUTRUM, emptyArray())};
+  private val tabelle = MutableList<Deklination>(0) {Deklination(Genus.NEUTRUM, emptyArray())}
 
   // gibt Wörterbuch zurück
 
@@ -75,7 +83,7 @@ class Wörterbuch {
     var max = tabelle.size
 
     while (min != max) {
-      var avg = floor((min.toDouble() + max) / 2).toInt()
+      val avg = floor((min.toDouble() + max) / 2).toInt()
       when {
         nominativ > tabelle[avg].nominativSingular -> {
           when {
@@ -100,7 +108,7 @@ class Wörterbuch {
     var min = 0
     var max = tabelle.size
     while (min != max) {
-      var avg = floor((min.toDouble() + max) / 2).toInt()
+      val avg = floor((min.toDouble() + max) / 2).toInt()
       val deklination = tabelle[avg]
       val nominativSingular = deklination.nominativSingular
       val maxLength = min(wort.length, nominativSingular.length)

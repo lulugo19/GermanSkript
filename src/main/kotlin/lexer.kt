@@ -30,18 +30,17 @@ enum class Genus {
 }
 
 // Kasus (Fall)
-enum class Kasus {
-    Nominativ,
-    Genitiv,
-    Dativ,
-    Akkusativ,
+enum class Kasus(val anzeigeName: String) {
+    NOMINATIV("Nominativ"),
+    GENITIV("Genitiv"),
+    DATIV("Dativ"),
+    AKKUSATIV("Akkusativ"),
 }
 
 // Numerus (Anzahl)
-enum class Numerus {
-    SINGULAR,
-    PLURAL,
-    BEIDE,
+enum class Numerus(val anzeigeName: String) {
+    SINGULAR("Singular"),
+    PLURAL("Plural"),
 }
 
 data class Form(val bestimmt: Boolean, val genus: Genus?, val kasus: Kasus, val numerus: Numerus)
@@ -92,10 +91,11 @@ sealed class TokenTyp(val anzeigeName: String) {
 
     // Artikel und Präpositionen
     data class JEDE(val genus: Genus): TokenTyp("'jeder' oder 'jede' oder 'jedes'")
-    data class ZUWEISUNG(val anzahl: Numerus): TokenTyp("'ist' oder 'sind' oder '='")
-    data class ARTIKEL(val formen: List<Form>): TokenTyp("Artikel") {} // ein, eine, eines, der, die, das, den
-    data class PRÄPOSITION(val fälle: EnumSet<Kasus>): TokenTyp("Präposition")
-
+    data class ZUWEISUNG(val numerus: EnumSet<Numerus>): TokenTyp("'ist' oder 'sind' oder '='")
+    sealed class ARTIKEL(anzeigeName: String): TokenTyp(anzeigeName) {
+        object BESTIMMT: ARTIKEL("bestimmter Artikel")
+        object UMBESTIMMT: ARTIKEL("umbestimmter Artikel")
+    }
     //Symbole
     object OFFENE_KLAMMER: TokenTyp("'('")
     object GESCHLOSSENE_KLAMMER: TokenTyp("')'")
@@ -136,7 +136,7 @@ private val SYMBOL_MAPPING = mapOf<Char, TokenTyp>(
     '/' to TokenTyp.OPERATOR(Operator.GETEILT),
     '^' to TokenTyp.OPERATOR(Operator.HOCH),
     '%' to TokenTyp.OPERATOR(Operator.MODULO),
-    '=' to TokenTyp.ZUWEISUNG(Numerus.BEIDE),
+    '=' to TokenTyp.ZUWEISUNG(EnumSet.of(Numerus.SINGULAR, Numerus.PLURAL)),
     '>' to TokenTyp.OPERATOR(Operator.GRÖßER),
     '<' to TokenTyp.OPERATOR(Operator.KLEINER),
     '&' to TokenTyp.UNDEFINIERT,
@@ -182,8 +182,8 @@ private val WORT_MAPPING = mapOf<String, TokenTyp>(
     "falsch" to TokenTyp.BOOLEAN(false),
 
     // Operatoren
-    "ist" to TokenTyp.ZUWEISUNG(Numerus.SINGULAR),
-    "sind" to TokenTyp.ZUWEISUNG(Numerus.PLURAL),
+    "ist" to TokenTyp.ZUWEISUNG(EnumSet.of(Numerus.SINGULAR)),
+    "sind" to TokenTyp.ZUWEISUNG(EnumSet.of(Numerus.PLURAL)),
     "gleich" to TokenTyp.OPERATOR(Operator.GLEICH),
     "ungleich" to TokenTyp.OPERATOR(Operator.UNGLEICH),
     "und" to TokenTyp.OPERATOR(Operator.UND),
@@ -198,54 +198,17 @@ private val WORT_MAPPING = mapOf<String, TokenTyp>(
     "modulo" to TokenTyp.OPERATOR(Operator.MODULO),
 
     // Artikel
-    "der" to TokenTyp.ARTIKEL(listOf(
-        Form(true, Genus.MASKULINUM, Kasus.Nominativ, Numerus.SINGULAR),
-        Form(true, Genus.FEMININUM, Kasus.Genitiv, Numerus.SINGULAR),
-        Form(true, Genus.FEMININUM, Kasus.Dativ, Numerus.SINGULAR),
-        Form(true,null, Kasus.Genitiv, Numerus.PLURAL)
-    )),
-    "die" to TokenTyp.ARTIKEL(listOf(
-        Form(true, Genus.FEMININUM, Kasus.Nominativ, Numerus.SINGULAR),
-        Form(true, Genus.FEMININUM, Kasus.Nominativ, Numerus.PLURAL),
-        Form(true, Genus.FEMININUM, Kasus.Akkusativ, Numerus.SINGULAR),
-        Form(true, null, Kasus.Akkusativ, Numerus.PLURAL)
-    )),
-    "das" to TokenTyp.ARTIKEL(listOf(
-        Form(true, Genus.NEUTRUM, Kasus.Nominativ, Numerus.SINGULAR),
-        Form(true, Genus.NEUTRUM, Kasus.Akkusativ, Numerus.SINGULAR)
-    )),
-    "den" to TokenTyp.ARTIKEL(listOf(
-        Form(true, Genus.MASKULINUM, Kasus.Akkusativ, Numerus.SINGULAR),
-        Form(true, null, Kasus.Dativ, Numerus.PLURAL)
-
-    )),
-    "ein" to TokenTyp.ARTIKEL(listOf(
-        Form(false, Genus.MASKULINUM, Kasus.Nominativ, Numerus.SINGULAR),
-        Form(false, Genus.NEUTRUM, Kasus.Nominativ, Numerus.SINGULAR),
-        Form(false, Genus.NEUTRUM, Kasus.Akkusativ, Numerus.PLURAL)
-    )),
-    "eine" to TokenTyp.ARTIKEL(listOf(
-        Form(false, Genus.FEMININUM, Kasus.Nominativ, Numerus.SINGULAR),
-        Form(false, Genus.FEMININUM, Kasus.Akkusativ, Numerus.SINGULAR)
-    ) ),
-    "eines" to TokenTyp.ARTIKEL(listOf(
-        Form(false, Genus.MASKULINUM, Kasus.Genitiv, Numerus.SINGULAR),
-        Form(false, Genus.NEUTRUM, Kasus.Genitiv, Numerus.SINGULAR)
-    )),
-    "einer" to TokenTyp.ARTIKEL(listOf(
-        Form(false, Genus.FEMININUM, Kasus.Genitiv, Numerus.SINGULAR),
-        Form(false, Genus.FEMININUM, Kasus.Dativ, Numerus.SINGULAR)
-    )),
-    "einige" to TokenTyp.ARTIKEL(listOf(
-        Form(false, null, Kasus.Nominativ, Numerus.PLURAL),
-        Form(false, null, Kasus.Akkusativ, Numerus.PLURAL)
-    )),
-    "einigen" to TokenTyp.ARTIKEL(listOf(
-        Form(false, null, Kasus.Dativ, Numerus.PLURAL)
-    )),
-    "einiger" to TokenTyp.ARTIKEL(listOf(
-        Form(false, null, Kasus.Genitiv, Numerus.PLURAL)
-    ))
+    "der" to TokenTyp.ARTIKEL.BESTIMMT,
+    "die" to TokenTyp.ARTIKEL.BESTIMMT,
+    "das" to TokenTyp.ARTIKEL.BESTIMMT,
+    "den" to TokenTyp.ARTIKEL.BESTIMMT,
+    "ein" to TokenTyp.ARTIKEL.UMBESTIMMT,
+    "eine" to TokenTyp.ARTIKEL.UMBESTIMMT,
+    "eines" to TokenTyp.ARTIKEL.UMBESTIMMT,
+    "einer" to TokenTyp.ARTIKEL.UMBESTIMMT,
+    "einige" to TokenTyp.ARTIKEL.UMBESTIMMT,
+    "einigen" to TokenTyp.ARTIKEL.UMBESTIMMT,
+    "einiger" to TokenTyp.ARTIKEL.UMBESTIMMT
 )
 
 class Lexer(val quellcode: String) {
