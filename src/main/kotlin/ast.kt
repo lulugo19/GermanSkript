@@ -39,7 +39,9 @@ sealed class AST {
         val artikel: TypedToken<TokenTyp.ARTIKEL>,
         val typ: Nomen,
         val name: Nomen?
-    )
+    ) {
+      val paramName: Nomen get() = name ?: typ
+    }
 
     data class Präposition(
         val präposition: AST.Präposition,
