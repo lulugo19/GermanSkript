@@ -118,7 +118,7 @@ sealed class AST {
 
     data class Boolean(val boolean: TypedToken<TokenTyp.BOOLEAN>) : Ausdruck()
 
-    data class Variable(val artikel: TypedToken<TokenTyp.ARTIKEL>, val name: TypedToken<TokenTyp.BEZEICHNER_GROSS>) : Ausdruck()
+    data class Variable(val artikel: TypedToken<TokenTyp.ARTIKEL>?, val name: TypedToken<TokenTyp.BEZEICHNER_GROSS>) : Ausdruck()
 
     data class FunktionsAufruf(val aufruf: AST.FunktionsAufruf): Ausdruck() {
       override fun visit(visitor: (AST) -> Unit) {
@@ -127,7 +127,7 @@ sealed class AST {
       }
     }
 
-    data class BinärerAusdruck(val operator: TypedToken<TokenTyp.OPERATOR>, val links: Ausdruck, val rechts: Ausdruck) : Ausdruck() {
+    data class BinärerAusdruck(val operator: TypedToken<TokenTyp.OPERATOR>, val links: Ausdruck, val rechts: Ausdruck, val istAnfang: kotlin.Boolean) : Ausdruck() {
       override fun visit(visitor: (AST) -> Unit) {
         super.visit(visitor)
         links.visit(visitor)

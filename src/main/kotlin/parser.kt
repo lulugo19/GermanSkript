@@ -1,3 +1,5 @@
+import java.util.*
+
 class Parser(code: String) {
   private val tokens = Peekable(Lexer(code).tokeniziere().iterator())
   private var currentToken: Token? = null
@@ -8,9 +10,10 @@ class Parser(code: String) {
   private fun peekDouble(): Token = tokens.peekDouble()!!
   private fun peekDoubleType(): TokenTyp = tokens.peekDouble()!!.typ
 
-  enum class Bereiche {
-    Schleife,
-    Bedingung,
+  fun parseProgramm(): AST.Programm {
+    while (true) {
+      TODO()
+    }
   }
 
   private inline fun <reified T : TokenTyp>expect(erwartet: String): TypedToken<T> {
@@ -22,16 +25,19 @@ class Parser(code: String) {
     }
   }
 
-  fun parse(): AST.Programm {
-    while (true) {
-      TODO()
-    }
-  }
-
   private fun überspringeLeereZeilen() {
     while (peekType() is TokenTyp.NEUE_ZEILE) {
       next()
     }
+  }
+
+  private fun <T: AST> parseKommaListe(elementParser: () -> T): List<T> {
+    val liste = mutableListOf<T>(elementParser())
+    while (peekType() is TokenTyp.KOMMA) {
+      next()
+      liste.add(elementParser())
+    }
+    return liste
   }
 
   // region Ausdrücke
@@ -54,7 +60,7 @@ class Parser(code: String) {
       }
       val operatorToken = expect<TokenTyp.OPERATOR>("Operator")
       val rightHandSide = parseBinärerAusdruck(rechteBindungsKraft)
-      leftHandSide = AST.Ausdruck.BinärerAusdruck(operatorToken, leftHandSide, rightHandSide)
+      leftHandSide = AST.Ausdruck.BinärerAusdruck(operatorToken, leftHandSide, rightHandSide, minBindungskraft == 0.0)
     }
 
     return leftHandSide
@@ -79,7 +85,7 @@ class Parser(code: String) {
         }
       }
       is TokenTyp.ARTIKEL -> {
-        val artikel = expect<TokenTyp.ARTIKEL>("bestimmter Artikel")
+        val artikel = expect<TokenTyp.ARTIKEL.BESTIMMT>("bestimmter Artikel")
         val name = expect<TokenTyp.BEZEICHNER_GROSS>("Bezeichner")
         AST.Ausdruck.Variable(artikel, name)
       }
@@ -103,6 +109,11 @@ class Parser(code: String) {
   // endregion
 
   // region Definitionen
+  fun parseDefinitionen(): List<AST.Definition> {
+    TODO()
+  }
+
+
   private fun parseFunktion(): AST.Definition.Funktion {
     TODO()
   }

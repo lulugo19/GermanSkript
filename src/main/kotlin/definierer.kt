@@ -42,7 +42,7 @@ class Definierer(quellCode: String) {
     funktionsDefinitionen[vollerName] = dieFunktionsDefinition
   }
 
-  fun getVollerNameVonDefinition(funktionsDefinition: AST.Definition.Funktion): String {
+  private fun getVollerNameVonDefinition(funktionsDefinition: AST.Definition.Funktion): String {
     var vollerName = funktionsDefinition.name.wert
     if (funktionsDefinition.objekt != null) {
       val objekt = funktionsDefinition.objekt
@@ -60,7 +60,7 @@ class Definierer(quellCode: String) {
     return vollerName
   }
 
-  fun getParameterTypen(funktionsDefinition: AST.Definition.Funktion): List<String> {
+  private fun getParameterTypen(funktionsDefinition: AST.Definition.Funktion): List<String> {
     val parameterTypen = mutableListOf<String>()
     if (funktionsDefinition.objekt != null) {
       val objekt = funktionsDefinition.objekt
@@ -74,7 +74,7 @@ class Definierer(quellCode: String) {
     return parameterTypen
   }
 
-  fun getVollerNameVonFunktionsAufruf(funktionsAufruf: AST.FunktionsAufruf): String {
+  private fun getVollerNameVonFunktionsAufruf(funktionsAufruf: AST.FunktionsAufruf): String {
     var vollerName = funktionsAufruf.verb.wert
     if (funktionsAufruf.objekt != null) {
       val objekt = funktionsAufruf.objekt

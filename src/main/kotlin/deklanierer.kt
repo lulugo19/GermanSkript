@@ -42,7 +42,7 @@ data class Deklination(
 }
 
 class Deklanierer(quellCode: String) {
-  val ast = Parser(quellCode).parse()
+  val ast = Parser(quellCode).parseProgramm()
   private val wörterbuch = Wörterbuch()
 
   fun deklaniere() {
