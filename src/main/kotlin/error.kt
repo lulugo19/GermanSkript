@@ -55,4 +55,11 @@ sealed class GermanScriptFehler(val token: Token): Error() {
         get() = "Die Funktion '${definition.vollerName}' ist schon in Zeile ${definition.verbToken.anfang.zeile} definiert."
     }
   }
+
+  sealed class Undefiniert(token: Token): GermanScriptFehler(token) {
+    class Funktion(token: Token, private val funktionsAufruf: AST.FunktionsAufruf): Undefiniert(token) {
+      override val nachricht: String?
+        get() = "Die Funktion '${funktionsAufruf.vollerName!!} ist nicht definiert.'"
+    }
+  }
 }

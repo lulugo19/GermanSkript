@@ -43,8 +43,8 @@ sealed class AST {
       val paramName: Nomen get() = name ?: typ
     }
 
-    data class Präposition(
-        val präposition: AST.Präposition,
+    data class PräpositionsParameter(
+        val präposition: Präposition,
         val parameter: List<Parameter>
     )
 
@@ -52,7 +52,7 @@ sealed class AST {
         val rückgabeTyp: Nomen,
         val name: TypedToken<TokenTyp.BEZEICHNER_KLEIN>,
         val objekt: Parameter?,
-        val präpositionen: List<Präposition>,
+        val präpositionsParameter: List<PräpositionsParameter>,
         val suffix: TypedToken<TokenTyp.BEZEICHNER_KLEIN>?,
         val sätze: List<Satz>
     ) : Definition()
@@ -72,8 +72,44 @@ sealed class AST {
         name.visit(visitor)
       }
     }
+
+    data class FunktionsAufruf(val aufruf: AST.FunktionsAufruf): Satz() {
+      override fun visit(visitor: (AST) -> Unit) {
+        super.visit(visitor)
+        aufruf.visit(visitor)
+      }
+    }
   }
 
+  data class Argument(
+      val artikel: TypedToken<TokenTyp.ARTIKEL>,
+      val name: Nomen,
+      val wert: Ausdruck
+  )
+
+  data class PräpositionsArgumente(val präposition: Präposition, val argumente: List<Argument>)
+
+  data class FunktionsAufruf(
+      val verb: TypedToken<TokenTyp.BEZEICHNER_KLEIN>,
+      val objekt: Argument?,
+      val präpositionsArgumente: List<PräpositionsArgumente>,
+      val suffix: TypedToken<TokenTyp.BEZEICHNER_KLEIN>?,
+      var vollerName: String? = null
+  ): AST() {
+    private val _argumente: MutableList<Ausdruck> = mutableListOf()
+    val argumente: List<Ausdruck> = _argumente
+
+    init {
+      if (objekt != null) {
+        _argumente.add(objekt.wert)
+      }
+      for (präposition in präpositionsArgumente) {
+        for (argument in präposition.argumente) {
+          _argumente.add(argument.wert)
+        }
+      }
+    }
+  }
 
   sealed class Ausdruck : AST() {
     data class Zeichenfolge(val zeichenfolge: TypedToken<TokenTyp.ZEICHENFOLGE>) : Ausdruck()
@@ -83,6 +119,13 @@ sealed class AST {
     data class Boolean(val boolean: TypedToken<TokenTyp.BOOLEAN>) : Ausdruck()
 
     data class Variable(val artikel: TypedToken<TokenTyp.ARTIKEL>, val name: TypedToken<TokenTyp.BEZEICHNER_GROSS>) : Ausdruck()
+
+    data class FunktionsAufruf(val aufruf: AST.FunktionsAufruf): Ausdruck() {
+      override fun visit(visitor: (AST) -> Unit) {
+        super.visit(visitor)
+        aufruf.visit(visitor)
+      }
+    }
 
     data class BinärerAusdruck(val operator: TypedToken<TokenTyp.OPERATOR>, val links: Ausdruck, val rechts: Ausdruck) : Ausdruck() {
       override fun visit(visitor: (AST) -> Unit) {

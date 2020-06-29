@@ -9,6 +9,7 @@ class GrammatikPrüfer(quellCode: String) {
       when (knoten) {
         is AST.Definition.Funktion -> prüfeFunktionsDefinition(knoten)
         is AST.Satz.Variablendeklaration -> prüfeVariablendeklaration(knoten)
+        is AST.FunktionsAufruf -> prüfeFunktionsAufruf(knoten)
       }
     }
   }
@@ -57,12 +58,12 @@ class GrammatikPrüfer(quellCode: String) {
     if (funktionsDefinition.objekt != null) {
       prüfeParameter(funktionsDefinition.objekt, Kasus.AKKUSATIV)
     }
-    for (präposition in funktionsDefinition.präpositionen) {
-      prüfePräposition(präposition)
+    for (präposition in funktionsDefinition.präpositionsParameter) {
+      prüfePräpositionsParameter(präposition)
     }
   }
 
-  private fun prüfePräposition(präposition: AST.Definition.Präposition) {
+  private fun prüfePräpositionsParameter(präposition: AST.Definition.PräpositionsParameter) {
     val fälle = präposition.präposition.kasus
     for (kasus in fälle.withIndex()) {
       try {
@@ -80,11 +81,43 @@ class GrammatikPrüfer(quellCode: String) {
     }
   }
 
-  fun getArtikel(bestimmt: Boolean, nomen: AST.Nomen, kasus: Kasus): String {
+  private fun prüfeArgument(argument: AST.Argument, kasus: Kasus) {
+    prüfeNomen(argument.name, kasus)
+    prüfeArtikel(argument.artikel, argument.name, kasus)
+  }
+
+  private fun prüfePräpositionsArgumente(präposition: AST.PräpositionsArgumente) {
+    val fälle = präposition.präposition.kasus
+    for (kasus in fälle.withIndex()) {
+      try {
+        for (argument in präposition.argumente) {
+          prüfeArgument(argument, kasus.value)
+        }
+      }
+      catch (grammatikFehler: GermanScriptFehler.GrammatikFehler) {
+        // Wenn der letzte Fall nicht geklappt hat werfe den Fehler
+        // TODO Man könnte auch 'prüfe' und die Fehlermeldungen verbessern, sodass der Benutzer auf meherer Fälle aufmerksam gemacht wird
+        if (kasus.index == fälle.size-1) {
+          throw grammatikFehler
+        }
+      }
+    }
+  }
+
+  private fun prüfeFunktionsAufruf(funktionsAufruf: AST.FunktionsAufruf) {
+    if (funktionsAufruf.objekt != null) {
+      prüfeArgument(funktionsAufruf.objekt, Kasus.AKKUSATIV)
+    }
+    for (präposition in funktionsAufruf.präpositionsArgumente) {
+      prüfePräpositionsArgumente(präposition)
+    }
+  }
+
+  private fun getArtikel(bestimmt: Boolean, nomen: AST.Nomen, kasus: Kasus): String {
     return getArtikel(bestimmt, nomen.genus!!, nomen.numerus!!, kasus)
   }
 
-  fun getArtikel(bestimmt: Boolean, genus: Genus, numerus: Numerus, kasus: Kasus): String {
+  private fun getArtikel(bestimmt: Boolean, genus: Genus, numerus: Numerus, kasus: Kasus): String {
     return when (kasus) {
       Kasus.NOMINATIV-> when(numerus) {
         Numerus.SINGULAR -> {

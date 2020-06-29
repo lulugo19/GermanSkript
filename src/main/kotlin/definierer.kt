@@ -17,13 +17,18 @@ class Definierer(quellCode: String) {
     }
   }
 
-  fun holeFunktionsDefinition(): AST.Definition.Funktion {
-    TODO()
+  fun holeFunktionsDefinition(funktionsAufruf: AST.FunktionsAufruf): FunktionsDefinition {
+    if (funktionsAufruf.vollerName == null) {
+      funktionsAufruf.vollerName = getVollerNameVonFunktionsAufruf(funktionsAufruf)
+    }
+    return funktionsDefinitionen.getOrElse(funktionsAufruf.vollerName!!) {
+      throw GermanScriptFehler.Undefiniert.Funktion(funktionsAufruf.verb.toUntyped(), funktionsAufruf)
+    }
   }
 
   private fun definiereFunktion(funktionsDefinition: AST.Definition.Funktion) {
     val  token = funktionsDefinition.name
-    val vollerName = getVollerName(funktionsDefinition)
+    val vollerName = getVollerNameVonDefinition(funktionsDefinition)
     if (funktionsDefinitionen.containsKey(vollerName)) {
       throw GermanScriptFehler.DoppelteDefinition.Funktion(
           funktionsDefinition.name.toUntyped(),
@@ -37,13 +42,13 @@ class Definierer(quellCode: String) {
     funktionsDefinitionen[vollerName] = dieFunktionsDefinition
   }
 
-  fun getVollerName(funktionsDefinition: AST.Definition.Funktion): String {
+  fun getVollerNameVonDefinition(funktionsDefinition: AST.Definition.Funktion): String {
     var vollerName = funktionsDefinition.name.wert
     if (funktionsDefinition.objekt != null) {
       val objekt = funktionsDefinition.objekt
       vollerName += " " + objekt.paramName.artikel!! + " " + objekt.paramName.bezeichner.wert
     }
-    for (präposition in funktionsDefinition.präpositionen) {
+    for (präposition in funktionsDefinition.präpositionsParameter) {
       vollerName += " " + präposition.präposition.präposition.wert
       for (parameter in präposition.parameter) {
         vollerName += " " + parameter.paramName.artikel!! + " " + parameter.paramName.bezeichner.wert
@@ -61,11 +66,29 @@ class Definierer(quellCode: String) {
       val objekt = funktionsDefinition.objekt
       parameterTypen.add(objekt.typ.nominativ!!)
     }
-    for (präposition in funktionsDefinition.präpositionen) {
+    for (präposition in funktionsDefinition.präpositionsParameter) {
       for (parameter in präposition.parameter) {
         parameterTypen.add(parameter.typ.nominativ!!)
       }
     }
     return parameterTypen
+  }
+
+  fun getVollerNameVonFunktionsAufruf(funktionsAufruf: AST.FunktionsAufruf): String {
+    var vollerName = funktionsAufruf.verb.wert
+    if (funktionsAufruf.objekt != null) {
+      val objekt = funktionsAufruf.objekt
+      vollerName += " " + objekt.name.artikel!! + " " + objekt.name.bezeichner.wert
+    }
+    for (präposition in funktionsAufruf.präpositionsArgumente) {
+      vollerName += " " + präposition.präposition.präposition.wert
+      for (argument in präposition.argumente) {
+        vollerName += " " + argument.name.artikel!! + " " + argument.wert
+      }
+    }
+    if (funktionsAufruf.suffix != null) {
+      vollerName += " " + funktionsAufruf.suffix
+    }
+    return vollerName
   }
 }
