@@ -49,11 +49,12 @@ sealed class AST {
     )
 
     data class Funktion(
-        val rückgabeTyp: TypedToken<TokenTyp.BEZEICHNER_GROSS>,
+        val rückgabeTyp: Nomen,
         val name: TypedToken<TokenTyp.BEZEICHNER_KLEIN>,
         val objekt: Parameter?,
         val präpositionen: List<Präposition>,
-        val suffix: TypedToken<TokenTyp.BEZEICHNER_KLEIN>
+        val suffix: TypedToken<TokenTyp.BEZEICHNER_KLEIN>?,
+        val sätze: List<Satz>
     ) : Definition()
 
   }

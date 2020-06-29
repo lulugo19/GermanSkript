@@ -49,4 +49,10 @@ sealed class GermanScriptFehler(val token: Token): Error() {
     }
   }
 
+  sealed class DoppelteDefinition(token: Token): GermanScriptFehler(token) {
+    class Funktion(token: Token, private val definition: FunktionsDefinition): DoppelteDefinition(token) {
+      override val nachricht: String?
+        get() = "Die Funktion '${definition.vollerName}' ist schon in Zeile ${definition.verbToken.anfang.zeile} definiert."
+    }
+  }
 }
