@@ -12,9 +12,9 @@ Das Pattern Dafür ist `Ding {, Ding}`. Hierfür verwenden wir die Abkürzung `K
 ### Groß- und Kleinschreibung
 Groß- und Kleinschreibung ist wichtig bei GermanScript. Namen die festgelegt werden können, sogenannte Bezeichner können groß oder klein geschrieben werden.
 Für große Bezeichner verwenden wir die Syntax `Bezeichner` und für kleine Bezeichner die Syntax `bezeichner`.
-Nomen werden bei der [Variablendeklarationen](###Deklaration-von-Variablen) und der [Typdefinitionen](###Definieren-eines-Typs)
-Verben bei der Definition von [Funktionen](###Definieren-einer-Funktion) und [Methoden](###Definieren-einer-Methode) verwendet 
-und Adjektive bei der Definition von [Schnittstellen](###Definieren-einer-Schnittstelle) verwendet.
+Nomen werden bei der [Variablendeklarationen](#deklaration-von-variablen) und der [Klassendefinition](#definieren-einer-klasse)
+Verben bei der Definition von [Funktionen](#definieren-einer-funktion) und [Methoden](#definieren-einer-methode) verwendet 
+und Adjektive bei der Definition von [Schnittstellen](#definieren-einer-schnittstelle) verwendet.
 
 #### Bezeichner
 Bezeichner, also großgeschriebene Wörter werden in GermanScript für Klassen- und Variablenbezeichner verwendet.
@@ -48,8 +48,8 @@ Beispiel für `Kind`:
 `Deklination Duden(Kind)`
 
 
-Es gibt aber auch Bezeichner die diese 4 Fälle **nicht** brauchen. Diese werden für die Bezeichnung von [Modulen](###Definieren-von-Modulen)
-und [Konstanten](###Definieren-von-Konstanten) und [Einheiten](###Einheiten) verwendet und müssen nicht deklaniert werden.
+Es gibt aber auch Bezeichner die diese 4 Fälle **nicht** brauchen. Diese werden für die Bezeichnung von [Modulen](#definieren-eines-moduls)
+und [Konstanten](#definieren-einer-Konstante) und [Einheiten](#einheiten) verwendet und müssen nicht deklaniert werden.
 
 
 ### Artikel
@@ -86,10 +86,10 @@ Folgendes sind Sätze:
 Außerdem gibt es noch Kontrollstrukturen, die auch zu den Sätzen zählen. Sie werden aber nicht mit `;` getrennt, 
 sondern beginnen jeweils einen neuen Bereich.
 Da wären:
-- [Bedingungen](###Bedingungen)
+- [Bedingungen](#bedingungen)
 - Schleifen
-     - [Solange-Schleife](###Solange-Schleife)
-     - [Für-Jede-Schleife](###Für-Jede-Schleife)
+     - [Solange-Schleife](#solange-schleife)
+     - [Für-Jede-Schleife](#für-jede-schleife)
      
 In der Syntax wird für keinen, einen oder mehrere Sätze, die Syntax `Sätze` verwendet.
 
@@ -165,7 +165,7 @@ Bei Variablen muss nach dem `minus` der Akkusativ kommen.
 #### Deklaration von Variablen
 Für eine unveränderbare Variable: `ArtikelNb [Typ] BezeichnerN Zuweisungsoperator AusdruckN`
 
-Für eine veränderbare Variable: `ArtikelNu [Typ] BezeichnerN Zuweisungsoperator AusdruckN`
+Für eine veränderbare Variable: `ArtikelNu [neuer|neue|neues] [Typ] BezeichnerN Zuweisungsoperator AusdruckN`
 
 Variablen können auf zwei Art und Weisen deklariert werden. Für Variablen, die nicht erneut zugewiesen werden können
 werden die bestimmten Artikel `der, die, das` verwendet. Und für Variablen die erneut zugewiesen werden können, werden
@@ -234,12 +234,12 @@ sonst wenn die Zahl gleich 42 ist:
 sonst schreibe die Zahl
 ```
 
-### Solange-Schleife
+### Solange Schleife
 `solange Bedingung: Sätze.`
 
 Solange die Bedingung zutrifft, werden die Sätze ausgeführt.
 
-### Für-Jede-Schleife
+### Für Jede Schleife
 `für (jeden | jede | jedes) BezeichnerA in AusdruckAP: Sätze.`
 
 Für jedes Element in dem iterierbaren Objekt, wird die Schleife einmal ausgeführt, wobei
@@ -268,13 +268,13 @@ Vorschlag: syntaktischer Zucker
 ```
 
 ### Definieren einer Funktion
-`Verb[(Rückgabetyp)] bezeichner Parameter [Suffix]: Sätze.`
+`Verb[(Rückgabetyp)] bezeichner Parameter [Suffix]: (Sätze|intern).`
 
 Parameter: `[Objekt] [Kommaliste(Präposition)]`
 
-Objekte: `ArtikelA Typ [NomenA]`
+Objekte: `ArtikelAb TypA [NomenN]`
 
-Präposition: `(PräpG | PräpD | PräpA | PräpAD) Kommaliste((ArtikelG | ArtikelD | ArtikelA) (TypG | TypD | TypA) [BezeichnerP])`
+Präposition: `(PräpG | PräpD | PräpA | PräpAD) Kommaliste((ArtikelGb | ArtikelDb | ArtikelAb) (TypG | TypD | TypA) [BezeichnerP])`
 
 PräpG: `angesichts, anhand, anlässlich, anstatt, anstelle, aufgrund, 
 außerhalb, beiderseits, bezüglich, diesseits, infolge, innerhalb, 
@@ -311,7 +311,7 @@ Verb stelle den Gegenstand her:
 ### Funktionsaufruf
 `Verb [Argumente] [Suffix]`
 
-Argumente: `[Kommaliste(Objekt)] [Kommaliste(Präposition)]`
+Argumente: `[Objekt] [Kommaliste(Präposition)]`
 
 Objekt: `ArtikelAb BezeichnerA1 (Variable | Literal) | ArtikelAu (Liste | Objektinstanziierung)`
 
@@ -319,9 +319,9 @@ Variable: `BezeichnerA2`
 
 Literal: `Zahl | Zeichenfolge | Boolean`
 
-Liste: siehe [Liste](###Listen)
+Liste: siehe [Liste](#listen)
 
-Objektinstanziierung: siehe [Objektinstanziierung](###Instanziieren-eines Objekts-einer-Klasse)
+Objektinstanziierung: siehe [Objektinstanziierung](#instanziieren-eines-objekts-einer-klasse)
 
 Präposition: `PräpGDA Kommaliste(ArtikelGDAb BezeichnerA1 [BezeicherA2 | Zahl |])`
 
@@ -359,7 +359,7 @@ Der Konstruktor ist dafür da das Objekt zu initialisieren.
 In dem Konstruktor können die Demonstativpronomen `diese` oder `jene`
 verwendet werden um Felder zu erstellen, auf die man von außen nicht zugreifen kann.
 
-Der Konstruktor ist eine spezielle [Methode](###Definieren-einer-Methoden) und es gelten
+Der Konstruktor ist eine spezielle [Methode](#definieren-einer-methode) und es gelten
 die Regeln für Methoden.
 
 Beispiel:
