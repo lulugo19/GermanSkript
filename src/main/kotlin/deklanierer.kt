@@ -46,13 +46,12 @@ class Deklanierer(dateiPfad: String): PipelineComponent(dateiPfad) {
   private val wörterbuch = Wörterbuch()
 
   fun deklaniere() {
-    ast.visit { knoten ->
+    ast.definitionen.visit(false) { knoten ->
       if (knoten is AST.Definition.DeklinationsDefinition) {
         wörterbuch.fügeDeklinationHinzu(knoten.deklination)
-        true
-      } else {
-        false
       }
+      // only visit on global level
+      return@visit false
     }
   }
   
@@ -64,7 +63,7 @@ class Deklanierer(dateiPfad: String): PipelineComponent(dateiPfad) {
     }
   }
 
-  fun printWörterbuch() = wörterbuch.print()
+  fun druckeWörterbuch() = wörterbuch.print()
 }
 
 class Wörterbuch {
@@ -197,5 +196,5 @@ fun main() {
 
   val deklanierer = Deklanierer("./iterationen/iter0/iter0.gms")
   deklanierer.deklaniere()
-  deklanierer.printWörterbuch()
+  deklanierer.druckeWörterbuch()
 }

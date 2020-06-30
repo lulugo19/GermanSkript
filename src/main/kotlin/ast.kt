@@ -1,5 +1,13 @@
-sealed class AST {
+fun List<AST>.visit(breakOnNotFullyVisited: Boolean, onVisitEnd: ((AST, Boolean) -> Unit)? = null, onVisit: (AST) -> Boolean): Boolean {
+  for (element in this) {
+    if (!element.visit(onVisitEnd, onVisit) && breakOnNotFullyVisited) {
+      return false
+    }
+  }
+  return true
+}
 
+sealed class AST {
   // visit implementation for all the leaf nodes
   fun visit(onVisitEnd: ((AST, Boolean) -> Unit)? = null, onVisit: (AST) -> Boolean): Boolean {
     val fullyVisited = onVisit(this)
@@ -13,21 +21,12 @@ sealed class AST {
     return onVisit(this)
   }
 
-  fun List<AST>.visit(breakOnNotFullyVisited: Boolean, onVisit: (AST) -> Boolean, onVisitEnd: ((AST, Boolean) -> Unit)?): Boolean {
-    for (element in this) {
-      if (!element.visit(onVisitEnd, onVisit) && breakOnNotFullyVisited) {
-        return false
-      }
-    }
-    return true
-  }
-
   // Wurzelknoten
   data class Programm(val definitionen: List<Definition>, val sätze: List<Satz>) : AST() {
     override fun visitImpl(onVisit: (AST) -> Boolean, onVisitEnd: ((AST, Boolean) -> Unit)?): Boolean {
       return super.visitImpl(onVisit, onVisitEnd) &&
-          definitionen.visit(false, onVisit, onVisitEnd) &&
-          sätze.visit(true, onVisit, onVisitEnd)
+          definitionen.visit(false, onVisitEnd, onVisit) &&
+          sätze.visit(true, onVisitEnd, onVisit)
     }
   }
 
@@ -74,7 +73,7 @@ sealed class AST {
         val sätze: List<Satz>
     ) : Definition() {
         override fun visitImpl(onVisit: (AST) -> Boolean, onVisitEnd: ((AST, Boolean) -> Unit)?): Boolean {
-          return super.visitImpl(onVisit, onVisitEnd) && sätze.visit(true, onVisit, onVisitEnd)
+          return super.visitImpl(onVisit, onVisitEnd) && sätze.visit(true, onVisitEnd, onVisit)
       }
     }
   }
