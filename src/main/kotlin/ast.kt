@@ -66,7 +66,7 @@ sealed class AST {
     )
 
     data class Funktion(
-        val rückgabeTyp: Nomen,
+        val rückgabeTyp: Nomen?,
         val name: TypedToken<TokenTyp.BEZEICHNER_KLEIN>,
         val objekt: Parameter?,
         val präpositionsParameter: List<PräpositionsParameter>,
@@ -81,12 +81,14 @@ sealed class AST {
 
 
   sealed class Satz : AST() {
-    data class Variablendeklaration(
+    object Intern: Satz()
+
+    data class VariablenDeklaration(
         val artikel: TypedToken<TokenTyp.ARTIKEL>,
         val name: Nomen,
         val zuweisungsOperator: TypedToken<TokenTyp.ZUWEISUNG>,
         val ausdruck: Ausdruck
-    ) : Satz()
+    ): Satz()
 
     data class FunktionsAufruf(val aufruf: AST.FunktionsAufruf): Satz() {
       override fun visitImpl(onVisit: (AST) -> Boolean, onVisitEnd: ((AST, Boolean) -> Unit)?): Boolean {
@@ -99,7 +101,7 @@ sealed class AST {
   data class Argument(
       val artikel: TypedToken<TokenTyp.ARTIKEL>,
       val name: Nomen,
-      val wert: Ausdruck
+      val wert: Ausdruck?
   )
 
   data class PräpositionsArgumente(val präposition: Präposition, val argumente: List<Argument>)
@@ -116,11 +118,11 @@ sealed class AST {
 
     init {
       if (objekt != null) {
-        _argumente.add(objekt.wert)
+        _argumente.add(objekt.wert ?: Ausdruck.Variable(null, objekt.name))
       }
       for (präposition in präpositionsArgumente) {
         for (argument in präposition.argumente) {
-          _argumente.add(argument.wert)
+          _argumente.add(argument.wert ?: Ausdruck.Variable(null, argument.name))
         }
       }
     }
@@ -133,7 +135,7 @@ sealed class AST {
 
     data class Boolean(val boolean: TypedToken<TokenTyp.BOOLEAN>) : Ausdruck()
 
-    data class Variable(val artikel: TypedToken<TokenTyp.ARTIKEL>?, val name: TypedToken<TokenTyp.BEZEICHNER_GROSS>) : Ausdruck()
+    data class Variable(val artikel: TypedToken<TokenTyp.ARTIKEL>?, val name: Nomen) : Ausdruck()
 
     data class FunktionsAufruf(val aufruf: AST.FunktionsAufruf): Ausdruck() {
       override fun visitImpl(onVisit: (AST) -> kotlin.Boolean, onVisitEnd: ((AST, kotlin.Boolean) -> Unit)?): kotlin.Boolean {

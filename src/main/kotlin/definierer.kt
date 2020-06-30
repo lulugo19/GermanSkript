@@ -42,7 +42,7 @@ class Definierer(quellCode: String) {
       )
     }
     val parameterTypen = getParameterTypen(funktionsDefinition)
-    val rückgabeTyp = funktionsDefinition.rückgabeTyp.nominativ!!
+    val rückgabeTyp = funktionsDefinition.rückgabeTyp?.nominativ!!
 
     val dieFunktionsDefinition = FunktionsDefinition(token, vollerName, parameterTypen, rückgabeTyp, funktionsDefinition.sätze)
     funktionsDefinitionen[vollerName] = dieFunktionsDefinition

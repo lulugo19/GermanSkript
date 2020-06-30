@@ -23,10 +23,10 @@ Deklination Maskulinum Singular(Mond, Mondes, Mond, Mond) Plural(Monde, Monde, M
 
 // FUNKTIONS-DEFINTION
 Verb begrüße die Zeichenfolge Welt:
-    schreibe "Hallo " + die Welt
+    schreibe die Zeichenfolge "Hallo " + die Welt
 .
 
-begrüße "GermanScript" // Hallo GermanScript
+begrüße die Welt "GermanScript" // Hallo GermanScript
 
 die Welt ist "Welt"
 begrüße die Welt // Hallo Welt

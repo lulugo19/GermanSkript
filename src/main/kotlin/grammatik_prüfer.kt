@@ -8,7 +8,7 @@ class GrammatikPrüfer(quellCode: String) {
     ast.visit { knoten ->
       when (knoten) {
         is AST.Definition.Funktion -> prüfeFunktionsDefinition(knoten)
-        is AST.Satz.Variablendeklaration -> prüfeVariablendeklaration(knoten)
+        is AST.Satz.VariablenDeklaration -> prüfeVariablendeklaration(knoten)
         is AST.FunktionsAufruf -> prüfeFunktionsAufruf(knoten)
       }
       // visit everything
@@ -40,7 +40,7 @@ class GrammatikPrüfer(quellCode: String) {
     return expectedArtikel
   }
 
-  private fun prüfeVariablendeklaration(variablenDeklaration: AST.Satz.Variablendeklaration) {
+  private fun prüfeVariablendeklaration(variablenDeklaration: AST.Satz.VariablenDeklaration) {
     val nomen = variablenDeklaration.name
     prüfeNomen(nomen, Kasus.NOMINATIV)
     prüfeArtikel(variablenDeklaration.artikel, nomen, Kasus.NOMINATIV)

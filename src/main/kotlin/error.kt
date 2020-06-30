@@ -4,7 +4,7 @@ sealed class GermanScriptFehler(val token: Token): Error() {
   override val message: String?
     get() {
       val pos = token.anfang
-      return "in (${pos.zeile}, ${pos.spalte}) " + nachricht.orEmpty()
+      return "in (${pos.zeile}, ${pos.spalte}): " + nachricht.orEmpty()
     }
 
   sealed class SyntaxFehler(token: Token): GermanScriptFehler(token) {
@@ -16,8 +16,19 @@ sealed class GermanScriptFehler(val token: Token): Error() {
 
     class ParseFehler(token: Token, private val erwartet: String? = null, private val details: String? = null): SyntaxFehler(token) {
       override val nachricht: String
-        get() = "Unerwartetes Token ${token.typ.anzeigeName}. $erwartet Erwartet. ${details.orEmpty()}"
+        get() {
+          var msg = "Unerwartetes Token '${token.wert}'."
+          if (erwartet != null) {
+            msg += " $erwartet Erwartet."
+          }
+          if (details != null) {
+            msg += " $details"
+          }
+          return msg
+        }
     }
+
+    class UngültigerBereich(token: Token, override val nachricht: String): SyntaxFehler(token)
   }
 
   sealed class DudenFehler(token: Token, protected val wort: String): GermanScriptFehler(token) {

@@ -6,7 +6,7 @@ class TypPrüfer(quellCode: String) {
   fun prüfe() {
     ast.visit { knoten ->
       when(knoten) {
-        is AST.Satz.Variablendeklaration -> TODO()
+        is AST.Satz.VariablenDeklaration -> TODO()
         else -> TODO()
       }
       true // visit everything

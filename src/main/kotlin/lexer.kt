@@ -79,6 +79,7 @@ sealed class TokenTyp(val anzeigeName: String) {
 
     // Schlüsselwörter
     object DEKLINATION: TokenTyp("'Deklination'")
+    data class GENUS(val genus: Genus): TokenTyp("'Genus'")
     object GEBE: TokenTyp("'gebe'")
     object ZURÜCK: TokenTyp("'zurück'")
     object WENN: TokenTyp("'wenn'")
@@ -95,6 +96,7 @@ sealed class TokenTyp(val anzeigeName: String) {
     object ADJEKTIV: TokenTyp("'Adjektiv'")
     object ALIAS: TokenTyp("'Alias'")
     object MODUL: TokenTyp("'Modul'")
+    object INTERN: TokenTyp("'intern'")
 
     // Artikel und Präpositionen
     data class JEDE(val genus: Genus): TokenTyp("'jeder' oder 'jede' oder 'jedes'")
@@ -164,8 +166,12 @@ private val DOPPEL_SYMBOL_MAPPING = mapOf<String, TokenTyp>(
 private val WORT_MAPPING = mapOf<String, TokenTyp>(
     // Schlüsselwörter
     "Deklination" to TokenTyp.DEKLINATION,
+    "Maskulinum" to TokenTyp.GENUS(Genus.MASKULINUM),
+    "Femininum" to TokenTyp.GENUS(Genus.FEMININUM),
+    "Neutrum" to TokenTyp.GENUS(Genus.NEUTRUM),
     "Nomen" to TokenTyp.NOMEN,
     "Verb" to TokenTyp.VERB,
+    "intern" to TokenTyp.INTERN,
     "Adjektiv" to TokenTyp.ADJEKTIV,
     "Alias" to TokenTyp.ALIAS,
     "gebe" to TokenTyp.GEBE,
@@ -293,15 +299,19 @@ class Lexer(val quellcode: String) {
     private fun symbol(): Sequence<Token> = sequence {
         val startPos = currentTokenPos
         var symbolString = iterator.next()!!.toString()
-        val potenziellesDoppelSymbol = symbolString + iterator.peek()!!.toString()
-        val tokenTyp = if (DOPPEL_SYMBOL_MAPPING.containsKey(potenziellesDoppelSymbol)) {
-            iterator.next()
-            symbolString = potenziellesDoppelSymbol
-            DOPPEL_SYMBOL_MAPPING.getValue(potenziellesDoppelSymbol)
-        } else if (SYMBOL_MAPPING.containsKey(symbolString[0])) {
-            SYMBOL_MAPPING.getValue(symbolString[0])
-        } else {
-            TokenTyp.UNDEFINIERT
+        val potenziellesDoppelSymbol = symbolString + (iterator.peek()?: '\n')
+        val tokenTyp = when {
+          DOPPEL_SYMBOL_MAPPING.containsKey(potenziellesDoppelSymbol) -> {
+              iterator.next()
+              symbolString = potenziellesDoppelSymbol
+              DOPPEL_SYMBOL_MAPPING.getValue(potenziellesDoppelSymbol)
+          }
+          SYMBOL_MAPPING.containsKey(symbolString[0]) -> {
+              SYMBOL_MAPPING.getValue(symbolString[0])
+          }
+          else -> {
+              TokenTyp.UNDEFINIERT
+          }
         }
         val endPos = currentTokenPos
         if (tokenTyp is TokenTyp.UNDEFINIERT) {
@@ -357,8 +367,8 @@ class Lexer(val quellcode: String) {
         yield(token)
     }
 
-    private val NOMEN_PATTERN = """[A-Z]\w*""".toRegex()
-    private val VERB_PATTERN = """[a-z]\w*[\?!]?""".toRegex()
+    private val NOMEN_PATTERN = """[A-ZÖÄÜ][\wöäüß]*""".toRegex()
+    private val VERB_PATTERN = """[a-zöäü][\wöäüß]*[\?!]?""".toRegex()
 
     private fun wort(): Sequence<Token> = sequence {
         val firstWordStartPos = currentTokenPos
@@ -436,9 +446,42 @@ fun main() {
         Lexer(code).tokeniziere().takeWhile { token -> token.typ != TokenTyp.EOF }.forEach { println(it) }
     }
 
-    val test = """
-        A größer gleich "String" und B kleiner Hallo oder C ungleich 3 && D || E ungleich "Hallo"
-    """.trimIndent()
+        val quellcode = """// INTERNE FUNKTIONEN
+    Verb schreibe die Zeichenfolge: intern. // print
+    
+    Verb schreibe die Zeichenfolge Zeile: intern. // println
+    
+    Verb schreibe die Zahl: intern.
+    
+    // VARIABLEN-DEKLARATIONEN, ZUWEISUNGEN UND ZAHLEN
+    
+    die Zahl ist 5 hoch 3
+    schreibe die Zahl // 125
+    
+    Deklination Femininum Singular(Summe, Summe, Summe, Summe) Plural(Summen, Summen, Summen, Summen)
+    
+    eine Summe ist die Zahl + 25,5
+    schreibe die Summe // 150,5
+    eine Summe ist die Summe - 0,5
+    schreibe die Summe // 150
+    
+    
+    Deklination Femininum Singular(Welt, Welt, Welt, Welt) Plural(Welten, Welten, Welten, Welten)
+    Deklination Maskulinum Singular(Mond, Mondes, Mond, Mond) Plural(Monde, Monde, Monden, Monde)
+    
+    // FUNKTIONS-DEFINTION
+    Verb begrüße die Zeichenfolge Welt:
+        schreibe "Hallo " + die Welt
+    .
+    
+    begrüße "GermanScript" // Hallo GermanScript
+    
+    die Welt ist "Welt"
+    begrüße die Welt // Hallo Welt
+    
+    der Mond ist "Mond"
+    begrüße die Welt Mond // Hallo Mond"""
 
-    outputTokenTypes(test)
+
+    outputTokenTypes(quellcode)
 }
