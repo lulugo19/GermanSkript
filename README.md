@@ -175,14 +175,14 @@ Bei Variablen muss nach dem `minus` der Akkusativ kommen.
 ### Variablen
 
 #### Deklaration von Variablen
-Für eine unveränderbare Variable: `ArtikelNb [Typ] BezeichnerN Zuweisungsoperator AusdruckN`
+Für eine unveränderbare Variable: `ArtikelNb BezeichnerN Zuweisungsoperator AusdruckN`
 
-Für eine veränderbare Variable: `ArtikelNu [neuer|neue|neues] [Typ] BezeichnerN Zuweisungsoperator AusdruckN`
+Für eine veränderbare Variable: `ArtikelNu [neuer|neue|neues] BezeichnerN Zuweisungsoperator AusdruckN`
 
 Variablen können auf zwei Art und Weisen deklariert werden. Für Variablen, die nicht erneut zugewiesen werden können
 werden die bestimmten Artikel `der, die, das` verwendet. Und für Variablen die erneut zugewiesen werden können, werden
 die unbestimmten Artikel `ein, eine, einige` verwendet. Der Artikel muss außerdem mit dem Genus und dem Numerus des Ausdrucks übereinstimmen.
-Der Typ kann bei der Deklaration weggelassen werden und wird dann aus dem Ausdruck ermittelt.
+Der Typ wird bei der Deklaration weggelassen werden und wird dann aus dem Ausdruck ermittelt.
 
 
 #### Neuzuweisung von Variablen

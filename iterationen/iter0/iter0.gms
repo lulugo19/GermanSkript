@@ -12,13 +12,14 @@ schreibe die Zahl // 125
 
 Deklination Femininum Singular(Summe, Summe, Summe, Summe) Plural(Summen, Summen, Summen, Summen)
 
-eine Zahl Summe ist Zahl + 25,5
+eine Summe ist die Zahl + 25,5
 schreibe die Summe // 150,5
 eine Summe ist die Summe - 0,5
 schreibe die Summe // 150
 
 
-Deklination Femininum Singular(Welt, Welt, Summe, Summe) Plural(Summen, Summen, Summen, Summen)
+Deklination Femininum Singular(Welt, Welt, Welt, Welt) Plural(Welten, Welten, Welten, Welten)
+Deklination Maskulinum Singular(Mond, Mondes, Mond, Mond) Plural(Monde, Monde, Monden, Monde)
 
 // FUNKTIONS-DEFINTION
 Verb begrüße die Zeichenfolge Welt:

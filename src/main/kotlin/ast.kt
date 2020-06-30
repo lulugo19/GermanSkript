@@ -83,9 +83,9 @@ sealed class AST {
   sealed class Satz : AST() {
     data class Variablendeklaration(
         val artikel: TypedToken<TokenTyp.ARTIKEL>,
-        val typ: Nomen,
         val name: Nomen,
-        val zuweisungsOperator: TypedToken<TokenTyp.ZUWEISUNG>
+        val zuweisungsOperator: TypedToken<TokenTyp.ZUWEISUNG>,
+        val ausdruck: Ausdruck
     ) : Satz()
 
     data class FunktionsAufruf(val aufruf: AST.FunktionsAufruf): Satz() {

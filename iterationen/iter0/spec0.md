@@ -2,12 +2,23 @@
 ## Sätze
 
 ### Variablendeklaration
-Für eine unveränderbare Variable: `ArtikelNb [Typ] BezeichnerN Zuweisungsoperator AusdruckN`
+Für eine unveränderbare Variable: `ArtikelNb BezeichnerN Zuweisungsoperator AusdruckN`
 
-Für eine veränderbare Variable: `ArtikelNu [Typ] BezeichnerN Zuweisungsoperator AusdruckN`
+Für eine veränderbare Variable: `ArtikelNu BezeichnerN Zuweisungsoperator AusdruckN`
 
 ### Variablenzuweisung
 `ArtikelNu BezeichnerN Zuweisungsoperator AusdruckN`
+
+### Funktionsaufrufe
+`Verb [Argumente] [Suffix]`
+
+Argumente: `[Objekt] [Kommaliste(Präposition)]`
+
+Objekt: `ArtikelAb BezeichnerA Argument`
+
+Präposition: `Präp Kommaliste(ArtikelGDAb  BezeicherGDA Argument)`
+
+Argument: `(Variable | Literal | Funktionsaufruf)`
 
 Nur unveränderbare Variablen können neu zugewiesen werden!
 
@@ -23,15 +34,7 @@ Nur unveränderbare Variablen können neu zugewiesen werden!
 einfach nur der Namen der Variable ohne den Artikel
 
 ### Funktionsaufrufe
-`Verb [Argumente] [Suffix]`
-
-Argumente: `[Objekt] [Kommaliste(Präposition)]`
-
-Objekt: `ArtikelAb BezeichnerA Argument`
-
-Präposition: `Präp Kommaliste(ArtikelGDAb  BezeicherGDA Argument)`
-
-Argument: `(Variable | Literal | Funktionsaufruf)`
+siehe Sätze
 
 ## Definitionen
 
