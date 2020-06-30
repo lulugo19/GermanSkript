@@ -46,13 +46,13 @@ class Deklanierer(dateiPfad: String): PipelineComponent(dateiPfad) {
   private val wörterbuch = Wörterbuch()
 
   fun deklaniere() {
-    ast.definitionen.visit(false) { knoten ->
+    ast.definitionen.visit(false, { knoten ->
       if (knoten is AST.Definition.DeklinationsDefinition) {
         wörterbuch.fügeDeklinationHinzu(knoten.deklination)
       }
       // only visit on global level
       return@visit false
-    }
+    })
   }
   
   fun holeDeklination(nomen: AST.Nomen): Deklination {
@@ -111,6 +111,7 @@ class Wörterbuch {
   fun holeDeklination(wort: String): Deklination {
     var min = 0
     var max = tabelle.size
+    var lastDiff = 0
     while (min != max) {
       val avg = floor((min.toDouble() + max) / 2).toInt()
       val deklination = tabelle[avg]
@@ -128,6 +129,11 @@ class Wörterbuch {
       } else {
         min = avg
       }
+      val newDiff = max - min
+      if (newDiff == lastDiff) {
+        break
+      }
+      lastDiff = newDiff
     }
 
     throw WortNichtGefunden(wort)

@@ -6,13 +6,13 @@ enum class Assoziativität {
     RECHTS,
 }
 
-enum class OperatorKlasse(kasus: Kasus) {
+enum class OperatorKlasse(val kasus: Kasus) {
     ARITHMETISCH(Kasus.AKKUSATIV),
     VERGLEICH(Kasus.DATIV),
     LOGISCH(Kasus.AKKUSATIV),
 }
 
-enum class Operator(val bindungsKraft: Int, val assoziativität: Assoziativität, klasse: OperatorKlasse) {
+enum class Operator(val bindungsKraft: Int, val assoziativität: Assoziativität, val klasse: OperatorKlasse) {
     ODER(1, Assoziativität.LINKS, OperatorKlasse.LOGISCH),
     UND(2, Assoziativität.LINKS, OperatorKlasse.LOGISCH),
     GLEICH(3, Assoziativität.LINKS, OperatorKlasse.ARITHMETISCH),
@@ -32,10 +32,10 @@ enum class Operator(val bindungsKraft: Int, val assoziativität: Assoziativität
 }
 
 // Genus (Geschlecht)
-enum class Genus {
-    MASKULINUM,
-    FEMININUM,
-    NEUTRUM,
+enum class Genus(val anzeigeName: String) {
+    MASKULINUM("Maskulinum"),
+    FEMININUM("Femininum"),
+    NEUTRUM("Neutrum")
 }
 
 // Kasus (Fall)
@@ -239,7 +239,7 @@ class Lexer(datei: String): PipelineComponent(datei) {
     fun tokeniziere() : Sequence<Token> = sequence {
         var inMehrZeilenKommentar = false
         for ((zeilenIndex, zeile) in File(dateiPfad).readLines().map(String::trim).withIndex()) {
-            this@Lexer.zeilenIndex = zeilenIndex
+            this@Lexer.zeilenIndex = zeilenIndex + 1
             var kannWortLesen = true
             if (zeile == "") {
                 continue

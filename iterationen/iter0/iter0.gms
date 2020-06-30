@@ -1,3 +1,7 @@
+Deklination Femininum Singular(Zahl, Zahl, Zahl, Zahl) Plural(Zahlen, Zahlen, Zahlen, Zahlen)
+Deklination Femininum Singular(Zeichenfolge, Zeichenfolge, Zeichenfolge, Zeichenfolge) Plural(Zeichenfolgen, Zeichenfolgen, Zeichenfolgen, Zeichenfolgen)
+Deklination Femininum Singular(Zeile, Zeile, Zeile, Zeile) Plural(Zeilen, Zeilen, Zeilen, Zeilen)
+
 // INTERNE FUNKTIONEN
 Verb schreibe die Zeichenfolge: intern. // print
 

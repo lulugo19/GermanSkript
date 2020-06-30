@@ -2,14 +2,20 @@ class GrammatikPrüfer(dateiPfad: String): PipelineComponent(dateiPfad) {
   val deklanierer = Deklanierer(dateiPfad)
   val ast = deklanierer.ast
 
+  val logger = SimpleLogger()
+
   fun prüfe() {
     deklanierer.deklaniere()
 
-    ast.visit { knoten ->
+    ast.visit(false) { knoten ->
       when (knoten) {
         is AST.Definition.Funktion -> prüfeFunktionsDefinition(knoten)
         is AST.Satz.VariablenDeklaration -> prüfeVariablendeklaration(knoten)
         is AST.FunktionsAufruf -> prüfeFunktionsAufruf(knoten)
+        is AST.Ausdruck -> when (knoten) {
+            is AST.Ausdruck.BinärerAusdruck -> prüfeBinärenAusdruck(knoten)
+            else -> return@visit false
+        }
       }
       // visit everything
       true
@@ -26,7 +32,7 @@ class GrammatikPrüfer(dateiPfad: String): PipelineComponent(dateiPfad) {
 
     val expectedForm = deklanation.getForm(kasus, numerus)
     if (nomen.bezeichner.wert != expectedForm) {
-      throw GermanScriptFehler.GrammatikFehler.FalscheForm(nomen.bezeichner.toUntyped(), kasus, numerus, expectedForm)
+      throw GermanScriptFehler.GrammatikFehler.FalscheForm(nomen.bezeichner.toUntyped(), kasus, nomen, expectedForm)
     }
   }
 
@@ -34,8 +40,9 @@ class GrammatikPrüfer(dateiPfad: String): PipelineComponent(dateiPfad) {
   {
     val bestimmt = artikel.typ is TokenTyp.ARTIKEL.BESTIMMT
     val expectedArtikel = getArtikel(bestimmt, nomen.genus!!, nomen.numerus!!, kasus)
+    nomen.artikel = expectedArtikel
     if (artikel.wert != expectedArtikel) {
-      throw GermanScriptFehler.GrammatikFehler.FalscherArtikel(artikel.toUntyped(), kasus, nomen.numerus!!, expectedArtikel)
+      throw GermanScriptFehler.GrammatikFehler.FalscherArtikel(artikel.toUntyped(), kasus, nomen, expectedArtikel)
     }
     return expectedArtikel
   }
@@ -44,6 +51,7 @@ class GrammatikPrüfer(dateiPfad: String): PipelineComponent(dateiPfad) {
     val nomen = variablenDeklaration.name
     prüfeNomen(nomen, Kasus.NOMINATIV)
     prüfeArtikel(variablenDeklaration.artikel, nomen, Kasus.NOMINATIV)
+    // logger.addLine("geprüft: $variablenDeklaration")
   }
 
   private fun prüfeParameter(parameter: AST.Definition.Parameter, kasus: Kasus) {
@@ -63,6 +71,7 @@ class GrammatikPrüfer(dateiPfad: String): PipelineComponent(dateiPfad) {
     for (präposition in funktionsDefinition.präpositionsParameter) {
       prüfePräpositionsParameter(präposition)
     }
+    // logger.addLine("geprüft: $funktionsDefinition")
   }
 
   private fun prüfePräpositionsParameter(präposition: AST.Definition.PräpositionsParameter) {
@@ -113,6 +122,24 @@ class GrammatikPrüfer(dateiPfad: String): PipelineComponent(dateiPfad) {
     for (präposition in funktionsAufruf.präpositionsArgumente) {
       prüfePräpositionsArgumente(präposition)
     }
+    // logger.addLine("geprüft: $funktionsAufruf")
+  }
+
+  private fun prüfeBinärenAusdruck(binärerAusdruck: AST.Ausdruck.BinärerAusdruck) {
+    if (binärerAusdruck.links is AST.Ausdruck.Variable) {
+      val variable = binärerAusdruck.links
+      val kasus = if (binärerAusdruck.istAnfang) Kasus.NOMINATIV
+      else binärerAusdruck.operator.typ.operator.klasse.kasus
+      prüfeNomen(variable.name, kasus)
+      prüfeArtikel(variable.artikel!!, variable.name, Kasus.NOMINATIV)
+    }
+    if (binärerAusdruck.rechts is AST.Ausdruck.Variable) {
+      val variable = binärerAusdruck.rechts
+      val kasus = binärerAusdruck.operator.typ.operator.klasse.kasus
+      prüfeNomen(variable.name, kasus)
+      prüfeArtikel(variable.artikel!!, variable.name, Kasus.AKKUSATIV)
+    }
+    logger.addLine("geprüft: $binärerAusdruck")
   }
 
   private fun getArtikel(bestimmt: Boolean, nomen: AST.Nomen, kasus: Kasus): String {
@@ -174,5 +201,11 @@ class GrammatikPrüfer(dateiPfad: String): PipelineComponent(dateiPfad) {
       }
     }
   }
+}
+
+fun main() {
+  val grammatikPrüfer = GrammatikPrüfer("./iterationen/iter0/iter0.gms")
+  grammatikPrüfer.prüfe()
+  grammatikPrüfer.logger.print()
 }
 
