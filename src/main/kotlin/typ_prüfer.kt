@@ -1,6 +1,6 @@
-class TypPrüfer(quellCode: String) {
+class TypPrüfer(dateiPfad: String): PipelineComponent(dateiPfad) {
 
-  val grammatikPrüfer = GrammatikPrüfer(quellCode)
+  val grammatikPrüfer = GrammatikPrüfer(dateiPfad)
   val ast = grammatikPrüfer.ast
 
   fun prüfe() {

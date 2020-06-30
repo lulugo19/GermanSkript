@@ -1,5 +1,5 @@
-class Interpreter(quellCode: String) {
-  val typPrüfer = TypPrüfer(quellCode)
+class Interpreter(dateiPfad: String): PipelineComponent(dateiPfad) {
+  val typPrüfer = TypPrüfer(dateiPfad)
   val ast = typPrüfer.ast
 
   fun interpretiere() {

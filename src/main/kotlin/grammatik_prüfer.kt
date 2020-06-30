@@ -1,5 +1,5 @@
-class GrammatikPrüfer(quellCode: String) {
-  val deklanierer = Deklanierer(quellCode)
+class GrammatikPrüfer(dateiPfad: String): PipelineComponent(dateiPfad) {
+  val deklanierer = Deklanierer(dateiPfad)
   val ast = deklanierer.ast
 
   fun prüfe() {

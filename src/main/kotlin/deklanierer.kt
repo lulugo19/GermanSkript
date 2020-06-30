@@ -41,8 +41,8 @@ data class Deklination(
   }
 }
 
-class Deklanierer(quellCode: String) {
-  val ast = Parser(quellCode).parse()
+class Deklanierer(dateiPfad: String): PipelineComponent(dateiPfad) {
+  val ast = Parser(dateiPfad).parse()
   private val wörterbuch = Wörterbuch()
 
   fun deklaniere() {
@@ -63,6 +63,8 @@ class Deklanierer(quellCode: String) {
       throw GermanScriptFehler.UnbekanntesWort(nomen.bezeichner.toUntyped())
     }
   }
+
+  fun printWörterbuch() = wörterbuch.print()
 }
 
 class Wörterbuch {
@@ -168,7 +170,7 @@ class Wörterbuch {
   }
 }
 
-fun main() {
+fun wörterBuchTest() {
   val wörterbuch = Wörterbuch()
 
   // Bäume sollte kleiner Baumhaus sein, dies können wir mit dem normalen Vergleich nicht erreichen, deswegen brauchen wir den Special Vergleich
@@ -188,4 +190,12 @@ fun main() {
   println(wörterbuch.holeDeklination("Baumhaus"))
   println(wörterbuch.holeDeklination("Dose"))
   println(wörterbuch.holeDeklination("Uhr"))
+}
+
+fun main() {
+  // wörterBuchTest()
+
+  val deklanierer = Deklanierer("./iterationen/iter0/iter0.gms")
+  deklanierer.deklaniere()
+  deklanierer.printWörterbuch()
 }

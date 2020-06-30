@@ -1,9 +1,15 @@
-import kotlin.time.measureTime
 
-data class FunktionsDefinition(val verbToken: TypedToken<TokenTyp.BEZEICHNER_KLEIN>, val vollerName: String, val parameterTypen: List<String>, val rückgabe: String? = null, val sätze: List<AST.Satz>)
 
-class Definierer(quellCode: String) {
-  val grammatikPrüfer = GrammatikPrüfer(quellCode)
+data class FunktionsDefinition(
+    val verbToken: TypedToken<TokenTyp.BEZEICHNER_KLEIN>,
+    val vollerName: String,
+    val parameterTypen: List<String>,
+    val rückgabe: String? = null,
+    val sätze: List<AST.Satz>
+)
+
+class Definierer(dateiPfad: String): PipelineComponent(dateiPfad) {
+  val grammatikPrüfer = GrammatikPrüfer(dateiPfad)
   val ast = grammatikPrüfer.ast
   private val funktionsDefinitionen = hashMapOf<String, FunktionsDefinition>()
 

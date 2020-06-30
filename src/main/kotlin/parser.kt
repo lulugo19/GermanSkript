@@ -10,9 +10,9 @@ enum class ASTKnotenID {
   DEKLINATION
 }
 
-class Parser(val quellCode: String) {
+class Parser(dateiPfad: String): PipelineComponent(dateiPfad) {
   fun parse(): AST.Programm {
-    val tokens = Peekable(Lexer(quellCode).tokeniziere().iterator())
+    val tokens = Peekable(Lexer(dateiPfad).tokeniziere().iterator())
     val ast = SubParser.Programm().parse(tokens, Stack())
     if (tokens.peek()!!.typ !is TokenTyp.EOF) {
       throw GermanScriptFehler.SyntaxFehler.ParseFehler(tokens.next()!!, "EOF")
@@ -400,43 +400,5 @@ private sealed class SubParser<T: AST>() {
 }
 
 fun main() {
-  val quellCode = """
-    // INTERNE FUNKTIONEN
-    Verb schreibe die Zeichenfolge: intern. // print
-
-    Verb schreibe die Zeichenfolge Zeile: intern. // println
-
-    Verb schreibe die Zahl: intern.
-
-    // VARIABLEN-DEKLARATIONEN, ZUWEISUNGEN UND ZAHLEN
-
-    die Zahl ist 5 hoch 3
-    schreibe die Zahl // 125
-
-    Deklination Femininum Singular(Summe, Summe, Summe, Summe) Plural(Summen, Summen, Summen, Summen)
-
-    eine Summe ist die Zahl + 25,5
-    schreibe die Summe // 150,5
-    eine Summe ist die Summe - 0,5
-    schreibe die Summe // 150
-
-
-    Deklination Femininum Singular(Welt, Welt, Welt, Welt) Plural(Welten, Welten, Welten, Welten)
-    Deklination Maskulinum Singular(Mond, Mondes, Mond, Mond) Plural(Monde, Monde, Monden, Monde)
-
-    // FUNKTIONS-DEFINTION
-    Verb begrüße die Zeichenfolge Welt:
-        schreibe die Zeichenfolge "Hallo " + die Welt
-    .
-
-    begrüße die Welt "GermanScript" // Hallo GermanScript
-
-    die Welt ist "Welt"
-    begrüße die Welt // Hallo Welt
-
-    der Mond ist "Mond"
-    begrüße die Welt Mond // Hallo Mond
-  """.trimIndent()
-
-  println(Parser(quellCode).parse())
+  println(Parser("./iterationen/iter0/iter0.gms").parse())
 }

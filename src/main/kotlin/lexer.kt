@@ -1,4 +1,6 @@
+import java.io.File
 import java.util.*
+
 enum class Assoziativität {
     LINKS,
     RECHTS,
@@ -49,8 +51,6 @@ enum class Numerus(val anzeigeName: String) {
     SINGULAR("Singular"),
     PLURAL("Plural"),
 }
-
-data class Form(val bestimmt: Boolean, val genus: Genus?, val kasus: Kasus, val numerus: Numerus)
 
 data class Token(val typ: TokenTyp, val wert: String, val anfang: Position, val ende: Position) {
     // um die Ausgabe zu vereinfachen
@@ -224,47 +224,51 @@ private val WORT_MAPPING = mapOf<String, TokenTyp>(
     "einiger" to TokenTyp.ARTIKEL.UMBESTIMMT
 )
 
-class Lexer(val quellcode: String) {
-    private var iterator = Peekable(quellcode.iterator())
+class Lexer(datei: String): PipelineComponent(datei) {
+    private var iterator: Peekable<Char>? = null
     private var zeilenIndex = 0
 
-    private val currentTokenPos: Token.Position get() = Token.Position(zeilenIndex, iterator.index)
-    private val nextTokenPos: Token.Position get() = Token.Position(zeilenIndex, iterator.index + 1)
+    private val currentTokenPos: Token.Position get() = Token.Position(zeilenIndex, iterator!!.index)
+    private val nextTokenPos: Token.Position get() = Token.Position(zeilenIndex, iterator!!.index + 1)
     private val eofToken = Token(TokenTyp.EOF, "EOF", Token.Position.Ende, Token.Position.Ende)
+    
+    private fun next() = iterator!!.next()
+    private fun peek() = iterator!!.peek()
+    private fun peekDouble() = iterator!!.peekDouble()
 
     fun tokeniziere() : Sequence<Token> = sequence {
         var inMehrZeilenKommentar = false
-        for ((zeilenIndex, zeile) in quellcode.lines().map(String::trim).withIndex()) {
+        for ((zeilenIndex, zeile) in File(dateiPfad).readLines().map(String::trim).withIndex()) {
             this@Lexer.zeilenIndex = zeilenIndex
             var kannWortLesen = true
             if (zeile == "") {
                 continue
             }
             iterator = Peekable(zeile.iterator())
-            while (iterator.peek() != null) {
-                val zeichen = iterator.peek()!!
+            while (peek() != null) {
+                val zeichen = peek()!!
                 // ignoriere Kommentare
                 if (inMehrZeilenKommentar) {
-                    if (zeichen == '*' && iterator.peekDouble() == '/') {
-                        iterator.next()
-                        iterator.next()
+                    if (zeichen == '*' && peekDouble() == '/') {
+                        next()
+                        next()
                         inMehrZeilenKommentar = false
                     }
                     break
                 }
-                if (zeichen == '/' && iterator.peekDouble() == '/') {
-                    iterator.next()
-                    iterator.next()
+                if (zeichen == '/' && peekDouble() == '/') {
+                    next()
+                    next()
                     break
                 }
-                if (zeichen == '/' && iterator.peekDouble() == '*') {
-                    iterator.next()
-                    iterator.next()
+                if (zeichen == '/' && peekDouble() == '*') {
+                    next()
+                    next()
                     inMehrZeilenKommentar = true
                     break
                 }
                 if (zeichen == ' ') {
-                    iterator.next()
+                    next()
                     kannWortLesen = true
                     continue
                 }
@@ -298,11 +302,11 @@ class Lexer(val quellcode: String) {
 
     private fun symbol(): Sequence<Token> = sequence {
         val startPos = currentTokenPos
-        var symbolString = iterator.next()!!.toString()
-        val potenziellesDoppelSymbol = symbolString + (iterator.peek()?: '\n')
+        var symbolString = next()!!.toString()
+        val potenziellesDoppelSymbol = symbolString + (peek()?: '\n')
         val tokenTyp = when {
           DOPPEL_SYMBOL_MAPPING.containsKey(potenziellesDoppelSymbol) -> {
-              iterator.next()
+              next()
               symbolString = potenziellesDoppelSymbol
               DOPPEL_SYMBOL_MAPPING.getValue(potenziellesDoppelSymbol)
           }
@@ -327,14 +331,14 @@ class Lexer(val quellcode: String) {
         val startPos = currentTokenPos
         var zahlenString = ""
         var hinternKomma = false
-        while (iterator.peek() != null) {
-            val zeichen = iterator.peek()!!
+        while (peek() != null) {
+            val zeichen = peek()!!
             if (zeichen.isDigit()) {
-                zahlenString += iterator.next()
-            } else if (!hinternKomma && (zeichen == '.' || zeichen == ',') && iterator.peekDouble()?.isDigit() == true) {
+                zahlenString += next()
+            } else if (!hinternKomma && (zeichen == '.' || zeichen == ',') && peekDouble()?.isDigit() == true) {
                 hinternKomma = zeichen == ','
-                zahlenString += iterator.next()
-                zahlenString += iterator.next()
+                zahlenString += next()
+                zahlenString += next()
             } else {
                 break
             }
@@ -353,15 +357,15 @@ class Lexer(val quellcode: String) {
 
     private fun zeichenfolge(): Sequence<Token> = sequence {
         val startPos = currentTokenPos
-        iterator.next() // consume first '"'
+        next() // consume first '"'
         var zeichenfolge = ""
-        while (iterator.peek() != null && iterator.peek() != '"') {
-            zeichenfolge += iterator.next()
+        while (peek() != null && peek() != '"') {
+            zeichenfolge += next()
         }
-        if (iterator.peek() != '"') {
+        if (peek() != '"') {
             throw GermanScriptFehler.SyntaxFehler.LexerFehler(eofToken)
         }
-        iterator.next()
+        next()
         val endPos = currentTokenPos
         val token = Token(TokenTyp.ZEICHENFOLGE(zeichenfolge), '"' + zeichenfolge + '"', startPos, endPos)
         yield(token)
@@ -378,10 +382,10 @@ class Lexer(val quellcode: String) {
         when {
             WORT_MAPPING.containsKey(erstesWort) -> when (erstesWort) {
                 "größer", "kleiner" -> {
-                    while (iterator.peek() == ' ') {
-                        spaceBetweenWords += iterator.next()
+                    while (peek() == ' ') {
+                        spaceBetweenWords += next()
                     }
-                    val nächstesZeichen = iterator.peek()
+                    val nächstesZeichen = peek()
                     val nächstesIstWort = !(SYMBOL_MAPPING.containsKey(nächstesZeichen) ||
                         nächstesZeichen == '&' ||
                         nächstesZeichen == '|' ||
@@ -425,14 +429,14 @@ class Lexer(val quellcode: String) {
     }
 
     private fun teilWort(): String {
-        var wort = iterator.next()!!.toString()
-        while (iterator.peek() != null) {
-            val nächstesZeiches = iterator.peek()!!
+        var wort = next()!!.toString()
+        while (peek() != null) {
+            val nächstesZeiches = peek()!!
             if (nächstesZeiches == ' ' ||
                 (nächstesZeiches != '!' && nächstesZeiches != '?' && SYMBOL_MAPPING.containsKey(nächstesZeiches))) {
                 break
             }
-            wort += iterator.next()!!
+            wort += next()!!
         }
         return wort
     }
@@ -441,47 +445,6 @@ class Lexer(val quellcode: String) {
 
 
 fun main() {
-
-    fun outputTokenTypes(code: String) {
-        Lexer(code).tokeniziere().takeWhile { token -> token.typ != TokenTyp.EOF }.forEach { println(it) }
-    }
-
-        val quellcode = """// INTERNE FUNKTIONEN
-    Verb schreibe die Zeichenfolge: intern. // print
-    
-    Verb schreibe die Zeichenfolge Zeile: intern. // println
-    
-    Verb schreibe die Zahl: intern.
-    
-    // VARIABLEN-DEKLARATIONEN, ZUWEISUNGEN UND ZAHLEN
-    
-    die Zahl ist 5 hoch 3
-    schreibe die Zahl // 125
-    
-    Deklination Femininum Singular(Summe, Summe, Summe, Summe) Plural(Summen, Summen, Summen, Summen)
-    
-    eine Summe ist die Zahl + 25,5
-    schreibe die Summe // 150,5
-    eine Summe ist die Summe - 0,5
-    schreibe die Summe // 150
-    
-    
-    Deklination Femininum Singular(Welt, Welt, Welt, Welt) Plural(Welten, Welten, Welten, Welten)
-    Deklination Maskulinum Singular(Mond, Mondes, Mond, Mond) Plural(Monde, Monde, Monden, Monde)
-    
-    // FUNKTIONS-DEFINTION
-    Verb begrüße die Zeichenfolge Welt:
-        schreibe "Hallo " + die Welt
-    .
-    
-    begrüße "GermanScript" // Hallo GermanScript
-    
-    die Welt ist "Welt"
-    begrüße die Welt // Hallo Welt
-    
-    der Mond ist "Mond"
-    begrüße die Welt Mond // Hallo Mond"""
-
-
-    outputTokenTypes(quellcode)
+    Lexer("./iterationen/iter0/iter0.gms")
+        .tokeniziere().takeWhile { token -> token.typ != TokenTyp.EOF }.forEach { println(it) }
 }
