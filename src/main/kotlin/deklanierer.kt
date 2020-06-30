@@ -49,6 +49,9 @@ class Deklanierer(quellCode: String) {
     ast.visit { knoten ->
       if (knoten is AST.Definition.DeklinationsDefinition) {
         wörterbuch.fügeDeklinationHinzu(knoten.deklination)
+        true
+      } else {
+        false
       }
     }
   }

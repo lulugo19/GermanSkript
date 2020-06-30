@@ -1,16 +1,33 @@
 sealed class AST {
 
   // visit implementation for all the leaf nodes
-  open fun visit(visitor: (AST) -> Unit) {
-    visitor(this)
+  fun visit(onVisitEnd: ((AST, Boolean) -> Unit)? = null, onVisit: (AST) -> Boolean): Boolean {
+    val fullyVisited = onVisit(this)
+    if (onVisitEnd != null) {
+      onVisitEnd(this, fullyVisited)
+    }
+    return fullyVisited
+  }
+
+  protected open fun visitImpl(onVisit: (AST) -> Boolean, onVisitEnd: ((AST, Boolean) -> Unit)?): Boolean {
+    return onVisit(this)
+  }
+
+  fun List<AST>.visit(breakOnNotFullyVisited: Boolean, onVisit: (AST) -> Boolean, onVisitEnd: ((AST, Boolean) -> Unit)?): Boolean {
+    for (element in this) {
+      if (!element.visit(onVisitEnd, onVisit) && breakOnNotFullyVisited) {
+        return false
+      }
+    }
+    return true
   }
 
   // Wurzelknoten
   data class Programm(val definitionen: List<Definition>, val sätze: List<Satz>) : AST() {
-    override fun visit(visitor: (AST) -> Unit) {
-      super.visit(visitor)
-      definitionen.forEach { it.visit(visitor) }
-      sätze.forEach { it.visit(visitor) }
+    override fun visitImpl(onVisit: (AST) -> Boolean, onVisitEnd: ((AST, Boolean) -> Unit)?): Boolean {
+      return super.visitImpl(onVisit, onVisitEnd) &&
+          definitionen.visit(false, onVisit, onVisitEnd) &&
+          sätze.visit(true, onVisit, onVisitEnd)
     }
   }
 
@@ -21,7 +38,7 @@ sealed class AST {
       var artikel: String? = null,
       var genus: Genus? = null,
       var numerus: Numerus? = null
-  ) : AST()
+  )
 
   data class Präposition(val präposition: TypedToken<TokenTyp.BEZEICHNER_KLEIN>) : AST() {
     val kasus = präpositionsFälle
@@ -55,9 +72,13 @@ sealed class AST {
         val präpositionsParameter: List<PräpositionsParameter>,
         val suffix: TypedToken<TokenTyp.BEZEICHNER_KLEIN>?,
         val sätze: List<Satz>
-    ) : Definition()
-
+    ) : Definition() {
+        override fun visitImpl(onVisit: (AST) -> Boolean, onVisitEnd: ((AST, Boolean) -> Unit)?): Boolean {
+          return super.visitImpl(onVisit, onVisitEnd) && sätze.visit(true, onVisit, onVisitEnd)
+      }
+    }
   }
+
 
   sealed class Satz : AST() {
     data class Variablendeklaration(
@@ -65,18 +86,12 @@ sealed class AST {
         val typ: Nomen,
         val name: Nomen,
         val zuweisungsOperator: TypedToken<TokenTyp.ZUWEISUNG>
-    ) : Satz() {
-      override fun visit(visitor: (AST) -> Unit) {
-        super.visit(visitor)
-        typ.visit(visitor)
-        name.visit(visitor)
-      }
-    }
+    ) : Satz()
 
     data class FunktionsAufruf(val aufruf: AST.FunktionsAufruf): Satz() {
-      override fun visit(visitor: (AST) -> Unit) {
-        super.visit(visitor)
-        aufruf.visit(visitor)
+      override fun visitImpl(onVisit: (AST) -> Boolean, onVisitEnd: ((AST, Boolean) -> Unit)?): Boolean {
+        return super.visitImpl(onVisit, onVisitEnd) &&
+        aufruf.visit(onVisitEnd, onVisit)
       }
     }
   }
@@ -121,24 +136,24 @@ sealed class AST {
     data class Variable(val artikel: TypedToken<TokenTyp.ARTIKEL>?, val name: TypedToken<TokenTyp.BEZEICHNER_GROSS>) : Ausdruck()
 
     data class FunktionsAufruf(val aufruf: AST.FunktionsAufruf): Ausdruck() {
-      override fun visit(visitor: (AST) -> Unit) {
-        super.visit(visitor)
-        aufruf.visit(visitor)
+      override fun visitImpl(onVisit: (AST) -> kotlin.Boolean, onVisitEnd: ((AST, kotlin.Boolean) -> Unit)?): kotlin.Boolean {
+        return super.visitImpl(onVisit, onVisitEnd) &&
+        aufruf.visit(onVisitEnd, onVisit)
       }
     }
 
     data class BinärerAusdruck(val operator: TypedToken<TokenTyp.OPERATOR>, val links: Ausdruck, val rechts: Ausdruck, val istAnfang: kotlin.Boolean) : Ausdruck() {
-      override fun visit(visitor: (AST) -> Unit) {
-        super.visit(visitor)
-        links.visit(visitor)
-        rechts.visit(visitor)
+      override fun visitImpl(onVisit: (AST) -> kotlin.Boolean, onVisitEnd: ((AST, kotlin.Boolean) -> Unit)?): kotlin.Boolean {
+        return super.visitImpl(onVisit, onVisitEnd) &&
+        links.visit(onVisitEnd, onVisit) &&
+        rechts.visit(onVisitEnd, onVisit)
       }
     }
 
     data class Minus(val ausdruck: Ausdruck) : Ausdruck() {
-      override fun visit(visitor: (AST) -> Unit) {
-        super.visit(visitor)
-        ausdruck.visit(visitor)
+      override fun visitImpl(onVisit: (AST) -> kotlin.Boolean, onVisitEnd: ((AST, kotlin.Boolean) -> Unit)?): kotlin.Boolean {
+        return super.visitImpl(onVisit, onVisitEnd) &&
+        ausdruck.visit(onVisitEnd, onVisit)
       }
     }
   }

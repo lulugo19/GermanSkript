@@ -1,4 +1,6 @@
-data class FunktionsDefinition(val verbToken: TypedToken<TokenTyp.BEZEICHNER_KLEIN>,val vollerName: String, val parameterTypen: List<String>, val rückgabe: String? = null, val sätze: List<AST.Satz>)
+import kotlin.time.measureTime
+
+data class FunktionsDefinition(val verbToken: TypedToken<TokenTyp.BEZEICHNER_KLEIN>, val vollerName: String, val parameterTypen: List<String>, val rückgabe: String? = null, val sätze: List<AST.Satz>)
 
 class Definierer(quellCode: String) {
   val grammatikPrüfer = GrammatikPrüfer(quellCode)
@@ -8,11 +10,15 @@ class Definierer(quellCode: String) {
   fun definiere() {
     grammatikPrüfer.prüfe()
     funktionsDefinitionen.clear()
-    for (definition in ast.definitionen) {
-      definition.visit { knoten ->
+    ast.visit { knoten ->
+      if (knoten is AST.Definition) {
         when (knoten) {
           is AST.Definition.Funktion -> definiereFunktion(knoten)
+          else -> throw Exception("Unhandled Definition: $knoten")
         }
+        true
+      } else {
+        false
       }
     }
   }

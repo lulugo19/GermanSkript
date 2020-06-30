@@ -11,6 +11,8 @@ class GrammatikPrüfer(quellCode: String) {
         is AST.Satz.Variablendeklaration -> prüfeVariablendeklaration(knoten)
         is AST.FunktionsAufruf -> prüfeFunktionsAufruf(knoten)
       }
+      // visit everything
+      true
     }
   }
 

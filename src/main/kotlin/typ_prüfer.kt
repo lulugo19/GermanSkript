@@ -9,6 +9,7 @@ class TypPrüfer(quellCode: String) {
         is AST.Satz.Variablendeklaration -> TODO()
         else -> TODO()
       }
+      true // visit everything
     }
   }
 }
