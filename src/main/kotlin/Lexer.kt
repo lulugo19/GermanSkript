@@ -81,8 +81,6 @@ sealed class TokenTyp(val anzeigeName: String) {
     // Schlüsselwörter
     object DEKLINATION: TokenTyp("'Deklination'")
     data class GENUS(val genus: Genus): TokenTyp("'Genus'")
-    object GEBE: TokenTyp("'gebe'")
-    object ZURÜCK: TokenTyp("'zurück'")
     object WENN: TokenTyp("'wenn'")
     object DANN: TokenTyp("'dann'")
     object SONST: TokenTyp("'sonst'")
@@ -175,8 +173,6 @@ private val WORT_MAPPING = mapOf<String, TokenTyp>(
     "intern" to TokenTyp.INTERN,
     "Adjektiv" to TokenTyp.ADJEKTIV,
     "Alias" to TokenTyp.ALIAS,
-    "gebe" to TokenTyp.GEBE,
-    "zurück" to TokenTyp.ZURÜCK,
     "wenn" to TokenTyp.WENN,
     "dann" to TokenTyp.DANN,
     "sonst" to TokenTyp.SONST,

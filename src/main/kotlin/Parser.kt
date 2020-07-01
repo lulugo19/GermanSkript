@@ -78,6 +78,14 @@ private sealed class SubParser<T: AST>() {
     }
   }
 
+  protected fun parseKleinesSchlüsselwort(schlüsselwort: String): TypedToken<TokenTyp.BEZEICHNER_KLEIN> {
+    val token = expect<TokenTyp.BEZEICHNER_KLEIN>("'$schlüsselwort'")
+    if (token.wert != schlüsselwort) {
+      throw GermanScriptFehler.SyntaxFehler.ParseFehler(token.toUntyped(), "'$schlüsselwort'")
+    }
+    return token
+  }
+
   protected inline fun <ElementT, reified StartTokenT> parseKommaListe(elementParser: () -> ElementT, canBeEmpty: Boolean): List<ElementT> {
     if (canBeEmpty && peekType() !is StartTokenT) {
       return emptyList()
@@ -102,18 +110,17 @@ private sealed class SubParser<T: AST>() {
     return liste
   }
 
-  protected inline fun <ElementT, ParserT, reified SeperatorT: TokenTyp> parseSeperatorFirstCombineList(
-      expectedSeperator: String,
-      canBeEmpty: Boolean,
+  // zum Parsen der Präpositionslisten bei einer Funktionsdefinition sowie beim Funktionsaufruf
+  protected inline fun <ElementT, ParserT> parsePräpositionsListe(
       parser: () -> ParserT,
-      combiner: (TypedToken<SeperatorT>, ParserT) -> ElementT
+      combiner: (TypedToken<TokenTyp.BEZEICHNER_KLEIN>, ParserT) -> ElementT
   ): List<ElementT> {
-    if (canBeEmpty && peekType() !is SeperatorT) {
+    if (peekType() !is TokenTyp.BEZEICHNER_KLEIN) {
       return emptyList()
     }
     val list = mutableListOf<ElementT>()
-    while (peekType() is SeperatorT) {
-      list += combiner(expect(expectedSeperator), parser())
+    while (peekType() is TokenTyp.BEZEICHNER_KLEIN && peekDoubleType() is TokenTyp.ARTIKEL) {
+      list += combiner(expect("Präposition"), parser())
     }
     return list
   }
@@ -165,11 +172,15 @@ private sealed class SubParser<T: AST>() {
     }
 
     fun parseSatz(): AST.Satz? {
-      return when (peekType()) {
+      val nextToken = peek()
+      return when (nextToken.typ) {
         is TokenTyp.INTERN -> subParse(Satz.Intern)
         is TokenTyp.ARTIKEL -> subParse(Satz.VariablenDeklaration)
-        is TokenTyp.BEZEICHNER_KLEIN -> subParse(Satz.FunktionsAufruf)
-        is TokenTyp.GEBE -> subParse(Satz.Zurückgabe)
+        is TokenTyp.BEZEICHNER_KLEIN ->
+          when (nextToken.wert) {
+            "gebe" -> subParse(Satz.Zurückgabe)
+            else -> subParse(Satz.FunktionsAufruf)
+          }
         else -> null
       }
     }
@@ -270,9 +281,7 @@ private sealed class SubParser<T: AST>() {
     }
 
     fun parsePräpositionsArgumente(): List<AST.PräpositionsArgumente> {
-      return parseSeperatorFirstCombineList<AST.PräpositionsArgumente, List<AST.Argument>, TokenTyp.BEZEICHNER_KLEIN>(
-          "Präposition",
-          true,
+      return parsePräpositionsListe(
           {parseKommaListe<AST.Argument, TokenTyp.ARTIKEL.BESTIMMT>(::parseArgument, false)}
       ) {
         präposition, argumente -> AST.PräpositionsArgumente(AST.Präposition(präposition), argumente)
@@ -320,9 +329,9 @@ private sealed class SubParser<T: AST>() {
         get() = ASTKnotenID.ZURÜCKGABE
 
       override fun parseImpl(): AST.Satz.Zurückgabe {
-        expect<TokenTyp.GEBE>("gebe")
+        parseKleinesSchlüsselwort("gebe")
         val ausdruck = subParse(Ausdruck)
-        expect<TokenTyp.ZURÜCK>("zurück")
+        parseKleinesSchlüsselwort("zurück")
         return AST.Satz.Zurückgabe(ausdruck)
       }
     }
@@ -401,9 +410,7 @@ private sealed class SubParser<T: AST>() {
       }
 
       fun parsePräpositionsParameter(): List<AST.Definition.PräpositionsParameter> {
-        return parseSeperatorFirstCombineList<AST.Definition.PräpositionsParameter, List<AST.Definition.Parameter>, TokenTyp.BEZEICHNER_KLEIN>(
-            "Präposition",
-            true,
+        return parsePräpositionsListe(
             { parseKommaListe<AST.Definition.Parameter, TokenTyp.ARTIKEL.BESTIMMT>(::parseParameter, false) }
         ) {
           präposition, parameter -> AST.Definition.PräpositionsParameter(AST.Präposition(präposition), parameter)

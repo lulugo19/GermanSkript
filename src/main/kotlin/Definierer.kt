@@ -12,7 +12,6 @@ class Definierer(dateiPfad: String): PipelineComponent(dateiPfad) {
       }
       return@visit false
     }
-
   }
 
   fun holeFunktionsDefinition(funktionsAufruf: AST.FunktionsAufruf): AST.Definition.Funktion {
@@ -62,7 +61,7 @@ class Definierer(dateiPfad: String): PipelineComponent(dateiPfad) {
       }
     }
     if (funktionsDefinition.suffix != null) {
-      vollerName += " " + funktionsDefinition.suffix
+      vollerName += " " + funktionsDefinition.suffix.wert
     }
     return vollerName
   }
@@ -101,7 +100,7 @@ class Definierer(dateiPfad: String): PipelineComponent(dateiPfad) {
       }
     }
     if (funktionsAufruf.suffix != null) {
-      vollerName += " " + funktionsAufruf.suffix
+      vollerName += " " + funktionsAufruf.suffix.wert
     }
     return vollerName
   }
