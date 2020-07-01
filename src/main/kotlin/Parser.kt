@@ -14,7 +14,7 @@ enum class ASTKnotenID {
 class Parser(dateiPfad: String): PipelineComponent(dateiPfad) {
   fun parse(): AST.Programm {
     val tokens = Peekable(Lexer(dateiPfad).tokeniziere().iterator())
-    val ast = SubParser.Programm().parse(tokens, Stack())
+    val ast = SubParser.Programm.parse(tokens, Stack())
     if (tokens.peek()!!.typ !is TokenTyp.EOF) {
       throw GermanScriptFehler.SyntaxFehler.ParseFehler(tokens.next()!!, "EOF")
     }
@@ -141,7 +141,7 @@ private sealed class SubParser<T: AST>() {
   }
   // endregion
 
-  class Programm(): SubParser<AST.Programm>() {
+  object Programm: SubParser<AST.Programm>() {
     override val id: ASTKnotenID
       get() = ASTKnotenID.PROGRAMM
 
@@ -165,23 +165,23 @@ private sealed class SubParser<T: AST>() {
 
     fun parseSatz(): AST.Satz? {
       return when (peekType()) {
-        is TokenTyp.INTERN -> subParse(Satz.Intern())
-        is TokenTyp.ARTIKEL -> subParse(Satz.VariablenDeklaration())
-        is TokenTyp.BEZEICHNER_KLEIN -> subParse(Satz.FunktionsAufruf())
+        is TokenTyp.INTERN -> subParse(Satz.Intern)
+        is TokenTyp.ARTIKEL -> subParse(Satz.VariablenDeklaration)
+        is TokenTyp.BEZEICHNER_KLEIN -> subParse(Satz.FunktionsAufruf)
         else -> null
       }
     }
 
     fun parseDefinition(): AST.Definition? {
       return when(peekType()) {
-        is TokenTyp.VERB -> subParse(Definition.Funktion())
-        is TokenTyp.DEKLINATION -> subParse(Definition.DeklinationsDefinition())
+        is TokenTyp.VERB -> subParse(Definition.Funktion)
+        is TokenTyp.DEKLINATION -> subParse(Definition.DeklinationsDefinition)
         else -> null
       }
     }
   }
 
-  class Ausdruck(): SubParser<AST.Ausdruck>() {
+  object Ausdruck: SubParser<AST.Ausdruck>() {
     override val id: ASTKnotenID
       get() = ASTKnotenID.AUSDRUCK
 
@@ -238,13 +238,13 @@ private sealed class SubParser<T: AST>() {
         is TokenTyp.ZEICHENFOLGE -> AST.Ausdruck.Zeichenfolge(next().toTyped())
         is TokenTyp.ZAHL -> AST.Ausdruck.Zahl(next().toTyped())
         is TokenTyp.BOOLEAN -> AST.Ausdruck.Boolean(next().toTyped())
-        is TokenTyp.BEZEICHNER_KLEIN -> AST.Ausdruck.FunktionsAufruf(subParse(FunktionsAufruf()))
+        is TokenTyp.BEZEICHNER_KLEIN -> AST.Ausdruck.FunktionsAufruf(subParse(FunktionsAufruf))
         else -> throw GermanScriptFehler.SyntaxFehler.ParseFehler(next())
       }
     }
   }
 
-  class FunktionsAufruf(): SubParser<AST.FunktionsAufruf>() {
+  object FunktionsAufruf: SubParser<AST.FunktionsAufruf>() {
     override val id: ASTKnotenID
       get() = ASTKnotenID.FUNKTIONS_AUFRUF
 
@@ -262,7 +262,7 @@ private sealed class SubParser<T: AST>() {
       val wert = when (peekType()) {
         is TokenTyp.NEUE_ZEILE, is TokenTyp.KOMMA, is TokenTyp.BEZEICHNER_KLEIN -> null
         is TokenTyp.BEZEICHNER_GROSS -> AST.Ausdruck.Variable(null, AST.Nomen(next().toTyped()))
-        else -> subParse(Ausdruck())
+        else -> subParse(Ausdruck)
       }
       return AST.Argument(artikel, AST.Nomen(name), wert)
     }
@@ -279,7 +279,7 @@ private sealed class SubParser<T: AST>() {
   }
 
   sealed class Satz<T: AST.Satz>(): SubParser<T>() {
-    class Intern: Satz<AST.Satz.Intern>() {
+    object Intern: Satz<AST.Satz.Intern>() {
       override val id: ASTKnotenID
         get() = ASTKnotenID.INTERN
 
@@ -293,7 +293,7 @@ private sealed class SubParser<T: AST>() {
 
     }
 
-    class VariablenDeklaration: Satz<AST.Satz.VariablenDeklaration>() {
+    object VariablenDeklaration: Satz<AST.Satz.VariablenDeklaration>() {
       override val id: ASTKnotenID
         get() = ASTKnotenID.VARIABLEN_DEKLARATION
 
@@ -301,16 +301,16 @@ private sealed class SubParser<T: AST>() {
         val artikel = expect<TokenTyp.ARTIKEL>("Artikel")
         val name = expect<TokenTyp.BEZEICHNER_GROSS>("Bezeichner")
         val zuweisung = expect<TokenTyp.ZUWEISUNG>("Zuweisung")
-        val ausdruck = subParse(Ausdruck())
+        val ausdruck = subParse(Ausdruck)
         return AST.Satz.VariablenDeklaration(artikel, AST.Nomen(name), zuweisung, ausdruck)
       }
     }
 
-    class FunktionsAufruf: Satz<AST.Satz.FunktionsAufruf>() {
+    object FunktionsAufruf: Satz<AST.Satz.FunktionsAufruf>() {
       override val id: ASTKnotenID
         get() = ASTKnotenID.FUNKTIONS_AUFRUF
 
-      override fun parseImpl(): AST.Satz.FunktionsAufruf = AST.Satz.FunktionsAufruf(subParse(SubParser.FunktionsAufruf()))
+      override fun parseImpl(): AST.Satz.FunktionsAufruf = AST.Satz.FunktionsAufruf(subParse(SubParser.FunktionsAufruf))
     }
   }
 
@@ -323,7 +323,7 @@ private sealed class SubParser<T: AST>() {
       }
     }
 
-    class DeklinationsDefinition: Definition<AST.Definition.DeklinationsDefinition>() {
+    object DeklinationsDefinition: Definition<AST.Definition.DeklinationsDefinition>() {
       override val id: ASTKnotenID
         get() = ASTKnotenID.DEKLINATION
 
@@ -357,7 +357,7 @@ private sealed class SubParser<T: AST>() {
 
     }
 
-    class Funktion: Definition<AST.Definition.Funktion>() {
+    object Funktion: Definition<AST.Definition.Funktion>() {
       override val id: ASTKnotenID
         get() = ASTKnotenID.FUNKTIONS_DEFINITION
 
@@ -368,7 +368,7 @@ private sealed class SubParser<T: AST>() {
         val objekt = parseOptional<AST.Definition.Parameter, TokenTyp.ARTIKEL.BESTIMMT>(::parseParameter)
         val präpositionsParameter = parsePräpositionsParameter()
         val suffix = parseOptional<TokenTyp.BEZEICHNER_KLEIN>()
-        val programm = parseBereich {subParse(Programm())}
+        val programm = parseBereich {subParse(Programm)}
         return AST.Definition.Funktion(rückgabeTyp?.let { AST.Nomen(it) }, name, objekt, präpositionsParameter, suffix, programm.sätze)
       }
 
