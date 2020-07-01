@@ -109,23 +109,18 @@ sealed class AST {
       val objekt: Argument?,
       val präpositionsArgumente: List<PräpositionsArgumente>,
       val suffix: TypedToken<TokenTyp.BEZEICHNER_KLEIN>?,
-      private var _vollerName: String = ""
+      var vollerName: String?
   ): AST() {
     private val _argumente: MutableList<Ausdruck> = mutableListOf()
     val argumente: List<Ausdruck> = _argumente
 
-    val vollerName get() = _vollerName
 
     init {
-      _vollerName = verb.wert
       if (objekt != null) {
-        _vollerName += " " + objekt.artikel.wert + " " + objekt.name.bezeichner.wert
         _argumente.add(objekt.wert ?: Ausdruck.Variable(null, objekt.name))
       }
       for (präposition in präpositionsArgumente) {
-        _vollerName += " " + präposition.präposition.präposition.wert
         for (argument in präposition.argumente) {
-          _vollerName += " " + argument.artikel.wert + " " + argument.name.bezeichner.wert
           _argumente.add(argument.wert ?: Ausdruck.Variable(null, argument.name))
         }
       }
