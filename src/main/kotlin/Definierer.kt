@@ -16,17 +16,13 @@ class Definierer(dateiPfad: String): PipelineComponent(dateiPfad) {
   fun definiere() {
     grammatikPrüfer.prüfe()
     funktionsDefinitionen.clear()
-    ast.visit() { knoten ->
-      if (knoten is AST.Definition) {
-        when (knoten) {
-          is AST.Definition.Funktion -> definiereFunktion(knoten)
-          else -> throw Exception("Unhandled Definition: $knoten")
-        }
-        true
-      } else {
-        false
+    ast.definitionen.visit { knoten ->
+      when (knoten) {
+        is AST.Definition.Funktion -> definiereFunktion(knoten)
       }
+      return@visit false
     }
+
   }
 
   fun holeFunktionsDefinition(funktionsAufruf: AST.FunktionsAufruf): FunktionsDefinition {
@@ -36,6 +32,15 @@ class Definierer(dateiPfad: String): PipelineComponent(dateiPfad) {
     return funktionsDefinitionen.getOrElse(funktionsAufruf.vollerName!!) {
       throw GermanScriptFehler.Undefiniert.Funktion(funktionsAufruf.verb.toUntyped(), funktionsAufruf)
     }
+  }
+
+  fun gebeFunktionsDefinitionenAus() {
+    funktionsDefinitionen.forEach {
+      vollerName, definition ->
+
+      println("$vollerName: $definition")
+    }
+
   }
 
   private fun definiereFunktion(funktionsDefinition: AST.Definition.Funktion) {
@@ -48,7 +53,7 @@ class Definierer(dateiPfad: String): PipelineComponent(dateiPfad) {
       )
     }
     val parameterTypen = getParameterTypen(funktionsDefinition)
-    val rückgabeTyp = funktionsDefinition.rückgabeTyp?.nominativ!!
+    val rückgabeTyp = funktionsDefinition.rückgabeTyp?.nominativ
 
     val dieFunktionsDefinition = FunktionsDefinition(token, vollerName, parameterTypen, rückgabeTyp, funktionsDefinition.sätze)
     funktionsDefinitionen[vollerName] = dieFunktionsDefinition
@@ -103,4 +108,10 @@ class Definierer(dateiPfad: String): PipelineComponent(dateiPfad) {
     }
     return vollerName
   }
+}
+
+fun main() {
+  val definierer = Definierer("./iterationen/iter_0/code.gms")
+  definierer.definiere()
+  definierer.gebeFunktionsDefinitionenAus()
 }

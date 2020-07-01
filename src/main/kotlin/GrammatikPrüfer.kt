@@ -68,6 +68,9 @@ class GrammatikPrüfer(dateiPfad: String): PipelineComponent(dateiPfad) {
   }
 
   private fun prüfeFunktionsDefinition(funktionsDefinition: AST.Definition.Funktion) {
+    if (funktionsDefinition.rückgabeTyp != null) {
+      prüfeNomen(funktionsDefinition.rückgabeTyp, Kasus.NOMINATIV)
+    }
     if (funktionsDefinition.objekt != null) {
       prüfeParameter(funktionsDefinition.objekt, Kasus.AKKUSATIV)
     }
