@@ -1,4 +1,4 @@
-import kotlin.time.measureTime
+package util
 
 class Peekable<T>(val iterator: Iterator<T>) {
   var index = 0

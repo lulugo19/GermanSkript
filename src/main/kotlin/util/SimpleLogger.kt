@@ -1,3 +1,5 @@
+package util
+
 import java.lang.StringBuilder
 
 class SimpleLogger {

@@ -1,3 +1,4 @@
+import util.Peekable
 import java.io.File
 import java.util.*
 
@@ -445,6 +446,6 @@ class Lexer(datei: String): PipelineComponent(datei) {
 
 
 fun main() {
-    Lexer("./iterationen/iter0/iter0.gms")
+    Lexer("./iterationen/iter_0/code.gms")
         .tokeniziere().takeWhile { token -> token.typ != TokenTyp.EOF }.forEach { println(it) }
 }

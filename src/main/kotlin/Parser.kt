@@ -1,3 +1,4 @@
+import util.Peekable
 import java.util.*
 
 enum class ASTKnotenID {
@@ -400,5 +401,5 @@ private sealed class SubParser<T: AST>() {
 }
 
 fun main() {
-  println(Parser("./iterationen/iter0/iter0.gms").parse())
+  println(Parser("./iterationen/iter_0/code.gms").parse())
 }

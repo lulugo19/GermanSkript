@@ -206,7 +206,7 @@ fun wörterBuchTest() {
 fun main() {
   // wörterBuchTest()
 
-  val deklanierer = Deklanierer("./iterationen/iter0/iter0.gms")
+  val deklanierer = Deklanierer("./iterationen/iter_0/code.gms")
   deklanierer.deklaniere()
   deklanierer.druckeWörterbuch()
 }

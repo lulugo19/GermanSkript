@@ -1,3 +1,5 @@
+import util.SimpleLogger
+
 class GrammatikPrüfer(dateiPfad: String): PipelineComponent(dateiPfad) {
   val deklanierer = Deklanierer(dateiPfad)
   val ast = deklanierer.ast
@@ -214,7 +216,7 @@ class GrammatikPrüfer(dateiPfad: String): PipelineComponent(dateiPfad) {
 }
 
 fun main() {
-  val grammatikPrüfer = GrammatikPrüfer("./iterationen/iter0/iter0.gms")
+  val grammatikPrüfer = GrammatikPrüfer("./iterationen/iter_0/code.gms")
   grammatikPrüfer.prüfe()
   grammatikPrüfer.logger.print()
 }
