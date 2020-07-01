@@ -46,9 +46,15 @@ class Deklanierer(dateiPfad: String): PipelineComponent(dateiPfad) {
   private val wörterbuch = Wörterbuch()
 
   fun deklaniere() {
-    ast.definitionen.visit(false, { knoten ->
+    ast.definitionen.visit({ knoten ->
       if (knoten is AST.Definition.DeklinationsDefinition) {
-        wörterbuch.fügeDeklinationHinzu(knoten.deklination)
+        try {
+          wörterbuch.fügeDeklinationHinzu(knoten.deklination)
+        }
+        catch (fehler: Wörterbuch.DoppelteDeklinationFehler) {
+          // Doppelte Deklinationen werden einfach ingoriert
+          // TODO: Vielleicht sollte eine Warnung ausgegeben werden
+        }
       }
       // only visit on global level
       return@visit false

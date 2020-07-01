@@ -7,13 +7,14 @@ class GrammatikPrüfer(dateiPfad: String): PipelineComponent(dateiPfad) {
   fun prüfe() {
     deklanierer.deklaniere()
 
-    ast.visit(false) { knoten ->
+    ast.visit() { knoten ->
       when (knoten) {
         is AST.Definition.Funktion -> prüfeFunktionsDefinition(knoten)
         is AST.Satz.VariablenDeklaration -> prüfeVariablendeklaration(knoten)
         is AST.FunktionsAufruf -> prüfeFunktionsAufruf(knoten)
         is AST.Ausdruck -> when (knoten) {
             is AST.Ausdruck.BinärerAusdruck -> prüfeBinärenAusdruck(knoten)
+            is AST.Ausdruck.Minus -> prüfeMinus(knoten)
             else -> return@visit false
         }
       }
@@ -141,6 +142,15 @@ class GrammatikPrüfer(dateiPfad: String): PipelineComponent(dateiPfad) {
     }
     logger.addLine("geprüft: $binärerAusdruck")
   }
+
+  private fun prüfeMinus(knoten: AST.Ausdruck.Minus) {
+    if (knoten.ausdruck is AST.Ausdruck.Variable) {
+      val variable = knoten.ausdruck
+      prüfeNomen(variable.name, Kasus.AKKUSATIV)
+      prüfeArtikel(variable.artikel!!, variable.name, Kasus.AKKUSATIV)
+    }
+  }
+
 
   private fun getArtikel(bestimmt: Boolean, nomen: AST.Nomen, kasus: Kasus): String {
     return getArtikel(bestimmt, nomen.genus!!, nomen.numerus!!, kasus)

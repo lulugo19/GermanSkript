@@ -16,7 +16,7 @@ class Definierer(dateiPfad: String): PipelineComponent(dateiPfad) {
   fun definiere() {
     grammatikPrüfer.prüfe()
     funktionsDefinitionen.clear()
-    ast.visit(false) { knoten ->
+    ast.visit() { knoten ->
       if (knoten is AST.Definition) {
         when (knoten) {
           is AST.Definition.Funktion -> definiereFunktion(knoten)
