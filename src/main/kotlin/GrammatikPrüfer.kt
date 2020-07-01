@@ -14,6 +14,7 @@ class GrammatikPrüfer(dateiPfad: String): PipelineComponent(dateiPfad) {
         is AST.Definition.Funktion -> prüfeFunktionsDefinition(knoten)
         is AST.Satz.VariablenDeklaration -> prüfeVariablendeklaration(knoten)
         is AST.FunktionsAufruf -> prüfeFunktionsAufruf(knoten)
+        is AST.Satz.Zurückgabe -> prüfeZurückgabe(knoten)
         is AST.Ausdruck -> when (knoten) {
             is AST.Ausdruck.BinärerAusdruck -> prüfeBinärenAusdruck(knoten)
             is AST.Ausdruck.Minus -> prüfeMinus(knoten)
@@ -22,6 +23,14 @@ class GrammatikPrüfer(dateiPfad: String): PipelineComponent(dateiPfad) {
       }
       // visit everything
       true
+    }
+  }
+
+  private fun prüfeZurückgabe(zurückgabe: AST.Satz.Zurückgabe) {
+    if (zurückgabe.ausdruck is AST.Ausdruck.Variable) {
+      val variable = zurückgabe.ausdruck
+      prüfeNomen(variable.name, Kasus.AKKUSATIV)
+      prüfeArtikel(variable.artikel!!, variable.name, Kasus.AKKUSATIV)
     }
   }
 
@@ -58,7 +67,7 @@ class GrammatikPrüfer(dateiPfad: String): PipelineComponent(dateiPfad) {
   }
 
   private fun prüfeParameter(parameter: AST.Definition.Parameter, kasus: Kasus) {
-    val nomen = parameter.typ
+    val nomen = parameter.typKnoten.name
     prüfeNomen(nomen, kasus)
     prüfeArtikel(parameter.artikel, nomen, kasus)
     if (parameter.name != null) {
@@ -69,7 +78,7 @@ class GrammatikPrüfer(dateiPfad: String): PipelineComponent(dateiPfad) {
 
   private fun prüfeFunktionsDefinition(funktionsDefinition: AST.Definition.Funktion) {
     if (funktionsDefinition.rückgabeTyp != null) {
-      prüfeNomen(funktionsDefinition.rückgabeTyp, Kasus.NOMINATIV)
+      prüfeNomen(funktionsDefinition.rückgabeTyp.name, Kasus.NOMINATIV)
     }
     if (funktionsDefinition.objekt != null) {
       prüfeParameter(funktionsDefinition.objekt, Kasus.AKKUSATIV)
@@ -101,6 +110,13 @@ class GrammatikPrüfer(dateiPfad: String): PipelineComponent(dateiPfad) {
   private fun prüfeArgument(argument: AST.Argument, kasus: Kasus) {
     prüfeNomen(argument.name, kasus)
     prüfeArtikel(argument.artikel, argument.name, kasus)
+    if (argument.wert is AST.Ausdruck.Variable) {
+      val variable = argument.wert
+      prüfeNomen(variable.name, Kasus.NOMINATIV)
+      if (variable.artikel != null) {
+        prüfeArtikel(variable.artikel, variable.name, kasus)
+      }
+    }
   }
 
   private fun prüfePräpositionsArgumente(präposition: AST.PräpositionsArgumente) {

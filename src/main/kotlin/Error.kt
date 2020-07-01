@@ -65,9 +65,9 @@ sealed class GermanScriptFehler(val token: Token): Error() {
   }
 
   sealed class DoppelteDefinition(token: Token): GermanScriptFehler(token) {
-    class Funktion(token: Token, private val definition: FunktionsDefinition): DoppelteDefinition(token) {
+    class Funktion(token: Token, private val definition: AST.Definition.Funktion): DoppelteDefinition(token) {
       override val nachricht: String?
-        get() = "Die Funktion '${definition.vollerName}' ist schon in Zeile ${definition.verbToken.anfang.zeile} definiert."
+        get() = "Die Funktion '${definition.vollerName}' ist schon in Zeile ${definition.name.anfang.zeile} definiert."
     }
   }
 
@@ -76,5 +76,20 @@ sealed class GermanScriptFehler(val token: Token): Error() {
       override val nachricht: String?
         get() = "Die Funktion '${funktionsAufruf.vollerName!!} ist nicht definiert.'"
     }
+
+    class Variable(token: Token): Undefiniert(token) {
+      override val nachricht: String?
+        get() = "Die Variable '${token.wert}' ist nicht definiert.'"
+    }
+
+    class Typ(token: Token): Undefiniert(token) {
+      override val nachricht: String?
+        get() = "Der Typ '${token.wert}' ist nicht definiert."
+    }
+  }
+
+  class TypFehler(token: Token, private val erwarteterTyp: Typ): GermanScriptFehler(token) {
+    override val nachricht: String?
+      get() = "Falscher Typ. Erwartet wird der Typ ${erwarteterTyp.name}"
   }
 }

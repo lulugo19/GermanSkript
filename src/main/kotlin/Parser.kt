@@ -8,7 +8,8 @@ enum class ASTKnotenID {
   FUNKTIONS_AUFRUF,
   FUNKTIONS_DEFINITION,
   INTERN,
-  DEKLINATION
+  DEKLINATION,
+  ZURÜCKGABE
 }
 
 class Parser(dateiPfad: String): PipelineComponent(dateiPfad) {
@@ -168,6 +169,7 @@ private sealed class SubParser<T: AST>() {
         is TokenTyp.INTERN -> subParse(Satz.Intern)
         is TokenTyp.ARTIKEL -> subParse(Satz.VariablenDeklaration)
         is TokenTyp.BEZEICHNER_KLEIN -> subParse(Satz.FunktionsAufruf)
+        is TokenTyp.GEBE -> subParse(Satz.Zurückgabe)
         else -> null
       }
     }
@@ -312,6 +314,18 @@ private sealed class SubParser<T: AST>() {
 
       override fun parseImpl(): AST.Satz.FunktionsAufruf = AST.Satz.FunktionsAufruf(subParse(SubParser.FunktionsAufruf))
     }
+
+    object Zurückgabe: Satz<AST.Satz.Zurückgabe>() {
+      override val id: ASTKnotenID
+        get() = ASTKnotenID.ZURÜCKGABE
+
+      override fun parseImpl(): AST.Satz.Zurückgabe {
+        expect<TokenTyp.GEBE>("gebe")
+        val ausdruck = subParse(Ausdruck)
+        expect<TokenTyp.ZURÜCK>("zurück")
+        return AST.Satz.Zurückgabe(ausdruck)
+      }
+    }
   }
 
   sealed class Definition<T: AST.Definition>(): SubParser<T>() {
@@ -369,7 +383,7 @@ private sealed class SubParser<T: AST>() {
         val präpositionsParameter = parsePräpositionsParameter()
         val suffix = parseOptional<TokenTyp.BEZEICHNER_KLEIN>()
         val programm = parseBereich {subParse(Programm)}
-        return AST.Definition.Funktion(rückgabeTyp?.let { AST.Nomen(it) }, name, objekt, präpositionsParameter, suffix, programm.sätze)
+        return AST.Definition.Funktion(rückgabeTyp?.let { AST.TypKnoten(AST.Nomen(it)) }, name, objekt, präpositionsParameter, suffix, programm.sätze)
       }
 
       fun parseRückgabeTyp(): TypedToken<TokenTyp.BEZEICHNER_GROSS> {
@@ -383,7 +397,7 @@ private sealed class SubParser<T: AST>() {
         val artikel = expect<TokenTyp.ARTIKEL.BESTIMMT>("bestimmter Artikel")
         val typ = expect<TokenTyp.BEZEICHNER_GROSS>("Bezeichner")
         val name = parseOptional<TokenTyp.BEZEICHNER_GROSS>()
-        return AST.Definition.Parameter(artikel, AST.Nomen(typ), name?.let { AST.Nomen(it) })
+        return AST.Definition.Parameter(artikel, AST.TypKnoten(AST.Nomen(typ)), name?.let { AST.Nomen(it) })
       }
 
       fun parsePräpositionsParameter(): List<AST.Definition.PräpositionsParameter> {
