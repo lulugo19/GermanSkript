@@ -2,46 +2,46 @@ import util.SimpleLogger
 import kotlin.Error
 
 sealed class Typ(val name: String) {
-  abstract val definierteOperatoren: Array<Operator>
+  abstract val definierteOperatoren: Map<Operator, Typ>
 
   object Zahl : Typ("Zahl") {
-    override val definierteOperatoren: Array<Operator>
-      get() = arrayOf(
-          Operator.PLUS,
-          Operator.MINUS,
-          Operator.MAL,
-          Operator.GETEILT,
-          Operator.MODULO,
-          Operator.HOCH,
-          Operator.GRÖßER,
-          Operator.KLEINER,
-          Operator.GRÖSSER_GLEICH,
-          Operator.KLEINER_GLEICH,
-          Operator.UNGLEICH,
-          Operator.GLEICH
+    override val definierteOperatoren: Map<Operator, Typ>
+      get() = mapOf(
+          Operator.PLUS to  Zahl,
+          Operator.MINUS to Zahl,
+          Operator.MAL to Zahl,
+          Operator.GETEILT to Zahl,
+          Operator.MODULO to Zahl,
+          Operator.HOCH to Zahl,
+          Operator.GRÖßER to Boolean,
+          Operator.KLEINER to Boolean,
+          Operator.GRÖSSER_GLEICH to Boolean,
+          Operator.KLEINER_GLEICH to Boolean,
+          Operator.UNGLEICH to Boolean,
+          Operator.GLEICH to Boolean
       )
   }
 
   object Zeichenfolge : Typ("Zeichenfolge") {
-    override val definierteOperatoren: Array<Operator>
-      get() = arrayOf(
-          Operator.PLUS,
-          Operator.GLEICH,
-          Operator.UNGLEICH,
-          Operator.GRÖßER,
-          Operator.KLEINER,
-          Operator.GRÖSSER_GLEICH,
-          Operator.KLEINER_GLEICH
+    override val definierteOperatoren: Map<Operator, Typ>
+      get() = mapOf(
+          Operator.PLUS to Zeichenfolge,
+          Operator.GLEICH to Boolean,
+          Operator.UNGLEICH to Boolean,
+          Operator.GRÖßER to Boolean,
+          Operator.KLEINER to Boolean,
+          Operator.GRÖSSER_GLEICH to Boolean,
+          Operator.KLEINER_GLEICH to Boolean
       )
   }
 
   object Boolean : Typ("Boolean") {
-    override val definierteOperatoren: Array<Operator>
-      get() = arrayOf(
-          Operator.UND,
-          Operator.ODER,
-          Operator.GLEICH,
-          Operator.UNGLEICH
+    override val definierteOperatoren: Map<Operator, Typ>
+      get() = mapOf(
+          Operator.UND to Boolean,
+          Operator.ODER to Boolean,
+          Operator.GLEICH to Boolean,
+          Operator.UNGLEICH to Boolean
       )
   }
 }
@@ -138,9 +138,10 @@ class TypPrüfer(dateiPfad: String): PipelineComponent(dateiPfad) {
     }
 
     for (i in argumente.indices) {
-      val typVonAusdruck = typVonAusdruck(argumente[i], variablen)
+      val typVonAusdruck = typVonAusdruck(argumente[i].wert?: AST.Ausdruck.Variable(null, argumente[i].name), variablen)
       if (typVonAusdruck != parameterTypen[i]) {
-        throw GermanScriptFehler.TypFehler(holeErstesTokenVonAusdruck(argumente[i]), parameterTypen[i])
+        throw GermanScriptFehler.TypFehler(holeErstesTokenVonAusdruck(
+            argumente[i].wert ?: AST.Ausdruck.Variable(null, argumente[i].name)), parameterTypen[i])
       }
     }
 
@@ -170,14 +171,14 @@ class TypPrüfer(dateiPfad: String): PipelineComponent(dateiPfad) {
   private fun prüfeBinärenAusdruck(ausdruck: AST.Ausdruck.BinärerAusdruck, variablen: HashMap<String, Typ>): Typ {
     val linkerTyp = typVonAusdruck(ausdruck.links, variablen)
     val operator = ausdruck.operator.typ.operator
-    if (!linkerTyp.definierteOperatoren.contains(operator)) {
+    if (!linkerTyp.definierteOperatoren.containsKey(operator)) {
       throw Error("Operator '$operator' ist für Typ '${linkerTyp.name}' nicht definiert.")
     }
     val rechterTyp = typVonAusdruck(ausdruck.rechts, variablen)
     if (linkerTyp != rechterTyp) {
       throw Error("Operatoren funktionieren nur für gleiche Typen")
     }
-    return linkerTyp
+    return linkerTyp.definierteOperatoren.getValue(operator)
   }
 
   private fun prüfeMinus(ausdruck: AST.Ausdruck.Minus, variablen: HashMap<String, Typ>): Typ {

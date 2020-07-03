@@ -294,6 +294,12 @@ private sealed class SubParser<T: AST>() {
       override val id: ASTKnotenID
         get() = ASTKnotenID.INTERN
 
+      override fun bewacheKnoten() {
+        if (!hierarchyContainsNode(ASTKnotenID.FUNKTIONS_DEFINITION)) {
+          throw GermanScriptFehler.SyntaxFehler.ParseFehler(next(), null, "Das Schlüsselwort 'intern' darf nur in einer Funktionsdefinition stehen.")
+        }
+      }
+
       override fun parseImpl(): AST.Satz.Intern {
         expect<TokenTyp.INTERN>("intern")
         if (peekType() !is TokenTyp.PUNKT) {
@@ -327,6 +333,12 @@ private sealed class SubParser<T: AST>() {
     object Zurückgabe: Satz<AST.Satz.Zurückgabe>() {
       override val id: ASTKnotenID
         get() = ASTKnotenID.ZURÜCKGABE
+
+      override fun bewacheKnoten() {
+        if (!hierarchyContainsNode(ASTKnotenID.FUNKTIONS_DEFINITION)) {
+          throw GermanScriptFehler.SyntaxFehler.ParseFehler(next(), null, "'gebe ... zurück' darf nur in einer Funktionsdefinition mit Rückgabetyp stehen.")
+        }
+      }
 
       override fun parseImpl(): AST.Satz.Zurückgabe {
         parseKleinesSchlüsselwort("gebe")

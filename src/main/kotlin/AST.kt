@@ -149,17 +149,17 @@ sealed class AST {
       val suffix: TypedToken<TokenTyp.BEZEICHNER_KLEIN>?,
       var vollerName: String? = null
   ): AST() {
-    private val _argumente: MutableList<Ausdruck> = mutableListOf()
-    val argumente: List<Ausdruck> = _argumente
+    private val _argumente: MutableList<Argument> = mutableListOf()
+    val argumente: List<Argument> = _argumente
 
 
     init {
       if (objekt != null) {
-        _argumente.add(objekt.wert ?: Ausdruck.Variable(null, objekt.name))
+        _argumente.add(objekt)
       }
       for (präposition in präpositionsArgumente) {
         for (argument in präposition.argumente) {
-          _argumente.add(argument.wert ?: Ausdruck.Variable(null, argument.name))
+          _argumente.add(argument)
         }
       }
     }
