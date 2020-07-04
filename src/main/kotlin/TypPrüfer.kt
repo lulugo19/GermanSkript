@@ -103,7 +103,7 @@ class TypPrüfer(dateiPfad: String): PipelineComponent(dateiPfad) {
 
   private fun prüfeZurückgabe(rückgabeTyp: Typ?, satz: AST.Satz.Zurückgabe, variablen: HashMap<String, Typ>) {
     if (rückgabeTyp == null) {
-      throw Error("Die Funktions kann nichts zurückgeben, wenn sie keinen Rückgabetypen hat.")//TODO(RückgabeFehler)
+      throw GermanScriptFehler.SyntaxFehler.RückgabeTypFehler(holeErstesTokenVonAusdruck(satz.ausdruck))
     }
     print("RückgabeTyp = $rückgabeTyp")
     val ausdruckTyp = typVonAusdruck(satz.ausdruck, variablen)
@@ -119,7 +119,7 @@ class TypPrüfer(dateiPfad: String): PipelineComponent(dateiPfad) {
     print("Variable($nominativ): ")
     val unveränderbar = deklaration.artikel.typ is TokenTyp.ARTIKEL.BESTIMMT
     if (unveränderbar && variablen.containsKey(nominativ)) {
-      throw Error("Unveränderbare Variablen können nicht neu zugewiesen werden!")//TODO(Zuweisungsfehler)
+      throw GermanScriptFehler.DoppelteDefinition.UnveränderlicheVariable(deklaration.name.bezeichner.toUntyped())
     }
     val ausdruckTyp = typVonAusdruck(deklaration.ausdruck, variablen)
     variablen[nominativ] = ausdruckTyp
@@ -129,7 +129,7 @@ class TypPrüfer(dateiPfad: String): PipelineComponent(dateiPfad) {
   }
 
   private fun typVonAusdruck(ausdruck: AST.Ausdruck, variablen: HashMap<String, Typ>): Typ {
-    val typ = when (ausdruck) {
+    return when (ausdruck) {
       is AST.Ausdruck.Zahl -> Typ.Zahl
       is AST.Ausdruck.Zeichenfolge -> Typ.Zeichenfolge
       is AST.Ausdruck.Boolean -> Typ.Boolean
@@ -140,20 +140,19 @@ class TypPrüfer(dateiPfad: String): PipelineComponent(dateiPfad) {
         prüfeFunktionsAufruf(ausdruck.aufruf, true, variablen)!!
       }
     }
-    return typ
   }
 
   private fun prüfeFunktionsAufruf(funktionsAufruf: AST.FunktionsAufruf, istAusdruck: Boolean, variablen: HashMap<String, Typ>): Typ? {
     val funktionsDefinition = definierer.holeFunktionsDefinition(funktionsAufruf)
     print("Funktionsaufruf(${funktionsAufruf.vollerName})")
     if (istAusdruck && funktionsDefinition.rückgabeTyp == null) {
-      throw Error("Eine Funktion ohne Rückgabetyp kann nicht als Ausdruck verwendet werden.")//TODO(RückgabeFehler die 2.)
+      throw GermanScriptFehler.SyntaxFehler.FunktionAlsAusdruckFehler(funktionsDefinition.name.toUntyped())
     }
 
     val parameterTypen = funktionsDefinition.parameter.map { it.typKnoten.typ!! }
     val argumente = funktionsAufruf.argumente
     if (argumente.size != parameterTypen.size) {
-      throw Error("Zu viele Parameter!")//TODO(ParameterFehler)
+      throw GermanScriptFehler.SyntaxFehler.AnzahlDerParameterFehler(funktionsDefinition.name.toUntyped())
     }
     print("[")
     for (i in argumente.indices) {
@@ -193,12 +192,12 @@ class TypPrüfer(dateiPfad: String): PipelineComponent(dateiPfad) {
     val linkerTyp = typVonAusdruck(ausdruck.links, variablen)
     val operator = ausdruck.operator.typ.operator
     if (!linkerTyp.definierteOperatoren.containsKey(operator)) {
-      throw GermanScriptFehler.Undefiniert.Operator(ausdruck.operator.toUntyped())
+      throw GermanScriptFehler.Undefiniert.Operator(ausdruck.operator.toUntyped(), linkerTyp.name)
     }
     val rechterTyp = typVonAusdruck(ausdruck.rechts, variablen)
     print("($linkerTyp $operator $rechterTyp)")
     if (linkerTyp != rechterTyp) {
-      throw Error("Operatoren funktionieren nur für gleiche Typen")//TODO(Operatorfehler)
+      throw GermanScriptFehler.SyntaxFehler.OperatorFehler(holeErstesTokenVonAusdruck(ausdruck), linkerTyp.name, rechterTyp.name)
     }
     return linkerTyp.definierteOperatoren.getValue(operator)
   }
@@ -206,7 +205,7 @@ class TypPrüfer(dateiPfad: String): PipelineComponent(dateiPfad) {
   private fun prüfeMinus(ausdruck: AST.Ausdruck.Minus, variablen: HashMap<String, Typ>): Typ {
     val typ = typVonAusdruck(ausdruck, variablen)
     if (typ != Typ.Zahl) {
-      throw Error("Minus nur für Zahlen definiert.")//TODO("Welcher Token?")
+      throw GermanScriptFehler.Undefiniert.Minus(holeErstesTokenVonAusdruck(ausdruck))
     }
     return Typ.Zahl
   }

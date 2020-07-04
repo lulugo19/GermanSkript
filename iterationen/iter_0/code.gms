@@ -21,7 +21,6 @@ schreibe die Zahl Summe // 150,5
 eine Summe ist die Summe - 0,5
 schreibe die Zahl Summe // 150
 
-
 Deklination Femininum Singular(Welt, Welt, Welt, Welt) Plural(Welten, Welten, Welten, Welten)
 Deklination Maskulinum Singular(Mond, Mondes, Mond, Mond) Plural(Monde, Monde, Monden, Monde)
 
@@ -44,3 +43,13 @@ die Zeichenfolge ist gebe die Zeichenfolge "TestA" zurück
 schreibe die Zeichenfolge // TestA
 
 // schreibe die Zeichenfolge (teste "TestB")// TestB
+
+// Space Für Error Tests
+//Deklination (Geschlecht) Singular((Nominativ), (Genitiv), (Dativ), (Akkusativ)) Plural((Nominativ), (Genitiv), (Dativ), (Akkusativ))
+Deklination Neutrum Singular(Auto, Autos, Auto, Auto) Plural(Autos, Autos, Autos, Autos)
+
+
+Verb umfahre die Zeichenfolge Welt mit der Zeichenfolge Auto:
+.
+
+ein Auto ist "Mars" + "5"

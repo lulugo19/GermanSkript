@@ -29,6 +29,26 @@ sealed class GermanScriptFehler(val token: Token): Error() {
     }
 
     class UngültigerBereich(token: Token, override val nachricht: String): SyntaxFehler(token)
+
+    class RückgabeTypFehler(token: Token): SyntaxFehler(token){
+      override val nachricht: String?
+        get() = "Die Funktion kann nichts zurückgeben, da in der definition kein Rückgabetyp angegeben ist."
+    }
+
+    class FunktionAlsAusdruckFehler(token: Token): SyntaxFehler(token){
+      override val nachricht: String?
+        get() = "Die Funktion '${token.wert}' kann nicht als Ausdruck verwendet werden, da sie keinen Rückgabetyp besitzt."
+    }
+
+    class AnzahlDerParameterFehler(token: Token): SyntaxFehler(token){
+      override val nachricht: String?
+        get() = "Die Anzahl der Parameter und Argumente der Funktion '${token.wert}' stimmen nicht überein."
+    }
+
+    class OperatorFehler(token: Token, private val linkerTyp: String, private val rechterTyp: String): SyntaxFehler(token){
+      override val nachricht: String?
+        get() = "Operatoren funktionieren nur für gleiche Typen. $linkerTyp und $rechterTyp sind nicht gleich."
+    }
   }
 
   sealed class DudenFehler(token: Token, protected val wort: String): GermanScriptFehler(token) {
@@ -69,6 +89,10 @@ sealed class GermanScriptFehler(val token: Token): Error() {
       override val nachricht: String?
         get() = "Die Funktion '${definition.vollerName}' ist schon in Zeile ${definition.name.anfang.zeile} definiert."
     }
+    class UnveränderlicheVariable(token: Token): DoppelteDefinition(token){
+      override val nachricht: String?
+        get() = "Die Variable '${token.wert}' kann nicht erneut zugewiesen werden, da sie unveränderlich ist."
+    }
   }
 
   sealed class Undefiniert(token: Token): GermanScriptFehler(token) {
@@ -87,9 +111,9 @@ sealed class GermanScriptFehler(val token: Token): Error() {
         get() = "Der Typ '${token.wert}' ist nicht definiert."
     }
 
-    class Operator(token: Token): Undefiniert(token){
+    class Operator(token: Token, private val typ: String): Undefiniert(token){
       override val nachricht: String?
-        get() = "Der Operator '${token.wert}' ist für diesen Typen nicht definiert."
+        get() = "Der Operator '${token.wert}' ist für den Typen '$typ' nicht definiert."
     }
 
     class Minus(token: Token): Undefiniert(token){
