@@ -45,7 +45,10 @@ sealed class AST {
 
   sealed class Definition : AST() {
 
-    data class DeklinationsDefinition(val deklination: Deklination) : Definition()
+    sealed class DeklinationsDefinition: Definition() {
+      data class Definition(val deklination: Deklination): DeklinationsDefinition()
+      data class Duden(val wort: TypedToken<TokenTyp.BEZEICHNER_GROSS>): DeklinationsDefinition()
+    }
 
     data class Parameter(
         val artikel: TypedToken<TokenTyp.ARTIKEL>,

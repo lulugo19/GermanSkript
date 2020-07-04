@@ -81,13 +81,14 @@ sealed class TokenTyp(val anzeigeName: String) {
     // Schlüsselwörter
     object DEKLINATION: TokenTyp("'Deklination'")
     data class GENUS(val genus: Genus): TokenTyp("'Genus'")
+    object PLURAL: TokenTyp("'Plural'")
+    object SINGULAR: TokenTyp("'Singular'")
+    object DUDEN: TokenTyp("'Duden'")
     object WENN: TokenTyp("'wenn'")
     object DANN: TokenTyp("'dann'")
     object SONST: TokenTyp("'sonst'")
     object SOLANGE: TokenTyp("'solange")
     object ALS: TokenTyp("'Als'")
-    object PLURAL: TokenTyp("'Plural'")
-    object SINGULAR: TokenTyp("'Singular'")
     object FORTFAHREN: TokenTyp("'fortfahren'")
     object ABBRECHEN: TokenTyp("'abbrechen'")
     object VERB: TokenTyp("'Verb'")
@@ -165,6 +166,9 @@ private val DOPPEL_SYMBOL_MAPPING = mapOf<String, TokenTyp>(
 private val WORT_MAPPING = mapOf<String, TokenTyp>(
     // Schlüsselwörter
     "Deklination" to TokenTyp.DEKLINATION,
+    "Singular" to TokenTyp.SINGULAR,
+    "Plural" to TokenTyp.PLURAL,
+    "Duden" to TokenTyp.DUDEN,
     "Maskulinum" to TokenTyp.GENUS(Genus.MASKULINUM),
     "Femininum" to TokenTyp.GENUS(Genus.FEMININUM),
     "Neutrum" to TokenTyp.GENUS(Genus.NEUTRUM),
@@ -180,8 +184,6 @@ private val WORT_MAPPING = mapOf<String, TokenTyp>(
     "fortfahren" to TokenTyp.FORTFAHREN,
     "abbrechen" to TokenTyp.ABBRECHEN,
     "als" to TokenTyp.ALS,
-    "Singular" to TokenTyp.SINGULAR,
-    "Plural" to TokenTyp.PLURAL,
     "Modul" to TokenTyp.MODUL,
     "jede" to TokenTyp.JEDE(Genus.FEMININUM),
     "jeden" to TokenTyp.JEDE(Genus.MASKULINUM),

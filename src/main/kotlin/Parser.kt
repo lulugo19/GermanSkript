@@ -309,7 +309,6 @@ private sealed class SubParser<T: AST>() {
         }
         return AST.Satz.Intern
       }
-
     }
 
     object VariablenDeklaration: Satz<AST.Satz.VariablenDeklaration>() {
@@ -398,6 +397,13 @@ private sealed class SubParser<T: AST>() {
 
       override fun parseImpl(): AST.Definition.DeklinationsDefinition {
         expect<TokenTyp.DEKLINATION>("Deklination")
+        return when (peekType()) {
+          is TokenTyp.DUDEN -> parseDuden()
+          else -> parseDeklination()
+        }
+      }
+
+      private fun parseDeklination(): AST.Definition.DeklinationsDefinition.Definition {
         val genus = expect<TokenTyp.GENUS>("Genus").typ.genus
         expect<TokenTyp.SINGULAR>("'Singular'")
         expect<TokenTyp.OFFENE_KLAMMER>("'('")
@@ -419,11 +425,17 @@ private sealed class SubParser<T: AST>() {
         expect<TokenTyp.KOMMA>("','")
         val akkusativP = expect<TokenTyp.BEZEICHNER_GROSS>("Bezeichner").wert
         expect<TokenTyp.GESCHLOSSENE_KLAMMER>("')'")
-
-        return AST.Definition.DeklinationsDefinition(Deklination(genus,
+        return AST.Definition.DeklinationsDefinition.Definition(Deklination(genus,
             arrayOf(nominativS, genitivS, dativS, akkusativS, nominativP, genitivP, dativP, akkusativP)))
       }
 
+      private fun parseDuden(): AST.Definition.DeklinationsDefinition.Duden {
+        expect<TokenTyp.DUDEN>("'Duden'")
+        expect<TokenTyp.OFFENE_KLAMMER>("'('")
+        val wort = expect<TokenTyp.BEZEICHNER_GROSS>("Bezeichner")
+        expect<TokenTyp.GESCHLOSSENE_KLAMMER>("')'")
+        return  AST.Definition.DeklinationsDefinition.Duden(wort)
+      }
     }
 
     object Funktion: Definition<AST.Definition.Funktion>() {

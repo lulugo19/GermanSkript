@@ -1,3 +1,5 @@
+import kotlinx.coroutines.*
+import java.io.File
 import java.lang.Integer.min
 import kotlin.math.floor
 
@@ -22,6 +24,12 @@ data class Deklination(
 
   val fallSequenz get() = fälle.asSequence()
 
+  override fun toString(): String {
+    return "Deklination ${genus.anzeigeName} " +
+        "Singular(${fälle[0]}, ${fälle[1]}, ${fälle[2]}, ${fälle[3]}) " +
+        "Plural(${fälle[4]}, ${fälle[5]}, ${fälle[6]}, ${fälle[7]})"
+  }
+
   override fun equals(other: Any?): Boolean {
     if (this === other) return true
     if (javaClass != other?.javaClass) return false
@@ -41,13 +49,16 @@ data class Deklination(
   }
 }
 
+typealias DudenAnfrage = Pair<TypedToken<TokenTyp.BEZEICHNER_GROSS>, Deferred<Deklination>>
+
 class Deklanierer(dateiPfad: String): PipelineComponent(dateiPfad) {
   val ast = Parser(dateiPfad).parse()
-  private val wörterbuch = Wörterbuch()
+  val wörterbuch = Wörterbuch()
 
-  fun deklaniere() {
-    ast.definitionen.visit({ knoten ->
-      if (knoten is AST.Definition.DeklinationsDefinition) {
+  fun deklaniere() = runBlocking {
+    val dudenAnfragen = mutableListOf<DudenAnfrage>()
+    ast.definitionen.visit { knoten ->
+      if (knoten is AST.Definition.DeklinationsDefinition.Definition) {
         try {
           wörterbuch.fügeDeklinationHinzu(knoten.deklination)
         }
@@ -56,9 +67,45 @@ class Deklanierer(dateiPfad: String): PipelineComponent(dateiPfad) {
           // TODO: Vielleicht sollte eine Warnung ausgegeben werden
         }
       }
+      else if (knoten is AST.Definition.DeklinationsDefinition.Duden) {
+        dudenAnfragen += (knoten.wort to async(Dispatchers.IO) {
+            val wort = knoten.wort
+            try {
+              return@async Duden.dudenGrammatikAnfrage(wort.wert)
+            }
+            catch (fehler: Duden.DudenFehler) {
+            when (fehler) {
+              is Duden.DudenFehler.NotFoundFehler, is Duden.DudenFehler.ParseFehler ->
+                throw GermanScriptFehler.DudenFehler.WortNichtGefundenFehler(wort.toUntyped(), wort.wert)
+              is Duden.DudenFehler.KeinInternetFehler -> throw GermanScriptFehler.DudenFehler.Verbindungsfehler(wort.toUntyped(), wort.wert)
+            }
+          }
+        })
+      }
+
       // only visit on global level
       return@visit false
-    })
+    }
+
+    löseDudenAnfragenAuf(dudenAnfragen)
+  }
+
+  suspend fun löseDudenAnfragenAuf(dudenAnfragen: List<DudenAnfrage>) {
+    // löse Duden-Anfragen auf und überschreibe Duden-Deklination mit manueller Deklination im Source-Code
+    val quellCodeDatei = File(dateiPfad)
+    val quellCodeZeilen = quellCodeDatei.readLines().toMutableList()
+    for ((token, anfrage) in dudenAnfragen) {
+      try {
+        val deklination = anfrage.await()
+        wörterbuch.fügeDeklinationHinzu(deklination)
+        // minus 1, da die Zeilen bei 1 anfangen zu zählen
+        quellCodeZeilen[token.anfang.zeile-1] = deklination.toString()
+      }
+      catch (fehler: Wörterbuch.DoppelteDeklinationFehler) {
+
+      }
+    }
+    quellCodeDatei.writeText(quellCodeZeilen.joinToString("\n"))
   }
   
   fun holeDeklination(nomen: AST.Nomen): Deklination {
