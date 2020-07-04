@@ -98,7 +98,14 @@ class TypPrüfer(dateiPfad: String): PipelineComponent(dateiPfad) {
       is AST.Satz.VariablenDeklaration -> prüfeVariablenDeklaration(satz, variablen)
       is AST.Satz.FunktionsAufruf -> prüfeFunktionsAufruf(satz.aufruf, false, variablen)
       is AST.Satz.Zurückgabe -> prüfeZurückgabe(rückgabeTyp, satz, variablen)
+      is AST.Satz.Bedingung -> prüfeBedingung()
     }
+  }
+
+  private fun prüfeBedingung() {
+    // Die Bedingungen müssen Boolean sein
+    // Sätze prüfen
+    TODO("Not yet implemented")
   }
 
   private fun prüfeZurückgabe(rückgabeTyp: Typ?, satz: AST.Satz.Zurückgabe, variablen: HashMap<String, Typ>) {

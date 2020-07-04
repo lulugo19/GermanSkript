@@ -86,4 +86,9 @@ addiere einige Zahlen[2, 3, 5, 7, 11, 13]
 Liest die nächste ganze Zeile von der Standardeingabe ein
 `lese`
 
+## Todo
+- Bug beheben mit Präpositionen Dativ und Akkusativ und dem falschen vollen Namen der Funktion (Lukas)
+- Typchecker: Bedingung checken -> Die Bedingung muss vom Typ Boolean sein (Finn)
+- Interpreter: Bedingung (Lukas)
+
 

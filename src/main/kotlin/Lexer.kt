@@ -212,6 +212,7 @@ private val WORT_MAPPING = mapOf<String, TokenTyp>(
     "die" to TokenTyp.ARTIKEL.BESTIMMT,
     "das" to TokenTyp.ARTIKEL.BESTIMMT,
     "den" to TokenTyp.ARTIKEL.BESTIMMT,
+    "dem" to TokenTyp.ARTIKEL.BESTIMMT,
     "ein" to TokenTyp.ARTIKEL.UMBESTIMMT,
     "eine" to TokenTyp.ARTIKEL.UMBESTIMMT,
     "eines" to TokenTyp.ARTIKEL.UMBESTIMMT,

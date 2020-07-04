@@ -9,7 +9,8 @@ enum class ASTKnotenID {
   FUNKTIONS_DEFINITION,
   INTERN,
   DEKLINATION,
-  ZURÜCKGABE
+  ZURÜCKGABE,
+  BEDINGUNG
 }
 
 class Parser(dateiPfad: String): PipelineComponent(dateiPfad) {
@@ -176,6 +177,7 @@ private sealed class SubParser<T: AST>() {
       return when (nextToken.typ) {
         is TokenTyp.INTERN -> subParse(Satz.Intern)
         is TokenTyp.ARTIKEL -> subParse(Satz.VariablenDeklaration)
+        is TokenTyp.WENN -> subParse(Satz.Bedingung)
         is TokenTyp.BEZEICHNER_KLEIN ->
           when (nextToken.wert) {
             "gebe" -> subParse(Satz.Zurückgabe)
@@ -345,6 +347,38 @@ private sealed class SubParser<T: AST>() {
         val ausdruck = subParse(Ausdruck)
         parseKleinesSchlüsselwort("zurück")
         return AST.Satz.Zurückgabe(ausdruck)
+      }
+    }
+
+    object Bedingung: Satz<AST.Satz.Bedingung>() {
+      override val id: ASTKnotenID
+        get() = ASTKnotenID.BEDINGUNG
+
+      override fun parseImpl(): AST.Satz.Bedingung {
+        val bedingungen = mutableListOf<AST.Satz.BedingungsTerm>()
+
+        expect<TokenTyp.WENN>("'wenn'")
+        var bedingung = subParse(Ausdruck)
+        var sätze = parseBereich { subParse(Programm) }.sätze
+
+        bedingungen += AST.Satz.BedingungsTerm(bedingung, sätze)
+
+        while (peekType() is TokenTyp.SONST) {
+          expect<TokenTyp.SONST>("'sonst'")
+          val nurSonst = peekType() !is TokenTyp.WENN
+          if (!nurSonst) {
+            expect<TokenTyp.WENN>("'wenn'")
+          }
+          bedingung = subParse(Ausdruck)
+          sätze = parseBereich { subParse(Programm) }.sätze
+          val bedingungsTerm = AST.Satz.BedingungsTerm(bedingung, sätze)
+          if (nurSonst) {
+            return AST.Satz.Bedingung(bedingungen, bedingungsTerm)
+          } else {
+            bedingungen += bedingungsTerm
+          }
+        }
+        return AST.Satz.Bedingung(bedingungen, null)
       }
     }
   }

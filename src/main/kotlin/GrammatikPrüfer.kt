@@ -81,6 +81,7 @@ class GrammatikPrüfer(dateiPfad: String): PipelineComponent(dateiPfad) {
       prüfeNomen(funktionsDefinition.rückgabeTyp.name, Kasus.NOMINATIV)
     }
     if (funktionsDefinition.objekt != null) {
+      // TODO: Das Objekt könnte auch im Dativ stehen
       prüfeParameter(funktionsDefinition.objekt, Kasus.AKKUSATIV)
     }
     for (präposition in funktionsDefinition.präpositionsParameter) {
@@ -97,7 +98,7 @@ class GrammatikPrüfer(dateiPfad: String): PipelineComponent(dateiPfad) {
           prüfeParameter(parameter, kasus.value)
         }
       }
-      catch (grammatikFehler: GermanScriptFehler.GrammatikFehler) {
+      catch (grammatikFehler: GermanScriptFehler.GrammatikFehler.FalscherArtikel) {
         // Wenn der letzte Fall nicht geklappt hat werfe den Fehler
         // TODO Man könnte auch 'prüfe' und die Fehlermeldungen verbessern, sodass der Benutzer auf meherer Fälle aufmerksam gemacht wird
         if (kasus.index == fälle.size-1) {
@@ -127,7 +128,7 @@ class GrammatikPrüfer(dateiPfad: String): PipelineComponent(dateiPfad) {
           prüfeArgument(argument, kasus.value)
         }
       }
-      catch (grammatikFehler: GermanScriptFehler.GrammatikFehler) {
+      catch (grammatikFehler: GermanScriptFehler.GrammatikFehler.FalscherArtikel) {
         // Wenn der letzte Fall nicht geklappt hat werfe den Fehler
         // TODO Man könnte auch 'prüfe' und die Fehlermeldungen verbessern, sodass der Benutzer auf meherer Fälle aufmerksam gemacht wird
         if (kasus.index == fälle.size-1) {

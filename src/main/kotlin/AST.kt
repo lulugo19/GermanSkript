@@ -107,6 +107,30 @@ sealed class AST {
       }
     }
 
+    data class BedingungsTerm(
+        val bedingung: Ausdruck,
+        val sätze: List<Satz>
+    ): Satz() {
+      override fun visit(onVisit: (AST) -> Boolean) {
+        if (onVisit(this)) {
+          bedingung.visit(onVisit)
+          sätze.visit(onVisit)
+        }
+      }
+    }
+
+    data class Bedingung(
+        val bedingungen: List<BedingungsTerm>,
+        val sonst: BedingungsTerm?
+    ): Satz() {
+      override fun visit(onVisit: (AST) -> Boolean) {
+        if (onVisit(this)) {
+          bedingungen.visit(onVisit)
+          sonst?.visit(onVisit)
+        }
+      }
+    }
+
     data class FunktionsAufruf(val aufruf: AST.FunktionsAufruf): Satz() {
       override fun visit(onVisit: (AST) -> Boolean) {
         aufruf.visit(onVisit)

@@ -88,6 +88,7 @@ class Definierer(dateiPfad: String): PipelineComponent(dateiPfad) {
   }
 
   private fun getVollerNameVonFunktionsAufruf(funktionsAufruf: AST.FunktionsAufruf): String {
+    // erkläre die Zeichenfolge mit der Zahl über die Zeile der Mond nach die Welt
     var vollerName = funktionsAufruf.verb.wert
     if (funktionsAufruf.objekt != null) {
       val objekt = funktionsAufruf.objekt
@@ -96,7 +97,7 @@ class Definierer(dateiPfad: String): PipelineComponent(dateiPfad) {
     for (präposition in funktionsAufruf.präpositionsArgumente) {
       vollerName += " " + präposition.präposition.präposition.wert
       for (argument in präposition.argumente) {
-        vollerName += " " + argument.name.artikel!! + " " + argument.wert
+        vollerName += " " + argument.name.artikel!! + " " + argument.name.bezeichner.wert
       }
     }
     if (funktionsAufruf.suffix != null) {
