@@ -4,7 +4,11 @@ import kotlin.Error
 sealed class Typ(val name: String) {
   abstract val definierteOperatoren: Map<Operator, Typ>
 
+
   object Zahl : Typ("Zahl") {
+    override fun toString(): String {
+      return "Zahl"
+    }
     override val definierteOperatoren: Map<Operator, Typ>
       get() = mapOf(
           Operator.PLUS to  Zahl,
@@ -23,6 +27,9 @@ sealed class Typ(val name: String) {
   }
 
   object Zeichenfolge : Typ("Zeichenfolge") {
+    override fun toString(): String {
+      return "Zeichenfolge"
+    }
     override val definierteOperatoren: Map<Operator, Typ>
       get() = mapOf(
           Operator.PLUS to Zeichenfolge,
@@ -36,6 +43,9 @@ sealed class Typ(val name: String) {
   }
 
   object Boolean : Typ("Boolean") {
+    override fun toString(): String {
+      return "Boolean"
+    }
     override val definierteOperatoren: Map<Operator, Typ>
       get() = mapOf(
           Operator.UND to Boolean,
@@ -66,10 +76,14 @@ class TypPrüfer(dateiPfad: String): PipelineComponent(dateiPfad) {
 
   private fun prüfeFunktion(funktion: AST.Definition.Funktion) {
     val variablen = HashMap<String, Typ>()
+    print("Funktionsdefinition(${funktion.name.wert})[")
     for (parameter in funktion.parameter) {
       variablen[parameter.paramName.nominativ!!] = parameter.typKnoten.typ!!
+      print("${parameter.paramName.nominativ!!} :${parameter.typKnoten.typ!!}")
     }
+    print("] -> ")
     prüfeSätze(funktion.sätze, variablen, funktion.rückgabeTyp?.typ)
+    println()
   }
 
   private fun prüfeSätze(sätze: List<AST.Satz>, variablen: HashMap<String, Typ>, rückgabeTyp: Typ?) {
@@ -89,8 +103,9 @@ class TypPrüfer(dateiPfad: String): PipelineComponent(dateiPfad) {
 
   private fun prüfeZurückgabe(rückgabeTyp: Typ?, satz: AST.Satz.Zurückgabe, variablen: HashMap<String, Typ>) {
     if (rückgabeTyp == null) {
-      throw Error("Die Funktions kann nichts zurückgeben, wenn sie keinen Rückgabetypen hat.")
+      throw Error("Die Funktions kann nichts zurückgeben, wenn sie keinen Rückgabetypen hat.")//TODO(RückgabeFehler)
     }
+    print("RückgabeTyp = $rückgabeTyp")
     val ausdruckTyp = typVonAusdruck(satz.ausdruck, variablen)
     if (rückgabeTyp != ausdruckTyp) {
       throw GermanScriptFehler.TypFehler(holeErstesTokenVonAusdruck(satz.ausdruck), rückgabeTyp)
@@ -101,17 +116,20 @@ class TypPrüfer(dateiPfad: String): PipelineComponent(dateiPfad) {
     // der Typ der Variable in die Variablen-Map packen
     // unveränderbare Variablen dürfen nicht überschrieben werden
     val nominativ = deklaration.name.nominativ!!
+    print("Variable($nominativ): ")
     val unveränderbar = deklaration.artikel.typ is TokenTyp.ARTIKEL.BESTIMMT
     if (unveränderbar && variablen.containsKey(nominativ)) {
-      throw Error("Unveränderbare Variablen können nicht neu zugewiesen werden!")
+      throw Error("Unveränderbare Variablen können nicht neu zugewiesen werden!")//TODO(Zuweisungsfehler)
     }
     val ausdruckTyp = typVonAusdruck(deklaration.ausdruck, variablen)
     variablen[nominativ] = ausdruckTyp
+    println(" -> $ausdruckTyp")
+    println()
     return ausdruckTyp
   }
 
   private fun typVonAusdruck(ausdruck: AST.Ausdruck, variablen: HashMap<String, Typ>): Typ {
-    return when (ausdruck) {
+    val typ = when (ausdruck) {
       is AST.Ausdruck.Zahl -> Typ.Zahl
       is AST.Ausdruck.Zeichenfolge -> Typ.Zeichenfolge
       is AST.Ausdruck.Boolean -> Typ.Boolean
@@ -122,29 +140,32 @@ class TypPrüfer(dateiPfad: String): PipelineComponent(dateiPfad) {
         prüfeFunktionsAufruf(ausdruck.aufruf, true, variablen)!!
       }
     }
+    return typ
   }
 
   private fun prüfeFunktionsAufruf(funktionsAufruf: AST.FunktionsAufruf, istAusdruck: Boolean, variablen: HashMap<String, Typ>): Typ? {
     val funktionsDefinition = definierer.holeFunktionsDefinition(funktionsAufruf)
-
+    print("Funktionsaufruf(${funktionsAufruf.vollerName})")
     if (istAusdruck && funktionsDefinition.rückgabeTyp == null) {
-      throw Error("Eine Funktion ohne Rückgabetyp kann nicht als Ausdruck verwendet werden.")
+      throw Error("Eine Funktion ohne Rückgabetyp kann nicht als Ausdruck verwendet werden.")//TODO(RückgabeFehler die 2.)
     }
 
     val parameterTypen = funktionsDefinition.parameter.map { it.typKnoten.typ!! }
     val argumente = funktionsAufruf.argumente
     if (argumente.size != parameterTypen.size) {
-      throw Error("Zu viele Parameter!")
+      throw Error("Zu viele Parameter!")//TODO(ParameterFehler)
     }
-
+    print("[")
     for (i in argumente.indices) {
       val typVonAusdruck = typVonAusdruck(argumente[i].wert?: AST.Ausdruck.Variable(null, argumente[i].name), variablen)
+      print("${argumente[i].name.nominativ} :${parameterTypen[i]}")
       if (typVonAusdruck != parameterTypen[i]) {
         throw GermanScriptFehler.TypFehler(holeErstesTokenVonAusdruck(
             argumente[i].wert ?: AST.Ausdruck.Variable(null, argumente[i].name)), parameterTypen[i])
       }
     }
-
+    println("]")
+    println()
     return funktionsDefinition.rückgabeTyp?.typ
   }
 
@@ -172,11 +193,12 @@ class TypPrüfer(dateiPfad: String): PipelineComponent(dateiPfad) {
     val linkerTyp = typVonAusdruck(ausdruck.links, variablen)
     val operator = ausdruck.operator.typ.operator
     if (!linkerTyp.definierteOperatoren.containsKey(operator)) {
-      throw Error("Operator '$operator' ist für Typ '${linkerTyp.name}' nicht definiert.")
+      throw GermanScriptFehler.Undefiniert.Operator(ausdruck.operator.toUntyped())
     }
     val rechterTyp = typVonAusdruck(ausdruck.rechts, variablen)
+    print("($linkerTyp $operator $rechterTyp)")
     if (linkerTyp != rechterTyp) {
-      throw Error("Operatoren funktionieren nur für gleiche Typen")
+      throw Error("Operatoren funktionieren nur für gleiche Typen")//TODO(Operatorfehler)
     }
     return linkerTyp.definierteOperatoren.getValue(operator)
   }
@@ -184,7 +206,7 @@ class TypPrüfer(dateiPfad: String): PipelineComponent(dateiPfad) {
   private fun prüfeMinus(ausdruck: AST.Ausdruck.Minus, variablen: HashMap<String, Typ>): Typ {
     val typ = typVonAusdruck(ausdruck, variablen)
     if (typ != Typ.Zahl) {
-      throw Error("minus ist nur für Zahlen definiert")
+      throw Error("Minus nur für Zahlen definiert.")//TODO("Welcher Token?")
     }
     return Typ.Zahl
   }

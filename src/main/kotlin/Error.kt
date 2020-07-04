@@ -86,6 +86,16 @@ sealed class GermanScriptFehler(val token: Token): Error() {
       override val nachricht: String?
         get() = "Der Typ '${token.wert}' ist nicht definiert."
     }
+
+    class Operator(token: Token): Undefiniert(token){
+      override val nachricht: String?
+        get() = "Der Operator '${token.wert}' ist für diesen Typen nicht definiert."
+    }
+
+    class Minus(token: Token): Undefiniert(token){
+      override val nachricht: String?
+        get() = "'$token' ist nur für Zahlen definiert."
+    }
   }
 
   class TypFehler(token: Token, private val erwarteterTyp: Typ): GermanScriptFehler(token) {
