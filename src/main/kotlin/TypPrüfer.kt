@@ -1,5 +1,4 @@
 import util.SimpleLogger
-import kotlin.Error
 
 sealed class Typ(val name: String) {
   abstract val definierteOperatoren: Map<Operator, Typ>
@@ -75,15 +74,18 @@ class TypPrüfer(dateiPfad: String): PipelineComponent(dateiPfad) {
   }
 
   private fun prüfeFunktion(funktion: AST.Definition.Funktion) {
+    logger.addLine("")
+    logger.addLine("_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-")
     val variablen = HashMap<String, Typ>()
-    print("Funktionsdefinition(${funktion.name.wert})[")
+    var variablenString = ""
     for (parameter in funktion.parameter) {
       variablen[parameter.paramName.nominativ!!] = parameter.typKnoten.typ!!
-      print("${parameter.paramName.nominativ!!} :${parameter.typKnoten.typ!!}")
+      variablenString += "${parameter.paramName.nominativ!!} :${parameter.typKnoten.typ!!}"
     }
-    print("] -> ")
+    logger.addLine("Funktionsdefinition(${funktion.name.wert})[$variablenString]")
+    logger.addLine("Sätze:")
     prüfeSätze(funktion.sätze, variablen, funktion.rückgabeTyp?.typ)
-    println()
+    logger.addLine("____________________________________________________________________")
   }
 
   private fun prüfeSätze(sätze: List<AST.Satz>, variablen: HashMap<String, Typ>, rückgabeTyp: Typ?) {
@@ -112,7 +114,7 @@ class TypPrüfer(dateiPfad: String): PipelineComponent(dateiPfad) {
     if (rückgabeTyp == null) {
       throw GermanScriptFehler.SyntaxFehler.RückgabeTypFehler(holeErstesTokenVonAusdruck(satz.ausdruck))
     }
-    print("RückgabeTyp = $rückgabeTyp")
+    logger.addLine("-> $rückgabeTyp")
     val ausdruckTyp = typVonAusdruck(satz.ausdruck, variablen)
     if (rückgabeTyp != ausdruckTyp) {
       throw GermanScriptFehler.TypFehler(holeErstesTokenVonAusdruck(satz.ausdruck), rückgabeTyp)
@@ -120,18 +122,20 @@ class TypPrüfer(dateiPfad: String): PipelineComponent(dateiPfad) {
   }
 
   private fun prüfeVariablenDeklaration(deklaration: AST.Satz.VariablenDeklaration, variablen: HashMap<String, Typ>): Typ {
+    logger.addLine("")
+    logger.addLine("_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-")
     // der Typ der Variable in die Variablen-Map packen
     // unveränderbare Variablen dürfen nicht überschrieben werden
     val nominativ = deklaration.name.nominativ!!
-    print("Variable($nominativ): ")
     val unveränderbar = deklaration.artikel.typ is TokenTyp.ARTIKEL.BESTIMMT
     if (unveränderbar && variablen.containsKey(nominativ)) {
       throw GermanScriptFehler.DoppelteDefinition.UnveränderlicheVariable(deklaration.name.bezeichner.toUntyped())
     }
+    logger.addLine("Variable($nominativ):")
     val ausdruckTyp = typVonAusdruck(deklaration.ausdruck, variablen)
     variablen[nominativ] = ausdruckTyp
-    println(" -> $ausdruckTyp")
-    println()
+    logger.addLine("-> $ausdruckTyp")
+    logger.addLine("____________________________________________________________________")
     return ausdruckTyp
   }
 
@@ -150,8 +154,8 @@ class TypPrüfer(dateiPfad: String): PipelineComponent(dateiPfad) {
   }
 
   private fun prüfeFunktionsAufruf(funktionsAufruf: AST.FunktionsAufruf, istAusdruck: Boolean, variablen: HashMap<String, Typ>): Typ? {
+    logger.addLine("")
     val funktionsDefinition = definierer.holeFunktionsDefinition(funktionsAufruf)
-    print("Funktionsaufruf(${funktionsAufruf.vollerName})")
     if (istAusdruck && funktionsDefinition.rückgabeTyp == null) {
       throw GermanScriptFehler.SyntaxFehler.FunktionAlsAusdruckFehler(funktionsDefinition.name.toUntyped())
     }
@@ -161,17 +165,18 @@ class TypPrüfer(dateiPfad: String): PipelineComponent(dateiPfad) {
     if (argumente.size != parameterTypen.size) {
       throw GermanScriptFehler.SyntaxFehler.AnzahlDerParameterFehler(funktionsDefinition.name.toUntyped())
     }
-    print("[")
+    var argumenteString = ""
     for (i in argumente.indices) {
       val typVonAusdruck = typVonAusdruck(argumente[i].wert?: AST.Ausdruck.Variable(null, argumente[i].name), variablen)
-      print("${argumente[i].name.nominativ} :${parameterTypen[i]}")
+      argumenteString += "${argumente[i].name.nominativ} :${parameterTypen[i]}"
       if (typVonAusdruck != parameterTypen[i]) {
         throw GermanScriptFehler.TypFehler(holeErstesTokenVonAusdruck(
             argumente[i].wert ?: AST.Ausdruck.Variable(null, argumente[i].name)), parameterTypen[i])
       }
     }
-    println("]")
-    println()
+    logger.addLine("Funktionsaufruf(${funktionsAufruf.vollerName})[$argumenteString]")
+//    logger.addLine("____________________________________________________________________")
+
     return funktionsDefinition.rückgabeTyp?.typ
   }
 
@@ -202,7 +207,7 @@ class TypPrüfer(dateiPfad: String): PipelineComponent(dateiPfad) {
       throw GermanScriptFehler.Undefiniert.Operator(ausdruck.operator.toUntyped(), linkerTyp.name)
     }
     val rechterTyp = typVonAusdruck(ausdruck.rechts, variablen)
-    print("($linkerTyp $operator $rechterTyp)")
+    logger.addLine("($linkerTyp $operator $rechterTyp)")
     if (linkerTyp != rechterTyp) {
       throw GermanScriptFehler.SyntaxFehler.OperatorFehler(holeErstesTokenVonAusdruck(ausdruck), linkerTyp.name, rechterTyp.name)
     }
