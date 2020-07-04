@@ -44,12 +44,3 @@ schreibe die Zeichenfolge // TestA
 
 // schreibe die Zeichenfolge (teste "TestB")// TestB
 
-// Space Für Error Tests
-//Deklination (Geschlecht) Singular((Nominativ), (Genitiv), (Dativ), (Akkusativ)) Plural((Nominativ), (Genitiv), (Dativ), (Akkusativ))
-Deklination Neutrum Singular(Auto, Autos, Auto, Auto) Plural(Autos, Autos, Autos, Autos)
-
-
-Verb umfahre die Zeichenfolge Welt mit der Zeichenfolge Auto:
-.
-
-ein Auto ist "Mars" + "5"
