@@ -32,6 +32,7 @@ val präpositionsFälle = mapOf<String, EnumSet<Kasus>>(
 
     // Präpositionen Dativ
     "aus" to EnumSet.of(Kasus.DATIV),
+    "ab" to EnumSet.of(Kasus.DATIV),
     "außer" to EnumSet.of(Kasus.DATIV),
     "bei" to EnumSet.of(Kasus.DATIV),
     "binnen" to EnumSet.of(Kasus.DATIV),

@@ -37,6 +37,16 @@ private class Umgebung() {
     bereiche.peek()!![varName] = wert
   }
 
+  fun überschreibeVariable(varName: String, wert: Wert) {
+    val bereich = bereiche.findLast { it.containsKey(varName) }
+    if (bereich != null) {
+      bereich[varName] = wert
+    } else {
+      // Fallback
+      schreibeVariable(varName, wert)
+    }
+  }
+
   fun schreibeRückgabe(wert: Wert) {
     bereiche.firstElement()["@Rückgabe"] = wert
   }
@@ -62,12 +72,12 @@ class Interpreter(dateiPfad: String): PipelineComponent(dateiPfad) {
   fun interpretiere() {
     typPrüfer.prüfe()
     stack.push(Umgebung())
-    intepretiereSätze(ast.sätze)
+    interpretiereSätze(ast.sätze)
   }
 
 
   // region Sätze
-  private fun intepretiereSätze(sätze: List<AST.Satz>)  {
+  private fun interpretiereSätze(sätze: List<AST.Satz>)  {
     stack.peek().pushBereich()
     for (satz in sätze) {
       when (satz) {
@@ -75,6 +85,7 @@ class Interpreter(dateiPfad: String): PipelineComponent(dateiPfad) {
         is AST.Satz.FunktionsAufruf -> interpretiereFunktionsAufruf(satz.aufruf)
         is AST.Satz.Zurückgabe -> interpretiereZurückgabe(satz)
         is AST.Satz.Bedingung -> interpretiereBedingung(satz)
+        is AST.Satz.SolangeSchleife -> interpretiereSolangeSchleife(satz)
       }
     }
     stack.peek().popBereich()
@@ -92,7 +103,7 @@ class Interpreter(dateiPfad: String): PipelineComponent(dateiPfad) {
     if (funktionsDefinition.sätze.isNotEmpty() && funktionsDefinition.sätze.first() is AST.Satz.Intern) {
       interneFunktionen.getValue(funktionsAufruf.vollerName!!)()
     } else {
-      intepretiereSätze(funktionsDefinition.sätze)
+      interpretiereSätze(funktionsDefinition.sätze)
     }
     return if (funktionsDefinition.rückgabeTyp != null) {
       stack.pop().leseRückgabe()
@@ -103,7 +114,11 @@ class Interpreter(dateiPfad: String): PipelineComponent(dateiPfad) {
 
   private fun interpretiereVariablenDeklaration(deklaration: AST.Satz.VariablenDeklaration) {
     val wert = evaluiereAusdruck(deklaration.ausdruck)
-    stack.peek().schreibeVariable(deklaration.name.nominativ!!, wert)
+    if (deklaration.artikel.typ is TokenTyp.ARTIKEL.BESTIMMT) {
+      stack.peek().schreibeVariable(deklaration.name.nominativ!!, wert)
+    } else {
+      stack.peek().überschreibeVariable(deklaration.name.nominativ!!, wert)
+    }
   }
 
   private fun interpretiereZurückgabe(zurückgabe: AST.Satz.Zurückgabe) {
@@ -114,14 +129,21 @@ class Interpreter(dateiPfad: String): PipelineComponent(dateiPfad) {
   private fun interpretiereBedingung(bedingung: AST.Satz.Bedingung) {
     for (bedingung in bedingung.bedingungen) {
       if ((evaluiereAusdruck(bedingung.bedingung) as Wert.Boolean).boolean) {
-        intepretiereSätze(bedingung.sätze)
+        interpretiereSätze(bedingung.sätze)
         return
       }
     }
     if (bedingung.sonst != null) {
-      intepretiereSätze(bedingung.sonst)
+      interpretiereSätze(bedingung.sonst)
     }
   }
+
+  private fun interpretiereSolangeSchleife(schleife: AST.Satz.SolangeSchleife) {
+    while ((evaluiereAusdruck(schleife.bedingung) as Wert.Boolean).boolean) {
+      interpretiereSätze(schleife.sätze)
+    }
+  }
+
 
 
   // endregion

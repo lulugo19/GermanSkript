@@ -81,6 +81,13 @@ class GrammatikPrüfer(dateiPfad: String): PipelineComponent(dateiPfad) {
     prüfeNomen(nomen, EnumSet.of(Kasus.NOMINATIV))
     prüfeArtikel(variablenDeklaration.artikel, nomen)
     // logger.addLine("geprüft: $variablenDeklaration")
+    if (variablenDeklaration.ausdruck is AST.Ausdruck.Variable) {
+      val variable = variablenDeklaration.ausdruck
+      prüfeNomen(variable.name, EnumSet.of(Kasus.NOMINATIV))
+      if (variable.artikel != null) {
+        prüfeArtikel(variable.artikel, nomen)
+      }
+    }
   }
 
   private fun prüfeParameter(parameter: AST.Definition.Parameter, fälle: EnumSet<Kasus>) {
@@ -164,7 +171,6 @@ class GrammatikPrüfer(dateiPfad: String): PipelineComponent(dateiPfad) {
       prüfeArtikel(variable.artikel!!, variable.name)
     }
   }
-
 
   private fun getArtikel(bestimmt: Boolean, nomen: AST.Nomen, kasus: Kasus): String {
     return getArtikel(bestimmt, nomen.genus!!, nomen.numerus!!, kasus)

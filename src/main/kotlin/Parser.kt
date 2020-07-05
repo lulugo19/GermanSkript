@@ -10,7 +10,8 @@ enum class ASTKnotenID {
   INTERN,
   DEKLINATION,
   ZURÜCKGABE,
-  BEDINGUNG
+  BEDINGUNG,
+  SCHLEIFE
 }
 
 class Parser(dateiPfad: String): PipelineComponent(dateiPfad) {
@@ -178,6 +179,7 @@ private sealed class SubParser<T: AST>() {
         is TokenTyp.INTERN -> subParse(Satz.Intern)
         is TokenTyp.ARTIKEL -> subParse(Satz.VariablenDeklaration)
         is TokenTyp.WENN -> subParse(Satz.Bedingung)
+        is TokenTyp.SOLANGE -> subParse(Satz.SolangeSchleife)
         is TokenTyp.BEZEICHNER_KLEIN ->
           when (nextToken.wert) {
             "gebe" -> subParse(Satz.Zurückgabe)
@@ -378,6 +380,19 @@ private sealed class SubParser<T: AST>() {
         }
         return AST.Satz.Bedingung(bedingungen, null)
       }
+    }
+
+    object SolangeSchleife: SubParser<AST.Satz.SolangeSchleife>() {
+      override val id: ASTKnotenID
+        get() = ASTKnotenID.SCHLEIFE
+
+      override fun parseImpl(): AST.Satz.SolangeSchleife {
+        expect<TokenTyp.SOLANGE>("'solange'")
+        val bedingung = subParse(Ausdruck)
+        val sätze = parseBereich { subParse(Programm) }.sätze
+        return AST.Satz.SolangeSchleife(bedingung, sätze)
+      }
+
     }
   }
 

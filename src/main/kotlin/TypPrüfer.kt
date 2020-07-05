@@ -100,14 +100,21 @@ class TypPrüfer(dateiPfad: String): PipelineComponent(dateiPfad) {
       is AST.Satz.VariablenDeklaration -> prüfeVariablenDeklaration(satz, variablen)
       is AST.Satz.FunktionsAufruf -> prüfeFunktionsAufruf(satz.aufruf, false, variablen)
       is AST.Satz.Zurückgabe -> prüfeZurückgabe(rückgabeTyp, satz, variablen)
-      is AST.Satz.Bedingung -> prüfeBedingung()
+      is AST.Satz.Bedingung -> prüfeBedingung(satz)
+      is AST.Satz.SolangeSchleife -> prüfeSolangeSchleife(satz)
     }
   }
 
-  private fun prüfeBedingung() {
+  private fun prüfeBedingung(bedingung: AST.Satz.Bedingung) {
     // Die Bedingungen müssen Boolean sein
     // Sätze prüfen
-    // TODO("Not yet implemented")
+    // TODO Finn
+  }
+
+  private fun prüfeSolangeSchleife(schleife: AST.Satz.SolangeSchleife) {
+    // Die Schleifenbedingung muss ein Boolean sein
+    // Sätze prüfen
+    // TODO Finn
   }
 
   private fun prüfeZurückgabe(rückgabeTyp: Typ?, satz: AST.Satz.Zurückgabe, variablen: HashMap<String, Typ>) {
@@ -192,10 +199,10 @@ class TypPrüfer(dateiPfad: String): PipelineComponent(dateiPfad) {
     }
   }
 
-  private fun prüfeVariable(ausdruck: AST.Ausdruck.Variable, variablen: HashMap<String, Typ>): Typ {
-    val nominativ = ausdruck.name.nominativ!!
+  private fun prüfeVariable(variable: AST.Ausdruck.Variable, variablen: HashMap<String, Typ>): Typ {
+    val nominativ = variable.name.nominativ!!
     if (!variablen.containsKey(nominativ)) {
-      throw GermanScriptFehler.Undefiniert.Variable(ausdruck.name.bezeichner.toUntyped())
+      throw GermanScriptFehler.Undefiniert.Variable(variable.name.bezeichner.toUntyped())
     }
     return variablen.getValue(nominativ)
   }

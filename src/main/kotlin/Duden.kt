@@ -31,7 +31,7 @@ object Duden {
                 </tr></tbody>""", EnumSet.of(RegexOption.MULTILINE, RegexOption.DOT_MATCHES_ALL))
 
   private val regexShortForm = Regex(
-      """<div class="division "  id="grammatik">.*?<p>([a-z]{3}) ([A-ZÖÄÜ][a-zöäüß]*); Genitiv:.*?([A-ZÖÄÜ][a-zöäüß\[\]]*), (Plural: )?.*?([A-ZÖÄÜ][a-zöäüß]*)</p>.*?</div>""",
+      """<div class="division "  id="grammatik">.*?<p>([a-z]{3}).*?([A-ZÖÄÜ][a-zöäüß]*); Genitiv:.*?([A-ZÖÄÜ][a-zöäüß\[\]]*), (Plural: )?.*?([A-ZÖÄÜ][a-zöäüß]*)</p>.*?</div>""",
       EnumSet.of(RegexOption.MULTILINE, RegexOption.DOT_MATCHES_ALL))
 
   fun dudenGrammatikAnfrage(wort: String): Deklination {

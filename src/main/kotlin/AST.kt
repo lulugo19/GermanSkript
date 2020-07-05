@@ -138,6 +138,18 @@ sealed class AST {
       }
     }
 
+    data class SolangeSchleife(
+        val bedingung: Ausdruck,
+        val sätze: List<Satz>
+    ) : Satz() {
+      override fun visit(onVisit: (AST) -> Boolean) {
+        if (onVisit(this)) {
+          bedingung.visit(onVisit)
+          sätze.visit(onVisit)
+        }
+      }
+    }
+
     data class FunktionsAufruf(val aufruf: AST.FunktionsAufruf): Satz() {
       override fun visit(onVisit: (AST) -> Boolean) {
         aufruf.visit(onVisit)
