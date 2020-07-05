@@ -9,7 +9,6 @@ Verb schreibe die Zeichenfolge Zeile: intern. // println
 
 Verb schreibe die Zahl: intern.
 
-
 Verb teste die Zahl:
     wenn die Zahl gleich 3:
       schreibe die Zeile "Alle guten Dinge sind drei!".
@@ -22,3 +21,11 @@ teste die Zahl 11
 teste die Zahl 3
 teste die Zahl 42
 teste die Zahl 12
+
+Verb(Zahl) fakultät von der Zahl:
+    wenn die Zahl gleich 0: gebe 1 zurück.
+    sonst: gebe die Zahl * (fakultät von der Zahl (die Zahl - 1)) zurück.
+.
+
+schreibe die Zeichenfolge "Die Fakultät von der Zahl 5 ist: "
+schreibe die Zahl (fakultät von der Zahl 5)

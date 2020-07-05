@@ -231,7 +231,7 @@ private sealed class SubParser<T: AST>() {
       return when (val tokenTyp = peekType()) {
         is TokenTyp.OFFENE_KLAMMER -> {
           next()
-          parseImpl().also { expect<TokenTyp.GESCHLOSSENE_KLAMMER>("'('") }
+          parseImpl().also { expect<TokenTyp.GESCHLOSSENE_KLAMMER>("')'") }
         }
         is TokenTyp.OPERATOR -> {
           if (currentToken != null &&

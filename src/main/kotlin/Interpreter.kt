@@ -5,7 +5,7 @@ import kotlin.math.pow
 
 private sealed class Wert {
   data class Zeichenfolge(val zeichenfolge: String): Wert() {
-    override fun toString(): String = zeichenfolge.toString()
+    override fun toString(): String = zeichenfolge
   }
 
   data class Zahl(val zahl: Double): Wert() {
@@ -24,10 +24,6 @@ private typealias Bereich = HashMap<String, Wert>
 private class Umgebung() {
   private val bereiche = Stack<Bereich>()
 
-  init {
-    bereiche.push(Bereich())
-  }
-
   fun leseVariable(varName: String): Wert {
     for (bereich in bereiche) {
       if (bereich.containsKey(varName)) {
@@ -39,6 +35,20 @@ private class Umgebung() {
 
   fun schreibeVariable(varName: String, wert: Wert) {
     bereiche.peek()!![varName] = wert
+  }
+
+  fun schreibeRückgabe(wert: Wert) {
+    bereiche.firstElement()["@Rückgabe"] = wert
+  }
+
+  fun leseRückgabe(): Wert = bereiche.peek().getValue("@Rückgabe")
+
+  fun pushBereich() {
+    bereiche.push(Bereich())
+  }
+
+  fun popBereich() {
+    bereiche.pop()
   }
 }
 
@@ -55,19 +65,24 @@ class Interpreter(dateiPfad: String): PipelineComponent(dateiPfad) {
     intepretiereSätze(ast.sätze)
   }
 
+
   // region Sätze
-  private fun intepretiereSätze(sätze: List<AST.Satz>) {
+  private fun intepretiereSätze(sätze: List<AST.Satz>)  {
+    stack.peek().pushBereich()
     for (satz in sätze) {
       when (satz) {
         is AST.Satz.VariablenDeklaration -> interpretiereVariablenDeklaration(satz)
         is AST.Satz.FunktionsAufruf -> interpretiereFunktionsAufruf(satz.aufruf)
         is AST.Satz.Zurückgabe -> interpretiereZurückgabe(satz)
+        is AST.Satz.Bedingung -> interpretiereBedingung(satz)
       }
     }
+    stack.peek().popBereich()
   }
 
   private fun interpretiereFunktionsAufruf(funktionsAufruf: AST.FunktionsAufruf): Wert? {
     val funktionsUmgebung = Umgebung()
+    funktionsUmgebung.pushBereich()
     for (argument in funktionsAufruf.argumente) {
       val argumentWert = evaluiereAusdruck(argument.wert?: AST.Ausdruck.Variable(null, argument.name))
       funktionsUmgebung.schreibeVariable(argument.name.nominativ!!, argumentWert)
@@ -80,12 +95,11 @@ class Interpreter(dateiPfad: String): PipelineComponent(dateiPfad) {
       intepretiereSätze(funktionsDefinition.sätze)
     }
     return if (funktionsDefinition.rückgabeTyp != null) {
-      stack.pop().leseVariable("@Rückgabewert")
+      stack.pop().leseRückgabe()
     } else {
       stack.pop().let { null }
     }
   }
-
 
   private fun interpretiereVariablenDeklaration(deklaration: AST.Satz.VariablenDeklaration) {
     val wert = evaluiereAusdruck(deklaration.ausdruck)
@@ -94,8 +108,21 @@ class Interpreter(dateiPfad: String): PipelineComponent(dateiPfad) {
 
   private fun interpretiereZurückgabe(zurückgabe: AST.Satz.Zurückgabe) {
     val wert = evaluiereAusdruck(zurückgabe.ausdruck)
-    stack.peek().schreibeVariable("@Rückgabewert", wert)
+    stack.peek().schreibeRückgabe(wert)
   }
+
+  private fun interpretiereBedingung(bedingung: AST.Satz.Bedingung) {
+    for (bedingung in bedingung.bedingungen) {
+      if ((evaluiereAusdruck(bedingung.bedingung) as Wert.Boolean).boolean) {
+        intepretiereSätze(bedingung.sätze)
+        return
+      }
+    }
+    if (bedingung.sonst != null) {
+      intepretiereSätze(bedingung.sonst)
+    }
+  }
+
 
   // endregion
 
@@ -197,7 +224,7 @@ class Interpreter(dateiPfad: String): PipelineComponent(dateiPfad) {
 }
 
 fun main() {
-  val interpreter = Interpreter("./iterationen/iter_0/code.gms")
+  val interpreter = Interpreter("./iterationen/iter_1/code.gms")
   interpreter.interpretiere()
 }
 

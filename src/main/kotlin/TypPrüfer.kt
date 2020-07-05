@@ -107,7 +107,7 @@ class TypPrüfer(dateiPfad: String): PipelineComponent(dateiPfad) {
   private fun prüfeBedingung() {
     // Die Bedingungen müssen Boolean sein
     // Sätze prüfen
-    TODO("Not yet implemented")
+    // TODO("Not yet implemented")
   }
 
   private fun prüfeZurückgabe(rückgabeTyp: Typ?, satz: AST.Satz.Zurückgabe, variablen: HashMap<String, Typ>) {
@@ -224,7 +224,7 @@ class TypPrüfer(dateiPfad: String): PipelineComponent(dateiPfad) {
 }
 
 fun main() {
-  val typPrüfer = TypPrüfer("./iterationen/iter_0/code.gms")
+  val typPrüfer = TypPrüfer("./iterationen/iter_1/code.gms")
   typPrüfer.prüfe()
   typPrüfer.logger.print()
 }
