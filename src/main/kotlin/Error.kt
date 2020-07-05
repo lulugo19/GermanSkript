@@ -75,7 +75,7 @@ sealed class GermanScriptFehler(val token: Token): Error() {
     class FalscherArtikel(token: Token, kasus: Kasus, nomen: AST.Nomen, private val richtigerArtikel: String): GrammatikFehler(token, kasus, nomen) {
       override val nachricht: String?
         get() = "Falscher Artikel '${token.wert} ${nomen.bezeichner.wert}'. " +
-            "Der richtige Artikel für '${nomen.bezeichner.wert}' $form ist '${nomen.artikel} ${nomen.bezeichner.wert}'."
+            "Der richtige Artikel für '${nomen.bezeichner.wert}' $form ist '$richtigerArtikel ${nomen.bezeichner.wert}'."
     }
 
     class FalscheForm(token: Token, kasus: Kasus, nomen: AST.Nomen, private val richtigeForm: String): GrammatikFehler(token, kasus, nomen) {

@@ -60,6 +60,7 @@ class GrammatikPrüfer(dateiPfad: String): PipelineComponent(dateiPfad) {
   private fun prüfeArtikel(artikel: TypedToken<TokenTyp.ARTIKEL>, nomen: AST.Nomen)
   {
     val bestimmt = artikel.typ is TokenTyp.ARTIKEL.BESTIMMT
+    val ersterFall = nomen.fälle.first()
     for (kasus in nomen.fälle) {
       val erwarteterArtikel = getArtikel(bestimmt, nomen.genus!!, nomen.numerus!!, kasus)
       if (artikel.wert == erwarteterArtikel) {
@@ -70,9 +71,8 @@ class GrammatikPrüfer(dateiPfad: String): PipelineComponent(dateiPfad) {
     }
 
     if (nomen.artikel == null) {
-      val fall = nomen.fälle.first()
-      val erwarteterArtikel = getArtikel(bestimmt, nomen.genus!!, nomen.numerus!!, fall)
-      throw GermanScriptFehler.GrammatikFehler.FalscherArtikel(artikel.toUntyped(), fall, nomen, erwarteterArtikel)
+      val erwarteterArtikel = getArtikel(bestimmt, nomen.genus!!, nomen.numerus!!, ersterFall)
+      throw GermanScriptFehler.GrammatikFehler.FalscherArtikel(artikel.toUntyped(), ersterFall, nomen, erwarteterArtikel)
     }
   }
 
@@ -228,7 +228,7 @@ class GrammatikPrüfer(dateiPfad: String): PipelineComponent(dateiPfad) {
 }
 
 fun main() {
-  val grammatikPrüfer = GrammatikPrüfer("./iterationen/iter_0/code.gms")
+  val grammatikPrüfer = GrammatikPrüfer("./iterationen/iter_1/code.gms")
   grammatikPrüfer.prüfe()
   grammatikPrüfer.logger.print()
 }

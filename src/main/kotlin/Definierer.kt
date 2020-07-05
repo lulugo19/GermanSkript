@@ -116,7 +116,7 @@ class Definierer(dateiPfad: String): PipelineComponent(dateiPfad) {
 }
 
 fun main() {
-  val definierer = Definierer("./iterationen/iter_0/code.gms")
+  val definierer = Definierer("./iterationen/iter_1/code.gms")
   definierer.definiere()
   definierer.gebeFunktionsDefinitionenAus()
 }
