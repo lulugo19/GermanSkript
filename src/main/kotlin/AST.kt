@@ -101,6 +101,11 @@ sealed class AST {
   sealed class Satz : AST() {
     object Intern: Satz()
 
+    sealed class SchleifenKontrolle: Satz() {
+      object Fortfahren: SchleifenKontrolle()
+      object Abbrechen: SchleifenKontrolle()
+    }
+
     data class VariablenDeklaration(
         val artikel: TypedToken<TokenTyp.ARTIKEL>,
         val name: Nomen,

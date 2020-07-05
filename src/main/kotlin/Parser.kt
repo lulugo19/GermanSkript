@@ -11,7 +11,8 @@ enum class ASTKnotenID {
   DEKLINATION,
   ZURÜCKGABE,
   BEDINGUNG,
-  SCHLEIFE
+  SCHLEIFE,
+  SCHLEIFENKONTROLLE
 }
 
 class Parser(dateiPfad: String): PipelineComponent(dateiPfad) {
@@ -180,6 +181,7 @@ private sealed class SubParser<T: AST>() {
         is TokenTyp.ARTIKEL -> subParse(Satz.VariablenDeklaration)
         is TokenTyp.WENN -> subParse(Satz.Bedingung)
         is TokenTyp.SOLANGE -> subParse(Satz.SolangeSchleife)
+        is TokenTyp.FORTFAHREN, is TokenTyp.ABBRECHEN -> subParse(Satz.SchleifenKontrolle)
         is TokenTyp.BEZEICHNER_KLEIN ->
           when (nextToken.wert) {
             "gebe" -> subParse(Satz.Zurückgabe)
@@ -392,8 +394,28 @@ private sealed class SubParser<T: AST>() {
         val sätze = parseBereich { subParse(Programm) }.sätze
         return AST.Satz.SolangeSchleife(bedingung, sätze)
       }
-
     }
+
+    object SchleifenKontrolle: SubParser<AST.Satz.SchleifenKontrolle>() {
+      override val id: ASTKnotenID
+        get() = ASTKnotenID.SCHLEIFENKONTROLLE
+
+      override fun bewacheKnoten() {
+        if (!hierarchyContainsNode(ASTKnotenID.SCHLEIFE)) {
+          val schlüsselwort = next()
+          throw GermanScriptFehler.SyntaxFehler.ParseFehler(schlüsselwort, null, "Das Schlüsselwort '${schlüsselwort.wert}' darf nur in einer Schleife verwendet werden.")
+        }
+      }
+
+      override fun parseImpl(): AST.Satz.SchleifenKontrolle {
+        return when (peekType()) {
+          TokenTyp.FORTFAHREN -> AST.Satz.SchleifenKontrolle.Fortfahren
+          TokenTyp.ABBRECHEN -> AST.Satz.SchleifenKontrolle.Abbrechen
+          else -> throw Error("Entweder 'fortfahren' oder 'abbrechen'")
+        }.also { next() }
+      }
+    }
+
   }
 
   sealed class Definition<T: AST.Definition>(): SubParser<T>() {

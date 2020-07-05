@@ -56,5 +56,15 @@ Verb zähle ab der Zahl runter:
     .
     schreibe die Zeile "Los!"
 .
-
 zähle ab der Zahl 10 runter
+
+// Abbrechen und Fortfahren einer Schleife
+schreibe den Bereich "Abbrechen und Fortfahren einer Schleife"
+schreibe die Zeile "Gebe nur die geraden Zahlen von 1 bis 10 aus."
+ein Zähler ist 0
+solange wahr:
+    ein Zähler ist der Zähler plus 1
+    wenn der Zähler > 10: abbrechen.
+    wenn der Zähler % 2 gleich 1: fortfahren.
+    schreibe die Zahl Zähler
+.

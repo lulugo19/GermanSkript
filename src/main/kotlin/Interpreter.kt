@@ -66,6 +66,7 @@ class Interpreter(dateiPfad: String): PipelineComponent(dateiPfad) {
   val typPrüfer = TypPrüfer(dateiPfad)
   val ast = typPrüfer.ast
   val definierer = typPrüfer.definierer
+  private val flags = EnumSet.noneOf(Flag::class.java)
 
   private val stack = Stack<Umgebung>()
 
@@ -75,17 +76,33 @@ class Interpreter(dateiPfad: String): PipelineComponent(dateiPfad) {
     interpretiereSätze(ast.sätze)
   }
 
+  enum class Flag {
+    SCHLEIFE_ABBRECHEN,
+    SCHLEIFE_FORTFAHREN,
+  }
+
 
   // region Sätze
   private fun interpretiereSätze(sätze: List<AST.Satz>)  {
     stack.peek().pushBereich()
     for (satz in sätze) {
+      if (flags.contains(Flag.SCHLEIFE_FORTFAHREN) || flags.contains(Flag.SCHLEIFE_ABBRECHEN)) {
+        return
+      }
       when (satz) {
         is AST.Satz.VariablenDeklaration -> interpretiereVariablenDeklaration(satz)
         is AST.Satz.FunktionsAufruf -> interpretiereFunktionsAufruf(satz.aufruf)
         is AST.Satz.Zurückgabe -> interpretiereZurückgabe(satz)
         is AST.Satz.Bedingung -> interpretiereBedingung(satz)
         is AST.Satz.SolangeSchleife -> interpretiereSolangeSchleife(satz)
+        is AST.Satz.SchleifenKontrolle.Abbrechen -> {
+          flags.add(Flag.SCHLEIFE_ABBRECHEN)
+          return
+        }
+        is AST.Satz.SchleifenKontrolle.Fortfahren -> {
+          flags.add(Flag.SCHLEIFE_FORTFAHREN)
+          return
+        }
       }
     }
     stack.peek().popBereich()
@@ -139,12 +156,12 @@ class Interpreter(dateiPfad: String): PipelineComponent(dateiPfad) {
   }
 
   private fun interpretiereSolangeSchleife(schleife: AST.Satz.SolangeSchleife) {
-    while ((evaluiereAusdruck(schleife.bedingung) as Wert.Boolean).boolean) {
+    while (!flags.contains(Flag.SCHLEIFE_ABBRECHEN) && (evaluiereAusdruck(schleife.bedingung) as Wert.Boolean).boolean) {
+      flags.remove(Flag.SCHLEIFE_FORTFAHREN)
       interpretiereSätze(schleife.sätze)
     }
+    flags.remove(Flag.SCHLEIFE_ABBRECHEN)
   }
-
-
 
   // endregion
 
