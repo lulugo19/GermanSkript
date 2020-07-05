@@ -98,7 +98,7 @@ sealed class GermanScriptFehler(val token: Token): Error() {
   sealed class Undefiniert(token: Token): GermanScriptFehler(token) {
     class Funktion(token: Token, private val funktionsAufruf: AST.FunktionsAufruf): Undefiniert(token) {
       override val nachricht: String?
-        get() = "Die Funktion '${funktionsAufruf.vollerName!!} ist nicht definiert.'"
+        get() = "Die Funktion '${funktionsAufruf.vollerName!!}' ist nicht definiert."
     }
 
     class Variable(token: Token): Undefiniert(token) {

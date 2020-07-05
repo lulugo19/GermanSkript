@@ -44,7 +44,5 @@ schreibe die Zeichenfolge // TestA
 
 // schreibe die Zeichenfolge (teste "TestB")// TestB
 
-// hier kann man noch nicht den Dativ verwenden
-/*Verb erkläre die Zeichenfolge mit der Zahl über die Zeichenfolge Zeile, die Zahl Mond nach der Zahl Welt:.
-
-erkläre die Zeichenfolge "" mit der Zahl 5 über die Zeile "Hallo", den Mond 5 nach der Welt 9
+Verb erkläre die Zeichenfolge mit der Zahl über der Zeichenfolge Zeile, der Zahl Mond nach der Zahl Welt:.
+erkläre die Zeichenfolge "" mit der Zahl 5 über der Zeile "Hallo", dem Mond 5 nach der Welt 9

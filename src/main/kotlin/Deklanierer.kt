@@ -19,7 +19,7 @@ data class Deklination(
     if (index == -1) {
       throw Wörterbuch.WortNichtGefunden(wort)
     }
-    return if (index < 3) Numerus.SINGULAR else Numerus.PLURAL
+    return if (index < 4) Numerus.SINGULAR else Numerus.PLURAL
   }
 
   val fallSequenz get() = fälle.asSequence()

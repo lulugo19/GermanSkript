@@ -1,3 +1,5 @@
+import java.util.*
+
 fun <T: AST> List<T>.visit(onVisit: (AST) -> Boolean): Boolean {
   for (element in this) {
     element.visit(onVisit)
@@ -23,12 +25,14 @@ sealed class AST {
   }
 
   data class Nomen(
-      val bezeichner: TypedToken<TokenTyp.BEZEICHNER_GROSS>,
-      var nominativ: String? = null,
-      var artikel: String? = null,
-      var genus: Genus? = null,
-      var numerus: Numerus? = null
-  )
+      val bezeichner: TypedToken<TokenTyp.BEZEICHNER_GROSS>
+  ) {
+    var nominativ: String? = null
+    var artikel: String? = null
+    var genus: Genus? = null
+    var numerus: Numerus? = null
+    var fälle: EnumSet<Kasus> = EnumSet.noneOf(Kasus::class.java)
+  }
 
   data class TypKnoten(
       val name: Nomen,
@@ -37,7 +41,7 @@ sealed class AST {
 
 
   data class Präposition(val präposition: TypedToken<TokenTyp.BEZEICHNER_KLEIN>) : AST() {
-    val kasus = präpositionsFälle
+    val fälle = präpositionsFälle
         .getOrElse(präposition.wert) {
           throw GermanScriptFehler.SyntaxFehler.ParseFehler(präposition.toUntyped(), "Präposition")
         }
