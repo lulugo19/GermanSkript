@@ -128,7 +128,7 @@ sealed class AST {
 
     data class Bedingung(
         val bedingungen: List<BedingungsTerm>,
-        val sonst: BedingungsTerm?
+        val sonst: List<Satz>?
     ): Satz() {
       override fun visit(onVisit: (AST) -> Boolean) {
         if (onVisit(this)) {

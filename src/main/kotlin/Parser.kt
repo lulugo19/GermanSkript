@@ -275,7 +275,7 @@ private sealed class SubParser<T: AST>() {
       val artikel = expect<TokenTyp.ARTIKEL.BESTIMMT>("bestimmter Artikel")
       val name = expect<TokenTyp.BEZEICHNER_GROSS>("Bezeichner")
       val wert = when (peekType()) {
-        is TokenTyp.NEUE_ZEILE, is TokenTyp.KOMMA, is TokenTyp.BEZEICHNER_KLEIN -> null
+        is TokenTyp.NEUE_ZEILE, is TokenTyp.PUNKT, is TokenTyp.KOMMA, is TokenTyp.BEZEICHNER_KLEIN -> null
         is TokenTyp.BEZEICHNER_GROSS -> AST.Ausdruck.Variable(null, AST.Nomen(next().toTyped()))
         else -> subParse(Ausdruck)
       }
@@ -362,20 +362,19 @@ private sealed class SubParser<T: AST>() {
 
         bedingungen += AST.Satz.BedingungsTerm(bedingung, sätze)
 
+        überspringeLeereZeilen()
         while (peekType() is TokenTyp.SONST) {
           expect<TokenTyp.SONST>("'sonst'")
-          val nurSonst = peekType() !is TokenTyp.WENN
-          if (!nurSonst) {
-            expect<TokenTyp.WENN>("'wenn'")
+          if (peekType() !is TokenTyp.WENN) {
+            sätze = parseBereich {subParse(Programm)}.sätze
+            return AST.Satz.Bedingung(bedingungen, sätze)
           }
+          expect<TokenTyp.WENN>("'wenn'")
           bedingung = subParse(Ausdruck)
           sätze = parseBereich { subParse(Programm) }.sätze
           val bedingungsTerm = AST.Satz.BedingungsTerm(bedingung, sätze)
-          if (nurSonst) {
-            return AST.Satz.Bedingung(bedingungen, bedingungsTerm)
-          } else {
-            bedingungen += bedingungsTerm
-          }
+          bedingungen += bedingungsTerm
+          überspringeLeereZeilen()
         }
         return AST.Satz.Bedingung(bedingungen, null)
       }
@@ -480,5 +479,5 @@ private sealed class SubParser<T: AST>() {
 }
 
 fun main() {
-  println(Parser("./iterationen/iter_0/code.gms").parse())
+  println(Parser("./iterationen/iter_1/code.gms").parse())
 }

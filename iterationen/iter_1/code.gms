@@ -15,7 +15,7 @@ Verb teste die Zahl:
       schreibe die Zeile "Alle guten Dinge sind drei!".
     sonst wenn die Zahl gleich 42:
       schreibe die Zeile "Die Antwort auf alles.".
-    sonst schreibe die Zahl
+    sonst: schreibe die Zahl.
 .
 
 teste die Zahl 11
