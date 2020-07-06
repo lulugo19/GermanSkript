@@ -100,14 +100,36 @@ class TypPrüfer(dateiPfad: String): PipelineComponent(dateiPfad) {
       is AST.Satz.VariablenDeklaration -> prüfeVariablenDeklaration(satz, variablen)
       is AST.Satz.FunktionsAufruf -> prüfeFunktionsAufruf(satz.aufruf, false, variablen)
       is AST.Satz.Zurückgabe -> prüfeZurückgabe(rückgabeTyp, satz, variablen)
-      is AST.Satz.Bedingung -> prüfeBedingung()
+      is AST.Satz.Bedingung -> prüfeBedingung(satz, variablen, rückgabeTyp)
+      is AST.Satz.BedingungsTerm -> throw Error("BedingungsTerm darf so nicht einfach stehen")
     }
   }
 
-  private fun prüfeBedingung() {
-    // Die Bedingungen müssen Boolean sein
-    // Sätze prüfen
-    TODO("Not yet implemented")
+  private fun prüfeBedingung(satz: AST.Satz.Bedingung, variablen: HashMap<String, Typ>, rückgabeTyp: Typ?) {
+    val bedingungen = satz.bedingungen
+    val sonst = satz.sonst
+    logger.addLine("--__--__--__--__--__--__--__--__--__--__--__--__--__--__--__--__--__")
+    for (i in bedingungen){
+      val typDerBedingung = typVonAusdruck(i.bedingung, variablen)
+      if (typDerBedingung !is Typ.Boolean){
+        throw GermanScriptFehler.SyntaxFehler.BedingungsFehler(holeErstesTokenVonAusdruck(i.bedingung))
+      }
+      logger.addLine("Bedingung: ${typDerBedingung.name}")
+      logger.addLine("Sätze:")
+      prüfeSätze(i.sätze,variablen, rückgabeTyp)
+      logger.addLine("_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ ")
+      logger.addLine("")
+    }
+
+    if (sonst != null){
+      val typVonSonst = typVonAusdruck(sonst.bedingung, variablen)
+      if (typVonSonst !is Typ.Boolean) {
+        throw GermanScriptFehler.SyntaxFehler.BedingungsFehler(holeErstesTokenVonAusdruck(sonst.bedingung))
+      }
+      logger.addLine("Bedingung: ${typVonSonst.name}")
+      logger.addLine("Sätze:")
+      prüfeSätze(sonst.sätze,variablen,rückgabeTyp)
+    }
   }
 
   private fun prüfeZurückgabe(rückgabeTyp: Typ?, satz: AST.Satz.Zurückgabe, variablen: HashMap<String, Typ>) {
@@ -224,7 +246,7 @@ class TypPrüfer(dateiPfad: String): PipelineComponent(dateiPfad) {
 }
 
 fun main() {
-  val typPrüfer = TypPrüfer("./iterationen/iter_0/code.gms")
+  val typPrüfer = TypPrüfer("./iterationen/iter_1/code.gms")
   typPrüfer.prüfe()
   typPrüfer.logger.print()
 }

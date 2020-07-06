@@ -49,6 +49,11 @@ sealed class GermanScriptFehler(val token: Token): Error() {
       override val nachricht: String?
         get() = "Operatoren funktionieren nur für gleiche Typen. $linkerTyp und $rechterTyp sind nicht gleich."
     }
+
+    class BedingungsFehler(token: Token): SyntaxFehler(token){
+      override val nachricht: String?
+        get() = "Bedingungen müssen vom Typ Boolean sein."
+    }
   }
 
   sealed class DudenFehler(token: Token, protected val wort: String): GermanScriptFehler(token) {
