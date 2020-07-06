@@ -12,7 +12,8 @@ enum class ASTKnotenID {
   ZURÜCKGABE,
   BEDINGUNG,
   SCHLEIFE,
-  SCHLEIFENKONTROLLE
+  SCHLEIFENKONTROLLE,
+  LISTE
 }
 
 class Parser(dateiPfad: String): PipelineComponent(dateiPfad) {
@@ -89,7 +90,7 @@ private sealed class SubParser<T: AST>() {
     return token
   }
 
-  protected inline fun <ElementT, reified StartTokenT> parseKommaListe(elementParser: () -> ElementT, canBeEmpty: Boolean): List<ElementT> {
+  protected inline fun <ElementT, reified StartTokenT> parseKommaListeMitStart(canBeEmpty: Boolean, elementParser: () -> ElementT): List<ElementT> {
     if (canBeEmpty && peekType() !is StartTokenT) {
       return emptyList()
     }
@@ -101,7 +102,19 @@ private sealed class SubParser<T: AST>() {
     return liste
   }
 
-  protected inline fun <reified T: TokenTyp> parseKommaListe(erwartet: String, canBeEmpty: Boolean): List<TypedToken<T>> {
+  protected inline fun <ElementT, reified EndTokenT> parseKommaListeMitEnde(canBeEmpty: Boolean, elementParser: () -> ElementT): List<ElementT> {
+    if (canBeEmpty && peekType() is EndTokenT) {
+      return emptyList()
+    }
+    val liste = mutableListOf(elementParser())
+    while (peekType() is TokenTyp.KOMMA) {
+      next()
+      liste.add(elementParser())
+    }
+    return liste
+  }
+
+  protected inline fun <reified T: TokenTyp> parseKommaListe(canBeEmpty: Boolean, erwartet: String): List<TypedToken<T>> {
     if (canBeEmpty && peekType() !is T) {
       return emptyList()
     }
@@ -249,17 +262,32 @@ private sealed class SubParser<T: AST>() {
             AST.Ausdruck.Minus(parseEinzelnerAusdruck())
           }
         }
-        is TokenTyp.ARTIKEL -> {
+        is TokenTyp.ARTIKEL.BESTIMMT -> {
           val artikel = expect<TokenTyp.ARTIKEL.BESTIMMT>("bestimmter Artikel")
-          val name = AST.Nomen(expect<TokenTyp.BEZEICHNER_GROSS>("Bezeichner"))
+          val name = AST.Nomen(expect("Bezeichner"))
           AST.Ausdruck.Variable(artikel, name)
         }
+        is TokenTyp.ARTIKEL.UMBESTIMMT -> subParse(Liste)
         is TokenTyp.ZEICHENFOLGE -> AST.Ausdruck.Zeichenfolge(next().toTyped())
         is TokenTyp.ZAHL -> AST.Ausdruck.Zahl(next().toTyped())
         is TokenTyp.BOOLEAN -> AST.Ausdruck.Boolean(next().toTyped())
         is TokenTyp.BEZEICHNER_KLEIN -> AST.Ausdruck.FunktionsAufruf(subParse(FunktionsAufruf))
         else -> throw GermanScriptFehler.SyntaxFehler.ParseFehler(next())
       }
+    }
+  }
+
+  object Liste: SubParser<AST.Ausdruck.Liste>() {
+    override val id: ASTKnotenID
+      get() = ASTKnotenID.LISTE
+
+    override fun parseImpl(): AST.Ausdruck.Liste {
+      val artikel = expect<TokenTyp.ARTIKEL.UMBESTIMMT>("unbestimmter Artikel")
+      val pluralTyp = expect<TokenTyp.BEZEICHNER_GROSS>("Bezeichner")
+      expect<TokenTyp.OFFENE_ECKIGE_KLAMMER>("'['")
+      val elemente = parseKommaListeMitEnde<AST.Ausdruck, TokenTyp.GESCHLOSSENE_ECKIGE_KLAMMER>(true) {subParse(Ausdruck)}
+      expect<TokenTyp.GESCHLOSSENE_ECKIGE_KLAMMER>("']'")
+      return AST.Ausdruck.Liste(artikel, AST.Nomen(pluralTyp), elemente)
     }
   }
 
@@ -276,7 +304,14 @@ private sealed class SubParser<T: AST>() {
     }
 
     fun parseArgument(): AST.Argument {
-      val artikel = expect<TokenTyp.ARTIKEL.BESTIMMT>("bestimmter Artikel")
+      val artikel = expect<TokenTyp.ARTIKEL>("Artikel")
+      return when (artikel.typ) {
+        is TokenTyp.ARTIKEL.BESTIMMT -> parseBestimmtesArgument(artikel)
+        is TokenTyp.ARTIKEL.UMBESTIMMT -> parseUnbestimmtesArgument(artikel)
+      }
+    }
+
+    fun parseBestimmtesArgument(artikel: TypedToken<TokenTyp.ARTIKEL>): AST.Argument {
       val name = expect<TokenTyp.BEZEICHNER_GROSS>("Bezeichner")
       val wert = when (peekType()) {
         is TokenTyp.NEUE_ZEILE, is TokenTyp.PUNKT, is TokenTyp.KOMMA, is TokenTyp.BEZEICHNER_KLEIN -> null
@@ -286,9 +321,19 @@ private sealed class SubParser<T: AST>() {
       return AST.Argument(artikel, AST.Nomen(name), wert)
     }
 
+    fun parseUnbestimmtesArgument(artikel: TypedToken<TokenTyp.ARTIKEL>): AST.Argument {
+      // Liste oder Objekt
+      if (peekType() !is TokenTyp.BEZEICHNER_GROSS) {
+        throw GermanScriptFehler.SyntaxFehler.ParseFehler(next(), "Bezeichner")
+      }
+      val name = peek().toTyped<TokenTyp.BEZEICHNER_GROSS>()
+      val liste = subParse(Liste)
+      return AST.Argument(artikel, AST.Nomen(name), liste)
+    }
+
     fun parsePräpositionsArgumente(): List<AST.PräpositionsArgumente> {
       return parsePräpositionsListe(
-          {parseKommaListe<AST.Argument, TokenTyp.ARTIKEL.BESTIMMT>(::parseArgument, false)}
+          {parseKommaListeMitStart<AST.Argument, TokenTyp.ARTIKEL.BESTIMMT>(false, ::parseArgument)}
       ) {
         präposition, argumente -> AST.PräpositionsArgumente(AST.Präposition(präposition), argumente)
       }
@@ -505,7 +550,7 @@ private sealed class SubParser<T: AST>() {
 
       fun parsePräpositionsParameter(): List<AST.Definition.PräpositionsParameter> {
         return parsePräpositionsListe(
-            { parseKommaListe<AST.Definition.Parameter, TokenTyp.ARTIKEL.BESTIMMT>(::parseParameter, false) }
+            { parseKommaListeMitStart<AST.Definition.Parameter, TokenTyp.ARTIKEL.BESTIMMT>(false, ::parseParameter) }
         ) {
           präposition, parameter -> AST.Definition.PräpositionsParameter(AST.Präposition(präposition), parameter)
         }

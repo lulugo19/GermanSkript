@@ -48,9 +48,9 @@ enum class Kasus(val anzeigeName: String) {
 }
 
 // Numerus (Anzahl)
-enum class Numerus(val anzeigeName: String) {
-    SINGULAR("Singular"),
-    PLURAL("Plural"),
+enum class Numerus(val anzeigeName: String, val zuweisung: String) {
+    SINGULAR("Singular", "ist"),
+    PLURAL("Plural", "sind"),
 }
 
 data class Token(val typ: TokenTyp, val wert: String, val anfang: Position, val ende: Position) {
@@ -87,8 +87,8 @@ sealed class TokenTyp(val anzeigeName: String) {
     object WENN: TokenTyp("'wenn'")
     object DANN: TokenTyp("'dann'")
     object SONST: TokenTyp("'sonst'")
-    object SOLANGE: TokenTyp("'solange")
-    object ALS: TokenTyp("'Als'")
+    object SOLANGE: TokenTyp("'solange'")
+    object ALS: TokenTyp("'als'")
     object FORTFAHREN: TokenTyp("'fortfahren'")
     object ABBRECHEN: TokenTyp("'abbrechen'")
     object VERB: TokenTyp("'Verb'")
@@ -108,6 +108,8 @@ sealed class TokenTyp(val anzeigeName: String) {
     //Symbole
     object OFFENE_KLAMMER: TokenTyp("'('")
     object GESCHLOSSENE_KLAMMER: TokenTyp("')'")
+    object OFFENE_ECKIGE_KLAMMER: TokenTyp("']'")
+    object GESCHLOSSENE_ECKIGE_KLAMMER: TokenTyp("']'")
     object KOMMA: TokenTyp("','")
     object PUNKT: TokenTyp("'.'")
     object DOPPELPUNKT: TokenTyp("':'")
@@ -133,6 +135,8 @@ sealed class TokenTyp(val anzeigeName: String) {
 private val SYMBOL_MAPPING = mapOf<Char, TokenTyp>(
     '(' to TokenTyp.OFFENE_KLAMMER,
     ')' to TokenTyp.GESCHLOSSENE_KLAMMER,
+    '[' to TokenTyp.OFFENE_ECKIGE_KLAMMER,
+    ']' to TokenTyp.GESCHLOSSENE_ECKIGE_KLAMMER,
     ',' to TokenTyp.KOMMA,
     ';' to TokenTyp.SEMIKOLON,
     '.' to TokenTyp.PUNKT,

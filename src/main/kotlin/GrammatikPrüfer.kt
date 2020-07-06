@@ -53,7 +53,7 @@ class GrammatikPrüfer(dateiPfad: String): PipelineComponent(dateiPfad) {
       // TODO: berücksichtige auch die möglichen anderen Fälle in der Fehlermeldung
       val kasus = fälle.first()
       val erwarteteForm = deklanation.getForm(kasus, numerus)
-      throw GermanScriptFehler.GrammatikFehler.FalscheForm(nomen.bezeichner.toUntyped(), kasus, nomen, erwarteteForm)
+      throw GermanScriptFehler.GrammatikFehler.KasusFehler.FalscheForm(nomen.bezeichner.toUntyped(), kasus, nomen, erwarteteForm)
     }
   }
 
@@ -72,21 +72,39 @@ class GrammatikPrüfer(dateiPfad: String): PipelineComponent(dateiPfad) {
 
     if (nomen.artikel == null) {
       val erwarteterArtikel = getArtikel(bestimmt, nomen.genus!!, nomen.numerus!!, ersterFall)
-      throw GermanScriptFehler.GrammatikFehler.FalscherArtikel(artikel.toUntyped(), ersterFall, nomen, erwarteterArtikel)
+      throw GermanScriptFehler.GrammatikFehler.KasusFehler.FalscherArtikel(artikel.toUntyped(), ersterFall, nomen, erwarteterArtikel)
+    }
+  }
+
+  private fun prüfeNumerus(nomen: AST.Nomen, numerus: Numerus) {
+    if (nomen.numerus!! != numerus) {
+      val numerusForm = deklanierer.holeDeklination(nomen).getForm(nomen.fälle.first(), numerus)
+      throw GermanScriptFehler.GrammatikFehler.FalscherNumerus(nomen.bezeichner.toUntyped(), numerus, numerusForm)
     }
   }
 
   private fun prüfeVariablendeklaration(variablenDeklaration: AST.Satz.VariablenDeklaration) {
     val nomen = variablenDeklaration.name
     prüfeNomen(nomen, EnumSet.of(Kasus.NOMINATIV))
+    if (!variablenDeklaration.zuweisungsOperator.typ.numerus.contains(nomen.numerus!!)) {
+      throw GermanScriptFehler.GrammatikFehler.FalscheZuweisung(variablenDeklaration.zuweisungsOperator.toUntyped(), nomen.numerus!!)
+    }
     prüfeArtikel(variablenDeklaration.artikel, nomen)
+    // prüfe ob Numerus mit 'ist' oder 'sind' übereinstimmt
     // logger.addLine("geprüft: $variablenDeklaration")
     if (variablenDeklaration.ausdruck is AST.Ausdruck.Variable) {
       val variable = variablenDeklaration.ausdruck
       prüfeNomen(variable.name, EnumSet.of(Kasus.NOMINATIV))
-      if (variable.artikel != null) {
-        prüfeArtikel(variable.artikel, nomen)
-      }
+      prüfeNumerus(variable.name, nomen.numerus!!)
+      prüfeArtikel(variable.artikel!!, nomen)
+    }
+    else if (variablenDeklaration.ausdruck is AST.Ausdruck.Liste) {
+      val liste = variablenDeklaration.ausdruck
+      prüfeNomen(liste.pluralTyp, EnumSet.of(Kasus.NOMINATIV))
+      prüfeNumerus(liste.pluralTyp, Numerus.PLURAL)
+      prüfeArtikel(liste.artikel, liste.pluralTyp)
+
+      prüfeNumerus(nomen, Numerus.PLURAL)
     }
   }
 
@@ -125,9 +143,18 @@ class GrammatikPrüfer(dateiPfad: String): PipelineComponent(dateiPfad) {
     if (argument.wert is AST.Ausdruck.Variable) {
       val variable = argument.wert
       prüfeNomen(variable.name, EnumSet.of(Kasus.NOMINATIV))
+      prüfeNumerus(variable.name, argument.name.numerus!!)
       if (variable.artikel != null) {
         prüfeArtikel(variable.artikel, variable.name)
       }
+    }
+    if (argument.wert is AST.Ausdruck.Liste) {
+      val liste = argument.wert
+      prüfeNomen(liste.pluralTyp, EnumSet.of(Kasus.NOMINATIV))
+      prüfeNumerus(liste.pluralTyp, Numerus.PLURAL)
+      prüfeArtikel(liste.artikel, liste.pluralTyp)
+
+      prüfeNumerus(argument.name, Numerus.PLURAL)
     }
   }
 

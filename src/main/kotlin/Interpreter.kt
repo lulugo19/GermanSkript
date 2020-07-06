@@ -14,9 +14,12 @@ private sealed class Wert {
     }
     override fun toString(): String = Format.dec.format(zahl)
   }
+
   data class Boolean(val boolean: kotlin.Boolean): Wert() {
     override fun toString(): String = boolean.toString()
   }
+
+  data class Liste(val elemente: List<Wert>): Wert()
 }
 
 private typealias Bereich = HashMap<String, Wert>
@@ -171,6 +174,7 @@ class Interpreter(dateiPfad: String): PipelineComponent(dateiPfad) {
         is AST.Ausdruck.Zeichenfolge -> Wert.Zeichenfolge(ausdruck.zeichenfolge.typ.zeichenfolge)
         is AST.Ausdruck.Zahl -> Wert.Zahl(ausdruck.zahl.typ.zahl)
         is AST.Ausdruck.Boolean -> Wert.Boolean(ausdruck.boolean.typ.boolean)
+        is AST.Ausdruck.Liste -> Wert.Liste(ausdruck.elemente.map(::evaluiereAusdruck))
         is AST.Ausdruck.Variable -> evaluiereVariable(ausdruck)
         is AST.Ausdruck.FunktionsAufruf -> evaluiereFunktionsAufruf(ausdruck.aufruf)
         is AST.Ausdruck.BinärerAusdruck -> evaluiereBinärenAusdruck(ausdruck)
@@ -192,6 +196,7 @@ class Interpreter(dateiPfad: String): PipelineComponent(dateiPfad) {
       is Wert.Zeichenfolge -> zeichenFolgenOperation(operator, links, rechts as Wert.Zeichenfolge)
       is Wert.Zahl -> zahlOperation(operator, links, rechts as Wert.Zahl)
       is Wert.Boolean -> booleanOperation(operator, links, rechts as Wert.Boolean)
+      is Wert.Liste -> TODO()
     }
   }
 
@@ -233,6 +238,13 @@ class Interpreter(dateiPfad: String): PipelineComponent(dateiPfad) {
       Operator.GLEICH -> Wert.Boolean(links.boolean == rechts.boolean)
       Operator.UNGLEICH -> Wert.Boolean(links.boolean != rechts.boolean)
       else -> throw Error("Operator $operator ist für den Typen Boolean nicht definiert.")
+    }
+  }
+
+  private fun listenOperation(operator: Operator, links: Wert.Liste, rechts: Wert.Liste): Wert {
+    return when (operator) {
+      Operator.PLUS -> Wert.Liste(links.elemente + rechts.elemente)
+      else -> throw Error("Operator $operator ist für den Typen Liste nicht definiert.")
     }
   }
 

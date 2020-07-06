@@ -227,7 +227,15 @@ sealed class AST {
 
     data class Boolean(val boolean: TypedToken<TokenTyp.BOOLEAN>) : Ausdruck()
 
-    data class Variable(val artikel: TypedToken<TokenTyp.ARTIKEL>?, val name: Nomen) : Ausdruck()
+    data class Variable(val artikel: TypedToken<TokenTyp.ARTIKEL.BESTIMMT>?, val name: Nomen) : Ausdruck()
+
+    data class Liste(val artikel: TypedToken<TokenTyp.ARTIKEL.UMBESTIMMT>, val pluralTyp: Nomen, val elemente: List<Ausdruck>): Ausdruck() {
+      override fun visit(onVisit: (AST) -> kotlin.Boolean) {
+        if (onVisit(this)) {
+          elemente.visit(onVisit)
+        }
+      }
+    }
 
     data class FunktionsAufruf(val aufruf: AST.FunktionsAufruf): Ausdruck() {
       override fun visit(onVisit: (AST) -> kotlin.Boolean){

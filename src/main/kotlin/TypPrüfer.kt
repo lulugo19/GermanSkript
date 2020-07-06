@@ -1,13 +1,11 @@
 import util.SimpleLogger
 
 sealed class Typ(val name: String) {
+  override fun toString(): String = name
+
   abstract val definierteOperatoren: Map<Operator, Typ>
 
-
   object Zahl : Typ("Zahl") {
-    override fun toString(): String {
-      return "Zahl"
-    }
     override val definierteOperatoren: Map<Operator, Typ>
       get() = mapOf(
           Operator.PLUS to  Zahl,
@@ -26,9 +24,6 @@ sealed class Typ(val name: String) {
   }
 
   object Zeichenfolge : Typ("Zeichenfolge") {
-    override fun toString(): String {
-      return "Zeichenfolge"
-    }
     override val definierteOperatoren: Map<Operator, Typ>
       get() = mapOf(
           Operator.PLUS to Zeichenfolge,
@@ -42,15 +37,19 @@ sealed class Typ(val name: String) {
   }
 
   object Boolean : Typ("Boolean") {
-    override fun toString(): String {
-      return "Boolean"
-    }
     override val definierteOperatoren: Map<Operator, Typ>
       get() = mapOf(
           Operator.UND to Boolean,
           Operator.ODER to Boolean,
           Operator.GLEICH to Boolean,
           Operator.UNGLEICH to Boolean
+      )
+  }
+
+  object Liste : Typ("Liste") {
+    override val definierteOperatoren: Map<Operator, Typ>
+      get() = mapOf(
+          Operator.PLUS to Liste
       )
   }
 }
@@ -151,6 +150,7 @@ class TypPrüfer(dateiPfad: String): PipelineComponent(dateiPfad) {
       is AST.Ausdruck.Zahl -> Typ.Zahl
       is AST.Ausdruck.Zeichenfolge -> Typ.Zeichenfolge
       is AST.Ausdruck.Boolean -> Typ.Boolean
+      is AST.Ausdruck.Liste -> Typ.Liste
       is AST.Ausdruck.BinärerAusdruck -> prüfeBinärenAusdruck(ausdruck, variablen)
       is AST.Ausdruck.Minus -> prüfeMinus(ausdruck, variablen)
       is AST.Ausdruck.Variable -> prüfeVariable(ausdruck, variablen)
@@ -190,6 +190,7 @@ class TypPrüfer(dateiPfad: String): PipelineComponent(dateiPfad) {
   private fun holeErstesTokenVonAusdruck(ausdruck: AST.Ausdruck): Token {
     return when (ausdruck) {
       is AST.Ausdruck.Zeichenfolge -> ausdruck.zeichenfolge.toUntyped()
+      is AST.Ausdruck.Liste -> ausdruck.artikel.toUntyped()
       is AST.Ausdruck.Zahl -> ausdruck.zahl.toUntyped()
       is AST.Ausdruck.Boolean -> ausdruck.boolean.toUntyped()
       is AST.Ausdruck.Variable -> ausdruck.name.bezeichner.toUntyped()

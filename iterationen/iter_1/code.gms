@@ -68,3 +68,7 @@ solange wahr:
     wenn der Zähler % 2 gleich 1: fortfahren.
     schreibe die Zahl Zähler
 .
+
+// Listen
+schreibe den Bereich "Listen"
+die Zahlen sind einige Zahlen[2, 3, 5, 7, 11, 13, 17, 19]

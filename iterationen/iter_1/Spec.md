@@ -50,7 +50,7 @@ Zugriff auf Element per Liste:
 
 ```
 die Person Erste ist die 1. Person der Personen
-eine Person ist die 2. Person einiger Personen
+eine Person ist die 2. Person der Personen
 ```
 
 ## Funktionsaufrufe und -definitionen unterstützen Listen

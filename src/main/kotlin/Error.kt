@@ -68,19 +68,32 @@ sealed class GermanScriptFehler(val token: Token): Error() {
       get() = "Das Wort ${token.wert} ist unbekannt. Füge eine Deklinationsanweisung für das Wort hinzu!"
   }
 
-  sealed class GrammatikFehler(token: Token, protected val kasus: Kasus, protected val nomen: AST.Nomen): GermanScriptFehler(token) {
+  sealed class GrammatikFehler(token: Token): GermanScriptFehler(token) {
 
-    val form get() = "(${kasus.anzeigeName}, ${nomen.genus!!.anzeigeName}, ${nomen.numerus!!.anzeigeName})"
+    sealed class KasusFehler(token: Token, protected val kasus: Kasus, protected val nomen: AST.Nomen): GrammatikFehler(token) {
+      val form get() = "(${kasus.anzeigeName}, ${nomen.genus!!.anzeigeName}, ${nomen.numerus!!.anzeigeName})"
 
-    class FalscherArtikel(token: Token, kasus: Kasus, nomen: AST.Nomen, private val richtigerArtikel: String): GrammatikFehler(token, kasus, nomen) {
-      override val nachricht: String?
-        get() = "Falscher Artikel '${token.wert} ${nomen.bezeichner.wert}'. " +
-            "Der richtige Artikel für '${nomen.bezeichner.wert}' $form ist '$richtigerArtikel ${nomen.bezeichner.wert}'."
+      class FalscherArtikel(token: Token, kasus: Kasus, nomen: AST.Nomen, private val richtigerArtikel: String) : KasusFehler(token, kasus, nomen) {
+        override val nachricht: String?
+          get() = "Falscher Artikel '${token.wert} ${nomen.bezeichner.wert}'. " +
+              "Der richtige Artikel für '${nomen.bezeichner.wert}' $form ist '$richtigerArtikel ${nomen.bezeichner.wert}'."
+      }
+
+      class FalscheForm(token: Token, kasus: Kasus, nomen: AST.Nomen, private val richtigeForm: String) : KasusFehler(token, kasus, nomen) {
+        override val nachricht: String?
+          get() = "Falsche Form des Nomens '${token.wert}'. Die richtige Form $form ist '$richtigeForm'."
+      }
     }
 
-    class FalscheForm(token: Token, kasus: Kasus, nomen: AST.Nomen, private val richtigeForm: String): GrammatikFehler(token, kasus, nomen) {
+    class FalscheZuweisung(token: Token, private val numerus: Numerus) : GrammatikFehler(token) {
       override val nachricht: String?
-        get() = "Falsche Form des Nomens '${token.wert}'. Die richtige Form $form ist '$richtigeForm'."
+        get() = "Falsche Zuweisung '${token.wert}'. Die richtige Form der Zuweisung im ${numerus.anzeigeName} ist '${numerus.zuweisung}'." +
+            "Statt dem Wort kann auch das Symbol '=' verwendet werden."
+    }
+
+    class FalscherNumerus(token: Token, private  val numerus: Numerus, private val erwartetesNomen: String): GrammatikFehler(token) {
+      override val nachricht: String?
+        get() = "Falscher Numerus. Das Nomen muss im ${numerus.anzeigeName} '$erwartetesNomen' stehen."
     }
   }
 
