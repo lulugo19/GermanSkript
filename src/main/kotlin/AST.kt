@@ -8,20 +8,24 @@ fun <T: AST> List<T>.visit(onVisit: (AST) -> Boolean): Boolean {
 }
 
 sealed class AST {
-  // visit implementation for all the leaf nodes
-  open fun visit(onVisit: (AST) -> Boolean) {
-    onVisit(this)
-  }
+  open val children = emptySequence<AST>()
 
+  // visit implementation for all the leaf nodes
+  fun visit(onVisit: (AST) -> Boolean) {
+    if (onVisit(this)) {
+      for (child in children) {
+        child.visit(onVisit)
+      }
+    }
+  }
 
   // Wurzelknoten
   data class Programm(val definitionen: List<Definition>, val sätze: List<Satz>) : AST() {
-    override fun visit(onVisit: (AST) -> Boolean) {
-      if (onVisit(this)) {
-        definitionen.visit(onVisit)
-        sätze.visit(onVisit)
+    override val children: Sequence<AST>
+      get() = sequence {
+        yieldAll(definitionen)
+        yieldAll(sätze)
       }
-    }
   }
 
   data class Nomen(
@@ -89,11 +93,10 @@ sealed class AST {
           return typen
         }
 
-        override fun visit(onVisit: (AST) -> Boolean) {
-          if (onVisit(this)) {
-            sätze.visit(onVisit)
-          }
-      }
+      override val children: Sequence<AST>
+        get() = sequence {
+          yieldAll(sätze)
+        }
     }
   }
 
@@ -112,61 +115,50 @@ sealed class AST {
         val zuweisungsOperator: TypedToken<TokenTyp.ZUWEISUNG>,
         val ausdruck: Ausdruck
     ): Satz() {
-      override fun visit(onVisit: (AST) -> Boolean) {
-        if (onVisit(this)) {
-          ausdruck.visit(onVisit)
-        }
-      }
+      override val children: Sequence<AST> get() = sequenceOf(ausdruck)
     }
 
     data class BedingungsTerm(
         val bedingung: Ausdruck,
         val sätze: List<Satz>
     ): Satz() {
-      override fun visit(onVisit: (AST) -> Boolean) {
-        if (onVisit(this)) {
-          bedingung.visit(onVisit)
-          sätze.visit(onVisit)
+      override val children: Sequence<AST>
+        get() = sequence {
+          yield(bedingung)
+          yieldAll(sätze)
         }
-      }
     }
 
     data class Bedingung(
         val bedingungen: List<BedingungsTerm>,
         val sonst: List<Satz>?
     ): Satz() {
-      override fun visit(onVisit: (AST) -> Boolean) {
-        if (onVisit(this)) {
-          bedingungen.visit(onVisit)
-          sonst?.visit(onVisit)
+      override val children: Sequence<AST>
+        get() = sequence {
+          yieldAll(bedingungen)
+          if (sonst != null) {
+            yieldAll(sonst!!)
+          }
         }
-      }
     }
 
     data class SolangeSchleife(
         val bedingung: Ausdruck,
         val sätze: List<Satz>
     ) : Satz() {
-      override fun visit(onVisit: (AST) -> Boolean) {
-        if (onVisit(this)) {
-          bedingung.visit(onVisit)
-          sätze.visit(onVisit)
+      override val children: Sequence<AST>
+        get() = sequence {
+          yield(bedingung)
+          yieldAll(sätze)
         }
-      }
     }
 
     data class FunktionsAufruf(val aufruf: AST.FunktionsAufruf): Satz() {
-      override fun visit(onVisit: (AST) -> Boolean) {
-        aufruf.visit(onVisit)
-      }
+      override val children: Sequence<AST> get() = sequenceOf(aufruf)
     }
 
     data class Zurückgabe(val ausdruck: Ausdruck): Satz() {
-      override fun visit(onVisit: (AST) -> Boolean) {
-        if (onVisit(this)) {
-          ausdruck.visit(onVisit)
-        }
-      }
+      override val children: Sequence<AST> get() = sequenceOf(ausdruck)
     }
   }
 
@@ -175,19 +167,19 @@ sealed class AST {
       val name: Nomen,
       val wert: Ausdruck?
   ): AST() {
-    override fun visit(onVisit: (AST) -> Boolean) {
-      if (onVisit(this) && wert != null) {
-        wert.visit(onVisit)
+    override val children: Sequence<AST>
+      get() = sequence {
+        if (wert != null) {
+          yield(wert!!)
+        }
       }
-    }
   }
 
   data class PräpositionsArgumente(val präposition: Präposition, val argumente: List<Argument>): AST() {
-    override fun visit(onVisit: (AST) -> Boolean) {
-      if (onVisit(this)) {
-        argumente.visit(onVisit)
+    override val children: Sequence<AST>
+      get() = sequence {
+        yieldAll(argumente)
       }
-    }
   }
 
   data class FunktionsAufruf(
@@ -200,7 +192,6 @@ sealed class AST {
     private val _argumente: MutableList<Argument> = mutableListOf()
     val argumente: List<Argument> = _argumente
 
-
     init {
       if (objekt != null) {
         _argumente.add(objekt)
@@ -212,12 +203,13 @@ sealed class AST {
       }
     }
 
-    override fun visit(onVisit: (AST) -> Boolean) {
-      if (onVisit(this)) {
-        objekt?.visit(onVisit)
-        präpositionsArgumente.visit(onVisit)
+    override val children: Sequence<AST>
+      get() = sequence {
+        if (objekt != null) {
+          yield(objekt!!)
+        }
+        yieldAll(präpositionsArgumente)
       }
-    }
   }
 
   sealed class Ausdruck : AST() {
@@ -230,34 +222,26 @@ sealed class AST {
     data class Variable(val artikel: TypedToken<TokenTyp.ARTIKEL.BESTIMMT>?, val name: Nomen) : Ausdruck()
 
     data class Liste(val artikel: TypedToken<TokenTyp.ARTIKEL.UMBESTIMMT>, val pluralTyp: Nomen, val elemente: List<Ausdruck>): Ausdruck() {
-      override fun visit(onVisit: (AST) -> kotlin.Boolean) {
-        if (onVisit(this)) {
-          elemente.visit(onVisit)
+      override val children: Sequence<AST>
+        get() = sequence {
+          yieldAll(elemente)
         }
-      }
     }
 
     data class FunktionsAufruf(val aufruf: AST.FunktionsAufruf): Ausdruck() {
-      override fun visit(onVisit: (AST) -> kotlin.Boolean){
-        aufruf.visit(onVisit)
-      }
+      override val children: Sequence<AST> get() = sequenceOf(aufruf)
     }
 
-    data class BinärerAusdruck(val operator: TypedToken<TokenTyp.OPERATOR>, val links: Ausdruck, val rechts: Ausdruck, val istAnfang: kotlin.Boolean) : Ausdruck() {
-      override fun visit(onVisit: (AST) -> kotlin.Boolean) {
-        if (onVisit(this)) {
-          links.visit(onVisit)
-          rechts.visit(onVisit)
-        }
-      }
+    data class BinärerAusdruck(
+        val operator: TypedToken<TokenTyp.OPERATOR>,
+        val links: Ausdruck,
+        val rechts: Ausdruck,
+        val istAnfang: kotlin.Boolean) : Ausdruck() {
+      override val children: Sequence<AST> get() = sequenceOf(links, rechts)
     }
 
     data class Minus(val ausdruck: Ausdruck) : Ausdruck() {
-      override fun visit(onVisit: (AST) -> kotlin.Boolean) {
-        if (onVisit(this)) {
-          ausdruck.visit(onVisit)
-        }
-      }
+      override val children: Sequence<AST> get() = sequenceOf(ausdruck)
     }
   }
 }

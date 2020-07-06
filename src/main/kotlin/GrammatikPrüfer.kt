@@ -14,7 +14,8 @@ class GrammatikPrüfer(dateiPfad: String): PipelineComponent(dateiPfad) {
       when (knoten) {
         is AST.Definition.Funktion -> prüfeFunktionsDefinition(knoten)
         is AST.Satz.VariablenDeklaration -> prüfeVariablendeklaration(knoten)
-        is AST.FunktionsAufruf -> prüfeFunktionsAufruf(knoten)
+        is AST.Satz.FunktionsAufruf -> prüfeFunktionsAufruf(knoten.aufruf)
+        is AST.Ausdruck.FunktionsAufruf -> prüfeFunktionsAufruf(knoten.aufruf)
         is AST.Satz.Zurückgabe -> prüfeZurückgabe(knoten)
         is AST.Ausdruck -> when (knoten) {
             is AST.Ausdruck.BinärerAusdruck -> prüfeBinärenAusdruck(knoten)
