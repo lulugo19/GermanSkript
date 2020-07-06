@@ -56,8 +56,12 @@ class Definierer(dateiPfad: String): PipelineComponent(dateiPfad) {
     }
     for (präposition in funktionsDefinition.präpositionsParameter) {
       vollerName += " " + präposition.präposition.präposition.wert
-      for (parameter in präposition.parameter) {
+      for (parameterIndex in präposition.parameter.indices) {
+        val parameter = präposition.parameter[parameterIndex]
         vollerName += " " + parameter.paramName.artikel!! + " " + parameter.paramName.bezeichner.wert
+        if (parameterIndex != präposition.parameter.size-1) {
+          vollerName += ","
+        }
       }
     }
     if (funktionsDefinition.suffix != null) {
@@ -96,8 +100,12 @@ class Definierer(dateiPfad: String): PipelineComponent(dateiPfad) {
     }
     for (präposition in funktionsAufruf.präpositionsArgumente) {
       vollerName += " " + präposition.präposition.präposition.wert
-      for (argument in präposition.argumente) {
+      for (argumentIndex in präposition.argumente.indices) {
+        val argument = präposition.argumente[argumentIndex]
         vollerName += " " + argument.name.artikel!! + " " + argument.name.bezeichner.wert
+        if (argumentIndex != präposition.argumente.size-1) {
+          vollerName += ","
+        }
       }
     }
     if (funktionsAufruf.suffix != null) {
@@ -108,7 +116,7 @@ class Definierer(dateiPfad: String): PipelineComponent(dateiPfad) {
 }
 
 fun main() {
-  val definierer = Definierer("./iterationen/iter_0/code.gms")
+  val definierer = Definierer("./iterationen/iter_1/code.gms")
   definierer.definiere()
   definierer.gebeFunktionsDefinitionenAus()
 }

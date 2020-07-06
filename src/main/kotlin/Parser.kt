@@ -10,7 +10,11 @@ enum class ASTKnotenID {
   INTERN,
   DEKLINATION,
   ZURÜCKGABE,
-  BEDINGUNG
+  BEDINGUNG,
+  SCHLEIFE,
+  SCHLEIFENKONTROLLE,
+  LISTE,
+  VARIABLE
 }
 
 class Parser(dateiPfad: String): PipelineComponent(dateiPfad) {
@@ -363,7 +367,6 @@ private sealed class SubParser<T: AST>() {
 
         bedingungen += AST.Satz.BedingungsTerm(bedingung, sätze)
 
-        überspringeLeereZeilen()
         while (peekType() is TokenTyp.SONST) {
           expect<TokenTyp.SONST>("'sonst'")
           val nurSonst = peekType() !is TokenTyp.WENN
@@ -378,7 +381,6 @@ private sealed class SubParser<T: AST>() {
           } else {
             bedingungen += bedingungsTerm
           }
-          überspringeLeereZeilen()
         }
         return AST.Satz.Bedingung(bedingungen, null)
       }

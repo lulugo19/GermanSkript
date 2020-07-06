@@ -12,7 +12,7 @@ repositories {
 
 dependencies {
     implementation(kotlin("stdlib-jdk8"))
-    implementation("org.jetbrains.kotlinx:kotlinx-collections-immutable-jvm:0.3.2")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.3.7")
 }
 
 tasks {

@@ -1,13 +1,11 @@
 import util.SimpleLogger
 
 sealed class Typ(val name: String) {
+  override fun toString(): String = name
+
   abstract val definierteOperatoren: Map<Operator, Typ>
 
-
   object Zahl : Typ("Zahl") {
-    override fun toString(): String {
-      return "Zahl"
-    }
     override val definierteOperatoren: Map<Operator, Typ>
       get() = mapOf(
           Operator.PLUS to  Zahl,
@@ -26,9 +24,6 @@ sealed class Typ(val name: String) {
   }
 
   object Zeichenfolge : Typ("Zeichenfolge") {
-    override fun toString(): String {
-      return "Zeichenfolge"
-    }
     override val definierteOperatoren: Map<Operator, Typ>
       get() = mapOf(
           Operator.PLUS to Zeichenfolge,
@@ -42,15 +37,19 @@ sealed class Typ(val name: String) {
   }
 
   object Boolean : Typ("Boolean") {
-    override fun toString(): String {
-      return "Boolean"
-    }
     override val definierteOperatoren: Map<Operator, Typ>
       get() = mapOf(
           Operator.UND to Boolean,
           Operator.ODER to Boolean,
           Operator.GLEICH to Boolean,
           Operator.UNGLEICH to Boolean
+      )
+  }
+
+  object Liste : Typ("Liste") {
+    override val definierteOperatoren: Map<Operator, Typ>
+      get() = mapOf(
+          Operator.PLUS to Liste
       )
   }
 }
@@ -100,7 +99,8 @@ class TypPrüfer(dateiPfad: String): PipelineComponent(dateiPfad) {
       is AST.Satz.VariablenDeklaration -> prüfeVariablenDeklaration(satz, variablen)
       is AST.Satz.FunktionsAufruf -> prüfeFunktionsAufruf(satz.aufruf, false, variablen)
       is AST.Satz.Zurückgabe -> prüfeZurückgabe(rückgabeTyp, satz, variablen)
-      is AST.Satz.Bedingung -> prüfeBedingung(satz, variablen, rückgabeTyp)
+      is AST.Satz.Bedingung -> prüfeBedingung(satz)
+      is AST.Satz.SolangeSchleife -> prüfeSolangeSchleife(satz)
       is AST.Satz.BedingungsTerm -> throw Error("BedingungsTerm darf so nicht einfach stehen")
     }
   }
@@ -130,6 +130,17 @@ class TypPrüfer(dateiPfad: String): PipelineComponent(dateiPfad) {
       logger.addLine("Sätze:")
       prüfeSätze(sonst.sätze,variablen,rückgabeTyp)
     }
+
+  private fun prüfeSolangeSchleife(schleife: AST.Satz.SolangeSchleife) {
+    // Die Schleifenbedingung muss ein Boolean sein
+    // Sätze prüfen
+    // TODO Finn
+  }
+
+  private fun prüfeFürJedeSchleife(schleife: AST.Satz.FürJedeSchleife) {
+    // der Schleifen Ausdruck muss eine Liste sein
+    // wenn der Ausdruck eine Variable ist muss diese mit prüfeVariable() überprüft werden
+    // TODO Finn
   }
 
   private fun prüfeZurückgabe(rückgabeTyp: Typ?, satz: AST.Satz.Zurückgabe, variablen: HashMap<String, Typ>) {
@@ -166,6 +177,7 @@ class TypPrüfer(dateiPfad: String): PipelineComponent(dateiPfad) {
       is AST.Ausdruck.Zahl -> Typ.Zahl
       is AST.Ausdruck.Zeichenfolge -> Typ.Zeichenfolge
       is AST.Ausdruck.Boolean -> Typ.Boolean
+      is AST.Ausdruck.Liste -> Typ.Liste
       is AST.Ausdruck.BinärerAusdruck -> prüfeBinärenAusdruck(ausdruck, variablen)
       is AST.Ausdruck.Minus -> prüfeMinus(ausdruck, variablen)
       is AST.Ausdruck.Variable -> prüfeVariable(ausdruck, variablen)
@@ -205,6 +217,7 @@ class TypPrüfer(dateiPfad: String): PipelineComponent(dateiPfad) {
   private fun holeErstesTokenVonAusdruck(ausdruck: AST.Ausdruck): Token {
     return when (ausdruck) {
       is AST.Ausdruck.Zeichenfolge -> ausdruck.zeichenfolge.toUntyped()
+      is AST.Ausdruck.Liste -> ausdruck.artikel.toUntyped()
       is AST.Ausdruck.Zahl -> ausdruck.zahl.toUntyped()
       is AST.Ausdruck.Boolean -> ausdruck.boolean.toUntyped()
       is AST.Ausdruck.Variable -> ausdruck.name.bezeichner.toUntyped()
@@ -214,10 +227,10 @@ class TypPrüfer(dateiPfad: String): PipelineComponent(dateiPfad) {
     }
   }
 
-  private fun prüfeVariable(ausdruck: AST.Ausdruck.Variable, variablen: HashMap<String, Typ>): Typ {
-    val nominativ = ausdruck.name.nominativ!!
+  private fun prüfeVariable(variable: AST.Ausdruck.Variable, variablen: HashMap<String, Typ>): Typ {
+    val nominativ = variable.name.nominativ!!
     if (!variablen.containsKey(nominativ)) {
-      throw GermanScriptFehler.Undefiniert.Variable(ausdruck.name.bezeichner.toUntyped())
+      throw GermanScriptFehler.Undefiniert.Variable(variable.name.bezeichner.toUntyped())
     }
     return variablen.getValue(nominativ)
   }
