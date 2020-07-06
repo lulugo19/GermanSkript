@@ -99,9 +99,8 @@ class TypPrüfer(dateiPfad: String): PipelineComponent(dateiPfad) {
       is AST.Satz.VariablenDeklaration -> prüfeVariablenDeklaration(satz, variablen)
       is AST.Satz.FunktionsAufruf -> prüfeFunktionsAufruf(satz.aufruf, false, variablen)
       is AST.Satz.Zurückgabe -> prüfeZurückgabe(rückgabeTyp, satz, variablen)
-      is AST.Satz.Bedingung -> prüfeBedingung(satz)
+      is AST.Satz.Bedingung -> prüfeBedingung(satz, variablen, rückgabeTyp)
       is AST.Satz.SolangeSchleife -> prüfeSolangeSchleife(satz)
-      is AST.Satz.BedingungsTerm -> throw Error("BedingungsTerm darf so nicht einfach stehen")
     }
   }
 
@@ -109,27 +108,23 @@ class TypPrüfer(dateiPfad: String): PipelineComponent(dateiPfad) {
     val bedingungen = satz.bedingungen
     val sonst = satz.sonst
     logger.addLine("--__--__--__--__--__--__--__--__--__--__--__--__--__--__--__--__--__")
-    for (i in bedingungen){
+    for (i in bedingungen) {
       val typDerBedingung = typVonAusdruck(i.bedingung, variablen)
-      if (typDerBedingung !is Typ.Boolean){
+      if (typDerBedingung !is Typ.Boolean) {
         throw GermanScriptFehler.SyntaxFehler.BedingungsFehler(holeErstesTokenVonAusdruck(i.bedingung))
       }
       logger.addLine("Bedingung: ${typDerBedingung.name}")
       logger.addLine("Sätze:")
-      prüfeSätze(i.sätze,variablen, rückgabeTyp)
+      prüfeSätze(i.sätze, variablen, rückgabeTyp)
       logger.addLine("_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ ")
       logger.addLine("")
     }
 
-    if (sonst != null){
-      val typVonSonst = typVonAusdruck(sonst.bedingung, variablen)
-      if (typVonSonst !is Typ.Boolean) {
-        throw GermanScriptFehler.SyntaxFehler.BedingungsFehler(holeErstesTokenVonAusdruck(sonst.bedingung))
-      }
-      logger.addLine("Bedingung: ${typVonSonst.name}")
-      logger.addLine("Sätze:")
-      prüfeSätze(sonst.sätze,variablen,rückgabeTyp)
+    if (sonst != null) {
+      logger.addLine("Sonst-Sätze:")
+      prüfeSätze(sonst, variablen, rückgabeTyp)
     }
+  }
 
   private fun prüfeSolangeSchleife(schleife: AST.Satz.SolangeSchleife) {
     // Die Schleifenbedingung muss ein Boolean sein
