@@ -95,6 +95,11 @@ sealed class GermanScriptFehler(val token: Token): Error() {
       override val nachricht: String?
         get() = "Falscher Numerus. Das Nomen muss im ${numerus.anzeigeName} '$erwartetesNomen' stehen."
     }
+
+    class FalschesSingular(token: Token, private val plural: String, private val erwartet: String): GrammatikFehler(token) {
+      override val nachricht: String?
+        get() = "Falsches Singular. Das Singular von '$plural' ist im Akkusativ '$erwartet'."
+    }
   }
 
   sealed class DoppelteDefinition(token: Token): GermanScriptFehler(token) {

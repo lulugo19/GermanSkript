@@ -71,4 +71,8 @@ solange wahr:
 
 // Listen
 schreibe den Bereich "Listen"
-die Zahlen sind einige Zahlen[2, 3, 5, 7, 11, 13, 17, 19]
+die Zahlen sind einige Zahlen [2, 3, 5, 7, 11, 13, 17, 19]
+für jede Zahl in den Zahlen:
+    wenn die Zahl > 13: abbrechen.
+    schreibe die Zahl
+.

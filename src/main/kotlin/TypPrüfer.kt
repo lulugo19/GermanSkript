@@ -116,6 +116,12 @@ class TypPrüfer(dateiPfad: String): PipelineComponent(dateiPfad) {
     // TODO Finn
   }
 
+  private fun prüfeFürJedeSchleife(schleife: AST.Satz.FürJedeSchleife) {
+    // der Schleifen Ausdruck muss eine Liste sein
+    // wenn der Ausdruck eine Variable ist muss diese mit prüfeVariable() überprüft werden
+    // TODO Finn
+  }
+
   private fun prüfeZurückgabe(rückgabeTyp: Typ?, satz: AST.Satz.Zurückgabe, variablen: HashMap<String, Typ>) {
     if (rückgabeTyp == null) {
       throw GermanScriptFehler.SyntaxFehler.RückgabeTypFehler(holeErstesTokenVonAusdruck(satz.ausdruck))

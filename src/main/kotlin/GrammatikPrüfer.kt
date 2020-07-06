@@ -14,6 +14,7 @@ class GrammatikPrüfer(dateiPfad: String): PipelineComponent(dateiPfad) {
       when (knoten) {
         is AST.Definition.Funktion -> prüfeFunktionsDefinition(knoten)
         is AST.Satz.VariablenDeklaration -> prüfeVariablendeklaration(knoten)
+        is AST.Satz.FürJedeSchleife -> prüfeFürJedeSchleife(knoten)
         is AST.Satz.FunktionsAufruf -> prüfeFunktionsAufruf(knoten.aufruf)
         is AST.Ausdruck.FunktionsAufruf -> prüfeFunktionsAufruf(knoten.aufruf)
         is AST.Satz.Zurückgabe -> prüfeZurückgabe(knoten)
@@ -108,6 +109,37 @@ class GrammatikPrüfer(dateiPfad: String): PipelineComponent(dateiPfad) {
       prüfeNumerus(nomen, Numerus.PLURAL)
     }
   }
+
+  private fun prüfeFürJedeSchleife(fürJedeSchleife: AST.Satz.FürJedeSchleife) {
+    val nomen = when(fürJedeSchleife.listenAusdruck) {
+      is AST.Ausdruck.Variable -> {
+        val variable = fürJedeSchleife.listenAusdruck
+        prüfeNomen(variable.name, EnumSet.of(Kasus.AKKUSATIV))
+        prüfeNumerus(variable.name, Numerus.PLURAL)
+        variable.name
+      }
+      is AST.Ausdruck.Liste -> {
+        val liste = fürJedeSchleife.listenAusdruck
+        prüfeNomen(liste.pluralTyp, EnumSet.of(Kasus.AKKUSATIV))
+        prüfeNumerus(liste.pluralTyp, Numerus.PLURAL)
+        liste.pluralTyp
+      }
+      else -> throw Error("Ausdruck bei einer 'Für-Jede-Schleife' kann nur eine Variable oder eine Liste sein")
+    }
+
+    val einzahl = deklanierer.holeDeklination(nomen).getForm(Kasus.AKKUSATIV, Numerus.SINGULAR)
+    val binder = fürJedeSchleife.binder
+    if (binder.bezeichner.wert != einzahl) {
+      throw GermanScriptFehler.GrammatikFehler.FalschesSingular(
+          binder.bezeichner.toUntyped(),
+          nomen.bezeichner.wert,
+          einzahl
+      )
+    }
+    // um noch den Nominativ, sowie die anderen Sachen zu setzen
+    prüfeNomen(binder, EnumSet.of(Kasus.AKKUSATIV))
+  }
+
 
   private fun prüfeParameter(parameter: AST.Definition.Parameter, fälle: EnumSet<Kasus>) {
     val nomen = parameter.typKnoten.name

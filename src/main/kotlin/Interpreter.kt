@@ -98,6 +98,7 @@ class Interpreter(dateiPfad: String): PipelineComponent(dateiPfad) {
         is AST.Satz.Zurückgabe -> interpretiereZurückgabe(satz)
         is AST.Satz.Bedingung -> interpretiereBedingung(satz)
         is AST.Satz.SolangeSchleife -> interpretiereSolangeSchleife(satz)
+        is AST.Satz.FürJedeSchleife -> interpretiereFürJedeSchleife(satz)
         is AST.Satz.SchleifenKontrolle.Abbrechen -> {
           flags.add(Flag.SCHLEIFE_ABBRECHEN)
           return
@@ -164,6 +165,21 @@ class Interpreter(dateiPfad: String): PipelineComponent(dateiPfad) {
       interpretiereSätze(schleife.sätze)
     }
     flags.remove(Flag.SCHLEIFE_ABBRECHEN)
+  }
+
+  private fun interpretiereFürJedeSchleife(schleife: AST.Satz.FürJedeSchleife) {
+    val liste = evaluiereAusdruck(schleife.listenAusdruck) as Wert.Liste
+    stack.peek().pushBereich()
+    for (element in liste.elemente) {
+      flags.remove(Flag.SCHLEIFE_FORTFAHREN)
+      stack.peek().überschreibeVariable(schleife.binder.nominativ!!, element)
+      interpretiereSätze(schleife.sätze)
+      if (flags.contains(Flag.SCHLEIFE_ABBRECHEN)) {
+        flags.remove(Flag.SCHLEIFE_ABBRECHEN)
+        break
+      }
+    }
+    stack.peek().popBereich()
   }
 
   // endregion

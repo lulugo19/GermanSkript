@@ -153,6 +153,19 @@ sealed class AST {
         }
     }
 
+    data class FürJedeSchleife(
+        val jede: TypedToken<TokenTyp.JEDE>,
+        val binder: Nomen,
+        val listenAusdruck: Ausdruck,
+        val sätze: List<AST.Satz>
+    ): Satz() {
+      override val children: Sequence<AST>
+        get() = sequence {
+          yield(listenAusdruck)
+          yieldAll(sätze)
+        }
+    }
+
     data class FunktionsAufruf(val aufruf: AST.FunktionsAufruf): Satz() {
       override val children: Sequence<AST> get() = sequenceOf(aufruf)
     }

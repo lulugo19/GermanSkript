@@ -13,7 +13,8 @@ enum class ASTKnotenID {
   BEDINGUNG,
   SCHLEIFE,
   SCHLEIFENKONTROLLE,
-  LISTE
+  LISTE,
+  VARIABLE
 }
 
 class Parser(dateiPfad: String): PipelineComponent(dateiPfad) {
@@ -198,6 +199,7 @@ private sealed class SubParser<T: AST>() {
         is TokenTyp.BEZEICHNER_KLEIN ->
           when (nextToken.wert) {
             "gebe" -> subParse(Satz.Zurückgabe)
+            "für" -> subParse(Satz.FürJedeSchleife)
             else -> subParse(Satz.FunktionsAufruf)
           }
         else -> null
@@ -262,11 +264,7 @@ private sealed class SubParser<T: AST>() {
             AST.Ausdruck.Minus(parseEinzelnerAusdruck())
           }
         }
-        is TokenTyp.ARTIKEL.BESTIMMT -> {
-          val artikel = expect<TokenTyp.ARTIKEL.BESTIMMT>("bestimmter Artikel")
-          val name = AST.Nomen(expect("Bezeichner"))
-          AST.Ausdruck.Variable(artikel, name)
-        }
+        is TokenTyp.ARTIKEL.BESTIMMT -> subParse(Variable)
         is TokenTyp.ARTIKEL.UMBESTIMMT -> subParse(Liste)
         is TokenTyp.ZEICHENFOLGE -> AST.Ausdruck.Zeichenfolge(next().toTyped())
         is TokenTyp.ZAHL -> AST.Ausdruck.Zahl(next().toTyped())
@@ -274,6 +272,16 @@ private sealed class SubParser<T: AST>() {
         is TokenTyp.BEZEICHNER_KLEIN -> AST.Ausdruck.FunktionsAufruf(subParse(FunktionsAufruf))
         else -> throw GermanScriptFehler.SyntaxFehler.ParseFehler(next())
       }
+    }
+  }
+
+  object Variable: SubParser<AST.Ausdruck.Variable>() {
+    override val id: ASTKnotenID = ASTKnotenID.VARIABLE
+
+    override fun parseImpl(): AST.Ausdruck.Variable {
+      val artikel = expect<TokenTyp.ARTIKEL.BESTIMMT>("bestimmter Artikel")
+      val name = AST.Nomen(expect("Bezeichner"))
+      return AST.Ausdruck.Variable(artikel, name)
     }
   }
 
@@ -438,6 +446,26 @@ private sealed class SubParser<T: AST>() {
         val bedingung = subParse(Ausdruck)
         val sätze = parseBereich { subParse(Programm) }.sätze
         return AST.Satz.SolangeSchleife(bedingung, sätze)
+      }
+    }
+
+    object FürJedeSchleife: SubParser<AST.Satz.FürJedeSchleife>() {
+      override val id: ASTKnotenID
+        get() = ASTKnotenID.SCHLEIFE
+
+      override fun parseImpl(): AST.Satz.FürJedeSchleife {
+        parseKleinesSchlüsselwort("für")
+        val jede = expect<TokenTyp.JEDE>("'jeder' oder 'jede' oder 'jedes'")
+        val binder = AST.Nomen(expect("Bezeichner"))
+        parseKleinesSchlüsselwort("in")
+        val listenAusdruck = when (peekType()) {
+          is TokenTyp.ARTIKEL.BESTIMMT -> subParse(Variable)
+          is TokenTyp.ARTIKEL.UMBESTIMMT -> subParse(Liste)
+          else -> GermanScriptFehler.SyntaxFehler.ParseFehler(next(), "Artikel")
+        } as AST.Ausdruck
+        println(binder)
+        val sätze = parseBereich { subParse(Programm) }.sätze
+        return AST.Satz.FürJedeSchleife(jede, binder, listenAusdruck, sätze)
       }
     }
 
