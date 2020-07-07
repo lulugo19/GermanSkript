@@ -93,11 +93,15 @@ class Interpreter(dateiPfad: String): ProgrammDurchlaufer<Wert>(dateiPfad) {
   }
 
   override fun durchlaufeFürJedeSchleife(schleife: AST.Satz.FürJedeSchleife) {
-    val liste = evaluiereAusdruck(schleife.listenAusdruck) as Wert.Liste
+    val liste = if (schleife.liste != null)  {
+      evaluiereAusdruck(schleife.liste) as Wert.Liste
+    } else {
+      evaluiereVariable(schleife.singular.nominativPlural!!)!! as Wert.Liste
+    }
     stack.peek().pushBereich()
     for (element in liste.elemente) {
       flags.remove(Flag.SCHLEIFE_FORTFAHREN)
-      stack.peek().überschreibeVariable(schleife.binder, element)
+      stack.peek().überschreibeVariable(schleife.singular, element)
       durchlaufeSätze(schleife.sätze, false)
       if (flags.contains(Flag.SCHLEIFE_ABBRECHEN)) {
         flags.remove(Flag.SCHLEIFE_ABBRECHEN)
@@ -200,8 +204,9 @@ class Interpreter(dateiPfad: String): ProgrammDurchlaufer<Wert>(dateiPfad) {
   }
 
   override fun evaluiereListenElement(listenElement: AST.Ausdruck.ListenElement): Wert {
-    val liste = evaluiereAusdruck(listenElement.listenAusdruck) as Wert.Liste
-    return liste.elemente[listenElement.index.typ.zahl.toInt()]
+    val liste = evaluiereVariable(listenElement.singular.nominativPlural!!) as Wert.Liste
+    val index = evaluiereAusdruck(listenElement.index) as Wert.Zahl
+    return liste.elemente[index.zahl.toInt()]
   }
   // endregion
 

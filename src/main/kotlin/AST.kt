@@ -58,6 +58,7 @@ sealed class AST {
   ) {
     var nominativ: String? = null
     var nominativSingular: String? = null
+    var nominativPlural: String? = null
     var artikel: String? = null
     var genus: Genus? = null
     var numerus: Numerus? = null
@@ -179,13 +180,15 @@ sealed class AST {
 
     data class FürJedeSchleife(
         val jede: TypedToken<TokenTyp.JEDE>,
-        val binder: Nomen,
-        val listenAusdruck: Ausdruck,
+        val singular: Nomen,
+        val liste: Ausdruck.Liste?,
         val sätze: List<Satz>
     ): Satz() {
       override val children: Sequence<AST>
         get() = sequence {
-          yield(listenAusdruck)
+          if (liste != null) {
+            yield(liste!!)
+          }
           yieldAll(sätze)
         }
     }
@@ -267,12 +270,10 @@ sealed class AST {
 
     data class ListenElement(
         val artikel: TypedToken<TokenTyp.ARTIKEL.BESTIMMT>,
-        val index: TypedToken<TokenTyp.ZAHL>,
         val singular: Nomen,
-        val kasus: Kasus,
-        val listenAusdruck: Ausdruck
+        val index: Ausdruck
     ): Ausdruck() {
-      override val children: Sequence<AST> = sequenceOf(listenAusdruck)
+      override val children: Sequence<AST> get() = sequenceOf(index)
     }
 
     data class FunktionsAufruf(val aufruf: AST.FunktionsAufruf): Ausdruck() {

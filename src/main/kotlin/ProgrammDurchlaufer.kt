@@ -73,8 +73,12 @@ abstract  class ProgrammDurchlaufer<T>(dateiPfad: String): PipelineKomponente(da
     }
   }
 
-  private fun evaluiereVariable(variable: AST.Ausdruck.Variable): T {
+  fun evaluiereVariable(variable: AST.Ausdruck.Variable): T {
     return stack.peek().leseVariable(variable.name)
+  }
+
+  fun evaluiereVariable(variable: String): T? {
+    return stack.peek().leseVariable(variable)
   }
 
   protected abstract fun evaluiereZeichenfolge(ausdruck: AST.Ausdruck.Zeichenfolge): T

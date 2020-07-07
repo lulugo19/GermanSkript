@@ -4,7 +4,8 @@ import java.util.*
 
 class Peekable<T>(val iterator: Iterator<T>) {
   var index = 0
-  val queue = LinkedList<T>()
+    private set
+  private val queue = LinkedList<T>()
 
   fun next(): T? = when {
     !queue.isEmpty() -> queue.remove()

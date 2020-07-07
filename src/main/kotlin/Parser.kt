@@ -163,14 +163,6 @@ private sealed class SubParser<T: AST>() {
     expect<TokenTyp.PUNKT>(".")
     return result
   }
-
-  protected fun parseListenAusdruck(): AST.Ausdruck {
-    return when (peekType()) {
-      is TokenTyp.ARTIKEL.BESTIMMT -> subParse(Variable)
-      is TokenTyp.ARTIKEL.UMBESTIMMT -> subParse(Liste)
-      else -> GermanScriptFehler.SyntaxFehler.ParseFehler(next(), "Artikel")
-    } as AST.Ausdruck
-  }
   // endregion
 
   object Programm: SubParser<AST.Programm>() {
@@ -261,10 +253,9 @@ private sealed class SubParser<T: AST>() {
         is TokenTyp.BEZEICHNER_KLEIN -> AST.Ausdruck.FunktionsAufruf(subParse(FunktionsAufruf))
         is TokenTyp.ARTIKEL.UMBESTIMMT -> subParse(Liste)
         is TokenTyp.ARTIKEL.BESTIMMT -> {
-          when (peekType(1)) {
-            is TokenTyp.BEZEICHNER_GROSS -> subParse(Variable)
-            is TokenTyp.ZAHL -> subParse(ListenElement)
-            else -> throw GermanScriptFehler.SyntaxFehler.ParseFehler(peek(1), "Bezeichner oder Index")
+          when (peekType(2)) {
+            is TokenTyp.OFFENE_ECKIGE_KLAMMER -> subParse(ListenElement)
+            else -> subParse(Variable)
           }
         }
         is TokenTyp.OFFENE_KLAMMER -> {
@@ -318,21 +309,11 @@ private sealed class SubParser<T: AST>() {
 
     override fun parseImpl(): AST.Ausdruck.ListenElement {
       val artikel = expect<TokenTyp.ARTIKEL.BESTIMMT>("bestimmter Artikel")
-      val index = expect<TokenTyp.ZAHL>("Index")
-      if (index.wert.contains(",")) {
-        throw GermanScriptFehler.SyntaxFehler.ParseFehler(next(), "ganze Zahl", "Ein Listenindex muss immer eine ganze Zahl sein.")
-      }
       val singular = AST.Nomen(expect("Bezeichner"))
-      val peekedToken = peek()
-      val kasus = if (peekedToken.typ is TokenTyp.BEZEICHNER_KLEIN) {
-        parseKleinesSchlüsselwort("von")
-        Kasus.DATIV
-      } else {
-        Kasus.GENITIV
-      }
-
-      val listenAusdruck = parseListenAusdruck()
-      return AST.Ausdruck.ListenElement(artikel, index, singular, kasus, listenAusdruck)
+      expect<TokenTyp.OFFENE_ECKIGE_KLAMMER>("'['")
+      val index = subParse(Ausdruck)
+      expect<TokenTyp.GESCHLOSSENE_ECKIGE_KLAMMER>("']'")
+      return AST.Ausdruck.ListenElement(artikel, singular, index)
     }
   }
 
@@ -494,10 +475,17 @@ private sealed class SubParser<T: AST>() {
         parseKleinesSchlüsselwort("für")
         val jede = expect<TokenTyp.JEDE>("'jeder' oder 'jede' oder 'jedes'")
         val binder = AST.Nomen(expect("Bezeichner"))
-        parseKleinesSchlüsselwort("in")
-        val listenAusdruck = parseListenAusdruck()
+        val peekToken = peek()
+        val liste = when (peekToken.typ) {
+          is TokenTyp.DOPPELPUNKT -> null
+          is TokenTyp.BEZEICHNER_KLEIN -> {
+            parseKleinesSchlüsselwort("in")
+            subParse(Liste)
+          }
+          else -> throw GermanScriptFehler.SyntaxFehler.ParseFehler(next(), "':' oder 'in'")
+        }
         val sätze = parseBereich { subParse(Programm) }.sätze
-        return AST.Satz.FürJedeSchleife(jede, binder, listenAusdruck, sätze)
+        return AST.Satz.FürJedeSchleife(jede, binder, liste, sätze)
       }
     }
 

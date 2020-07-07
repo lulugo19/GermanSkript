@@ -131,9 +131,9 @@ sealed class GermanScriptFehler(val token: Token): Error() {
         get() = "Die Funktion '${funktionsAufruf.vollerName!!}' ist nicht definiert."
     }
 
-    class Variable(token: Token): Undefiniert(token) {
+    class Variable(token: Token, private val name: String = token.wert): Undefiniert(token) {
       override val nachricht: String?
-        get() = "Die Variable '${token.wert}' ist nicht definiert.'"
+        get() = "Die Variable '$name' ist nicht definiert.'"
     }
 
     class Typ(token: Token): Undefiniert(token) {

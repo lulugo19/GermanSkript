@@ -72,18 +72,16 @@ solange wahr:
 // Listen
 schreibe den Bereich "Listen"
 die Zahlen sind einige Zahlen [2, 3, 5, 7, 11, 13, 17, 19]
-für jede Zahl in den Zahlen:
+für jede Zahl:
     wenn die Zahl > 13: abbrechen.
     schreibe die Zahl
 .
 
 // Listenindex
 schreibe den Bereich "Listen Index"
-/*
 schreibe die Zeichenfolge "Die erste Primzahl ist: "
-schreibe die Zahl (die 1. Zahl von den Zahlen)
+schreibe die Zahl (die Zahl[0])
 schreibe die Zeichenfolge "Die dritte Primzahl ist: "
-schreibe die Zahl (die 3. Zahl der Zahlen)
+schreibe die Zahl (die Zahl[2])
 schreibe die Zeichenfolge "Die fünfte Primzahl ist: "
-schreibe die Zahl (die 5. Zahl von den Zahlen)
-*/
+schreibe die Zahl (die Zahl[3])

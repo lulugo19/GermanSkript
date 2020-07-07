@@ -22,7 +22,7 @@ wenn Bedingung:
 `solange Bedingung: Sätze.`
 
 ### Für-Jede-Schleife
-`für (jeden | jede | jedes) BezeichnerA in ListenAusdruck: Sätze.`
+`für (jeden | jede | jedes) BezeichnerA [in Liste]: Sätze.`
 
 ## Ausdrücke
 ### Liste

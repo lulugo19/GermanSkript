@@ -101,10 +101,13 @@ class TypPrüfer(dateiPfad: String): ProgrammDurchlaufer<Typ>(dateiPfad) {
   }
 
   override fun durchlaufeFürJedeSchleife(schleife: AST.Satz.FürJedeSchleife) {
-    val elementTyp = typisierer.bestimmeTypen(schleife.binder)
-    ausdruckMussTypSein(schleife.listenAusdruck, Typ.Liste(elementTyp))
+    val elementTyp = if (schleife.liste != null) {
+      (evaluiereListe(schleife.liste) as Typ.Liste).elementTyp
+    } else {
+      evaluiereListenSingular(schleife.singular)
+    }
     stack.peek().pushBereich()
-    stack.peek().schreibeVariable(schleife.binder, elementTyp)
+    stack.peek().schreibeVariable(schleife.singular, elementTyp)
     durchlaufeSätze(schleife.sätze, false)
     stack.peek().popBereich()
   }
@@ -128,8 +131,15 @@ class TypPrüfer(dateiPfad: String): ProgrammDurchlaufer<Typ>(dateiPfad) {
   }
 
   override fun evaluiereListenElement(listenElement: AST.Ausdruck.ListenElement): Typ {
-    val listenTyp = evaluiereAusdruck(listenElement.listenAusdruck) as Typ.Liste
-    return listenTyp.elementTyp
+    ausdruckMussTypSein(listenElement.index, Typ.Zahl)
+    return evaluiereListenSingular(listenElement.singular)
+  }
+
+  private fun evaluiereListenSingular(singular: AST.Nomen): Typ {
+    val liste = evaluiereVariable(singular.nominativPlural!!)?:
+    throw GermanScriptFehler.Undefiniert.Variable(singular.bezeichner.toUntyped(), singular.nominativPlural!!)
+
+    return (liste as Typ.Liste).elementTyp
   }
 
   override fun evaluiereBinärenAusdruck(ausdruck: AST.Ausdruck.BinärerAusdruck): Typ {

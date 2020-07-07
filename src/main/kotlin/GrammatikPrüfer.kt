@@ -44,8 +44,8 @@ class GrammatikPrüfer(dateiPfad: String): PipelineKomponente(dateiPfad) {
     val numerus = deklanation.getNumerus(nomen.bezeichner.wert)
     nomen.numerus = numerus
     nomen.nominativ = deklanation.getForm(Kasus.NOMINATIV, numerus)
-    nomen.nominativSingular = if (nomen.numerus == Numerus.SINGULAR) nomen.nominativ
-      else deklanation.getForm(Kasus.NOMINATIV, Numerus.SINGULAR)
+    nomen.nominativSingular = deklanation.getForm(Kasus.NOMINATIV, Numerus.SINGULAR)
+    nomen.nominativPlural = deklanation.getForm(Kasus.NOMINATIV, Numerus.PLURAL)
     nomen.genus = deklanation.genus
     for (kasus in fälle) {
       val erwarteteForm = deklanation.getForm(kasus, numerus)
@@ -87,41 +87,23 @@ class GrammatikPrüfer(dateiPfad: String): PipelineKomponente(dateiPfad) {
     }
   }
 
-  // prüft bei der Für-Jede-Schleife ob Singular und Plural übereinstimmen
   // prüft bei den Listenelement ob Singular und Plural übereinstimmen
-  private fun prüfeSingularPlural(
-      singular: AST.Nomen,
-      kasusSingular: Kasus,
-      listenAusdruck: AST.Ausdruck,
-      kasusPlural: Kasus
-  ) {
-    val nomen = when(listenAusdruck) {
-      is AST.Ausdruck.Variable -> {
-        prüfeNomen(listenAusdruck.name, EnumSet.of(kasusPlural))
-        prüfeNumerus(listenAusdruck.name, Numerus.PLURAL)
-        prüfeArtikel(listenAusdruck.artikel!!, listenAusdruck.name)
-        listenAusdruck.name
-      }
-      is AST.Ausdruck.Liste -> {
-        prüfeNomen(listenAusdruck.pluralTyp, EnumSet.of(kasusSingular))
-        prüfeNumerus(listenAusdruck.pluralTyp, Numerus.PLURAL)
-        prüfeArtikel(listenAusdruck.artikel, listenAusdruck.pluralTyp)
-        listenAusdruck.pluralTyp
-      }
-      else -> throw Error("Ausdruck bei einer 'Für-Jede-Schleife' kann nur eine Variable oder eine Liste sein")
-    }
+  private fun prüfeSingularPlural(singular: AST.Nomen, kasusSingular: Kasus, liste: AST.Ausdruck.Liste, kasusPlural: Kasus) {
+      prüfeNomen(liste.pluralTyp, EnumSet.of(kasusPlural))
+      prüfeNumerus(liste.pluralTyp, Numerus.PLURAL)
+      prüfeArtikel(liste.artikel, liste.pluralTyp)
 
-    val einzahl = deklanierer.holeDeklination(nomen).getForm(Kasus.AKKUSATIV, Numerus.SINGULAR)
-    if (singular.bezeichner.wert != einzahl) {
-      throw GermanScriptFehler.GrammatikFehler.FalschesSingular(
-          singular.bezeichner.toUntyped(),
-          nomen.bezeichner.wert,
-          einzahl
-      )
+      val einzahl = deklanierer.holeDeklination(liste.pluralTyp).getForm(kasusSingular, Numerus.SINGULAR)
+      if (singular.bezeichner.wert != einzahl) {
+        throw GermanScriptFehler.GrammatikFehler.FalschesSingular(
+            singular.bezeichner.toUntyped(),
+            liste.pluralTyp.bezeichner.wert,
+            einzahl
+        )
+      }
+      // um noch den Nominativ, sowie die anderen Sachen zu setzen
+      prüfeNomen(singular, EnumSet.of(kasusSingular))
     }
-    // um noch den Nominativ, sowie die anderen Sachen zu setzen
-    prüfeNomen(singular, EnumSet.of(Kasus.AKKUSATIV))
-  }
 
   private fun prüfeVariablendeklaration(variablenDeklaration: AST.Satz.VariablenDeklaration) {
     val nomen = variablenDeklaration.name
@@ -149,15 +131,22 @@ class GrammatikPrüfer(dateiPfad: String): PipelineKomponente(dateiPfad) {
   }
 
   private fun prüfeFürJedeSchleife(fürJedeSchleife: AST.Satz.FürJedeSchleife) {
-    prüfeSingularPlural(fürJedeSchleife.binder, Kasus.AKKUSATIV, fürJedeSchleife.listenAusdruck, Kasus.DATIV)
-    if (fürJedeSchleife.jede.typ.genus != fürJedeSchleife.binder.genus!!) {
-      val richtigeForm = when (fürJedeSchleife.binder.genus!!) {
+    val singular = fürJedeSchleife.singular
+    if (fürJedeSchleife.liste != null) {
+      prüfeSingularPlural(singular, Kasus.AKKUSATIV, fürJedeSchleife.liste, Kasus.DATIV)
+    } else {
+      prüfeNomen(singular, EnumSet.of(Kasus.AKKUSATIV))
+      prüfeNumerus(singular, Numerus.SINGULAR)
+    }
+
+    if (fürJedeSchleife.jede.typ.genus != singular.genus!!) {
+      val richtigeForm = when (singular.genus!!) {
         Genus.MASKULINUM -> "jeder"
         Genus.FEMININUM -> "jede"
         Genus.NEUTRUM -> "jedes"
       }
       throw GermanScriptFehler.GrammatikFehler.FormFehler.FalschesPronomen(
-          fürJedeSchleife.jede.toUntyped(), Kasus.AKKUSATIV, fürJedeSchleife.binder, richtigeForm
+          fürJedeSchleife.jede.toUntyped(), Kasus.AKKUSATIV, singular, richtigeForm
       )
     }
   }
@@ -255,7 +244,8 @@ class GrammatikPrüfer(dateiPfad: String): PipelineKomponente(dateiPfad) {
   }
 
   private fun prüfeListenElement(listenElement: AST.Ausdruck.ListenElement) {
-    prüfeSingularPlural(listenElement.singular, Kasus.NOMINATIV, listenElement.listenAusdruck, listenElement.kasus)
+    prüfeNomen(listenElement.singular, EnumSet.of(Kasus.NOMINATIV))
+    prüfeNumerus(listenElement.singular, Numerus.SINGULAR)
     prüfeArtikel(listenElement.artikel, listenElement.singular)
   }
 
