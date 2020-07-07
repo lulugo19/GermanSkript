@@ -45,9 +45,16 @@ sealed class GermanScriptFehler(val token: Token): Error() {
         get() = "Die Anzahl der Parameter und Argumente der Funktion '${token.wert}' stimmen nicht überein."
     }
 
+    // TODO: Brauchen wir diesen Fehler? Es ist kein SyntaxFehler, sondern ein Typfehler oder? Und für Typfehler habe wir schon eine Art.
     class OperatorFehler(token: Token, private val linkerTyp: String, private val rechterTyp: String): SyntaxFehler(token){
       override val nachricht: String?
         get() = "Operatoren funktionieren nur für gleiche Typen. $linkerTyp und $rechterTyp sind nicht gleich."
+    }
+
+    // TODO: Brauchen wir diesen Fehler? Es ist kein SyntaxFehler, sondern ein Typfehler oder? Und für Typfehler habe wir schon eine Art.
+    class BedingungsFehler(token: Token): SyntaxFehler(token){
+      override val nachricht: String?
+        get() = "Bedingungen müssen vom Typ Boolean sein."
     }
   }
 

@@ -130,8 +130,8 @@ private sealed class SubParser<T: AST>() {
 
   // zum Parsen der Präpositionslisten bei einer Funktionsdefinition sowie beim Funktionsaufruf
   protected inline fun <ElementT, ParserT> parsePräpositionsListe(
-      parser: () -> ParserT,
-      combiner: (TypedToken<TokenTyp.BEZEICHNER_KLEIN>, ParserT) -> ElementT
+          parser: () -> ParserT,
+          combiner: (TypedToken<TokenTyp.BEZEICHNER_KLEIN>, ParserT) -> ElementT
   ): List<ElementT> {
     if (peekType() !is TokenTyp.BEZEICHNER_KLEIN) {
       return emptyList()
@@ -275,8 +275,8 @@ private sealed class SubParser<T: AST>() {
         }
         is TokenTyp.OPERATOR -> {
           if (currentToken != null &&
-              currentToken!!.typ is TokenTyp.OPERATOR &&
-              currentToken!!.toTyped<TokenTyp.OPERATOR>().typ.operator == Operator.MINUS) {
+                  currentToken!!.typ is TokenTyp.OPERATOR &&
+                  currentToken!!.toTyped<TokenTyp.OPERATOR>().typ.operator == Operator.MINUS) {
             throw GermanScriptFehler.SyntaxFehler.ParseFehler(next(), null, "Es dürfen keine zwei '-' aufeinander folgen.")
           } else if (tokenTyp.operator != Operator.MINUS) {
             throw GermanScriptFehler.SyntaxFehler.ParseFehler(next(), null)
@@ -380,7 +380,7 @@ private sealed class SubParser<T: AST>() {
 
     fun parsePräpositionsArgumente(): List<AST.PräpositionsArgumente> {
       return parsePräpositionsListe(
-          {parseKommaListeMitStart<AST.Argument, TokenTyp.ARTIKEL.BESTIMMT>(false, ::parseArgument)}
+              {parseKommaListeMitStart<AST.Argument, TokenTyp.ARTIKEL.BESTIMMT>(false, ::parseArgument)}
       ) {
         präposition, argumente -> AST.PräpositionsArgumente(AST.Präposition(präposition), argumente)
       }
@@ -569,7 +569,7 @@ private sealed class SubParser<T: AST>() {
         val akkusativP = expect<TokenTyp.BEZEICHNER_GROSS>("Bezeichner").wert
         expect<TokenTyp.GESCHLOSSENE_KLAMMER>("')'")
         return AST.Definition.DeklinationsDefinition.Definition(Deklination(genus,
-            arrayOf(nominativS, genitivS, dativS, akkusativS, nominativP, genitivP, dativP, akkusativP)))
+                arrayOf(nominativS, genitivS, dativS, akkusativS, nominativP, genitivP, dativP, akkusativP)))
       }
 
       private fun parseDuden(): AST.Definition.DeklinationsDefinition.Duden {
@@ -612,7 +612,7 @@ private sealed class SubParser<T: AST>() {
 
       fun parsePräpositionsParameter(): List<AST.Definition.PräpositionsParameter> {
         return parsePräpositionsListe(
-            { parseKommaListeMitStart<AST.Definition.Parameter, TokenTyp.ARTIKEL.BESTIMMT>(false, ::parseParameter) }
+                { parseKommaListeMitStart<AST.Definition.Parameter, TokenTyp.ARTIKEL.BESTIMMT>(false, ::parseParameter) }
         ) {
           präposition, parameter -> AST.Definition.PräpositionsParameter(AST.Präposition(präposition), parameter)
         }
