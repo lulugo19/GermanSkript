@@ -1,38 +1,25 @@
 package util
 
+import java.util.*
+
 class Peekable<T>(val iterator: Iterator<T>) {
   var index = 0
-  var lookahead: T? = null
-  var lookaheadDouble: T? = null
+  val queue = LinkedList<T>()
 
   fun next(): T? = when {
-    lookahead != null -> lookahead.also {
-      lookahead = lookaheadDouble
-      lookaheadDouble = null
-    }
+    !queue.isEmpty() -> queue.remove()
     iterator.hasNext() -> iterator.next()
     else -> null
   }.also { index++ }
 
-  fun peek(): T? {
-    if (lookahead != null) {
-       return lookahead
+  fun peek(ahead: Int = 0): T? {
+    return if (ahead < queue.size) {
+      queue[ahead]
+    } else {
+      while (queue.size <= ahead && iterator.hasNext()) {
+        queue.add(iterator.next())
+      }
+      if (ahead < queue.size) queue[ahead] else null
     }
-    lookahead = when {
-      iterator.hasNext() -> iterator.next()
-      else -> null
-    }
-    return lookahead
-  }
-
-  fun peekDouble(): T? {
-    if (lookaheadDouble != null)
-        return lookaheadDouble
-    peek()
-    lookaheadDouble = when {
-      iterator.hasNext() -> iterator.next()
-      else -> null
-    }
-    return lookaheadDouble
   }
 }

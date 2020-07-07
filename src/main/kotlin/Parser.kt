@@ -22,7 +22,7 @@ class Parser(dateiPfad: String): PipelineKomponente(dateiPfad) {
   fun parse(): AST.Programm {
     val tokens = Peekable(Lexer(dateiPfad).tokeniziere().iterator())
     val ast = SubParser.Programm.parse(tokens, Stack())
-    if (tokens.peek()!!.typ !is TokenTyp.EOF) {
+    if (tokens.peek(0)!!.typ !is TokenTyp.EOF) {
       throw GermanScriptFehler.SyntaxFehler.ParseFehler(tokens.next()!!, "EOF")
     }
     return ast
@@ -57,10 +57,8 @@ private sealed class SubParser<T: AST>() {
 
   // region Hilfsmethoden
   protected fun next(): Token = tokens!!.next()!!.also { currentToken = it }
-  protected fun peek(): Token = tokens!!.peek()!!
-  protected fun peekType(): TokenTyp = tokens!!.peek()!!.typ
-  protected fun peekDouble(): Token = tokens!!.peekDouble()!!
-  protected fun peekDoubleType(): TokenTyp = tokens!!.peekDouble()!!.typ
+  protected fun peek(ahead: Int = 0): Token = tokens!!.peek(ahead)!!
+  protected fun peekType(ahead: Int = 0): TokenTyp = tokens!!.peek(ahead)!!.typ
   protected fun hierarchyContainsNode(knotenId: ASTKnotenID) = stack!!.contains(knotenId)
   protected fun hierarchyContainsAnyNode(knotenIds: Array<ASTKnotenID>) = stack!!.any {knotenIds.contains(it)}
 
@@ -137,7 +135,7 @@ private sealed class SubParser<T: AST>() {
       return emptyList()
     }
     val list = mutableListOf<ElementT>()
-    while (peekType() is TokenTyp.BEZEICHNER_KLEIN && peekDoubleType() is TokenTyp.ARTIKEL) {
+    while (peekType() is TokenTyp.BEZEICHNER_KLEIN && peekType(1) is TokenTyp.ARTIKEL) {
       list += combiner(expect("Präposition"), parser())
     }
     return list
@@ -263,10 +261,10 @@ private sealed class SubParser<T: AST>() {
         is TokenTyp.BEZEICHNER_KLEIN -> AST.Ausdruck.FunktionsAufruf(subParse(FunktionsAufruf))
         is TokenTyp.ARTIKEL.UMBESTIMMT -> subParse(Liste)
         is TokenTyp.ARTIKEL.BESTIMMT -> {
-          when (peekDoubleType()) {
+          when (peekType(1)) {
             is TokenTyp.BEZEICHNER_GROSS -> subParse(Variable)
             is TokenTyp.ZAHL -> subParse(ListenElement)
-            else -> throw GermanScriptFehler.SyntaxFehler.ParseFehler(peekDouble(), "Bezeichner oder Index")
+            else -> throw GermanScriptFehler.SyntaxFehler.ParseFehler(peek(1), "Bezeichner oder Index")
           }
         }
         is TokenTyp.OFFENE_KLAMMER -> {

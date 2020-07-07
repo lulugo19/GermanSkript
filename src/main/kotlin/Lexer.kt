@@ -237,8 +237,7 @@ class Lexer(datei: String): PipelineKomponente(datei) {
     private val eofToken = Token(TokenTyp.EOF, "EOF", Token.Position.Ende, Token.Position.Ende)
     
     private fun next() = iterator!!.next()
-    private fun peek() = iterator!!.peek()
-    private fun peekDouble() = iterator!!.peekDouble()
+    private fun peek(ahead: Int = 0) = iterator!!.peek(ahead)
 
     fun tokeniziere() : Sequence<Token> = sequence {
         var inMehrZeilenKommentar = false
@@ -253,19 +252,19 @@ class Lexer(datei: String): PipelineKomponente(datei) {
                 val zeichen = peek()!!
                 // ignoriere Kommentare
                 if (inMehrZeilenKommentar) {
-                    if (zeichen == '*' && peekDouble() == '/') {
+                    if (zeichen == '*' && peek(1) == '/') {
                         next()
                         next()
                         inMehrZeilenKommentar = false
                     }
                     break
                 }
-                if (zeichen == '/' && peekDouble() == '/') {
+                if (zeichen == '/' && peek(1) == '/') {
                     next()
                     next()
                     break
                 }
-                if (zeichen == '/' && peekDouble() == '*') {
+                if (zeichen == '/' && peek(1) == '*') {
                     next()
                     next()
                     inMehrZeilenKommentar = true
@@ -339,7 +338,7 @@ class Lexer(datei: String): PipelineKomponente(datei) {
             val zeichen = peek()!!
             if (zeichen.isDigit()) {
                 zahlenString += next()
-            } else if (!hinternKomma && (zeichen == '.' || zeichen == ',') && peekDouble()?.isDigit() == true) {
+            } else if (!hinternKomma && (zeichen == '.' || zeichen == ',') && peek(1)?.isDigit() == true) {
                 hinternKomma = zeichen == ','
                 zahlenString += next()
                 zahlenString += next()

@@ -42,15 +42,15 @@ Personen: füge Person mit dem Namen="Test", dem Alter=23 hinzu
 ```
 
 
-Listen fangen in GermanScript mit dem Index 1 an.
+Listen fangen in GermanScript mit dem Index 0 an.
 
 Zugriff auf Element per Liste:
 
 `ArtikelAb Index. Singular [AusdruckGP | AusdruckDP]`
 
 ```
-die Person Erste ist die X. Person der Personen
-eine Person ist die 2. Person der Personen
+der Erste ist die Person[0]
+eine Zweite ist die Person[1]
 ```
 
 ## Funktionsaufrufe und -definitionen unterstützen Listen
