@@ -228,7 +228,7 @@ private val WORT_MAPPING = mapOf<String, TokenTyp>(
     "einiger" to TokenTyp.ARTIKEL.UMBESTIMMT
 )
 
-class Lexer(datei: String): PipelineComponent(datei) {
+class Lexer(datei: String): PipelineKomponente(datei) {
     private var iterator: Peekable<Char>? = null
     private var zeilenIndex = 0
 

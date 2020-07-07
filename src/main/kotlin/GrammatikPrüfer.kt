@@ -1,7 +1,7 @@
 import util.SimpleLogger
 import java.util.*
 
-class GrammatikPrüfer(dateiPfad: String): PipelineComponent(dateiPfad) {
+class GrammatikPrüfer(dateiPfad: String): PipelineKomponente(dateiPfad) {
   val deklanierer = Deklanierer(dateiPfad)
   val ast = deklanierer.ast
 
@@ -21,6 +21,7 @@ class GrammatikPrüfer(dateiPfad: String): PipelineComponent(dateiPfad) {
         is AST.Ausdruck -> when (knoten) {
             is AST.Ausdruck.BinärerAusdruck -> prüfeBinärenAusdruck(knoten)
             is AST.Ausdruck.Minus -> prüfeMinus(knoten)
+            is AST.Ausdruck.ListenElement -> prüfeListenElement(knoten)
             else -> return@visit false
         }
       }
@@ -43,8 +44,9 @@ class GrammatikPrüfer(dateiPfad: String): PipelineComponent(dateiPfad) {
     val numerus = deklanation.getNumerus(nomen.bezeichner.wert)
     nomen.numerus = numerus
     nomen.nominativ = deklanation.getForm(Kasus.NOMINATIV, numerus)
+    nomen.nominativSingular = if (nomen.numerus == Numerus.SINGULAR) nomen.nominativ
+      else deklanation.getForm(Kasus.NOMINATIV, Numerus.SINGULAR)
     nomen.genus = deklanation.genus
-
     for (kasus in fälle) {
       val erwarteteForm = deklanation.getForm(kasus, numerus)
       if (nomen.bezeichner.wert == erwarteteForm) {
@@ -55,7 +57,7 @@ class GrammatikPrüfer(dateiPfad: String): PipelineComponent(dateiPfad) {
       // TODO: berücksichtige auch die möglichen anderen Fälle in der Fehlermeldung
       val kasus = fälle.first()
       val erwarteteForm = deklanation.getForm(kasus, numerus)
-      throw GermanScriptFehler.GrammatikFehler.KasusFehler.FalscheForm(nomen.bezeichner.toUntyped(), kasus, nomen, erwarteteForm)
+      throw GermanScriptFehler.GrammatikFehler.FormFehler.FalschesNomen(nomen.bezeichner.toUntyped(), kasus, nomen, erwarteteForm)
     }
   }
 
@@ -74,7 +76,7 @@ class GrammatikPrüfer(dateiPfad: String): PipelineComponent(dateiPfad) {
 
     if (nomen.artikel == null) {
       val erwarteterArtikel = getArtikel(bestimmt, nomen.genus!!, nomen.numerus!!, ersterFall)
-      throw GermanScriptFehler.GrammatikFehler.KasusFehler.FalscherArtikel(artikel.toUntyped(), ersterFall, nomen, erwarteterArtikel)
+      throw GermanScriptFehler.GrammatikFehler.FormFehler.FalscherArtikel(artikel.toUntyped(), ersterFall, nomen, erwarteterArtikel)
     }
   }
 
@@ -83,6 +85,42 @@ class GrammatikPrüfer(dateiPfad: String): PipelineComponent(dateiPfad) {
       val numerusForm = deklanierer.holeDeklination(nomen).getForm(nomen.fälle.first(), numerus)
       throw GermanScriptFehler.GrammatikFehler.FalscherNumerus(nomen.bezeichner.toUntyped(), numerus, numerusForm)
     }
+  }
+
+  // prüft bei der Für-Jede-Schleife ob Singular und Plural übereinstimmen
+  // prüft bei den Listenelement ob Singular und Plural übereinstimmen
+  private fun prüfeSingularPlural(
+      singular: AST.Nomen,
+      kasusSingular: Kasus,
+      listenAusdruck: AST.Ausdruck,
+      kasusPlural: Kasus
+  ) {
+    val nomen = when(listenAusdruck) {
+      is AST.Ausdruck.Variable -> {
+        prüfeNomen(listenAusdruck.name, EnumSet.of(kasusPlural))
+        prüfeNumerus(listenAusdruck.name, Numerus.PLURAL)
+        prüfeArtikel(listenAusdruck.artikel!!, listenAusdruck.name)
+        listenAusdruck.name
+      }
+      is AST.Ausdruck.Liste -> {
+        prüfeNomen(listenAusdruck.pluralTyp, EnumSet.of(kasusSingular))
+        prüfeNumerus(listenAusdruck.pluralTyp, Numerus.PLURAL)
+        prüfeArtikel(listenAusdruck.artikel, listenAusdruck.pluralTyp)
+        listenAusdruck.pluralTyp
+      }
+      else -> throw Error("Ausdruck bei einer 'Für-Jede-Schleife' kann nur eine Variable oder eine Liste sein")
+    }
+
+    val einzahl = deklanierer.holeDeklination(nomen).getForm(Kasus.AKKUSATIV, Numerus.SINGULAR)
+    if (singular.bezeichner.wert != einzahl) {
+      throw GermanScriptFehler.GrammatikFehler.FalschesSingular(
+          singular.bezeichner.toUntyped(),
+          nomen.bezeichner.wert,
+          einzahl
+      )
+    }
+    // um noch den Nominativ, sowie die anderen Sachen zu setzen
+    prüfeNomen(singular, EnumSet.of(Kasus.AKKUSATIV))
   }
 
   private fun prüfeVariablendeklaration(variablenDeklaration: AST.Satz.VariablenDeklaration) {
@@ -111,33 +149,17 @@ class GrammatikPrüfer(dateiPfad: String): PipelineComponent(dateiPfad) {
   }
 
   private fun prüfeFürJedeSchleife(fürJedeSchleife: AST.Satz.FürJedeSchleife) {
-    val nomen = when(fürJedeSchleife.listenAusdruck) {
-      is AST.Ausdruck.Variable -> {
-        val variable = fürJedeSchleife.listenAusdruck
-        prüfeNomen(variable.name, EnumSet.of(Kasus.AKKUSATIV))
-        prüfeNumerus(variable.name, Numerus.PLURAL)
-        variable.name
+    prüfeSingularPlural(fürJedeSchleife.binder, Kasus.AKKUSATIV, fürJedeSchleife.listenAusdruck, Kasus.DATIV)
+    if (fürJedeSchleife.jede.typ.genus != fürJedeSchleife.binder.genus!!) {
+      val richtigeForm = when (fürJedeSchleife.binder.genus!!) {
+        Genus.MASKULINUM -> "jeder"
+        Genus.FEMININUM -> "jede"
+        Genus.NEUTRUM -> "jedes"
       }
-      is AST.Ausdruck.Liste -> {
-        val liste = fürJedeSchleife.listenAusdruck
-        prüfeNomen(liste.pluralTyp, EnumSet.of(Kasus.AKKUSATIV))
-        prüfeNumerus(liste.pluralTyp, Numerus.PLURAL)
-        liste.pluralTyp
-      }
-      else -> throw Error("Ausdruck bei einer 'Für-Jede-Schleife' kann nur eine Variable oder eine Liste sein")
-    }
-
-    val einzahl = deklanierer.holeDeklination(nomen).getForm(Kasus.AKKUSATIV, Numerus.SINGULAR)
-    val binder = fürJedeSchleife.binder
-    if (binder.bezeichner.wert != einzahl) {
-      throw GermanScriptFehler.GrammatikFehler.FalschesSingular(
-          binder.bezeichner.toUntyped(),
-          nomen.bezeichner.wert,
-          einzahl
+      throw GermanScriptFehler.GrammatikFehler.FormFehler.FalschesPronomen(
+          fürJedeSchleife.jede.toUntyped(), Kasus.AKKUSATIV, fürJedeSchleife.binder, richtigeForm
       )
     }
-    // um noch den Nominativ, sowie die anderen Sachen zu setzen
-    prüfeNomen(binder, EnumSet.of(Kasus.AKKUSATIV))
   }
 
 
@@ -230,6 +252,11 @@ class GrammatikPrüfer(dateiPfad: String): PipelineComponent(dateiPfad) {
       prüfeNomen(variable.name, EnumSet.of(Kasus.AKKUSATIV))
       prüfeArtikel(variable.artikel!!, variable.name)
     }
+  }
+
+  private fun prüfeListenElement(listenElement: AST.Ausdruck.ListenElement) {
+    prüfeSingularPlural(listenElement.singular, Kasus.NOMINATIV, listenElement.listenAusdruck, listenElement.kasus)
+    prüfeArtikel(listenElement.artikel, listenElement.singular)
   }
 
   private fun getArtikel(bestimmt: Boolean, nomen: AST.Nomen, kasus: Kasus): String {

@@ -76,3 +76,14 @@ für jede Zahl in den Zahlen:
     wenn die Zahl > 13: abbrechen.
     schreibe die Zahl
 .
+
+// Listenindex
+schreibe den Bereich "Listen Index"
+/*
+schreibe die Zeichenfolge "Die erste Primzahl ist: "
+schreibe die Zahl (die 1. Zahl von den Zahlen)
+schreibe die Zeichenfolge "Die dritte Primzahl ist: "
+schreibe die Zahl (die 3. Zahl der Zahlen)
+schreibe die Zeichenfolge "Die fünfte Primzahl ist: "
+schreibe die Zahl (die 5. Zahl von den Zahlen)
+*/

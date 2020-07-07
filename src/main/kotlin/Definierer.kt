@@ -1,11 +1,12 @@
-class Definierer(dateiPfad: String): PipelineComponent(dateiPfad) {
+class Definierer(dateiPfad: String): PipelineKomponente(dateiPfad) {
   val grammatikPrüfer = GrammatikPrüfer(dateiPfad)
   val ast = grammatikPrüfer.ast
-  private val funktionsDefinitionen = hashMapOf<String, AST.Definition.Funktion>()
+  private val funktionsDefinitionsMapping = hashMapOf<String, AST.Definition.Funktion>()
 
   fun definiere() {
     grammatikPrüfer.prüfe()
-    funktionsDefinitionen.clear()
+    funktionsDefinitionsMapping.clear()
+    // definiere Funktionen und Klassen
     ast.definitionen.visit { knoten ->
       when (knoten) {
         is AST.Definition.Funktion -> definiereFunktion(knoten)
@@ -18,34 +19,31 @@ class Definierer(dateiPfad: String): PipelineComponent(dateiPfad) {
     if (funktionsAufruf.vollerName == null) {
       funktionsAufruf.vollerName = getVollerNameVonFunktionsAufruf(funktionsAufruf)
     }
-    return funktionsDefinitionen.getOrElse(funktionsAufruf.vollerName!!) {
+    return funktionsDefinitionsMapping.getOrElse(funktionsAufruf.vollerName!!) {
       throw GermanScriptFehler.Undefiniert.Funktion(funktionsAufruf.verb.toUntyped(), funktionsAufruf)
     }
   }
 
+  val funktionsDefinitionen get(): Sequence<AST.Definition.Funktion> = funktionsDefinitionsMapping.values.asSequence()
+
   fun gebeFunktionsDefinitionenAus() {
-    funktionsDefinitionen.forEach {
+    funktionsDefinitionsMapping.forEach {
       vollerName, definition ->
 
       println("$vollerName: $definition")
     }
-
   }
 
   private fun definiereFunktion(funktionsDefinition: AST.Definition.Funktion) {
     val vollerName = getVollerNameVonDefinition(funktionsDefinition)
-    if (funktionsDefinitionen.containsKey(vollerName)) {
+    if (funktionsDefinitionsMapping.containsKey(vollerName)) {
       throw GermanScriptFehler.DoppelteDefinition.Funktion(
           funktionsDefinition.name.toUntyped(),
-          funktionsDefinitionen.getValue(vollerName)
+          funktionsDefinitionsMapping.getValue(vollerName)
       )
     }
-    if (funktionsDefinition.rückgabeTyp != null) {
-      bestimmeTypKnotenTyp(funktionsDefinition.rückgabeTyp)
-    }
-    weiseFunktionsParameternTypenZu(funktionsDefinition)
     funktionsDefinition.vollerName = vollerName
-    funktionsDefinitionen[vollerName] = funktionsDefinition
+    funktionsDefinitionsMapping[vollerName] = funktionsDefinition
   }
 
   private fun getVollerNameVonDefinition(funktionsDefinition: AST.Definition.Funktion): String {
@@ -68,27 +66,6 @@ class Definierer(dateiPfad: String): PipelineComponent(dateiPfad) {
       vollerName += " " + funktionsDefinition.suffix.wert
     }
     return vollerName
-  }
-
-  private fun weiseFunktionsParameternTypenZu(funktionsDefinition: AST.Definition.Funktion) {
-    if (funktionsDefinition.objekt != null) {
-      bestimmeTypKnotenTyp(funktionsDefinition.objekt.typKnoten)
-    }
-    for (präposition in funktionsDefinition.präpositionsParameter) {
-      for (parameter in präposition.parameter) {
-        bestimmeTypKnotenTyp(parameter.typKnoten)
-      }
-    }
-  }
-
-  private fun bestimmeTypKnotenTyp(typKnoten: AST.TypKnoten) {
-    val typ = when(typKnoten.name.nominativ!!) {
-      "Zahl" -> Typ.Zahl
-      "Zeichenfolge"  -> Typ.Zeichenfolge
-      "Boolean" -> Typ.Boolean
-      else -> throw GermanScriptFehler.Undefiniert.Typ(typKnoten.name.bezeichner.toUntyped())
-    }
-    typKnoten.typ = typ
   }
 
   private fun getVollerNameVonFunktionsAufruf(funktionsAufruf: AST.FunktionsAufruf): String {

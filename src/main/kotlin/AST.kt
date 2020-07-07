@@ -9,6 +9,26 @@ fun <T: AST> List<T>.visit(onVisit: (AST) -> Boolean): Boolean {
 
 sealed class AST {
   open val children = emptySequence<AST>()
+  var parent: AST? = null
+    protected set
+
+  inline fun<reified T: AST> findNodeInParents(): T? {
+    var par = this.parent
+    while (par != null) {
+      if (par is T) {
+        return par
+      }
+      par = par.parent
+    }
+    return null
+  }
+
+  protected fun setParentForChildren() {
+    for (child in children) {
+      child.parent = this
+      child.setParentForChildren()
+    }
+  }
 
   // visit implementation for all the leaf nodes
   fun visit(onVisit: (AST) -> Boolean) {
@@ -26,12 +46,18 @@ sealed class AST {
         yieldAll(definitionen)
         yieldAll(sätze)
       }
+
+    init {
+      // go through the whole AST and set the parents
+      setParentForChildren()
+    }
   }
 
   data class Nomen(
       val bezeichner: TypedToken<TokenTyp.BEZEICHNER_GROSS>
   ) {
     var nominativ: String? = null
+    var nominativSingular: String? = null
     var artikel: String? = null
     var genus: Genus? = null
     var numerus: Numerus? = null
@@ -80,18 +106,18 @@ sealed class AST {
         val sätze: List<Satz>,
         var vollerName: String? = null
     ) : Definition() {
-        val parameter: List<Parameter> get() {
-          val typen = mutableListOf<Parameter>()
-          if (objekt != null) {
-            typen.add(objekt)
-          }
-          for (präposition in präpositionsParameter) {
-            for (param in präposition.parameter) {
-              typen.add(param)
-            }
-          }
-          return typen
+
+      private val _parameter: MutableList<Parameter> = mutableListOf()
+      val parameter: List<Parameter> = _parameter
+
+      init {
+        if (objekt != null) {
+          _parameter.add(objekt)
         }
+        for (präposition in präpositionsParameter) {
+          _parameter.addAll(präposition.parameter)
+        }
+      }
 
       override val children: Sequence<AST>
         get() = sequence {
@@ -121,7 +147,7 @@ sealed class AST {
     data class BedingungsTerm(
         val bedingung: Ausdruck,
         val sätze: List<Satz>
-    ): Satz() {
+    ): AST() {
       override val children: Sequence<AST>
         get() = sequence {
           yield(bedingung)
@@ -143,13 +169,11 @@ sealed class AST {
     }
 
     data class SolangeSchleife(
-        val bedingung: Ausdruck,
-        val sätze: List<Satz>
+        val bedingung: BedingungsTerm
     ) : Satz() {
       override val children: Sequence<AST>
         get() = sequence {
           yield(bedingung)
-          yieldAll(sätze)
         }
     }
 
@@ -157,7 +181,7 @@ sealed class AST {
         val jede: TypedToken<TokenTyp.JEDE>,
         val binder: Nomen,
         val listenAusdruck: Ausdruck,
-        val sätze: List<AST.Satz>
+        val sätze: List<Satz>
     ): Satz() {
       override val children: Sequence<AST>
         get() = sequence {
@@ -186,6 +210,8 @@ sealed class AST {
           yield(wert!!)
         }
       }
+
+    val sichererWert: Ausdruck = wert?: Ausdruck.Variable(null, name)
   }
 
   data class PräpositionsArgumente(val präposition: Präposition, val argumente: List<Argument>): AST() {
@@ -210,9 +236,7 @@ sealed class AST {
         _argumente.add(objekt)
       }
       for (präposition in präpositionsArgumente) {
-        for (argument in präposition.argumente) {
-          _argumente.add(argument)
-        }
+        _argumente.addAll(präposition.argumente)
       }
     }
 
@@ -239,6 +263,16 @@ sealed class AST {
         get() = sequence {
           yieldAll(elemente)
         }
+    }
+
+    data class ListenElement(
+        val artikel: TypedToken<TokenTyp.ARTIKEL.BESTIMMT>,
+        val index: TypedToken<TokenTyp.ZAHL>,
+        val singular: Nomen,
+        val kasus: Kasus,
+        val listenAusdruck: Ausdruck
+    ): Ausdruck() {
+      override val children: Sequence<AST> = sequenceOf(listenAusdruck)
     }
 
     data class FunktionsAufruf(val aufruf: AST.FunktionsAufruf): Ausdruck() {

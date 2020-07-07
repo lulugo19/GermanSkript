@@ -1,191 +1,60 @@
 import util.SimpleLogger
 
-sealed class Typ(val name: String) {
-  override fun toString(): String = name
-
-  abstract val definierteOperatoren: Map<Operator, Typ>
-
-  object Zahl : Typ("Zahl") {
-    override val definierteOperatoren: Map<Operator, Typ>
-      get() = mapOf(
-          Operator.PLUS to  Zahl,
-          Operator.MINUS to Zahl,
-          Operator.MAL to Zahl,
-          Operator.GETEILT to Zahl,
-          Operator.MODULO to Zahl,
-          Operator.HOCH to Zahl,
-          Operator.GRÖßER to Boolean,
-          Operator.KLEINER to Boolean,
-          Operator.GRÖSSER_GLEICH to Boolean,
-          Operator.KLEINER_GLEICH to Boolean,
-          Operator.UNGLEICH to Boolean,
-          Operator.GLEICH to Boolean
-      )
-  }
-
-  object Zeichenfolge : Typ("Zeichenfolge") {
-    override val definierteOperatoren: Map<Operator, Typ>
-      get() = mapOf(
-          Operator.PLUS to Zeichenfolge,
-          Operator.GLEICH to Boolean,
-          Operator.UNGLEICH to Boolean,
-          Operator.GRÖßER to Boolean,
-          Operator.KLEINER to Boolean,
-          Operator.GRÖSSER_GLEICH to Boolean,
-          Operator.KLEINER_GLEICH to Boolean
-      )
-  }
-
-  object Boolean : Typ("Boolean") {
-    override val definierteOperatoren: Map<Operator, Typ>
-      get() = mapOf(
-          Operator.UND to Boolean,
-          Operator.ODER to Boolean,
-          Operator.GLEICH to Boolean,
-          Operator.UNGLEICH to Boolean
-      )
-  }
-
-  object Liste : Typ("Liste") {
-    override val definierteOperatoren: Map<Operator, Typ>
-      get() = mapOf(
-          Operator.PLUS to Liste
-      )
-  }
-}
-
-class TypPrüfer(dateiPfad: String): PipelineComponent(dateiPfad) {
-
-  val definierer = Definierer(dateiPfad)
-  val ast = definierer.ast
+class TypPrüfer(dateiPfad: String): ProgrammDurchlaufer<Typ>(dateiPfad) {
+  val typisierer = Typisierer(dateiPfad)
+  val definierer = typisierer.definierer
   val logger = SimpleLogger()
 
+  override val ast: AST.Programm get() = typisierer.ast
+
   fun prüfe() {
-    definierer.definiere()
-
-    prüfeSätze(ast.sätze, HashMap(), null)
-
-    for (definition in ast.definitionen) {
-      if (definition is AST.Definition.Funktion) {
-        prüfeFunktion(definition)
-      }
-    }
+    typisierer.typisiere()
+    durchlaufe(ast.sätze, Umgebung(), true)
+    definierer.funktionsDefinitionen.forEach(::prüfeFunktion)
   }
+
+  private fun ausdruckMussTypSein(ausdruck: AST.Ausdruck, erwarteterTyp: Typ): Typ {
+    if (evaluiereAusdruck(ausdruck) != erwarteterTyp) {
+      throw GermanScriptFehler.TypFehler(holeErstesTokenVonAusdruck(ausdruck), erwarteterTyp)
+    }
+    return erwarteterTyp
+  }
+
+  // breche niemals Sätze ab
+  override fun sollSätzeAbbrechen(): Boolean = false
 
   private fun prüfeFunktion(funktion: AST.Definition.Funktion) {
     logger.addLine("")
     logger.addLine("_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-")
-    val variablen = HashMap<String, Typ>()
+    val funktionsUmgebung = Umgebung<Typ>()
+    funktionsUmgebung.pushBereich()
     var variablenString = ""
     for (parameter in funktion.parameter) {
-      variablen[parameter.paramName.nominativ!!] = parameter.typKnoten.typ!!
+      funktionsUmgebung.schreibeVariable(parameter.paramName, parameter.typKnoten.typ!!)
       variablenString += "${parameter.paramName.nominativ!!} :${parameter.typKnoten.typ!!}"
     }
     logger.addLine("Funktionsdefinition(${funktion.name.wert})[$variablenString]")
     logger.addLine("Sätze:")
-    prüfeSätze(funktion.sätze, variablen, funktion.rückgabeTyp?.typ)
+    durchlaufe(funktion.sätze, funktionsUmgebung, true)
     logger.addLine("____________________________________________________________________")
   }
 
-  private fun prüfeSätze(sätze: List<AST.Satz>, variablen: HashMap<String, Typ>, rückgabeTyp: Typ?) {
-    for (satz in sätze) {
-      prüfeSatz(satz, rückgabeTyp, variablen)
-    }
-  }
-
-  private fun prüfeSatz(satz: AST.Satz, rückgabeTyp: Typ?, variablen: HashMap<String, Typ>) {
-    when (satz) {
-      AST.Satz.Intern -> Unit // ignorieren
-      is AST.Satz.VariablenDeklaration -> prüfeVariablenDeklaration(satz, variablen)
-      is AST.Satz.FunktionsAufruf -> prüfeFunktionsAufruf(satz.aufruf, false, variablen)
-      is AST.Satz.Zurückgabe -> prüfeZurückgabe(rückgabeTyp, satz, variablen)
-      is AST.Satz.Bedingung -> prüfeBedingung(satz)
-      is AST.Satz.SolangeSchleife -> prüfeSolangeSchleife(satz)
-    }
-  }
-
-  private fun prüfeBedingung(bedingung: AST.Satz.Bedingung) {
-    // Die Bedingungen müssen Boolean sein
-    // Sätze prüfen
-    // TODO Finn
-  }
-
-  private fun prüfeSolangeSchleife(schleife: AST.Satz.SolangeSchleife) {
-    // Die Schleifenbedingung muss ein Boolean sein
-    // Sätze prüfen
-    // TODO Finn
-  }
-
-  private fun prüfeFürJedeSchleife(schleife: AST.Satz.FürJedeSchleife) {
-    // der Schleifen Ausdruck muss eine Liste sein
-    // wenn der Ausdruck eine Variable ist muss diese mit prüfeVariable() überprüft werden
-    // TODO Finn
-  }
-
-  private fun prüfeZurückgabe(rückgabeTyp: Typ?, satz: AST.Satz.Zurückgabe, variablen: HashMap<String, Typ>) {
-    if (rückgabeTyp == null) {
-      throw GermanScriptFehler.SyntaxFehler.RückgabeTypFehler(holeErstesTokenVonAusdruck(satz.ausdruck))
-    }
-    logger.addLine("-> $rückgabeTyp")
-    val ausdruckTyp = typVonAusdruck(satz.ausdruck, variablen)
-    if (rückgabeTyp != ausdruckTyp) {
-      throw GermanScriptFehler.TypFehler(holeErstesTokenVonAusdruck(satz.ausdruck), rückgabeTyp)
-    }
-  }
-
-  private fun prüfeVariablenDeklaration(deklaration: AST.Satz.VariablenDeklaration, variablen: HashMap<String, Typ>): Typ {
-    logger.addLine("")
-    logger.addLine("_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-")
-    // der Typ der Variable in die Variablen-Map packen
-    // unveränderbare Variablen dürfen nicht überschrieben werden
-    val nominativ = deklaration.name.nominativ!!
-    val unveränderbar = deklaration.artikel.typ is TokenTyp.ARTIKEL.BESTIMMT
-    if (unveränderbar && variablen.containsKey(nominativ)) {
-      throw GermanScriptFehler.DoppelteDefinition.UnveränderlicheVariable(deklaration.name.bezeichner.toUntyped())
-    }
-    logger.addLine("Variable($nominativ):")
-    val ausdruckTyp = typVonAusdruck(deklaration.ausdruck, variablen)
-    variablen[nominativ] = ausdruckTyp
-    logger.addLine("-> $ausdruckTyp")
-    logger.addLine("____________________________________________________________________")
-    return ausdruckTyp
-  }
-
-  private fun typVonAusdruck(ausdruck: AST.Ausdruck, variablen: HashMap<String, Typ>): Typ {
-    return when (ausdruck) {
-      is AST.Ausdruck.Zahl -> Typ.Zahl
-      is AST.Ausdruck.Zeichenfolge -> Typ.Zeichenfolge
-      is AST.Ausdruck.Boolean -> Typ.Boolean
-      is AST.Ausdruck.Liste -> Typ.Liste
-      is AST.Ausdruck.BinärerAusdruck -> prüfeBinärenAusdruck(ausdruck, variablen)
-      is AST.Ausdruck.Minus -> prüfeMinus(ausdruck, variablen)
-      is AST.Ausdruck.Variable -> prüfeVariable(ausdruck, variablen)
-      is AST.Ausdruck.FunktionsAufruf -> {
-        prüfeFunktionsAufruf(ausdruck.aufruf, true, variablen)!!
-      }
-    }
-  }
-
-  private fun prüfeFunktionsAufruf(funktionsAufruf: AST.FunktionsAufruf, istAusdruck: Boolean, variablen: HashMap<String, Typ>): Typ? {
+  override fun durchlaufeFunktionsAufruf(funktionsAufruf: AST.FunktionsAufruf, istAusdruck: Boolean): Typ? {
     logger.addLine("")
     val funktionsDefinition = definierer.holeFunktionsDefinition(funktionsAufruf)
     if (istAusdruck && funktionsDefinition.rückgabeTyp == null) {
       throw GermanScriptFehler.SyntaxFehler.FunktionAlsAusdruckFehler(funktionsDefinition.name.toUntyped())
     }
 
-    val parameterTypen = funktionsDefinition.parameter.map { it.typKnoten.typ!! }
+    val parameter = funktionsDefinition.parameter
     val argumente = funktionsAufruf.argumente
-    if (argumente.size != parameterTypen.size) {
+    if (argumente.size != parameter.size) {
       throw GermanScriptFehler.SyntaxFehler.AnzahlDerParameterFehler(funktionsDefinition.name.toUntyped())
     }
     var argumenteString = ""
     for (i in argumente.indices) {
-      val typVonAusdruck = typVonAusdruck(argumente[i].wert?: AST.Ausdruck.Variable(null, argumente[i].name), variablen)
-      argumenteString += "${argumente[i].name.nominativ} :${parameterTypen[i]}"
-      if (typVonAusdruck != parameterTypen[i]) {
-        throw GermanScriptFehler.TypFehler(holeErstesTokenVonAusdruck(
-            argumente[i].wert ?: AST.Ausdruck.Variable(null, argumente[i].name)), parameterTypen[i])
-      }
+      ausdruckMussTypSein(argumente[i].sichererWert, parameter[i].typKnoten.typ!!)
+      argumenteString += "${argumente[i].name.nominativ} :${parameter[i].typKnoten.typ!!}"
     }
     logger.addLine("Funktionsaufruf(${funktionsAufruf.vollerName})[$argumenteString]")
 //    logger.addLine("____________________________________________________________________")
@@ -201,39 +70,81 @@ class TypPrüfer(dateiPfad: String): PipelineComponent(dateiPfad) {
       is AST.Ausdruck.Boolean -> ausdruck.boolean.toUntyped()
       is AST.Ausdruck.Variable -> ausdruck.name.bezeichner.toUntyped()
       is AST.Ausdruck.FunktionsAufruf -> ausdruck.aufruf.verb.toUntyped()
+      is AST.Ausdruck.ListenElement -> ausdruck.artikel.toUntyped()
       is AST.Ausdruck.BinärerAusdruck -> holeErstesTokenVonAusdruck(ausdruck.links)
       is AST.Ausdruck.Minus -> holeErstesTokenVonAusdruck(ausdruck.ausdruck)
     }
   }
 
-  private fun prüfeVariable(variable: AST.Ausdruck.Variable, variablen: HashMap<String, Typ>): Typ {
-    val nominativ = variable.name.nominativ!!
-    if (!variablen.containsKey(nominativ)) {
-      throw GermanScriptFehler.Undefiniert.Variable(variable.name.bezeichner.toUntyped())
+  override fun durchlaufeZurückgabe(zurückgabe: AST.Satz.Zurückgabe) {
+    val funktionsDefinition = zurückgabe.findNodeInParents<AST.Definition.Funktion>()!!
+    val rückgabeTyp = funktionsDefinition.rückgabeTyp
+    if (funktionsDefinition.rückgabeTyp == null) {
+      throw GermanScriptFehler.SyntaxFehler.RückgabeTypFehler(holeErstesTokenVonAusdruck(zurückgabe.ausdruck))
     }
-    return variablen.getValue(nominativ)
+    logger.addLine("-> $rückgabeTyp")
+    ausdruckMussTypSein(zurückgabe.ausdruck, rückgabeTyp!!.typ!!)
   }
 
-  private fun prüfeBinärenAusdruck(ausdruck: AST.Ausdruck.BinärerAusdruck, variablen: HashMap<String, Typ>): Typ {
-    val linkerTyp = typVonAusdruck(ausdruck.links, variablen)
+  private fun prüfeBedingung(bedingung: AST.Satz.BedingungsTerm) {
+    ausdruckMussTypSein(bedingung.bedingung, Typ.Boolean)
+    durchlaufeSätze(bedingung.sätze, true)
+  }
+
+  override fun durchlaufeBedingungsSatz(bedingungsSatz: AST.Satz.Bedingung) {
+    bedingungsSatz.bedingungen.forEach(::prüfeBedingung)
+    bedingungsSatz.sonst?.also {durchlaufeSätze(it, true)}
+  }
+
+  override fun durchlaufeSolangeSchleife(schleife: AST.Satz.SolangeSchleife) {
+    prüfeBedingung(schleife.bedingung)
+  }
+
+  override fun durchlaufeFürJedeSchleife(schleife: AST.Satz.FürJedeSchleife) {
+    val elementTyp = typisierer.bestimmeTypen(schleife.binder)
+    ausdruckMussTypSein(schleife.listenAusdruck, Typ.Liste(elementTyp))
+    stack.peek().pushBereich()
+    stack.peek().schreibeVariable(schleife.binder, elementTyp)
+    durchlaufeSätze(schleife.sätze, false)
+    stack.peek().popBereich()
+  }
+
+  override fun durchlaufeAbbrechen() {
+    // mache nichts hier
+  }
+
+  override fun durchlaufeFortfahren() {
+    // mache nichts hier
+  }
+
+  override fun evaluiereZeichenfolge(ausdruck: AST.Ausdruck.Zeichenfolge) = Typ.Zeichenfolge
+
+  override fun evaluiereZahl(ausdruck: AST.Ausdruck.Zahl) = Typ.Zahl
+
+  override fun evaluiereBoolean(ausdruck: AST.Ausdruck.Boolean) = Typ.Boolean
+
+  override fun evaluiereListe(ausdruck: AST.Ausdruck.Liste): Typ {
+    return typisierer.bestimmeTypen(ausdruck.pluralTyp)
+  }
+
+  override fun evaluiereListenElement(listenElement: AST.Ausdruck.ListenElement): Typ {
+    val listenTyp = evaluiereAusdruck(listenElement.listenAusdruck) as Typ.Liste
+    return listenTyp.elementTyp
+  }
+
+  override fun evaluiereBinärenAusdruck(ausdruck: AST.Ausdruck.BinärerAusdruck): Typ {
+    val linkerTyp = evaluiereAusdruck(ausdruck.links)
     val operator = ausdruck.operator.typ.operator
     if (!linkerTyp.definierteOperatoren.containsKey(operator)) {
       throw GermanScriptFehler.Undefiniert.Operator(ausdruck.operator.toUntyped(), linkerTyp.name)
     }
-    val rechterTyp = typVonAusdruck(ausdruck.rechts, variablen)
-    logger.addLine("($linkerTyp $operator $rechterTyp)")
-    if (linkerTyp != rechterTyp) {
-      throw GermanScriptFehler.SyntaxFehler.OperatorFehler(holeErstesTokenVonAusdruck(ausdruck), linkerTyp.name, rechterTyp.name)
-    }
+    // es wird erwartete, dass bei einem binären Ausdruck beide Operanden vom selben Typen sind
+    ausdruckMussTypSein(ausdruck.rechts, linkerTyp)
     return linkerTyp.definierteOperatoren.getValue(operator)
   }
 
-  private fun prüfeMinus(ausdruck: AST.Ausdruck.Minus, variablen: HashMap<String, Typ>): Typ {
-    val typ = typVonAusdruck(ausdruck, variablen)
-    if (typ != Typ.Zahl) {
-      throw GermanScriptFehler.Undefiniert.Minus(holeErstesTokenVonAusdruck(ausdruck))
-    }
-    return Typ.Zahl
+  override fun evaluiereMinus(minus: AST.Ausdruck.Minus): Typ {
+    return ausdruckMussTypSein(minus.ausdruck, Typ.Zahl)
   }
 }
 

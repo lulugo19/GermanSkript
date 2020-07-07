@@ -51,7 +51,7 @@ data class Deklination(
 
 typealias DudenAnfrage = Pair<TypedToken<TokenTyp.BEZEICHNER_GROSS>, Deferred<Deklination>>
 
-class Deklanierer(dateiPfad: String): PipelineComponent(dateiPfad) {
+class Deklanierer(dateiPfad: String): PipelineKomponente(dateiPfad) {
   val ast = Parser(dateiPfad).parse()
   val wörterbuch = Wörterbuch()
 

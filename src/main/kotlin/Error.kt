@@ -32,7 +32,7 @@ sealed class GermanScriptFehler(val token: Token): Error() {
 
     class RückgabeTypFehler(token: Token): SyntaxFehler(token){
       override val nachricht: String?
-        get() = "Die Funktion kann nichts zurückgeben, da in der definition kein Rückgabetyp angegeben ist."
+        get() = "Die Funktion kann nichts zurückgeben, da in der Definition kein Rückgabetyp angegeben ist."
     }
 
     class FunktionAlsAusdruckFehler(token: Token): SyntaxFehler(token){
@@ -70,18 +70,23 @@ sealed class GermanScriptFehler(val token: Token): Error() {
 
   sealed class GrammatikFehler(token: Token): GermanScriptFehler(token) {
 
-    sealed class KasusFehler(token: Token, protected val kasus: Kasus, protected val nomen: AST.Nomen): GrammatikFehler(token) {
+    sealed class FormFehler(token: Token, protected val kasus: Kasus, protected val nomen: AST.Nomen): GrammatikFehler(token) {
       val form get() = "(${kasus.anzeigeName}, ${nomen.genus!!.anzeigeName}, ${nomen.numerus!!.anzeigeName})"
 
-      class FalscherArtikel(token: Token, kasus: Kasus, nomen: AST.Nomen, private val richtigerArtikel: String) : KasusFehler(token, kasus, nomen) {
+      class FalscherArtikel(token: Token, kasus: Kasus, nomen: AST.Nomen, private val richtigerArtikel: String) : FormFehler(token, kasus, nomen) {
         override val nachricht: String?
           get() = "Falscher Artikel '${token.wert} ${nomen.bezeichner.wert}'. " +
               "Der richtige Artikel für '${nomen.bezeichner.wert}' $form ist '$richtigerArtikel ${nomen.bezeichner.wert}'."
       }
 
-      class FalscheForm(token: Token, kasus: Kasus, nomen: AST.Nomen, private val richtigeForm: String) : KasusFehler(token, kasus, nomen) {
+      class FalschesNomen(token: Token, kasus: Kasus, nomen: AST.Nomen, private val richtigeForm: String) : FormFehler(token, kasus, nomen) {
         override val nachricht: String?
           get() = "Falsche Form des Nomens '${token.wert}'. Die richtige Form $form ist '$richtigeForm'."
+      }
+
+      class FalschesPronomen(token: Token, kasus: Kasus, nomen: AST.Nomen, private val richtigeForm: String): FormFehler(token, kasus, nomen) {
+        override val nachricht: String?
+          get() = "Falsche Form des Pronomens '${token.wert}'. Die richtige Form $form ist '$richtigeForm'."
       }
     }
 

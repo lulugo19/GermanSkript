@@ -49,7 +49,7 @@ Zugriff auf Element per Liste:
 `ArtikelAb Index. Singular [AusdruckGP | AusdruckDP]`
 
 ```
-die Person Erste ist die 1. Person der Personen
+die Person Erste ist die X. Person der Personen
 eine Person ist die 2. Person der Personen
 ```
 
