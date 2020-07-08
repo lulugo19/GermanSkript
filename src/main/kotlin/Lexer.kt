@@ -53,11 +53,11 @@ enum class Numerus(val anzeigeName: String, val zuweisung: String) {
     PLURAL("Plural", "sind"),
 }
 
-data class Token(val typ: TokenTyp, val wert: String, val anfang: Position, val ende: Position) {
+data class Token(val typ: TokenTyp, val wert: String, val dateiPfad: String, val anfang: Position, val ende: Position) {
     // um die Ausgabe zu vereinfachen
     // override fun toString(): String = typ.toString()
 
-    fun <T: TokenTyp> toTyped() = TypedToken<T>(typ as T, wert, anfang, ende)
+    fun <T: TokenTyp> toTyped() = TypedToken<T>(typ as T, wert, dateiPfad, anfang, ende)
 
     open class Position(val zeile: Int, val spalte: Int) {
         object Ende: Token.Position(-1, -1)
@@ -69,8 +69,8 @@ data class Token(val typ: TokenTyp, val wert: String, val anfang: Position, val 
 }
 
 // für den Parser gedacht
-data class TypedToken<out T : TokenTyp>(val typ: T, val wert: String, val anfang: Token.Position, val ende: Token.Position) {
-    fun toUntyped()  = Token(typ, wert, anfang, ende)
+data class TypedToken<out T : TokenTyp>(val typ: T, val wert: String, val dateiPfad: String, val anfang: Token.Position, val ende: Token.Position) {
+    fun toUntyped()  = Token(typ, wert, dateiPfad, anfang, ende)
 }
 
 sealed class TokenTyp(val anzeigeName: String) {
@@ -234,16 +234,40 @@ class Lexer(datei: String): PipelineKomponente(datei) {
     private var iterator: Peekable<Char>? = null
     private var zeilenIndex = 0
 
+    private var currentFile: String = ""
     private val currentTokenPos: Token.Position get() = Token.Position(zeilenIndex, iterator!!.index)
     private val nextTokenPos: Token.Position get() = Token.Position(zeilenIndex, iterator!!.index + 1)
-    private val eofToken = Token(TokenTyp.EOF, "EOF", Token.Position.Ende, Token.Position.Ende)
+    private val eofToken = Token(TokenTyp.EOF, "EOF", currentFile, Token.Position.Ende, Token.Position.Ende)
     
     private fun next() = iterator!!.next()
     private fun peek(ahead: Int = 0) = iterator!!.peek(ahead)
+    private val dateiPfadSchlange = LinkedList<String>()
+    private val bearbeiteteDateien = mutableSetOf<String>()
 
-    fun tokeniziere() : Sequence<Token> = sequence {
+    fun tokeniziere(): Sequence<Token> = sequence {
+        dateiPfadSchlange.add("./stdbib/stdbib.gms")
+        dateiPfadSchlange.add(dateiPfad)
+        while (dateiPfadSchlange.isNotEmpty()) {
+            val nächsteDatei = dateiPfadSchlange.remove()
+            bearbeiteteDateien.add(nächsteDatei)
+            yieldAll(tokeniziereDatei(nächsteDatei))
+        }
+        while (true) {
+            yield(eofToken)
+        }
+    }
+
+    fun fügeDateiHinzu(dateiPfad: String) {
+        if (bearbeiteteDateien.contains(dateiPfad)) {
+            throw Error("zyklische Imports!!!")
+        }
+        dateiPfadSchlange.add(dateiPfad)
+    }
+
+    private fun tokeniziereDatei(dateiPfad: String) : Sequence<Token> = sequence {
+        currentFile = dateiPfad
         var inMehrZeilenKommentar = false
-        for ((zeilenIndex, zeile) in File(dateiPfad).readLines().map(String::trim).withIndex()) {
+        for ((zeilenIndex, zeile) in File(currentFile).readLines().map(String::trim).withIndex()) {
             this@Lexer.zeilenIndex = zeilenIndex + 1
             var kannWortLesen = true
             if (zeile == "") {
@@ -286,6 +310,7 @@ class Lexer(datei: String): PipelineKomponente(datei) {
                         Token(
                             TokenTyp.FEHLER,
                             zeichen.toString(),
+                            currentFile,
                             currentTokenPos,
                             nextTokenPos
                         )
@@ -296,12 +321,10 @@ class Lexer(datei: String): PipelineKomponente(datei) {
             yield(Token(
                 TokenTyp.NEUE_ZEILE,
                 "\\n",
+                currentFile,
                 currentTokenPos,
                 nextTokenPos
             ))
-        }
-        while (true) {
-            yield(eofToken)
         }
     }
 
@@ -324,10 +347,10 @@ class Lexer(datei: String): PipelineKomponente(datei) {
         }
         val endPos = currentTokenPos
         if (tokenTyp is TokenTyp.UNDEFINIERT) {
-            val fehlerToken = Token(TokenTyp.FEHLER, symbolString, startPos, endPos)
+            val fehlerToken = Token(TokenTyp.FEHLER, symbolString, currentFile, startPos, endPos)
             throw GermanScriptFehler.SyntaxFehler.LexerFehler(fehlerToken)
         }
-        yield(Token(tokenTyp, symbolString, startPos, endPos))
+        yield(Token(tokenTyp, symbolString, currentFile, startPos, endPos))
     }
 
     private val ZAHLEN_PATTERN = """(0|[1-9]\d?\d?(\.\d{3})+|[1-9]\d*)(\,\d+)?""".toRegex()
@@ -351,10 +374,10 @@ class Lexer(datei: String): PipelineKomponente(datei) {
 
         val endPos = currentTokenPos
         val zahl = zahlenString.replace(".", "").replace(',', '.').toDouble()
-        val token = Token(TokenTyp.ZAHL(zahl), zahlenString, startPos, endPos)
+        val token = Token(TokenTyp.ZAHL(zahl), zahlenString, currentFile, startPos, endPos)
 
         if (!zahlenString.matches(ZAHLEN_PATTERN)) {
-            val fehlerToken = Token(TokenTyp.FEHLER, zahlenString, startPos, endPos)
+            val fehlerToken = Token(TokenTyp.FEHLER, zahlenString, currentFile, startPos, endPos)
             throw GermanScriptFehler.SyntaxFehler.LexerFehler(fehlerToken)
         }
         yield(token)
@@ -372,7 +395,7 @@ class Lexer(datei: String): PipelineKomponente(datei) {
         }
         next()
         val endPos = currentTokenPos
-        val token = Token(TokenTyp.ZEICHENFOLGE(zeichenfolge), '"' + zeichenfolge + '"', startPos, endPos)
+        val token = Token(TokenTyp.ZEICHENFOLGE(zeichenfolge), '"' + zeichenfolge + '"', currentFile, startPos, endPos)
         yield(token)
     }
 
@@ -406,30 +429,30 @@ class Lexer(datei: String): PipelineKomponente(datei) {
                                 "kleiner" -> TokenTyp.OPERATOR(Operator.KLEINER_GLEICH)
                                 else -> throw Exception("Diser Fall wird nie ausgeführt")
                             }
-                            yield(Token(tokenTyp, erstesWort + spaceBetweenWords + nächstesWort, firstWordStartPos, nextWordEndPos))
+                            yield(Token(tokenTyp, erstesWort + spaceBetweenWords + nächstesWort, currentFile, firstWordStartPos, nextWordEndPos))
                         } else {
-                            yield(Token(WORT_MAPPING.getValue(erstesWort), erstesWort, firstWordStartPos, firstWordEndPos))
+                            yield(Token(WORT_MAPPING.getValue(erstesWort), erstesWort, currentFile, firstWordStartPos, firstWordEndPos))
                             val tokenTyp = (WORT_MAPPING.getOrElse(nächstesWort, {
                                 when {
                                     NOMEN_PATTERN.matches(nächstesWort) -> TokenTyp.BEZEICHNER_GROSS(nächstesWort)
                                     VERB_PATTERN.matches(nächstesWort) -> TokenTyp.BEZEICHNER_KLEIN(nächstesWort)
                                     else -> throw GermanScriptFehler.SyntaxFehler.LexerFehler(
-                                        Token(TokenTyp.FEHLER, nächstesWort, nextWordStartPos, nextWordEndPos)
+                                        Token(TokenTyp.FEHLER, nächstesWort, currentFile, nextWordStartPos, nextWordEndPos)
                                     )
                                 }
                             }))
-                            yield(Token(tokenTyp, nächstesWort, nextWordStartPos, nextWordEndPos))
+                            yield(Token(tokenTyp, nächstesWort, currentFile, nextWordStartPos, nextWordEndPos))
                         }
                     }
                     else {
-                        yield(Token(WORT_MAPPING.getValue(erstesWort), erstesWort, firstWordStartPos, firstWordEndPos))
+                        yield(Token(WORT_MAPPING.getValue(erstesWort), erstesWort, currentFile, firstWordStartPos, firstWordEndPos))
                     }
                 }
-                else -> yield(Token(WORT_MAPPING.getValue(erstesWort), erstesWort, firstWordStartPos, firstWordEndPos))
+                else -> yield(Token(WORT_MAPPING.getValue(erstesWort), erstesWort, currentFile, firstWordStartPos, firstWordEndPos))
             }
-            NOMEN_PATTERN.matches(erstesWort) -> yield(Token(TokenTyp.BEZEICHNER_GROSS(erstesWort), erstesWort, firstWordStartPos, firstWordEndPos))
-            VERB_PATTERN.matches(erstesWort) -> yield(Token(TokenTyp.BEZEICHNER_KLEIN(erstesWort), erstesWort, firstWordStartPos, firstWordEndPos))
-            else -> throw GermanScriptFehler.SyntaxFehler.LexerFehler(Token(TokenTyp.FEHLER, erstesWort, firstWordStartPos, firstWordEndPos))
+            NOMEN_PATTERN.matches(erstesWort) -> yield(Token(TokenTyp.BEZEICHNER_GROSS(erstesWort), erstesWort, currentFile, firstWordStartPos, firstWordEndPos))
+            VERB_PATTERN.matches(erstesWort) -> yield(Token(TokenTyp.BEZEICHNER_KLEIN(erstesWort), erstesWort, currentFile, firstWordStartPos, firstWordEndPos))
+            else -> throw GermanScriptFehler.SyntaxFehler.LexerFehler(Token(TokenTyp.FEHLER, erstesWort, currentFile, firstWordStartPos, firstWordEndPos))
         }
     }
 
@@ -450,6 +473,6 @@ class Lexer(datei: String): PipelineKomponente(datei) {
 
 
 fun main() {
-    Lexer("./iterationen/iter_1/code.gms")
+    Lexer("./iterationen/iter_2/code.gms")
         .tokeniziere().takeWhile { token -> token.typ != TokenTyp.EOF }.forEach { println(it) }
 }

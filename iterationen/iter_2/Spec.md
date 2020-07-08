@@ -173,9 +173,11 @@ Client: verbinde dich
 ```
 
 ## TODO
-- Wörterbuch-Bug beheben (Lukas)
-- Typ-Konvertierungs-Bug bei Funktionsaufruf
-- Fehlermeldungen
-- Klassendefinition
-- Klassen
-- Methoden
+-[x] Wörterbuch-Bug beheben (Lukas)
+-[x] Typ-Konvertierungs-Bug bei Funktionsaufruf
+-[ ] mehrere Dateien und Standardbibliothek
+-[ ] erstes Element vom binären Ausdruck als NomenAusdruck
+-[ ] Fehlermeldungen
+-[ ] Klassendefinition
+-[ ] Klassen
+-[ ] Methoden

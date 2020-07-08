@@ -274,7 +274,11 @@ class Interpreter(dateiPfad: String): ProgrammDurchlaufer<Wert>(dateiPfad) {
 
 fun main() {
   val interpreter = Interpreter("./iterationen/iter_2/code.gms")
-  interpreter.interpretiere()
+  try {
+    interpreter.interpretiere()
+  } catch (fehler: GermanScriptFehler) {
+    System.err.println(fehler.message!!)
+  }
 }
 
 
