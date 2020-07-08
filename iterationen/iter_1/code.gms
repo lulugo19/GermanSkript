@@ -2,7 +2,7 @@ Deklination Femininum Singular(Zahl, Zahl, Zahl, Zahl) Plural(Zahlen, Zahlen, Za
 Deklination Femininum Singular(Zeichenfolge, Zeichenfolge, Zeichenfolge, Zeichenfolge) Plural(Zeichenfolgen, Zeichenfolgen, Zeichenfolgen, Zeichenfolgen)
 Deklination Femininum Singular(Zeile, Zeile, Zeile, Zeile) Plural(Zeilen, Zeilen, Zeilen, Zeilen)
 Deklination Maskulinum Singular(Bereich, Bereichs, Bereich, Bereich) Plural(Bereiche, Bereiche, Bereiche, Bereiche)
-//Deklination Maskulinum Singular(Baum, Baumes, Baum, Baum) Plural(Bäume, Bäume, Bäumen, Bäume)
+Deklination Maskulinum Singular(Baum, Baumes, Baum, Baum) Plural(Bäume, Bäume, Bäumen, Bäume)
 Deklination Maskulinum Singular(Name, Namens, Namen, Namen) Plural(Namen, Namen, Namen, Namen)
 
 // INTERNE FUNKTIONEN

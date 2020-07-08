@@ -175,7 +175,11 @@ class Wörterbuch {
         if (deklination.fallSequenz.contains(wort)) {
           return deklination
         } else {
-          max = avg
+          if (wort > nominativSingular) {
+            min = avg
+          } else {
+            max = avg
+          }
         }
       }
       else if (wortVergleichBerücksichtigeUmlaute(wort, deklination.nominativSingular) == -1) {
@@ -210,11 +214,7 @@ class Wörterbuch {
       val c = zeichenVergleichBerücksichtigeUmlaute(word1[i], word2[i])
       if (c != 0) return c
     }
-    return when {
-      word1.length < word2.length -> -1
-      word1.length > word2.length -> 1
-      else -> 0
-    }
+    return word1.substring(minlen).compareTo(word2.substring(minlen))
   }
 
   private fun zeichenVergleichBerücksichtigeUmlaute(a: Char, b: Char): Int {
