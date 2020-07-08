@@ -171,3 +171,11 @@ der Client ist Client mit ...
 Client: verbinde dich
         sende die Nachricht "Hallo Welt" mit dem Flag "X"!
 ```
+
+## TODO
+- Wörterbuch-Bug beheben (Lukas)
+- Typ-Konvertierungs-Bug bei Funktionsaufruf
+- Fehlermeldungen
+- Klassendefinition
+- Klassen
+- Methoden
