@@ -162,6 +162,7 @@ class Wörterbuch {
   }
 
   fun holeDeklination(wort: String): Deklination {
+    // TODO: hat wahrscheinlich einen Bug, das wenn bestimmte Wörter dadrin sind, ein bestimmtes Wort nicht gefunden werden kann
     var min = 0
     var max = tabelle.size
     var lastDiff = 0

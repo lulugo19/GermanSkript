@@ -74,7 +74,7 @@ solange wahr:
 
 // Listen
 schreibe den Bereich "Listen"
-die Zahlen sind einige Zahlen [2, 3, 5, 7, 11, 13, 17, 19]
+die Zahlen sind einige Zahlen [2,12, 3, 5, 7,6, 11,4, 13,5, 17,6, 19]
 
 für jede Zahl:
     wenn die Zahl > 13: abbrechen.

@@ -109,7 +109,7 @@ private sealed class SubParser<T: AST>() {
     return AST.Nomen(vornomen, bezeichner)
   }
 
-  protected inline fun <ElementT, reified StartTokenT> parseKommaListeMitStart(canBeEmpty: Boolean, elementParser: () -> ElementT): List<ElementT> {
+  protected inline fun <ElementT, reified TrennerT: TokenTyp, reified StartTokenT: TokenTyp> parseListeMitStart(canBeEmpty: Boolean, elementParser: () -> ElementT): List<ElementT> {
     if (canBeEmpty && peekType() !is StartTokenT) {
       return emptyList()
     }
@@ -121,24 +121,24 @@ private sealed class SubParser<T: AST>() {
     return liste
   }
 
-  protected inline fun <ElementT, reified EndTokenT> parseKommaListeMitEnde(canBeEmpty: Boolean, elementParser: () -> ElementT): List<ElementT> {
+  protected inline fun <ElementT, reified TrennerT: TokenTyp, reified EndTokenT: TokenTyp> parseListeMitEnde(canBeEmpty: Boolean, elementParser: () -> ElementT): List<ElementT> {
     if (canBeEmpty && peekType() is EndTokenT) {
       return emptyList()
     }
     val liste = mutableListOf(elementParser())
-    while (peekType() is TokenTyp.KOMMA) {
+    while (peekType() is TrennerT) {
       next()
       liste.add(elementParser())
     }
     return liste
   }
 
-  protected inline fun <reified T: TokenTyp> parseKommaListe(canBeEmpty: Boolean, erwartet: String): List<TypedToken<T>> {
+  protected inline fun <reified T: TokenTyp, reified TrennerT: TokenTyp> parseListe(canBeEmpty: Boolean, erwartet: String): List<TypedToken<T>> {
     if (canBeEmpty && peekType() !is T) {
       return emptyList()
     }
     val liste = mutableListOf<TypedToken<T>>()
-    while (peekType() is TokenTyp.KOMMA) {
+    while (peekType() is TrennerT) {
       next()
       liste.add(expect(erwartet))
     }
@@ -318,7 +318,7 @@ private sealed class SubParser<T: AST>() {
 
       override fun parseImpl(): AST.Ausdruck.Liste {
         expect<TokenTyp.OFFENE_ECKIGE_KLAMMER>("'['")
-        val elemente = parseKommaListeMitEnde<AST.Ausdruck, TokenTyp.GESCHLOSSENE_ECKIGE_KLAMMER>(true) {subParse(Ausdruck)}
+        val elemente = parseListeMitEnde<AST.Ausdruck, TokenTyp.KOMMA, TokenTyp.GESCHLOSSENE_ECKIGE_KLAMMER>(true) {subParse(Ausdruck)}
         expect<TokenTyp.GESCHLOSSENE_ECKIGE_KLAMMER>("']'")
         return AST.Ausdruck.Liste(nomen, elemente)
       }
@@ -363,7 +363,7 @@ private sealed class SubParser<T: AST>() {
 
     fun parsePräpositionsArgumente(): List<AST.PräpositionsArgumente> {
       return parsePräpositionsListe(
-              {parseKommaListeMitStart<AST.Argument, TokenTyp.VORNOMEN.ARTIKEL_BESTIMMT>(false, ::parseArgument)}
+              {parseListeMitStart<AST.Argument, TokenTyp.KOMMA, TokenTyp.VORNOMEN.ARTIKEL_BESTIMMT>(false, ::parseArgument)}
       ) {
         präposition, argumente -> AST.PräpositionsArgumente(AST.Präposition(präposition), argumente)
       }
@@ -603,7 +603,7 @@ private sealed class SubParser<T: AST>() {
 
       fun parsePräpositionsParameter(): List<AST.Definition.PräpositionsParameter> {
         return parsePräpositionsListe(
-                { parseKommaListeMitStart<AST.Definition.Parameter, TokenTyp.VORNOMEN.ARTIKEL_BESTIMMT>(false, ::parseParameter) }
+                { parseListeMitStart<AST.Definition.Parameter, TokenTyp.KOMMA, TokenTyp.VORNOMEN.ARTIKEL_BESTIMMT>(false, ::parseParameter) }
         ) {
           präposition, parameter -> AST.Definition.PräpositionsParameter(AST.Präposition(präposition), parameter)
         }

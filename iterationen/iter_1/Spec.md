@@ -26,11 +26,11 @@ wenn Bedingung:
 
 ## Ausdrücke
 ### Liste
-```BezeichnungP [\[{Ausdruck}\]]```
+```BezeichnungP \[SemikolonListe(Ausdruck)\]```
 
 Beispiel:
 
-`die Primzahlen sind einige Zahlen[2, 3, 5, 7, 11, 13]`
+`die Primzahlen sind einige Zahlen[2; 3; 5; 7; 11; 13]`
 
 ```
 die Person1 ist Person mit dem Namen=John", dem Alter=42
