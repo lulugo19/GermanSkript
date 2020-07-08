@@ -2,7 +2,8 @@ Deklination Femininum Singular(Zahl, Zahl, Zahl, Zahl) Plural(Zahlen, Zahlen, Za
 Deklination Femininum Singular(Zeichenfolge, Zeichenfolge, Zeichenfolge, Zeichenfolge) Plural(Zeichenfolgen, Zeichenfolgen, Zeichenfolgen, Zeichenfolgen)
 Deklination Femininum Singular(Zeile, Zeile, Zeile, Zeile) Plural(Zeilen, Zeilen, Zeilen, Zeilen)
 Deklination Maskulinum Singular(Bereich, Bereichs, Bereich, Bereich) Plural(Bereiche, Bereiche, Bereiche, Bereiche)
-Deklination Maskulinum Singular(Baum, Baumes, Baum, Baum) Plural(Bäume, Bäume, Bäumen, Bäume)
+//Deklination Maskulinum Singular(Baum, Baumes, Baum, Baum) Plural(Bäume, Bäume, Bäumen, Bäume)
+Deklination Maskulinum Singular(Name, Namens, Namen, Namen) Plural(Namen, Namen, Namen, Namen)
 
 // INTERNE FUNKTIONEN
 Verb schreibe die Zeichenfolge: intern. // print
@@ -10,6 +11,8 @@ Verb schreibe die Zeichenfolge: intern. // print
 Verb schreibe die Zeichenfolge Zeile: intern. // println
 
 Verb schreibe die Zahl: intern.
+
+Verb(Zeichenfolge) lese: intern.
 
 Verb schreibe die Zeichenfolge Bereich:
     schreibe die Zeile ""
@@ -89,3 +92,9 @@ schreibe die Zeichenfolge "Die vierte Primzahl ist: "
 schreibe die Zahl[die Zahl[0] + 1]
 schreibe die Zeichenfolge "Die fünfte Primzahl ist: "
 schreibe die Zahl[4]
+
+//Lese-Funktion
+schreibe den Bereich "Eingabe"
+schreibe die Zeichenfolge "Gebe deinen Namen ein: "
+der Name ist lese
+schreibe die Zeichenfolge "Dein Name ist " + den Namen

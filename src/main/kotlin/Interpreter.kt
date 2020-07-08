@@ -225,6 +225,10 @@ class Interpreter(dateiPfad: String): ProgrammDurchlaufer<Wert>(dateiPfad) {
       "schreibe die Zahl" to {
         val zahl = stack.peek().leseVariable("Zahl") as Wert.Zahl
         println(zahl)
+      },
+
+      "lese" to{
+        rückgabeWert = Wert.Zeichenfolge(readLine()!!)
       }
   )
   // endregion
