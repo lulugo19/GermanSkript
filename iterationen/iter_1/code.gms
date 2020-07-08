@@ -85,7 +85,7 @@ für jede Zahl:
 schreibe den Bereich "Listen Index"
 schreibe die Zeichenfolge "Die erste Primzahl ist: "
 schreibe die Zahl[0]
-schreibe die Zeichenfolge "Die dritte Primzahl ist: "
-schreibe die Zahl[2]
+schreibe die Zeichenfolge "Die vierte Primzahl ist: "
+schreibe die Zahl[die Zahl[0] + 1]
 schreibe die Zeichenfolge "Die fünfte Primzahl ist: "
-schreibe die Zahl[3]
+schreibe die Zahl[4]

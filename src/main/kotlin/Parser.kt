@@ -481,6 +481,7 @@ private sealed class SubParser<T: AST>() {
         var liste: AST.Ausdruck.Liste? = null
         var binder = nomen
         when (peekToken.typ) {
+          is TokenTyp.DOPPELPUNKT -> null
           is TokenTyp.BEZEICHNER_GROSS -> binder = AST.Nomen(null, next().toTyped())
           is TokenTyp.BEZEICHNER_KLEIN -> {
             parseKleinesSchlüsselwort("in")
