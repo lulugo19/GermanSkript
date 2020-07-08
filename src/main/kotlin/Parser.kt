@@ -290,6 +290,7 @@ private sealed class SubParser<T: AST>() {
         is TokenTyp.ZAHL -> AST.Ausdruck.Zahl(next().toTyped())
         is TokenTyp.BOOLEAN -> AST.Ausdruck.Boolean(next().toTyped())
         is TokenTyp.BEZEICHNER_KLEIN -> AST.Ausdruck.FunktionsAufruf(subParse(FunktionsAufruf))
+        is TokenTyp.BEZEICHNER_GROSS -> AST.Ausdruck.Variable(parseNomen())
         is TokenTyp.VORNOMEN -> parseNomenAusdruck(parseNomen())
         is TokenTyp.OFFENE_KLAMMER -> {
           next()
@@ -631,5 +632,5 @@ private sealed class SubParser<T: AST>() {
 }
 
 fun main() {
-  println(Parser("./iterationen/iter_1/code.gms").parse())
+  println(Parser("./iterationen/iter_2/code.gms").parse())
 }

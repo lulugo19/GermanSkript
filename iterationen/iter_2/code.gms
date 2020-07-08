@@ -19,6 +19,6 @@ Verb schreibe die Zeichenfolge Bereich:
 
 //Typ-Umwandlung
 
-die Zahl ist 3 als Zeichenfolge
-schreibe die Zeile die Zahl
-//schreibe die Zeile die Zahl als Zeichenfolge
+die Zahl ist 3
+//schreibe die Zeile die Zahl
+schreibe die Zeile die Zahl als Zeichenfolge
