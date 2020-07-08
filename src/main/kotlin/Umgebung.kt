@@ -24,7 +24,7 @@ class Umgebung<T>() {
   }
 
   fun überschreibeVariable(varName: AST.Nomen, wert: T) {
-    val bereich = bereiche.findLast {b -> (b as HashMap<String, T>).containsKey(varName.nominativ!!) }
+    val bereich = bereiche.findLast {it.containsKey(varName.nominativ!!) }
     if (bereich != null) {
       bereich[varName.nominativ!!] = wert
     } else {

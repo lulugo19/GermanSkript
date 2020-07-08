@@ -73,6 +73,7 @@ class TypPrüfer(dateiPfad: String): ProgrammDurchlaufer<Typ>(dateiPfad) {
       is AST.Ausdruck.ListenElement -> ausdruck.singular.vornomen!!.toUntyped()
       is AST.Ausdruck.BinärerAusdruck -> holeErstesTokenVonAusdruck(ausdruck.links)
       is AST.Ausdruck.Minus -> holeErstesTokenVonAusdruck(ausdruck.ausdruck)
+      is AST.Ausdruck.Konvertierung -> holeErstesTokenVonAusdruck(ausdruck.ausdruck)
     }
   }
 
@@ -155,6 +156,20 @@ class TypPrüfer(dateiPfad: String): ProgrammDurchlaufer<Typ>(dateiPfad) {
 
   override fun evaluiereMinus(minus: AST.Ausdruck.Minus): Typ {
     return ausdruckMussTypSein(minus.ausdruck, Typ.Zahl)
+  }
+
+  override fun evaluiereKonvertierung(konvertierung: AST.Ausdruck.Konvertierung): Typ{
+    val ausdruck = evaluiereAusdruck(konvertierung.ausdruck)
+    typisierer.typisiereTypKnoten(konvertierung.typ)
+    if (!ausdruck.istKonvertierbar(konvertierung.typ.typ!!)){
+      throw Error("Keine Konvertierung möglich!!")
+    }
+
+//    if (!ausdruck.definierteKonvertierungen.contains(typ)){
+//      throw Error("Keine Konvertierung möglich!!")
+//    }
+
+    return konvertierung.typ.typ!!
   }
 }
 

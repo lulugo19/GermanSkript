@@ -206,11 +206,7 @@ sealed class AST {
       val wert: Ausdruck
   ): AST() {
     override val children: Sequence<AST>
-      get() = sequence {
-        if (wert != null) {
-          yield(wert!!)
-        }
-      }
+      get() = sequenceOf(wert)
   }
 
   data class PräpositionsArgumente(val präposition: Präposition, val argumente: List<Argument>): AST() {
@@ -286,5 +282,10 @@ sealed class AST {
     data class Minus(val ausdruck: Ausdruck) : Ausdruck() {
       override val children: Sequence<AST> get() = sequenceOf(ausdruck)
     }
+
+    data class Konvertierung(
+        val ausdruck: Ausdruck,
+        val typ: TypKnoten
+    ):Ausdruck()
   }
 }

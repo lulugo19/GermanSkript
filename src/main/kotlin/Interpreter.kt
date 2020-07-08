@@ -1,5 +1,6 @@
 import java.text.DecimalFormat
 import java.util.*
+import kotlin.collections.HashMap
 import kotlin.math.pow
 
 sealed class Wert {
@@ -231,11 +232,48 @@ class Interpreter(dateiPfad: String): ProgrammDurchlaufer<Wert>(dateiPfad) {
         rückgabeWert = Wert.Zeichenfolge(readLine()!!)
       }
   )
+
+  val konvertierungsTabelle = mapOf<Typ, (Wert)-> Wert>(
+          Typ.Zahl to {
+            wert -> when (wert){
+            is Wert.Zeichenfolge -> Wert.Zahl(wert.zeichenfolge.toDouble())
+            is Wert.Boolean -> {
+              if (wert.boolean){
+                Wert.Zahl(1.0)
+              }else{
+                Wert.Zahl(0.0)
+              }
+            }
+            else -> wert
+          }
+          },
+
+          Typ.Zeichenfolge to {
+            wert -> when(wert){
+            is Wert.Zahl -> Wert.Zeichenfolge(wert.toString())
+            is Wert.Boolean -> Wert.Zeichenfolge(if (wert.boolean) "wahr" else "falsch")
+            else -> wert
+          }
+          },
+
+          Typ.Boolean to {
+            wert -> when(wert){
+            is Wert.Zahl -> Wert.Boolean(wert.zahl != 0.0)
+            is Wert.Zeichenfolge -> Wert.Boolean(wert.zeichenfolge.isNotEmpty())
+            else -> wert
+          }
+          }
+  )
+
+  override fun evaluiereKonvertierung(konvertierung: AST.Ausdruck.Konvertierung): Wert {
+    val wert = evaluiereAusdruck(konvertierung.ausdruck)
+    return konvertierungsTabelle.getValue(konvertierung.typ.typ!!)(wert)
+  }
   // endregion
 }
 
 fun main() {
-  val interpreter = Interpreter("./iterationen/iter_1/code.gms")
+  val interpreter = Interpreter("./iterationen/iter_2/code.gms")
   interpreter.interpretiere()
 }
 

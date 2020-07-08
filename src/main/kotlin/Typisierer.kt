@@ -5,6 +5,8 @@ sealed class Typ(val name: String) {
   val logger = SimpleLogger()
 
   abstract val definierteOperatoren: Map<Operator, Typ>
+  abstract val definierteKonvertierungen: Set<Typ>
+  abstract fun istKonvertierbar(typ: Typ): kotlin.Boolean
 
   object Zahl : Typ("Zahl") {
     override val definierteOperatoren: Map<Operator, Typ>
@@ -22,6 +24,14 @@ sealed class Typ(val name: String) {
           Operator.UNGLEICH to Boolean,
           Operator.GLEICH to Boolean
       )
+    override val definierteKonvertierungen: Set<Typ>
+      get() = setOf(
+          Zeichenfolge,
+          Boolean
+      )
+
+    override fun istKonvertierbar(typ: Typ): kotlin.Boolean = typ is Zeichenfolge || typ is Boolean
+
   }
 
   object Zeichenfolge : Typ("Zeichenfolge") {
@@ -35,6 +45,12 @@ sealed class Typ(val name: String) {
           Operator.GRÖSSER_GLEICH to Boolean,
           Operator.KLEINER_GLEICH to Boolean
       )
+    override val definierteKonvertierungen: Set<Typ>
+      get() = setOf(
+          Zahl
+      )
+
+    override fun istKonvertierbar(typ: Typ): kotlin.Boolean = typ is Zahl
   }
 
   object Boolean : Typ("Boolean") {
@@ -45,6 +61,13 @@ sealed class Typ(val name: String) {
           Operator.GLEICH to Boolean,
           Operator.UNGLEICH to Boolean
       )
+    override val definierteKonvertierungen: Set<Typ>
+      get() = setOf(
+          Zeichenfolge,
+          Zahl
+      )
+
+    override fun istKonvertierbar(typ: Typ): kotlin.Boolean = typ is Zeichenfolge || typ is Zahl
   }
 
   data class Liste(val elementTyp: Typ) : Typ("Liste($elementTyp)") {
@@ -52,6 +75,10 @@ sealed class Typ(val name: String) {
       get() = mapOf(
           Operator.PLUS to Liste(elementTyp)
       )
+    override val definierteKonvertierungen: Set<Typ>
+      get() = setOf()
+
+    override fun istKonvertierbar(typ: Typ): kotlin.Boolean = false
   }
 }
 
@@ -85,7 +112,7 @@ class Typisierer(dateiPfad: String): PipelineKomponente(dateiPfad) {
     }
   }
 
-  private fun typisiereTypKnoten(typKnoten: AST.TypKnoten?) {
+  fun typisiereTypKnoten(typKnoten: AST.TypKnoten?) {
     if (typKnoten != null) {
       typKnoten.typ = bestimmeTypen(typKnoten.name)
     }

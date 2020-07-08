@@ -16,3 +16,9 @@ Verb schreibe die Zeichenfolge Bereich:
     schreibe die Zeile ""
     schreibe die Zeile "----------------- " + den Bereich + " -----------------"
 .
+
+//Typ-Umwandlung
+
+die Zahl ist 3 als Zeichenfolge
+schreibe die Zeile die Zahl
+//schreibe die Zeile die Zahl als Zeichenfolge

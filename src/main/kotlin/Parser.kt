@@ -177,13 +177,22 @@ private sealed class SubParser<T: AST>() {
   }
 
   protected fun parseNomenAusdruck(nomen: AST.Nomen): AST.Ausdruck {
-    return when (nomen.vornomen!!.typ) {
+    val ausdruck = when (nomen.vornomen!!.typ) {
       is TokenTyp.VORNOMEN.ARTIKEL_BESTIMMT -> when(peekType()) {
         is TokenTyp.OFFENE_ECKIGE_KLAMMER -> subParse(NomenAusdruck.ListenElement(nomen))
         else -> subParse(NomenAusdruck.Variable(nomen))
       }
       is TokenTyp.VORNOMEN.ARTIKEL_UNBESTIMMT -> subParse(NomenAusdruck.Liste(nomen))
       is TokenTyp.VORNOMEN.JEDE -> throw GermanScriptFehler.SyntaxFehler.ParseFehler(nomen.vornomen.toUntyped())
+    }
+
+    return when(peekType()){
+      is TokenTyp.ALS -> {
+        next()
+        val typ = parseNomen()
+        AST.Ausdruck.Konvertierung(ausdruck, AST.TypKnoten(typ))
+      }
+      else -> ausdruck
     }
   }
 
@@ -276,7 +285,7 @@ private sealed class SubParser<T: AST>() {
     }
 
     private fun parseEinzelnerAusdruck(): AST.Ausdruck {
-      return when (val tokenTyp = peekType()) {
+      val ausdruck = when (val tokenTyp = peekType()) {
         is TokenTyp.ZEICHENFOLGE -> AST.Ausdruck.Zeichenfolge(next().toTyped())
         is TokenTyp.ZAHL -> AST.Ausdruck.Zahl(next().toTyped())
         is TokenTyp.BOOLEAN -> AST.Ausdruck.Boolean(next().toTyped())
@@ -299,6 +308,14 @@ private sealed class SubParser<T: AST>() {
           }
         }
         else -> throw GermanScriptFehler.SyntaxFehler.ParseFehler(next())
+      }
+      return when (peekType()){
+        is TokenTyp.ALS -> {
+          next()
+          val typ = parseNomen()
+          AST.Ausdruck.Konvertierung(ausdruck,AST.TypKnoten(typ))
+        }
+        else -> ausdruck
       }
     }
   }

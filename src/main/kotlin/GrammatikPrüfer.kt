@@ -22,12 +22,17 @@ class GrammatikPrüfer(dateiPfad: String): PipelineKomponente(dateiPfad) {
             is AST.Ausdruck.BinärerAusdruck -> prüfeBinärenAusdruck(knoten)
             is AST.Ausdruck.Minus -> prüfeMinus(knoten)
             is AST.Ausdruck.ListenElement -> prüfeListenElement(knoten)
+            is AST.Ausdruck.Konvertierung -> prüfeKonvertierung(knoten)
             else -> return@visit false
         }
       }
       // visit everything
       true
     }
+  }
+
+  private fun prüfeKonvertierung(konvertierung: AST.Ausdruck.Konvertierung) {
+    prüfeNomen(konvertierung.typ.name, EnumSet.of(Kasus.NOMINATIV))
   }
 
   private fun prüfeZurückgabe(zurückgabe: AST.Satz.Zurückgabe) {

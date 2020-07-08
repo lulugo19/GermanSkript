@@ -70,6 +70,7 @@ abstract  class ProgrammDurchlaufer<T>(dateiPfad: String): PipelineKomponente(da
       is AST.Ausdruck.FunktionsAufruf -> durchlaufeFunktionsAufruf(ausdruck.aufruf, true)!!
       is AST.Ausdruck.BinärerAusdruck -> evaluiereBinärenAusdruck(ausdruck)
       is AST.Ausdruck.Minus -> evaluiereMinus(ausdruck)
+      is AST.Ausdruck.Konvertierung -> evaluiereKonvertierung(ausdruck)
     }
   }
 
@@ -88,4 +89,5 @@ abstract  class ProgrammDurchlaufer<T>(dateiPfad: String): PipelineKomponente(da
   protected abstract fun evaluiereListenElement(listenElement: AST.Ausdruck.ListenElement): T
   protected abstract fun evaluiereBinärenAusdruck(ausdruck: AST.Ausdruck.BinärerAusdruck): T
   protected abstract fun evaluiereMinus(minus: AST.Ausdruck.Minus): T
+  protected abstract fun evaluiereKonvertierung(konvertierung: AST.Ausdruck.Konvertierung): T
 }
