@@ -42,7 +42,7 @@ abstract  class ProgrammDurchlaufer<T>(dateiPfad: String): PipelineKomponente(da
 
   private fun durchlaufeVariablenDeklaration(deklaration: AST.Satz.VariablenDeklaration) {
     val wert = evaluiereAusdruck(deklaration.ausdruck)
-    if (deklaration.artikel.typ is TokenTyp.ARTIKEL.BESTIMMT) {
+    if (deklaration.name.vornomen!!.typ is TokenTyp.VORNOMEN.ARTIKEL_BESTIMMT) {
       stack.peek().schreibeVariable(deklaration.name, wert)
     } else {
       stack.peek().überschreibeVariable(deklaration.name, wert)

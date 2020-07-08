@@ -46,7 +46,7 @@ Listen fangen in GermanScript mit dem Index 0 an.
 
 Zugriff auf Element per Liste:
 
-`ArtikelAb Index. Singular [AusdruckGP | AusdruckDP]`
+`ArtikelAb NomenNS[Index]`
 
 ```
 der Erste ist die Person[0]

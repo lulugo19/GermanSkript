@@ -99,12 +99,14 @@ sealed class TokenTyp(val anzeigeName: String) {
     object INTERN: TokenTyp("'intern'")
 
     // Artikel und Präpositionen
-    data class JEDE(val genus: Genus): TokenTyp("'jeder' oder 'jede' oder 'jedes'")
     data class ZUWEISUNG(val numerus: EnumSet<Numerus>): TokenTyp("'ist' oder 'sind' oder '='")
-    sealed class ARTIKEL(anzeigeName: String): TokenTyp(anzeigeName) {
-        object BESTIMMT: ARTIKEL("bestimmter Artikel")
-        object UMBESTIMMT: ARTIKEL("umbestimmter Artikel")
+
+    sealed class VORNOMEN(anzeigeName: String): TokenTyp(anzeigeName) {
+        object ARTIKEL_BESTIMMT: VORNOMEN("bestimmter Artikel")
+        object ARTIKEL_UNBESTIMMT: VORNOMEN("unbestimmter Artikel")
+        object JEDE: VORNOMEN("'jeder' oder 'jede' oder 'jedes'")
     }
+
     //Symbole
     object OFFENE_KLAMMER: TokenTyp("'('")
     object GESCHLOSSENE_KLAMMER: TokenTyp("')'")
@@ -189,10 +191,6 @@ private val WORT_MAPPING = mapOf<String, TokenTyp>(
     "abbrechen" to TokenTyp.ABBRECHEN,
     "als" to TokenTyp.ALS,
     "Modul" to TokenTyp.MODUL,
-    "jede" to TokenTyp.JEDE(Genus.FEMININUM),
-    "jeden" to TokenTyp.JEDE(Genus.MASKULINUM),
-    "jedes" to TokenTyp.JEDE(Genus.NEUTRUM),
-
     // Werte
     "wahr" to TokenTyp.BOOLEAN(true),
     "falsch" to TokenTyp.BOOLEAN(false),
@@ -213,19 +211,23 @@ private val WORT_MAPPING = mapOf<String, TokenTyp>(
     "hoch" to TokenTyp.OPERATOR(Operator.HOCH),
     "modulo" to TokenTyp.OPERATOR(Operator.MODULO),
 
-    // Artikel
-    "der" to TokenTyp.ARTIKEL.BESTIMMT,
-    "die" to TokenTyp.ARTIKEL.BESTIMMT,
-    "das" to TokenTyp.ARTIKEL.BESTIMMT,
-    "den" to TokenTyp.ARTIKEL.BESTIMMT,
-    "dem" to TokenTyp.ARTIKEL.BESTIMMT,
-    "ein" to TokenTyp.ARTIKEL.UMBESTIMMT,
-    "eine" to TokenTyp.ARTIKEL.UMBESTIMMT,
-    "eines" to TokenTyp.ARTIKEL.UMBESTIMMT,
-    "einer" to TokenTyp.ARTIKEL.UMBESTIMMT,
-    "einige" to TokenTyp.ARTIKEL.UMBESTIMMT,
-    "einigen" to TokenTyp.ARTIKEL.UMBESTIMMT,
-    "einiger" to TokenTyp.ARTIKEL.UMBESTIMMT
+    // Vornomen
+    "der" to TokenTyp.VORNOMEN.ARTIKEL_BESTIMMT,
+    "die" to TokenTyp.VORNOMEN.ARTIKEL_BESTIMMT,
+    "das" to TokenTyp.VORNOMEN.ARTIKEL_BESTIMMT,
+    "den" to TokenTyp.VORNOMEN.ARTIKEL_BESTIMMT,
+    "dem" to TokenTyp.VORNOMEN.ARTIKEL_BESTIMMT,
+    "ein" to TokenTyp.VORNOMEN.ARTIKEL_UNBESTIMMT,
+    "eine" to TokenTyp.VORNOMEN.ARTIKEL_UNBESTIMMT,
+    "eines" to TokenTyp.VORNOMEN.ARTIKEL_UNBESTIMMT,
+    "einer" to TokenTyp.VORNOMEN.ARTIKEL_UNBESTIMMT,
+    "einige" to TokenTyp.VORNOMEN.ARTIKEL_UNBESTIMMT,
+    "einigen" to TokenTyp.VORNOMEN.ARTIKEL_UNBESTIMMT,
+    "einiger" to TokenTyp.VORNOMEN.ARTIKEL_UNBESTIMMT,
+
+    "jede" to TokenTyp.VORNOMEN.JEDE,
+    "jeden" to TokenTyp.VORNOMEN.JEDE,
+    "jedes" to TokenTyp.VORNOMEN.JEDE
 )
 
 class Lexer(datei: String): PipelineKomponente(datei) {
@@ -448,6 +450,6 @@ class Lexer(datei: String): PipelineKomponente(datei) {
 
 
 fun main() {
-    Lexer("./iterationen/iter_0/code.gms")
+    Lexer("./iterationen/iter_1/code.gms")
         .tokeniziere().takeWhile { token -> token.typ != TokenTyp.EOF }.forEach { println(it) }
 }

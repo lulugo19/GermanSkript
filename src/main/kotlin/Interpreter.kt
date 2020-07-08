@@ -57,7 +57,7 @@ class Interpreter(dateiPfad: String): ProgrammDurchlaufer<Wert>(dateiPfad) {
     val funktionsUmgebung = Umgebung<Wert>()
     funktionsUmgebung.pushBereich()
     for (argument in funktionsAufruf.argumente) {
-      val argumentWert = evaluiereAusdruck(argument.sichererWert)
+      val argumentWert = evaluiereAusdruck(argument.wert)
       funktionsUmgebung.schreibeVariable(argument.name, argumentWert)
     }
     stack.push(funktionsUmgebung)
@@ -96,12 +96,12 @@ class Interpreter(dateiPfad: String): ProgrammDurchlaufer<Wert>(dateiPfad) {
     val liste = if (schleife.liste != null)  {
       evaluiereAusdruck(schleife.liste) as Wert.Liste
     } else {
-      evaluiereVariable(schleife.singular.nominativPlural!!)!! as Wert.Liste
+      evaluiereVariable(schleife.singular!!.nominativPlural!!)!! as Wert.Liste
     }
     stack.peek().pushBereich()
     for (element in liste.elemente) {
       flags.remove(Flag.SCHLEIFE_FORTFAHREN)
-      stack.peek().überschreibeVariable(schleife.singular, element)
+      stack.peek().überschreibeVariable(schleife.binder, element)
       durchlaufeSätze(schleife.sätze, false)
       if (flags.contains(Flag.SCHLEIFE_ABBRECHEN)) {
         flags.remove(Flag.SCHLEIFE_ABBRECHEN)

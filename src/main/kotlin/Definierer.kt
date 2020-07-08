@@ -50,13 +50,13 @@ class Definierer(dateiPfad: String): PipelineKomponente(dateiPfad) {
     var vollerName = funktionsDefinition.name.wert
     if (funktionsDefinition.objekt != null) {
       val objekt = funktionsDefinition.objekt
-      vollerName += " " + objekt.paramName.artikel!! + " " + objekt.paramName.bezeichner.wert
+      vollerName += " " + objekt.name.vornomenString!! + " " + objekt.name.bezeichner.wert
     }
     for (präposition in funktionsDefinition.präpositionsParameter) {
       vollerName += " " + präposition.präposition.präposition.wert
       for (parameterIndex in präposition.parameter.indices) {
         val parameter = präposition.parameter[parameterIndex]
-        vollerName += " " + parameter.paramName.artikel!! + " " + parameter.paramName.bezeichner.wert
+        vollerName += " " + parameter.name.vornomenString!! + " " + parameter.name.bezeichner.wert
         if (parameterIndex != präposition.parameter.size-1) {
           vollerName += ","
         }
@@ -73,13 +73,13 @@ class Definierer(dateiPfad: String): PipelineKomponente(dateiPfad) {
     var vollerName = funktionsAufruf.verb.wert
     if (funktionsAufruf.objekt != null) {
       val objekt = funktionsAufruf.objekt
-      vollerName += " " + objekt.name.artikel!! + " " + objekt.name.bezeichner.wert
+      vollerName += " " + objekt.name.vornomenString!! + " " + objekt.name.bezeichner.wert
     }
     for (präposition in funktionsAufruf.präpositionsArgumente) {
       vollerName += " " + präposition.präposition.präposition.wert
       for (argumentIndex in präposition.argumente.indices) {
         val argument = präposition.argumente[argumentIndex]
-        vollerName += " " + argument.name.artikel!! + " " + argument.name.bezeichner.wert
+        vollerName += " " + argument.name.vornomenString!! + " " + argument.name.bezeichner.wert
         if (argumentIndex != präposition.argumente.size-1) {
           vollerName += ","
         }

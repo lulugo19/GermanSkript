@@ -54,22 +54,25 @@ sealed class AST {
   }
 
   data class Nomen(
+      val vornomen: TypedToken<TokenTyp.VORNOMEN>?,
       val bezeichner: TypedToken<TokenTyp.BEZEICHNER_GROSS>
   ) {
     var nominativ: String? = null
     var nominativSingular: String? = null
     var nominativPlural: String? = null
-    var artikel: String? = null
+    var vornomenString: String? = null
     var genus: Genus? = null
     var numerus: Numerus? = null
     var fälle: EnumSet<Kasus> = EnumSet.noneOf(Kasus::class.java)
+
+    val geprüft = nominativ != null
   }
+
 
   data class TypKnoten(
       val name: Nomen,
       var typ: Typ? = null
   )
-
 
   data class Präposition(val präposition: TypedToken<TokenTyp.BEZEICHNER_KLEIN>) : AST() {
     val fälle = präpositionsFälle
@@ -86,12 +89,9 @@ sealed class AST {
     }
 
     data class Parameter(
-        val artikel: TypedToken<TokenTyp.ARTIKEL>,
         val typKnoten: TypKnoten,
-        val name: Nomen?
-    ) {
-      val paramName: Nomen get() = name ?: typKnoten.name
-    }
+        val name: Nomen
+    )
 
     data class PräpositionsParameter(
         val präposition: Präposition,
@@ -137,7 +137,6 @@ sealed class AST {
     }
 
     data class VariablenDeklaration(
-        val artikel: TypedToken<TokenTyp.ARTIKEL>,
         val name: Nomen,
         val zuweisungsOperator: TypedToken<TokenTyp.ZUWEISUNG>,
         val ausdruck: Ausdruck
@@ -179,8 +178,8 @@ sealed class AST {
     }
 
     data class FürJedeSchleife(
-        val jede: TypedToken<TokenTyp.JEDE>,
-        val singular: Nomen,
+        val binder: Nomen,
+        val singular: Nomen?,
         val liste: Ausdruck.Liste?,
         val sätze: List<Satz>
     ): Satz() {
@@ -203,9 +202,8 @@ sealed class AST {
   }
 
   data class Argument(
-      val artikel: TypedToken<TokenTyp.ARTIKEL>,
       val name: Nomen,
-      val wert: Ausdruck?
+      val wert: Ausdruck
   ): AST() {
     override val children: Sequence<AST>
       get() = sequence {
@@ -213,8 +211,6 @@ sealed class AST {
           yield(wert!!)
         }
       }
-
-    val sichererWert: Ausdruck = wert?: Ausdruck.Variable(null, name)
   }
 
   data class PräpositionsArgumente(val präposition: Präposition, val argumente: List<Argument>): AST() {
@@ -259,9 +255,9 @@ sealed class AST {
 
     data class Boolean(val boolean: TypedToken<TokenTyp.BOOLEAN>) : Ausdruck()
 
-    data class Variable(val artikel: TypedToken<TokenTyp.ARTIKEL.BESTIMMT>?, val name: Nomen) : Ausdruck()
+    data class Variable(val name: Nomen) : Ausdruck()
 
-    data class Liste(val artikel: TypedToken<TokenTyp.ARTIKEL.UMBESTIMMT>, val pluralTyp: Nomen, val elemente: List<Ausdruck>): Ausdruck() {
+    data class Liste(val pluralTyp: Nomen, val elemente: List<Ausdruck>): Ausdruck() {
       override val children: Sequence<AST>
         get() = sequence {
           yieldAll(elemente)
@@ -269,7 +265,6 @@ sealed class AST {
     }
 
     data class ListenElement(
-        val artikel: TypedToken<TokenTyp.ARTIKEL.BESTIMMT>,
         val singular: Nomen,
         val index: Ausdruck
     ): Ausdruck() {

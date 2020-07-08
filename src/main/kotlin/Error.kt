@@ -80,10 +80,10 @@ sealed class GermanScriptFehler(val token: Token): Error() {
     sealed class FormFehler(token: Token, protected val kasus: Kasus, protected val nomen: AST.Nomen): GrammatikFehler(token) {
       val form get() = "(${kasus.anzeigeName}, ${nomen.genus!!.anzeigeName}, ${nomen.numerus!!.anzeigeName})"
 
-      class FalscherArtikel(token: Token, kasus: Kasus, nomen: AST.Nomen, private val richtigerArtikel: String) : FormFehler(token, kasus, nomen) {
+      class FalschesVornomen(token: Token, kasus: Kasus, nomen: AST.Nomen, private val richtigesVornomen: String) : FormFehler(token, kasus, nomen) {
         override val nachricht: String?
-          get() = "Falscher Artikel '${token.wert} ${nomen.bezeichner.wert}'. " +
-              "Der richtige Artikel für '${nomen.bezeichner.wert}' $form ist '$richtigerArtikel ${nomen.bezeichner.wert}'."
+          get() = "Falsches Vornomen '${token.wert} ${nomen.bezeichner.wert}'. " +
+              "Das richtige Vornomen für '${nomen.bezeichner.wert}' $form ist '$richtigesVornomen ${nomen.bezeichner.wert}'."
       }
 
       class FalschesNomen(token: Token, kasus: Kasus, nomen: AST.Nomen, private val richtigeForm: String) : FormFehler(token, kasus, nomen) {

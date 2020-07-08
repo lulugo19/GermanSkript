@@ -30,8 +30,8 @@ class TypPrüfer(dateiPfad: String): ProgrammDurchlaufer<Typ>(dateiPfad) {
     funktionsUmgebung.pushBereich()
     var variablenString = ""
     for (parameter in funktion.parameter) {
-      funktionsUmgebung.schreibeVariable(parameter.paramName, parameter.typKnoten.typ!!)
-      variablenString += "${parameter.paramName.nominativ!!} :${parameter.typKnoten.typ!!}"
+      funktionsUmgebung.schreibeVariable(parameter.name, parameter.typKnoten.typ!!)
+      variablenString += "${parameter.name.nominativ!!} :${parameter.typKnoten.typ!!}"
     }
     logger.addLine("Funktionsdefinition(${funktion.name.wert})[$variablenString]")
     logger.addLine("Sätze:")
@@ -53,7 +53,7 @@ class TypPrüfer(dateiPfad: String): ProgrammDurchlaufer<Typ>(dateiPfad) {
     }
     var argumenteString = ""
     for (i in argumente.indices) {
-      ausdruckMussTypSein(argumente[i].sichererWert, parameter[i].typKnoten.typ!!)
+      ausdruckMussTypSein(argumente[i].wert, parameter[i].typKnoten.typ!!)
       argumenteString += "${argumente[i].name.nominativ} :${parameter[i].typKnoten.typ!!}"
     }
     logger.addLine("Funktionsaufruf(${funktionsAufruf.vollerName})[$argumenteString]")
@@ -65,12 +65,12 @@ class TypPrüfer(dateiPfad: String): ProgrammDurchlaufer<Typ>(dateiPfad) {
   private fun holeErstesTokenVonAusdruck(ausdruck: AST.Ausdruck): Token {
     return when (ausdruck) {
       is AST.Ausdruck.Zeichenfolge -> ausdruck.zeichenfolge.toUntyped()
-      is AST.Ausdruck.Liste -> ausdruck.artikel.toUntyped()
+      is AST.Ausdruck.Liste -> ausdruck.pluralTyp.vornomen!!.toUntyped()
       is AST.Ausdruck.Zahl -> ausdruck.zahl.toUntyped()
       is AST.Ausdruck.Boolean -> ausdruck.boolean.toUntyped()
       is AST.Ausdruck.Variable -> ausdruck.name.bezeichner.toUntyped()
       is AST.Ausdruck.FunktionsAufruf -> ausdruck.aufruf.verb.toUntyped()
-      is AST.Ausdruck.ListenElement -> ausdruck.artikel.toUntyped()
+      is AST.Ausdruck.ListenElement -> ausdruck.singular.vornomen!!.toUntyped()
       is AST.Ausdruck.BinärerAusdruck -> holeErstesTokenVonAusdruck(ausdruck.links)
       is AST.Ausdruck.Minus -> holeErstesTokenVonAusdruck(ausdruck.ausdruck)
     }
@@ -104,10 +104,10 @@ class TypPrüfer(dateiPfad: String): ProgrammDurchlaufer<Typ>(dateiPfad) {
     val elementTyp = if (schleife.liste != null) {
       (evaluiereListe(schleife.liste) as Typ.Liste).elementTyp
     } else {
-      evaluiereListenSingular(schleife.singular)
+      evaluiereListenSingular(schleife.singular!!)
     }
     stack.peek().pushBereich()
-    stack.peek().schreibeVariable(schleife.singular, elementTyp)
+    stack.peek().schreibeVariable(schleife.binder, elementTyp)
     durchlaufeSätze(schleife.sätze, false)
     stack.peek().popBereich()
   }

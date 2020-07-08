@@ -34,13 +34,14 @@ class GrammatikPrüfer(dateiPfad: String): PipelineKomponente(dateiPfad) {
     if (zurückgabe.ausdruck is AST.Ausdruck.Variable) {
       val variable = zurückgabe.ausdruck
       prüfeNomen(variable.name, EnumSet.of(Kasus.AKKUSATIV))
-      prüfeArtikel(variable.artikel!!, variable.name)
     }
   }
 
   private fun prüfeNomen(nomen: AST.Nomen, fälle: EnumSet<Kasus>) {
+    if (nomen.geprüft) {
+      return
+    }
     val deklanation = deklanierer.holeDeklination(nomen)
-
     val numerus = deklanation.getNumerus(nomen.bezeichner.wert)
     nomen.numerus = numerus
     nomen.nominativ = deklanation.getForm(Kasus.NOMINATIV, numerus)
@@ -59,25 +60,35 @@ class GrammatikPrüfer(dateiPfad: String): PipelineKomponente(dateiPfad) {
       val erwarteteForm = deklanation.getForm(kasus, numerus)
       throw GermanScriptFehler.GrammatikFehler.FormFehler.FalschesNomen(nomen.bezeichner.toUntyped(), kasus, nomen, erwarteteForm)
     }
+    prüfeVornomen(nomen)
   }
 
-  private fun prüfeArtikel(artikel: TypedToken<TokenTyp.ARTIKEL>, nomen: AST.Nomen)
+  private fun prüfeVornomen(nomen: AST.Nomen)
   {
-    val bestimmt = artikel.typ is TokenTyp.ARTIKEL.BESTIMMT
+    if (nomen.vornomen == null) {
+      return
+    }
+    val vorNomen = nomen.vornomen
     val ersterFall = nomen.fälle.first()
     for (kasus in nomen.fälle) {
-      val erwarteterArtikel = getArtikel(bestimmt, nomen.genus!!, nomen.numerus!!, kasus)
-      if (artikel.wert == erwarteterArtikel) {
-        nomen.artikel = erwarteterArtikel
+      val erwartetesVornomen = holeVornomen(vorNomen.typ, kasus, nomen.genus!!, nomen.numerus!!)
+      if (vorNomen.wert == erwartetesVornomen) {
+        nomen.vornomenString = erwartetesVornomen
       } else {
         nomen.fälle.remove(kasus)
       }
     }
 
-    if (nomen.artikel == null) {
-      val erwarteterArtikel = getArtikel(bestimmt, nomen.genus!!, nomen.numerus!!, ersterFall)
-      throw GermanScriptFehler.GrammatikFehler.FormFehler.FalscherArtikel(artikel.toUntyped(), ersterFall, nomen, erwarteterArtikel)
+    if (nomen.vornomenString == null) {
+      val erwartetesVornomen = holeVornomen(vorNomen.typ, ersterFall, nomen.genus!!, nomen.numerus!!)
+      throw GermanScriptFehler.GrammatikFehler.FormFehler.FalschesVornomen(vorNomen.toUntyped(), ersterFall, nomen, erwartetesVornomen)
     }
+  }
+
+  private fun holeVornomen(vorNomen: TokenTyp.VORNOMEN, kasus: Kasus, genus: Genus, numerus: Numerus): String {
+    val kasusIndex = kasus.ordinal
+    val spaltenIndex = if (numerus == Numerus.SINGULAR) genus.ordinal else 3
+    return VORNOMEN_TABELLE.getValue(vorNomen)[kasusIndex][spaltenIndex]
   }
 
   private fun prüfeNumerus(nomen: AST.Nomen, numerus: Numerus) {
@@ -87,67 +98,37 @@ class GrammatikPrüfer(dateiPfad: String): PipelineKomponente(dateiPfad) {
     }
   }
 
-  // prüft bei den Listenelement ob Singular und Plural übereinstimmen
-  private fun prüfeSingularPlural(singular: AST.Nomen, kasusSingular: Kasus, liste: AST.Ausdruck.Liste, kasusPlural: Kasus) {
-      prüfeNomen(liste.pluralTyp, EnumSet.of(kasusPlural))
-      prüfeNumerus(liste.pluralTyp, Numerus.PLURAL)
-      prüfeArtikel(liste.artikel, liste.pluralTyp)
-
-      val einzahl = deklanierer.holeDeklination(liste.pluralTyp).getForm(kasusSingular, Numerus.SINGULAR)
-      if (singular.bezeichner.wert != einzahl) {
-        throw GermanScriptFehler.GrammatikFehler.FalschesSingular(
-            singular.bezeichner.toUntyped(),
-            liste.pluralTyp.bezeichner.wert,
-            einzahl
-        )
-      }
-      // um noch den Nominativ, sowie die anderen Sachen zu setzen
-      prüfeNomen(singular, EnumSet.of(kasusSingular))
-    }
-
   private fun prüfeVariablendeklaration(variablenDeklaration: AST.Satz.VariablenDeklaration) {
     val nomen = variablenDeklaration.name
     prüfeNomen(nomen, EnumSet.of(Kasus.NOMINATIV))
     if (!variablenDeklaration.zuweisungsOperator.typ.numerus.contains(nomen.numerus!!)) {
       throw GermanScriptFehler.GrammatikFehler.FalscheZuweisung(variablenDeklaration.zuweisungsOperator.toUntyped(), nomen.numerus!!)
     }
-    prüfeArtikel(variablenDeklaration.artikel, nomen)
     // prüfe ob Numerus mit 'ist' oder 'sind' übereinstimmt
     // logger.addLine("geprüft: $variablenDeklaration")
     if (variablenDeklaration.ausdruck is AST.Ausdruck.Variable) {
       val variable = variablenDeklaration.ausdruck
       prüfeNomen(variable.name, EnumSet.of(Kasus.NOMINATIV))
       prüfeNumerus(variable.name, nomen.numerus!!)
-      prüfeArtikel(variable.artikel!!, nomen)
     }
     else if (variablenDeklaration.ausdruck is AST.Ausdruck.Liste) {
       val liste = variablenDeklaration.ausdruck
       prüfeNomen(liste.pluralTyp, EnumSet.of(Kasus.NOMINATIV))
       prüfeNumerus(liste.pluralTyp, Numerus.PLURAL)
-      prüfeArtikel(liste.artikel, liste.pluralTyp)
 
       prüfeNumerus(nomen, Numerus.PLURAL)
     }
   }
 
   private fun prüfeFürJedeSchleife(fürJedeSchleife: AST.Satz.FürJedeSchleife) {
-    val singular = fürJedeSchleife.singular
+    prüfeNomen(fürJedeSchleife.binder, EnumSet.of(Kasus.AKKUSATIV))
+    prüfeNumerus(fürJedeSchleife.binder, Numerus.SINGULAR)
     if (fürJedeSchleife.liste != null) {
-      prüfeSingularPlural(singular, Kasus.AKKUSATIV, fürJedeSchleife.liste, Kasus.DATIV)
-    } else {
-      prüfeNomen(singular, EnumSet.of(Kasus.AKKUSATIV))
-      prüfeNumerus(singular, Numerus.SINGULAR)
-    }
-
-    if (fürJedeSchleife.jede.typ.genus != singular.genus!!) {
-      val richtigeForm = when (singular.genus!!) {
-        Genus.MASKULINUM -> "jeder"
-        Genus.FEMININUM -> "jede"
-        Genus.NEUTRUM -> "jedes"
-      }
-      throw GermanScriptFehler.GrammatikFehler.FormFehler.FalschesPronomen(
-          fürJedeSchleife.jede.toUntyped(), Kasus.AKKUSATIV, singular, richtigeForm
-      )
+      prüfeNomen(fürJedeSchleife.liste.pluralTyp, EnumSet.of(Kasus.DATIV))
+      prüfeNumerus(fürJedeSchleife.liste.pluralTyp, Numerus.PLURAL)
+    } else if (fürJedeSchleife.singular != null)  {
+      prüfeNomen(fürJedeSchleife.singular, EnumSet.of(Kasus.AKKUSATIV))
+      prüfeNumerus(fürJedeSchleife.singular, Numerus.SINGULAR)
     }
   }
 
@@ -155,10 +136,10 @@ class GrammatikPrüfer(dateiPfad: String): PipelineKomponente(dateiPfad) {
   private fun prüfeParameter(parameter: AST.Definition.Parameter, fälle: EnumSet<Kasus>) {
     val nomen = parameter.typKnoten.name
     prüfeNomen(nomen, fälle)
-    prüfeArtikel(parameter.artikel, nomen)
-    if (parameter.name != null) {
-      prüfeNomen(parameter.name, EnumSet.of(Kasus.NOMINATIV))
-      parameter.name.artikel = getArtikel(true, parameter.name, nomen.fälle.first())
+    prüfeNomen(parameter.name, EnumSet.of(Kasus.NOMINATIV))
+    if (parameter.name.vornomenString == null) {
+      val paramName = parameter.name
+      paramName.vornomenString = holeVornomen(TokenTyp.VORNOMEN.ARTIKEL_BESTIMMT, nomen.fälle.first(), paramName.genus!!, paramName.numerus!!)
     }
   }
 
@@ -183,20 +164,15 @@ class GrammatikPrüfer(dateiPfad: String): PipelineKomponente(dateiPfad) {
 
   private fun prüfeArgument(argument: AST.Argument, fälle: EnumSet<Kasus>) {
     prüfeNomen(argument.name, fälle)
-    prüfeArtikel(argument.artikel, argument.name)
     if (argument.wert is AST.Ausdruck.Variable) {
       val variable = argument.wert
       prüfeNomen(variable.name, EnumSet.of(Kasus.NOMINATIV))
       prüfeNumerus(variable.name, argument.name.numerus!!)
-      if (variable.artikel != null) {
-        prüfeArtikel(variable.artikel, variable.name)
-      }
     }
     if (argument.wert is AST.Ausdruck.Liste) {
       val liste = argument.wert
       prüfeNomen(liste.pluralTyp, EnumSet.of(Kasus.NOMINATIV))
       prüfeNumerus(liste.pluralTyp, Numerus.PLURAL)
-      prüfeArtikel(liste.artikel, liste.pluralTyp)
 
       prüfeNumerus(argument.name, Numerus.PLURAL)
     }
@@ -224,13 +200,11 @@ class GrammatikPrüfer(dateiPfad: String): PipelineKomponente(dateiPfad) {
       val kasus = if (binärerAusdruck.istAnfang) Kasus.NOMINATIV
       else binärerAusdruck.operator.typ.operator.klasse.kasus
       prüfeNomen(variable.name, EnumSet.of(kasus))
-      prüfeArtikel(variable.artikel!!, variable.name)
     }
     if (binärerAusdruck.rechts is AST.Ausdruck.Variable) {
       val variable = binärerAusdruck.rechts
       val kasus = binärerAusdruck.operator.typ.operator.klasse.kasus
       prüfeNomen(variable.name, EnumSet.of(kasus))
-      prüfeArtikel(variable.artikel!!, variable.name)
     }
     logger.addLine("geprüft: $binärerAusdruck")
   }
@@ -239,76 +213,37 @@ class GrammatikPrüfer(dateiPfad: String): PipelineKomponente(dateiPfad) {
     if (knoten.ausdruck is AST.Ausdruck.Variable) {
       val variable = knoten.ausdruck
       prüfeNomen(variable.name, EnumSet.of(Kasus.AKKUSATIV))
-      prüfeArtikel(variable.artikel!!, variable.name)
     }
   }
 
   private fun prüfeListenElement(listenElement: AST.Ausdruck.ListenElement) {
     prüfeNomen(listenElement.singular, EnumSet.of(Kasus.NOMINATIV))
     prüfeNumerus(listenElement.singular, Numerus.SINGULAR)
-    prüfeArtikel(listenElement.artikel, listenElement.singular)
-  }
-
-  private fun getArtikel(bestimmt: Boolean, nomen: AST.Nomen, kasus: Kasus): String {
-    return getArtikel(bestimmt, nomen.genus!!, nomen.numerus!!, kasus)
-  }
-
-  private fun getArtikel(bestimmt: Boolean, genus: Genus, numerus: Numerus, kasus: Kasus): String {
-    return when (kasus) {
-      Kasus.NOMINATIV-> when(numerus) {
-        Numerus.SINGULAR -> {
-          when(genus) {
-            Genus.MASKULINUM -> if (bestimmt) "der" else "ein"
-            Genus.FEMININUM -> if (bestimmt) "die" else "eine"
-            Genus.NEUTRUM -> if (bestimmt) "das" else "ein"
-          }
-        }
-        Numerus.PLURAL -> {
-          if (bestimmt) "die" else "einige"
-        }
-      }
-
-      Kasus.GENITIV-> when(numerus) {
-        Numerus.SINGULAR -> {
-          when(genus) {
-            Genus.MASKULINUM -> if (bestimmt) "des" else "eines"
-            Genus.FEMININUM -> if (bestimmt) "der" else "einer"
-            Genus.NEUTRUM -> if (bestimmt) "des" else "eines"
-          }
-        }
-        Numerus.PLURAL -> {
-          if (bestimmt) "der" else "einiger"
-        }
-      }
-
-      Kasus.DATIV -> when(numerus) {
-        Numerus.SINGULAR -> {
-          when(genus) {
-            Genus.MASKULINUM -> if (bestimmt) "dem" else "einem"
-            Genus.FEMININUM -> if (bestimmt) "der" else "einer"
-            Genus.NEUTRUM -> if (bestimmt) "dem" else "einem"
-          }
-        }
-        Numerus.PLURAL -> {
-          if (bestimmt) "den" else "einigen"
-        }
-      }
-
-      Kasus.AKKUSATIV-> when(numerus) {
-        Numerus.SINGULAR -> {
-          when(genus) {
-            Genus.MASKULINUM -> if (bestimmt) "den" else "einen"
-            Genus.FEMININUM -> if (bestimmt) "die" else "eine"
-            Genus.NEUTRUM -> if (bestimmt) "das" else "ein"
-          }
-        }
-        Numerus.PLURAL -> {
-          if (bestimmt) "die" else "einige"
-        }
-      }
-    }
   }
 }
+
+private val VORNOMEN_TABELLE = mapOf<TokenTyp.VORNOMEN, Array<Array<String>>>(
+    TokenTyp.VORNOMEN.ARTIKEL_BESTIMMT to arrayOf(
+        arrayOf("der", "die", "das", "die"),
+        arrayOf("des", "der", "des", "der"),
+        arrayOf("dem", "der", "dem", "den"),
+        arrayOf("den", "die", "das", "die")
+    ),
+
+    TokenTyp.VORNOMEN.ARTIKEL_UNBESTIMMT to arrayOf(
+        arrayOf("ein", "eine", "ein", "einige"),
+        arrayOf("eines", "einer", "eines", "einiger"),
+        arrayOf("einem", "einer", "einem", "einigen"),
+        arrayOf("einen", "eine", "ein", "einige")
+    ),
+
+    TokenTyp.VORNOMEN.JEDE to arrayOf(
+        arrayOf("jeder", "jede", "jedes", "alle"),
+        arrayOf("jedes", "jeder", "jedes", "aller"),
+        arrayOf("jedem", "jeder", "jedem", "allen"),
+        arrayOf("jeden", "jede", "jedes", "alle")
+    )
+)
 
 fun main() {
   val grammatikPrüfer = GrammatikPrüfer("./iterationen/iter_1/code.gms")
