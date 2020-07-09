@@ -1,11 +1,11 @@
-sealed class GermanScriptFehler(private val fehlerName: String, val token: Token): Error() {
+sealed class GermanScriptFehler(private val fehlerName: String, val token: Token): Exception() {
   abstract val nachricht: String
 
   override val message: String?
     get() {
       val pos = token.anfang
-      val vorspann = "$fehlerName in Datei '${token.dateiPfad}' (${pos.zeile}, ${pos.spalte}): "
-      return vorspann + "\n" + nachricht.lines().map { "\t" + it }.joinToString("\n")
+      val vorspann = "$fehlerName in '${token.dateiPfad}' (${pos.zeile}, ${pos.spalte}): "
+      return vorspann + "\n" + nachricht.lines().joinToString("\n", "\t")
     }
 
   sealed class SyntaxFehler(token: Token): GermanScriptFehler("Syntaxfehler", token) {
@@ -133,5 +133,15 @@ sealed class GermanScriptFehler(private val fehlerName: String, val token: Token
   class TypFehler(token: Token, private val erwarteterTyp: Typ): GermanScriptFehler("Typfehler", token) {
     override val nachricht: String
       get() = "Falscher Typ. Erwartet wird der Typ '${erwarteterTyp.name}'."
+  }
+
+  class KonvertierungsFehler(token: Token, private val von: Typ, private val zu: Typ): GermanScriptFehler("Konvertierungsfehler", token) {
+    override val nachricht: String
+      get() = "Die Konvertierung von $von zu $zu ist nicht möglich."
+  }
+
+  class LaufzeitFehler(token: Token, val aufrufStapel: AufrufStapel, val fehlerMeldung: String): GermanScriptFehler("Laufzeitfehler", token) {
+    override val nachricht: String
+      get() = "$fehlerMeldung\n$aufrufStapel"
   }
 }

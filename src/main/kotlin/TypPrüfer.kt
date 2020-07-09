@@ -62,21 +62,6 @@ class TypPrüfer(dateiPfad: String): ProgrammDurchlaufer<Typ>(dateiPfad) {
     return funktionsDefinition.rückgabeTyp?.typ
   }
 
-  private fun holeErstesTokenVonAusdruck(ausdruck: AST.Ausdruck): Token {
-    return when (ausdruck) {
-      is AST.Ausdruck.Zeichenfolge -> ausdruck.zeichenfolge.toUntyped()
-      is AST.Ausdruck.Liste -> ausdruck.pluralTyp.vornomen!!.toUntyped()
-      is AST.Ausdruck.Zahl -> ausdruck.zahl.toUntyped()
-      is AST.Ausdruck.Boolean -> ausdruck.boolean.toUntyped()
-      is AST.Ausdruck.Variable -> ausdruck.name.bezeichner.toUntyped()
-      is AST.Ausdruck.FunktionsAufruf -> ausdruck.aufruf.verb.toUntyped()
-      is AST.Ausdruck.ListenElement -> ausdruck.singular.vornomen!!.toUntyped()
-      is AST.Ausdruck.BinärerAusdruck -> holeErstesTokenVonAusdruck(ausdruck.links)
-      is AST.Ausdruck.Minus -> holeErstesTokenVonAusdruck(ausdruck.ausdruck)
-      is AST.Ausdruck.Konvertierung -> holeErstesTokenVonAusdruck(ausdruck.ausdruck)
-    }
-  }
-
   override fun durchlaufeZurückgabe(zurückgabe: AST.Satz.Zurückgabe) {
     val funktionsDefinition = zurückgabe.findNodeInParents<AST.Definition.Funktion>()!!
     val rückgabeTyp = funktionsDefinition.rückgabeTyp
@@ -162,7 +147,8 @@ class TypPrüfer(dateiPfad: String): ProgrammDurchlaufer<Typ>(dateiPfad) {
     val ausdruck = evaluiereAusdruck(konvertierung.ausdruck)
     typisierer.typisiereTypKnoten(konvertierung.typ)
     if (!ausdruck.istKonvertierbar(konvertierung.typ.typ!!)){
-      throw Error("Keine Konvertierung möglich!!")
+      throw GermanScriptFehler.KonvertierungsFehler(konvertierung.typ.name.bezeichner.toUntyped(),
+          ausdruck, konvertierung.typ.typ!!)
     }
 
 //    if (!ausdruck.definierteKonvertierungen.contains(typ)){

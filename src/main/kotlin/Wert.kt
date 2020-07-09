@@ -1,17 +1,16 @@
 import java.text.*
 import java.math.*
-import java.lang.ArithmeticException
-import kotlin.math.roundToInt
+import kotlin.math.*
 
 
 sealed class Wert {
-  data class Zeichenfolge(val wert: String): Wert(), Comparable<Zeichenfolge> {
-    override fun toString(): String = wert
-    operator fun plus(zeichenfolge: Zeichenfolge) = this.wert + zeichenfolge.wert
-    override fun compareTo(other: Zeichenfolge): Int = this.wert.compareTo(other.wert)
+  data class Zeichenfolge(val zeichenfolge: String): Wert(), Comparable<Zeichenfolge> {
+    override fun toString(): String = zeichenfolge
+    operator fun plus(zeichenfolge: Zeichenfolge) = this.zeichenfolge + zeichenfolge.zeichenfolge
+    override fun compareTo(other: Zeichenfolge): Int = this.zeichenfolge.compareTo(other.zeichenfolge)
   }
 
-  class Zahl(val wert: Double): Wert(), Comparable<Zahl> {
+  class Zahl(val zahl: Double): Wert(), Comparable<Zahl> {
     object Static {
       val format = DecimalFormat()
       init {
@@ -31,36 +30,36 @@ sealed class Wert {
     }
 
     constructor(zahl: String): this(Static.format.parse(zahl).toDouble())
-    override fun toString(): String = Static.format.format(wert)
+    override fun toString(): String = Static.format.format(zahl)
 
-    operator fun unaryMinus() = Zahl(-this.wert)
-    operator fun plus(zahl: Zahl) = Zahl(this.wert + zahl.wert)
-    operator fun minus(zahl: Zahl) = Zahl(this.wert - zahl.wert)
-    operator fun times(zahl: Zahl) = Zahl(this.wert * zahl.wert)
+    operator fun unaryMinus() = Zahl(-this.zahl)
+    operator fun plus(other: Zahl) = Zahl(this.zahl + other.zahl)
+    operator fun minus(other: Zahl) = Zahl(this.zahl - other.zahl)
+    operator fun times(other: Zahl) = Zahl(this.zahl * other.zahl)
 
-    operator fun div(zahl: Zahl) = Zahl(this.wert / zahl.wert)
+    operator fun div(other: Zahl) = Zahl(this.zahl / other.zahl)
 
     override fun equals(other: Any?): kotlin.Boolean {
       return if (other is Zahl) {
-        this.wert.compareTo(other.wert) == 0
+        this.zahl.compareTo(other.zahl) == 0
       } else {
         false
       }
     }
 
-    override fun hashCode(): Int = this.wert.hashCode()
+    override fun hashCode(): Int = this.zahl.hashCode()
 
-    operator fun rem(zahl: Zahl) = Zahl(this.wert % zahl.wert)
-    fun pow(zahl: Zahl): Zahl   = Zahl(Math.pow(this.wert, zahl.wert))
-    fun toInt() = this.wert.toInt()
-    fun toDouble() = this.wert
-    fun round() = wert.roundToInt()
-    fun floor() = kotlin.math.floor(wert)
-    fun ceil() = kotlin.math.ceil(wert)
+    operator fun rem(other: Zahl) = Zahl(this.zahl % other.zahl)
+    fun pow(other: Zahl): Zahl   = Zahl(this.zahl.pow(other.zahl))
+    fun toInt() = zahl.toInt()
+    fun toDouble() = zahl
+    fun round() = zahl.roundToInt()
+    fun floor() = floor(zahl)
+    fun ceil() = ceil(zahl)
 
-    override fun compareTo(other: Zahl): Int = this.wert.compareTo(other.wert)
+    override fun compareTo(other: Zahl): Int = this.zahl.compareTo(other.zahl)
 
-    fun isZero() = this.wert == 0.0
+    fun isZero() = this.zahl == 0.0
   }
 
   class Boolean(val boolean: kotlin.Boolean): Wert() {

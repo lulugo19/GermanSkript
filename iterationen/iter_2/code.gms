@@ -7,8 +7,9 @@ Verb schreibe die Zeichenfolge Bereich:
 
 //Typ-Umwandlung
 schreibe den Bereich "Typ-Umwandlung"
-die Zahl ist 4^2
-schreibe die Zeile (die Zahl als Zeichenfolge)
+die Zeichenfolge ist "1,7239"
+die Zahl ist die Zeichenfolge als Zahl
+schreibe die Zahl
 
 // Binärer Ausdruck
 // Es ist jetzt möglich dass bei einem binären Ausdruck als Argument der erste Operand als Parametername erkannt wird
@@ -25,3 +26,13 @@ Verb(Zahl) fakultät von der Zahl:
 .
 schreibe die Zeichenfolge "Die Fakulät von der Zahl 6 ist: "
 schreibe die Zahl (fakultät von der Zahl 6)
+
+// Stack Overflow Handling
+schreibe den Bereich "Stack Overflow"
+Verb rekursiv eins:
+    rekursiv zwei
+.
+Verb rekursiv zwei:
+    rekursiv eins
+.
+rekursiv eins

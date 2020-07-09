@@ -40,6 +40,21 @@ abstract  class ProgrammDurchlaufer<T>(dateiPfad: String): PipelineKomponente(da
     }
   }
 
+  protected fun holeErstesTokenVonAusdruck(ausdruck: AST.Ausdruck): Token {
+    return when (ausdruck) {
+      is AST.Ausdruck.Zeichenfolge -> ausdruck.zeichenfolge.toUntyped()
+      is AST.Ausdruck.Liste -> ausdruck.pluralTyp.vornomen!!.toUntyped()
+      is AST.Ausdruck.Zahl -> ausdruck.zahl.toUntyped()
+      is AST.Ausdruck.Boolean -> ausdruck.boolean.toUntyped()
+      is AST.Ausdruck.Variable -> ausdruck.name.bezeichner.toUntyped()
+      is AST.Ausdruck.FunktionsAufruf -> ausdruck.aufruf.verb.toUntyped()
+      is AST.Ausdruck.ListenElement -> ausdruck.singular.vornomen!!.toUntyped()
+      is AST.Ausdruck.BinärerAusdruck -> holeErstesTokenVonAusdruck(ausdruck.links)
+      is AST.Ausdruck.Minus -> holeErstesTokenVonAusdruck(ausdruck.ausdruck)
+      is AST.Ausdruck.Konvertierung -> holeErstesTokenVonAusdruck(ausdruck.ausdruck)
+    }
+  }
+
   private fun durchlaufeVariablenDeklaration(deklaration: AST.Satz.VariablenDeklaration) {
     val wert = evaluiereAusdruck(deklaration.ausdruck)
     if (deklaration.name.vornomen!!.typ is TokenTyp.VORNOMEN.ARTIKEL_BESTIMMT) {

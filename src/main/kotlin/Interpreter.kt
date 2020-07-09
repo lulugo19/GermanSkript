@@ -1,4 +1,36 @@
+import java.text.ParseException
 import java.util.*
+
+class AufrufStapel {
+  private object Static {
+    const val CALL_STACK_OUTPUT_LIMIT = 50
+  }
+
+  private val stapel = Stack<AST.FunktionsAufruf>()
+
+  fun top(): AST.FunktionsAufruf = stapel.peek()
+  fun push(funktionsAufruf: AST.FunktionsAufruf): Unit = stapel.push(funktionsAufruf).let { Unit }
+  fun pop(): AST.FunktionsAufruf = stapel.pop()
+
+  override fun toString(): String {
+    if (stapel.isEmpty()) {
+      return ""
+    }
+    return "Aufrufstapel:\n"+ stapel.reversed().joinToString(
+        "\n",
+        "\t",
+        "",
+        Static.CALL_STACK_OUTPUT_LIMIT,
+        "...",
+        ::funktionsAufrufZuString
+    )
+  }
+
+  private fun funktionsAufrufZuString(funktionsAufruf: AST.FunktionsAufruf): String {
+    val token = funktionsAufruf.verb
+    return "${funktionsAufruf.vollerName} in '${token.dateiPfad}' ${token.anfang}"
+  }
+}
 
 class Interpreter(dateiPfad: String): ProgrammDurchlaufer<Wert>(dateiPfad) {
   val typPrüfer = TypPrüfer(dateiPfad)
@@ -7,10 +39,15 @@ class Interpreter(dateiPfad: String): ProgrammDurchlaufer<Wert>(dateiPfad) {
 
   private var rückgabeWert: Wert? = null
   private val flags = EnumSet.noneOf(Flag::class.java)
+  private val aufrufStapel = AufrufStapel()
 
   fun interpretiere() {
     typPrüfer.prüfe()
-    durchlaufe(ast.sätze, Umgebung(), true)
+    try {
+      durchlaufe(ast.sätze, Umgebung(), true)
+    } catch (stackOverflow: StackOverflowError) {
+      throw GermanScriptFehler.LaufzeitFehler(aufrufStapel.top().verb.toUntyped(), aufrufStapel, "Stack Overflow")
+    }
   }
 
   enum class Flag {
@@ -39,7 +76,9 @@ class Interpreter(dateiPfad: String): ProgrammDurchlaufer<Wert>(dateiPfad) {
       val argumentWert = evaluiereAusdruck(argument.wert)
       funktionsUmgebung.schreibeVariable(argument.name, argumentWert)
     }
+    aufrufStapel.push(funktionsAufruf)
     stack.push(funktionsUmgebung)
+    rückgabeWert = null
     val funktionsDefinition = definierer.holeFunktionsDefinition(funktionsAufruf)
     if (funktionsDefinition.sätze.isNotEmpty() && funktionsDefinition.sätze.first() is AST.Satz.Intern) {
       interneFunktionen.getValue(funktionsAufruf.vollerName!!)()
@@ -47,6 +86,7 @@ class Interpreter(dateiPfad: String): ProgrammDurchlaufer<Wert>(dateiPfad) {
       durchlaufeSätze(funktionsDefinition.sätze, false)
     }
     stack.pop()
+    aufrufStapel.pop()
     return funktionsDefinition.rückgabeTyp?.let { rückgabeWert }
   }
 
@@ -123,7 +163,13 @@ class Interpreter(dateiPfad: String): ProgrammDurchlaufer<Wert>(dateiPfad) {
     val operator = ausdruck.operator.typ.operator
     return when (links) {
       is Wert.Zeichenfolge -> zeichenFolgenOperation(operator, links, rechts as Wert.Zeichenfolge)
-      is Wert.Zahl -> zahlOperation(operator, links, rechts as Wert.Zahl)
+      is Wert.Zahl -> {
+        if ((rechts as Wert.Zahl).isZero() && operator == Operator.GETEILT) {
+          throw GermanScriptFehler.LaufzeitFehler(holeErstesTokenVonAusdruck(ausdruck.rechts), aufrufStapel,
+            "Division durch 0. Es kann nicht durch 0 dividiert werden.")
+        }
+        zahlOperation(operator, links, rechts)
+      }
       is Wert.Boolean -> booleanOperation(operator, links, rechts as Wert.Boolean)
       is Wert.Liste -> listenOperation(operator, links, rechts as Wert.Liste)
     }
@@ -138,7 +184,7 @@ class Interpreter(dateiPfad: String): ProgrammDurchlaufer<Wert>(dateiPfad) {
       Operator.GRÖSSER_GLEICH -> Wert.Boolean(links >= rechts)
       Operator.KLEINER_GLEICH -> Wert.Boolean(links <= rechts)
       Operator.PLUS -> Wert.Zeichenfolge(links + rechts)
-      else -> throw Error("Operator $operator ist für den Typen Zeichenfolge nicht definiert.")
+      else -> throw Exception("Operator $operator ist für den Typen Zeichenfolge nicht definiert.")
     }
   }
 
@@ -156,7 +202,7 @@ class Interpreter(dateiPfad: String): ProgrammDurchlaufer<Wert>(dateiPfad) {
       Operator.GETEILT -> links / rechts
       Operator.MODULO -> links % rechts
       Operator.HOCH -> links.pow(rechts)
-      else -> throw Error("Operator $operator ist für den Typen Zahl nicht definiert.")
+      else -> throw Exception("Operator $operator ist für den Typen Zahl nicht definiert.")
     }
   }
 
@@ -166,14 +212,14 @@ class Interpreter(dateiPfad: String): ProgrammDurchlaufer<Wert>(dateiPfad) {
       Operator.UND -> Wert.Boolean(links.boolean && rechts.boolean)
       Operator.GLEICH -> Wert.Boolean(links.boolean == rechts.boolean)
       Operator.UNGLEICH -> Wert.Boolean(links.boolean != rechts.boolean)
-      else -> throw Error("Operator $operator ist für den Typen Boolean nicht definiert.")
+      else -> throw Exception("Operator $operator ist für den Typen Boolean nicht definiert.")
     }
   }
 
   private fun listenOperation(operator: Operator, links: Wert.Liste, rechts: Wert.Liste): Wert {
     return when (operator) {
       Operator.PLUS -> Wert.Liste(links.elemente + rechts.elemente)
-      else -> throw Error("Operator $operator ist für den Typen Liste nicht definiert.")
+      else -> throw Exception("Operator $operator ist für den Typen Liste nicht definiert.")
     }
   }
 
@@ -184,8 +230,12 @@ class Interpreter(dateiPfad: String): ProgrammDurchlaufer<Wert>(dateiPfad) {
 
   override fun evaluiereListenElement(listenElement: AST.Ausdruck.ListenElement): Wert {
     val liste = evaluiereVariable(listenElement.singular.nominativPlural!!) as Wert.Liste
-    val index = evaluiereAusdruck(listenElement.index) as Wert.Zahl
-    return liste.elemente[index.toInt()]
+    val index = (evaluiereAusdruck(listenElement.index) as Wert.Zahl).toInt()
+    if (index >= liste.elemente.size) {
+      throw GermanScriptFehler.LaufzeitFehler(holeErstesTokenVonAusdruck(listenElement.index),
+        aufrufStapel,"Index außerhalb des Bereichs. Der Index ist $index, doch die Länge der Liste ist ${liste.elemente.size}.\n")
+    }
+    return liste.elemente[index]
   }
   // endregion
 
@@ -211,41 +261,46 @@ class Interpreter(dateiPfad: String): ProgrammDurchlaufer<Wert>(dateiPfad) {
       }
   )
 
-  val konvertierungsTabelle = mapOf<Typ, (Wert)-> Wert>(
-          Typ.Zahl to {
-            wert -> when (wert){
-            is Wert.Zeichenfolge -> Wert.Zahl(wert.wert)
-            is Wert.Boolean -> {
-              if (wert.boolean){
-                Wert.Zahl("1")
-              }else{
-                Wert.Zahl("0")
-              }
-            }
-            else -> wert
-          }
-          },
-
-          Typ.Zeichenfolge to {
-            wert -> when(wert){
-            is Wert.Zahl -> Wert.Zeichenfolge(wert.toString())
-            is Wert.Boolean -> Wert.Zeichenfolge(if (wert.boolean) "wahr" else "falsch")
-            else -> wert
-          }
-          },
-
-          Typ.Boolean to {
-            wert -> when(wert){
-            is Wert.Zahl -> Wert.Boolean(wert.isZero())
-            is Wert.Zeichenfolge -> Wert.Boolean(wert.wert.isNotEmpty())
-            else -> wert
-          }
-          }
-  )
-
   override fun evaluiereKonvertierung(konvertierung: AST.Ausdruck.Konvertierung): Wert {
     val wert = evaluiereAusdruck(konvertierung.ausdruck)
-    return konvertierungsTabelle.getValue(konvertierung.typ.typ!!)(wert)
+    return when (konvertierung.typ.typ!!) {
+      is Typ.Zahl -> konvertiereZuZahl(konvertierung, wert)
+      is Typ.Boolean -> konvertiereZuBoolean(konvertierung, wert)
+      is Typ.Zeichenfolge -> konvertiereZuZeichenfolge(konvertierung, wert)
+      else -> throw Exception("Typprüfer sollte diesen Fall schon überprüfen!")
+    }
+  }
+
+  private fun konvertiereZuZahl(konvertierung: AST.Ausdruck.Konvertierung, wert: Wert): Wert.Zahl {
+    return when (wert) {
+      is Wert.Zeichenfolge -> {
+        try {
+          Wert.Zahl(wert.zeichenfolge)
+        }
+        catch (parseFehler: ParseException) {
+          throw GermanScriptFehler.LaufzeitFehler(konvertierung.typ.name.bezeichner.toUntyped(), aufrufStapel,
+              "Die Zeichenfolge '${wert.zeichenfolge}' kann nicht in eine Zahl konvertiert werden.")
+        }
+      }
+      is Wert.Boolean -> Wert.Zahl(if (wert.boolean) 1.0 else 0.0)
+      else -> throw Exception("Typ-Prüfer sollte dies schon überprüfen!")
+    }
+  }
+
+  private fun konvertiereZuZeichenfolge(konvertierung: AST.Ausdruck.Konvertierung, wert: Wert): Wert.Zeichenfolge {
+    return when (wert) {
+      is Wert.Zahl -> Wert.Zeichenfolge(wert.toString())
+      is Wert.Boolean -> Wert.Zeichenfolge(if(wert.boolean) "wahr" else "falsch")
+      else -> throw Exception("Typ-Prüfer sollte dies schon überprüfen!")
+    }
+  }
+
+  private fun konvertiereZuBoolean(konvertierung: AST.Ausdruck.Konvertierung, wert: Wert): Wert.Boolean {
+    return when (wert) {
+      is Wert.Zeichenfolge -> Wert.Boolean(wert.zeichenfolge.isNotEmpty())
+      is Wert.Zahl -> Wert.Boolean(!wert.isZero())
+      else -> throw Exception("Typ-Prüfer sollte dies schon überprüfen!")
+    }
   }
   // endregion
 }

@@ -259,7 +259,7 @@ class Lexer(datei: String): PipelineKomponente(datei) {
 
     fun fügeDateiHinzu(dateiPfad: String) {
         if (bearbeiteteDateien.contains(dateiPfad)) {
-            throw Error("zyklische Imports!!!")
+            throw Exception("zyklische Imports!!!")
         }
         dateiPfadSchlange.add(dateiPfad)
     }

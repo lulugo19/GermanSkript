@@ -5,12 +5,13 @@ import java.util.*
 import kotlin.Error
 import kotlinx.coroutines.*
 import util.SimpleLogger
+import java.lang.Exception
 import kotlin.math.absoluteValue
 import kotlin.system.measureTimeMillis
 
 object Duden {
   val logger = SimpleLogger()
-  sealed class DudenFehler(message: String): Error(message) {
+  sealed class DudenFehler(message: String): Exception(message) {
      class NotFoundFehler(url: String): DudenFehler("Die Seite '$url' wurde nicht gefunden.")
      class ParseFehler(): DudenFehler("Die Grammatik konnte nicht geparst werden.")
      class KeinInternetFehler(): DudenFehler("Es besteht keine Internet-Verbindung.")

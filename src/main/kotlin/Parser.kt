@@ -366,7 +366,12 @@ private sealed class SubParser<T: AST>() {
       var wert = parseNomenAusdruck(nomen, false)
       if (wert is AST.Ausdruck.Variable) {
         wert = when(peekType()) {
-          is TokenTyp.NEUE_ZEILE, is TokenTyp.PUNKT, is TokenTyp.KOMMA, is TokenTyp.BEZEICHNER_KLEIN -> wert
+          is TokenTyp.NEUE_ZEILE,
+          is TokenTyp.PUNKT,
+          is TokenTyp.KOMMA,
+          is TokenTyp.BEZEICHNER_KLEIN,
+          is TokenTyp.GESCHLOSSENE_KLAMMER -> wert
+
           else -> subParse(Ausdruck())
         }
       }
@@ -521,7 +526,7 @@ private sealed class SubParser<T: AST>() {
         return when (peekType()) {
           TokenTyp.FORTFAHREN -> AST.Satz.SchleifenKontrolle.Fortfahren
           TokenTyp.ABBRECHEN -> AST.Satz.SchleifenKontrolle.Abbrechen
-          else -> throw Error("Entweder 'fortfahren' oder 'abbrechen'")
+          else -> throw Exception("Entweder 'fortfahren' oder 'abbrechen'")
         }.also { next() }
       }
     }
