@@ -14,25 +14,18 @@ class GrammatikPrüfer(dateiPfad: String): PipelineKomponente(dateiPfad) {
       when (knoten) {
         is AST.Definition.Funktion -> prüfeFunktionsDefinition(knoten)
         is AST.Satz.VariablenDeklaration -> prüfeVariablendeklaration(knoten)
+        is AST.Satz.BedingungsTerm -> prüfeKontextbasiertenAusdruck(knoten.bedingung, null, EnumSet.of(Kasus.NOMINATIV))
+        is AST.Satz.Zurückgabe -> prüfeKontextbasiertenAusdruck(knoten.ausdruck, null, EnumSet.of(Kasus.AKKUSATIV))
         is AST.Satz.FürJedeSchleife -> prüfeFürJedeSchleife(knoten)
         is AST.Satz.FunktionsAufruf -> prüfeFunktionsAufruf(knoten.aufruf)
         is AST.Ausdruck.FunktionsAufruf -> prüfeFunktionsAufruf(knoten.aufruf)
-        is AST.Satz.Zurückgabe -> prüfeZurückgabe(knoten)
         is AST.Ausdruck -> when (knoten) {
-            is AST.Ausdruck.BinärerAusdruck -> prüfeBinärenAusdruck(knoten)
             is AST.Ausdruck.Minus -> prüfeMinus(knoten)
             else -> return@visit false
         }
       }
       // visit everything
       true
-    }
-  }
-
-  private fun prüfeZurückgabe(zurückgabe: AST.Satz.Zurückgabe) {
-    if (zurückgabe.ausdruck is AST.Ausdruck.Variable) {
-      val variable = zurückgabe.ausdruck
-      prüfeNomen(variable.name, EnumSet.of(Kasus.AKKUSATIV))
     }
   }
 
@@ -97,6 +90,15 @@ class GrammatikPrüfer(dateiPfad: String): PipelineKomponente(dateiPfad) {
     }
   }
 
+  // TODO: eventuell entfernen
+  private fun prüfeKontextbasierteKindAusdrücke(knoten: AST.Satz, kontextNomen: AST.Nomen?, fälle: EnumSet<Kasus>) {
+    for (child in knoten.children) {
+      if (child is AST.Ausdruck) {
+        prüfeKontextbasiertenAusdruck(child, kontextNomen, fälle)
+      }
+    }
+  }
+
   // region kontextbasierte Ausdrücke
   private fun prüfeKontextbasiertenAusdruck(ausdruck: AST.Ausdruck, kontextNomen: AST.Nomen?, fälle: EnumSet<Kasus>) {
     when (ausdruck) {
@@ -104,7 +106,9 @@ class GrammatikPrüfer(dateiPfad: String): PipelineKomponente(dateiPfad) {
       is AST.Ausdruck.Liste ->  prüfeListe(ausdruck, kontextNomen, fälle)
       is AST.Ausdruck.ListenElement -> prüfeListenElement(ausdruck, kontextNomen, fälle)
       is AST.Ausdruck.Konvertierung -> prüfeKonvertierung(ausdruck, kontextNomen, fälle)
-      is AST.Ausdruck.BinärerAusdruck -> prüfeBinärenAusdruck(ausdruck)
+      is AST.Ausdruck.BinärerAusdruck -> prüfeBinärenAusdruck(ausdruck, kontextNomen, fälle)
+      is AST.Ausdruck.FunktionsAufruf -> prüfeFunktionsAufruf(ausdruck.aufruf)
+      is AST.Ausdruck.Minus -> prüfeMinus(ausdruck)
     }
   }
 
@@ -147,6 +151,16 @@ class GrammatikPrüfer(dateiPfad: String): PipelineKomponente(dateiPfad) {
     }
     // logger.addLine("geprüft: $variablenDeklaration")
     prüfeKontextbasiertenAusdruck(variablenDeklaration.ausdruck, nomen, EnumSet.of(Kasus.NOMINATIV))
+  }
+
+  private fun prüfeBinärenAusdruck(binärerAusdruck: AST.Ausdruck.BinärerAusdruck, kontextNomen: AST.Nomen?, fälle: EnumSet<Kasus>) {
+    val rechterKasus = EnumSet.of(binärerAusdruck.operator.typ.operator.klasse.kasus)
+    val linkerKasus = if (binärerAusdruck.istAnfang) fälle else rechterKasus
+
+    // kontextNomen gilt nur für den linken Ausdruck (für den aller ersten Audruck in dem binären Ausdruck)
+    prüfeKontextbasiertenAusdruck(binärerAusdruck.links, kontextNomen, linkerKasus)
+    prüfeKontextbasiertenAusdruck(binärerAusdruck.rechts, null, rechterKasus)
+    logger.addLine("geprüft: $binärerAusdruck")
   }
 
   private fun prüfeFürJedeSchleife(fürJedeSchleife: AST.Satz.FürJedeSchleife) {
@@ -210,16 +224,6 @@ class GrammatikPrüfer(dateiPfad: String): PipelineKomponente(dateiPfad) {
       prüfePräpositionsArgumente(präposition)
     }
     // logger.addLine("geprüft: $funktionsAufruf")
-  }
-
-  // TODO: binären Ausdruck sollte auch kontextsensitiv sein
-  private fun prüfeBinärenAusdruck(binärerAusdruck: AST.Ausdruck.BinärerAusdruck) {
-    val rechterKasus = binärerAusdruck.operator.typ.operator.klasse.kasus
-    val linkerKasus = if (binärerAusdruck.istAnfang) Kasus.NOMINATIV else rechterKasus
-
-    prüfeKontextbasiertenAusdruck(binärerAusdruck.links, null, EnumSet.of(linkerKasus))
-    prüfeKontextbasiertenAusdruck(binärerAusdruck.rechts, null, EnumSet.of(rechterKasus))
-    logger.addLine("geprüft: $binärerAusdruck")
   }
 
   private fun prüfeMinus(knoten: AST.Ausdruck.Minus) {

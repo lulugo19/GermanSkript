@@ -15,7 +15,6 @@ enum class ASTKnotenID {
   FÜR_JEDE_SCHLEIFE,
   SCHLEIFENKONTROLLE,
   LISTE,
-  VARIABLE,
   LISTEN_ELEMENT
 }
 
@@ -176,11 +175,11 @@ private sealed class SubParser<T: AST>() {
     }
   }
 
-  protected fun parseNomenAusdruck(nomen: AST.Nomen): AST.Ausdruck {
+  protected fun parseNomenAusdruck(nomen: AST.Nomen, inBinärenAusdruck: Boolean): AST.Ausdruck {
     val ausdruck = when (nomen.vornomen!!.typ) {
       is TokenTyp.VORNOMEN.ARTIKEL_BESTIMMT -> when(peekType()) {
         is TokenTyp.OFFENE_ECKIGE_KLAMMER -> subParse(NomenAusdruck.ListenElement(nomen))
-        else -> subParse(NomenAusdruck.Variable(nomen))
+        else -> AST.Ausdruck.Variable(nomen)
       }
       is TokenTyp.VORNOMEN.ARTIKEL_UNBESTIMMT -> subParse(NomenAusdruck.Liste(nomen))
       is TokenTyp.VORNOMEN.JEDE -> throw GermanScriptFehler.SyntaxFehler.ParseFehler(nomen.vornomen.toUntyped())
@@ -191,6 +190,9 @@ private sealed class SubParser<T: AST>() {
         next()
         val typ = parseNomen()
         AST.Ausdruck.Konvertierung(ausdruck, AST.TypKnoten(typ))
+      }
+      is TokenTyp.OPERATOR -> {
+         if (inBinärenAusdruck) ausdruck else subParse(Ausdruck(ausdruck))
       }
       else -> ausdruck
     }
@@ -253,17 +255,17 @@ private sealed class SubParser<T: AST>() {
     }
   }
 
-  object Ausdruck: SubParser<AST.Ausdruck>() {
+  class Ausdruck(private val linkerAusdruck: AST.Ausdruck? = null): SubParser<AST.Ausdruck>() {
     override val id: ASTKnotenID
       get() = ASTKnotenID.AUSDRUCK
 
     override fun parseImpl(): AST.Ausdruck {
-      return parseBinärerAusdruck(0.0)
+      return parseBinärenAusdruck(0.0, linkerAusdruck)
     }
 
     // pratt parsing: https://matklad.github.io/2020/04/13/simple-but-powerful-pratt-parsing.html
-    private fun parseBinärerAusdruck(minBindungskraft: Double) : AST.Ausdruck {
-      var leftHandSide = parseEinzelnerAusdruck()
+    private fun parseBinärenAusdruck(minBindungskraft: Double, links: AST.Ausdruck? = null) : AST.Ausdruck {
+      var links = links?: parseEinzelnerAusdruck()
 
       loop@ while (true) {
         val operator = when (val tokenTyp = peekType()) {
@@ -277,11 +279,11 @@ private sealed class SubParser<T: AST>() {
           break
         }
         val operatorToken = expect<TokenTyp.OPERATOR>("Operator")
-        val rightHandSide = parseBinärerAusdruck(rechteBindungsKraft)
-        leftHandSide = AST.Ausdruck.BinärerAusdruck(operatorToken, leftHandSide, rightHandSide, minBindungskraft == 0.0)
+        val rechts = parseBinärenAusdruck(rechteBindungsKraft)
+        links = AST.Ausdruck.BinärerAusdruck(operatorToken, links, rechts, minBindungskraft == 0.0)
       }
 
-      return leftHandSide
+      return links
     }
 
     private fun parseEinzelnerAusdruck(): AST.Ausdruck {
@@ -291,7 +293,7 @@ private sealed class SubParser<T: AST>() {
         is TokenTyp.BOOLEAN -> AST.Ausdruck.Boolean(next().toTyped())
         is TokenTyp.BEZEICHNER_KLEIN -> AST.Ausdruck.FunktionsAufruf(subParse(FunktionsAufruf))
         is TokenTyp.BEZEICHNER_GROSS -> AST.Ausdruck.Variable(parseNomen())
-        is TokenTyp.VORNOMEN -> parseNomenAusdruck(parseNomen())
+        is TokenTyp.VORNOMEN -> parseNomenAusdruck(parseNomen(), true)
         is TokenTyp.OFFENE_KLAMMER -> {
           next()
           parseImpl().also { expect<TokenTyp.GESCHLOSSENE_KLAMMER>("')'") }
@@ -322,21 +324,13 @@ private sealed class SubParser<T: AST>() {
   }
 
   sealed class NomenAusdruck<T: AST.Ausdruck>(protected val nomen: AST.Nomen): SubParser<T>() {
-    class Variable(nomen: AST.Nomen): NomenAusdruck<AST.Ausdruck.Variable>(nomen) {
-      override val id: ASTKnotenID = ASTKnotenID.VARIABLE
-
-      override fun parseImpl(): AST.Ausdruck.Variable {
-        return AST.Ausdruck.Variable(nomen)
-      }
-    }
-
     class Liste(nomen: AST.Nomen): NomenAusdruck<AST.Ausdruck.Liste>(nomen) {
       override val id: ASTKnotenID
         get() = ASTKnotenID.LISTE
 
       override fun parseImpl(): AST.Ausdruck.Liste {
         expect<TokenTyp.OFFENE_ECKIGE_KLAMMER>("'['")
-        val elemente = parseListeMitEnde<AST.Ausdruck, TokenTyp.KOMMA, TokenTyp.GESCHLOSSENE_ECKIGE_KLAMMER>(true) {subParse(Ausdruck)}
+        val elemente = parseListeMitEnde<AST.Ausdruck, TokenTyp.KOMMA, TokenTyp.GESCHLOSSENE_ECKIGE_KLAMMER>(true) {subParse(Ausdruck())}
         expect<TokenTyp.GESCHLOSSENE_ECKIGE_KLAMMER>("']'")
         return AST.Ausdruck.Liste(nomen, elemente)
       }
@@ -348,7 +342,7 @@ private sealed class SubParser<T: AST>() {
 
       override fun parseImpl(): AST.Ausdruck.ListenElement {
         expect<TokenTyp.OFFENE_ECKIGE_KLAMMER>("'['")
-        val index = subParse(Ausdruck)
+        val index = subParse(Ausdruck())
         expect<TokenTyp.GESCHLOSSENE_ECKIGE_KLAMMER>("']'")
         return AST.Ausdruck.ListenElement(nomen, index)
       }
@@ -369,11 +363,11 @@ private sealed class SubParser<T: AST>() {
 
     fun parseArgument(): AST.Argument {
       val nomen = parseNomen()
-      var wert = parseNomenAusdruck(nomen)
+      var wert = parseNomenAusdruck(nomen, false)
       if (wert is AST.Ausdruck.Variable) {
         wert = when(peekType()) {
           is TokenTyp.NEUE_ZEILE, is TokenTyp.PUNKT, is TokenTyp.KOMMA, is TokenTyp.BEZEICHNER_KLEIN -> wert
-          else -> subParse(Ausdruck)
+          else -> subParse(Ausdruck())
         }
       }
       return AST.Argument(nomen, wert)
@@ -415,7 +409,7 @@ private sealed class SubParser<T: AST>() {
       override fun parseImpl(): AST.Satz.VariablenDeklaration {
         val name = parseNomen()
         val zuweisung = expect<TokenTyp.ZUWEISUNG>("Zuweisung")
-        val ausdruck = subParse(Ausdruck)
+        val ausdruck = subParse(Ausdruck())
         return AST.Satz.VariablenDeklaration(name, zuweisung, ausdruck)
       }
     }
@@ -439,7 +433,7 @@ private sealed class SubParser<T: AST>() {
 
       override fun parseImpl(): AST.Satz.Zurückgabe {
         parseKleinesSchlüsselwort("gebe")
-        val ausdruck = subParse(Ausdruck)
+        val ausdruck = subParse(Ausdruck())
         parseKleinesSchlüsselwort("zurück")
         return AST.Satz.Zurückgabe(ausdruck)
       }
@@ -453,7 +447,7 @@ private sealed class SubParser<T: AST>() {
         val bedingungen = mutableListOf<AST.Satz.BedingungsTerm>()
 
         expect<TokenTyp.WENN>("'wenn'")
-        var bedingung = subParse(Ausdruck)
+        var bedingung = subParse(Ausdruck())
         var sätze = parseBereich { subParse(Programm) }.sätze
 
         bedingungen += AST.Satz.BedingungsTerm(bedingung, sätze)
@@ -466,7 +460,7 @@ private sealed class SubParser<T: AST>() {
             return AST.Satz.Bedingung(bedingungen, sätze)
           }
           expect<TokenTyp.WENN>("'wenn'")
-          bedingung = subParse(Ausdruck)
+          bedingung = subParse(Ausdruck())
           sätze = parseBereich { subParse(Programm) }.sätze
           val bedingungsTerm = AST.Satz.BedingungsTerm(bedingung, sätze)
           bedingungen += bedingungsTerm
@@ -482,7 +476,7 @@ private sealed class SubParser<T: AST>() {
 
       override fun parseImpl(): AST.Satz.SolangeSchleife {
         expect<TokenTyp.SOLANGE>("'solange'")
-        val bedingung = subParse(Ausdruck)
+        val bedingung = subParse(Ausdruck())
         val sätze = parseBereich { subParse(Programm) }.sätze
         return AST.Satz.SolangeSchleife(AST.Satz.BedingungsTerm(bedingung, sätze))
       }
@@ -632,5 +626,6 @@ private sealed class SubParser<T: AST>() {
 }
 
 fun main() {
-  println(Parser("./iterationen/iter_2/code.gms").parse())
+  val ast = Parser("./iterationen/iter_2/code.gms").parse()
+  println(ast)
 }

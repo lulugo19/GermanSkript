@@ -175,9 +175,11 @@ Client: verbinde dich
 ## TODO
 -[x] Wörterbuch-Bug beheben (Lukas)
 -[x] Typ-Konvertierungs-Bug bei Funktionsaufruf
--[ ] mehrere Dateien und Standardbibliothek
--[ ] erstes Element vom binären Ausdruck als NomenAusdruck
+-[x] mehrere Dateien und Standardbibliothek
+-[ ] Implementierung von Symbolen (große Bezeichner mit nur einem Buchstaben)
+-[x] erstes Element vom binären Ausdruck als NomenAusdruck
 -[ ] Fehlermeldungen
+-[ ] Wrapper um BigDecimal als Germanscript Zahlentyp
 -[ ] Klassendefinition
 -[ ] Klassen
 -[ ] Methoden
