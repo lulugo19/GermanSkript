@@ -1,5 +1,6 @@
 import kotlinx.coroutines.*
 import java.io.File
+import java.util.LinkedList
 import java.lang.Integer.min
 import kotlin.math.floor
 
@@ -124,7 +125,7 @@ class Wörterbuch {
   class WortNichtGefunden(wort: String): Error("Wort '$wort' nicht gefunden!")
   class DoppelteDeklinationFehler(deklination: Deklination): Error("Doppelte Deklination: $deklination!")
   
-  private val tabelle = MutableList<Deklination>(0) {Deklination(Genus.NEUTRUM, emptyArray())}
+  private val tabelle = LinkedList<Deklination>()
 
   // gibt Wörterbuch zurück
 
@@ -134,64 +135,50 @@ class Wörterbuch {
       return
     }
 
-    val nominativ = deklination.nominativSingular
+    val wort = deklination.nominativSingular
 
-    var min = 0
-    var max = tabelle.size
+    var lo = 0
+    var hi = tabelle.size
 
-    while (min != max) {
-      val avg = floor((min.toDouble() + max) / 2).toInt()
-      when {
-        nominativ > tabelle[avg].nominativSingular -> {
-          when {
-            avg == tabelle.size - 1 -> tabelle.add(deklination).also { return }
-            nominativ < tabelle[avg+1].nominativSingular -> tabelle.add(avg, deklination).also { return }
-            else -> min = avg
-          }
-        }
-        nominativ < tabelle[avg].nominativSingular -> {
-          when {
-            avg == 0 -> tabelle.add(0, deklination).also { return }
-            nominativ > tabelle[avg-1].nominativSingular -> tabelle.add(avg, deklination).also { return }
-            else -> max = avg
-          }
-        }
-        else -> throw DoppelteDeklinationFehler(deklination)
+    while (lo < hi) {
+      val mid = ((lo.toDouble() + hi) / 2).toInt()
+      if (tabelle[mid].nominativSingular < wort) {
+        lo = mid + 1
+      } else {
+        hi = mid
       }
     }
+
+    if (lo < tabelle.size && tabelle[lo].nominativSingular == wort) {
+      throw DoppelteDeklinationFehler(deklination)
+    }
+    tabelle.add(lo, deklination)
   }
 
   fun holeDeklination(wort: String): Deklination {
-    // TODO: hat wahrscheinlich einen Bug, das wenn bestimmte Wörter dadrin sind, ein bestimmtes Wort nicht gefunden werden kann
-    var min = 0
-    var max = tabelle.size
-    var lastDiff = 0
-    while (min != max) {
-      val avg = floor((min.toDouble() + max) / 2).toInt()
-      val deklination = tabelle[avg]
+    var lo = 0
+    var hi = tabelle.size
+    while (lo < hi) {
+      val mid = ((lo.toDouble() + hi) / 2).toInt()
+      val deklination = tabelle[mid]
       val nominativSingular = deklination.nominativSingular
       val maxLength = min(wort.length, nominativSingular.length)
       if (wortVergleichBerücksichtigeUmlaute(wort.substring(0, maxLength), deklination.nominativSingular) == 0) {
         if (deklination.fallSequenz.contains(wort)) {
           return deklination
         } else {
-          if (wort > nominativSingular) {
-            min = avg
+          if (nominativSingular < wort) {
+            lo = mid + 1
           } else {
-            max = avg
+            hi = mid
           }
         }
       }
-      else if (wortVergleichBerücksichtigeUmlaute(wort, deklination.nominativSingular) == -1) {
-        max = avg
+      else if (wortVergleichBerücksichtigeUmlaute(deklination.nominativSingular, wort) == -1) {
+        lo = mid + 1
       } else {
-        min = avg
+        hi = mid
       }
-      val newDiff = max - min
-      if (newDiff == lastDiff) {
-        break
-      }
-      lastDiff = newDiff
     }
 
     throw WortNichtGefunden(wort)
@@ -254,7 +241,7 @@ fun wörterBuchTest() {
 fun main() {
   // wörterBuchTest()
 
-  val deklanierer = Deklanierer("./iterationen/iter_1/code.gms")
+  val deklanierer = Deklanierer("./iterationen/iter_2/code.gms")
   deklanierer.deklaniere()
   deklanierer.druckeWörterbuch()
 }
