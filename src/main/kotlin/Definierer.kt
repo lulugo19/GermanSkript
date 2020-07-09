@@ -2,6 +2,7 @@ class Definierer(dateiPfad: String): PipelineKomponente(dateiPfad) {
   val grammatikPrüfer = GrammatikPrüfer(dateiPfad)
   val ast = grammatikPrüfer.ast
   private val funktionsDefinitionsMapping = hashMapOf<String, AST.Definition.Funktion>()
+  private val klassenDefinitionsMapping = hashMapOf<String, AST.Definition.Klasse>()
 
   fun definiere() {
     grammatikPrüfer.prüfe()
@@ -10,6 +11,7 @@ class Definierer(dateiPfad: String): PipelineKomponente(dateiPfad) {
     ast.definitionen.visit { knoten ->
       when (knoten) {
         is AST.Definition.Funktion -> definiereFunktion(knoten)
+        is AST.Definition.Klasse -> definiereKlasse(knoten)
       }
       return@visit false
     }
@@ -24,13 +26,21 @@ class Definierer(dateiPfad: String): PipelineKomponente(dateiPfad) {
     }
   }
 
+  fun holeKlassenDefinition(vollerName: String): AST.Definition.Klasse {
+    return klassenDefinitionsMapping.getValue(vollerName)
+  }
+
   val funktionsDefinitionen get(): Sequence<AST.Definition.Funktion> = funktionsDefinitionsMapping.values.asSequence()
 
   fun gebeFunktionsDefinitionenAus() {
-    funktionsDefinitionsMapping.forEach {
-      vollerName, definition ->
-
+    funktionsDefinitionsMapping.forEach { (vollerName, definition) ->
       println("$vollerName: $definition")
+    }
+  }
+
+  fun gebeKlassenDefinitionenAus() {
+    klassenDefinitionsMapping.forEach {(name, definition) ->
+      println("$name: $definition")
     }
   }
 
@@ -90,10 +100,25 @@ class Definierer(dateiPfad: String): PipelineKomponente(dateiPfad) {
     }
     return vollerName
   }
+
+  private fun definiereKlasse(klasse: AST.Definition.Klasse) {
+    val klassenName = klasse.name.nominativ!!
+    val reservierteNamen = arrayOf("Zahl", "Boolean", "Zeichenfolge")
+    if (reservierteNamen.contains(klassenName)) {
+      throw GermanScriptFehler.ReservierterTypName(klasse.name.bezeichner.toUntyped())
+    }
+    if (klassenDefinitionsMapping.containsKey(klasse.name.nominativ!!)) {
+      throw GermanScriptFehler.DoppelteDefinition.Klasse(klasse.name.bezeichner.toUntyped(),
+          klassenDefinitionsMapping.getValue(klasse.name.nominativ!!))
+    }
+    klassenDefinitionsMapping[klassenName] = klasse
+  }
+
 }
 
 fun main() {
-  val definierer = Definierer("./iterationen/iter_1/code.gms")
+  val definierer = Definierer("./iterationen/iter_2/code.gms")
   definierer.definiere()
   definierer.gebeFunktionsDefinitionenAus()
+  definierer.gebeKlassenDefinitionenAus()
 }

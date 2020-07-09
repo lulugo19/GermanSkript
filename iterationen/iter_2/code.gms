@@ -28,11 +28,20 @@ schreibe die Zeichenfolge "Die Fakulät von der Zahl 6 ist: "
 schreibe die Zahl (fakultät von der Zahl 6)
 
 // Klassendefinition
-Deklination Duden(Person)
+Deklination Femininum Singular(Person, Person, Person, Person) Plural(Personen, Personen, Personen, Personen)
+Deklination Maskulinum Singular(Name, Namens, Namen, Namen) Plural(Namen, Namen, Namen, Namen)
+Deklination Maskulinum Singular(Nachname, Nachnamens, Nachnamen, Nachnamen) Plural(Nachnamen, Nachnamen, Nachnamen, Nachnamen)
+Deklination Neutrum Singular(Alter, Alters, Alter, Alter) Plural(Alter, Alter, Alter, Alter)
+Deklination Femininum Singular(Begrüßung, Begrüßung, Begrüßung, Begrüßung) Plural(Begrüßungen, Begrüßungen, Begrüßungen, Begrüßungen)
+
 Nomen Person mit
     der Zeichenfolge Name,
     der Zeichenfolge Nachname,
     der Zahl Alter:
+.
+
+Verb begrüße die Person mit der Zeichenfolge Begrüßung:
+    schreibe die Zeile die Begrüßung + " Person"
 .
 
 // Stack Overflow Handling

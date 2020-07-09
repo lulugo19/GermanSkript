@@ -113,7 +113,9 @@ class TypPrüfer(dateiPfad: String): ProgrammDurchlaufer<Typ>(dateiPfad) {
   override fun evaluiereBoolean(ausdruck: AST.Ausdruck.Boolean) = Typ.Boolean
 
   override fun evaluiereListe(ausdruck: AST.Ausdruck.Liste): Typ {
-    return typisierer.bestimmeTypen(ausdruck.pluralTyp)
+    val listenTyp = typisierer.bestimmeTypen(ausdruck.pluralTyp) as Typ.Liste
+    ausdruck.elemente.forEach {element -> ausdruckMussTypSein(element, listenTyp.elementTyp)}
+    return listenTyp
   }
 
   override fun evaluiereListenElement(listenElement: AST.Ausdruck.ListenElement): Typ {
@@ -146,21 +148,18 @@ class TypPrüfer(dateiPfad: String): ProgrammDurchlaufer<Typ>(dateiPfad) {
   override fun evaluiereKonvertierung(konvertierung: AST.Ausdruck.Konvertierung): Typ{
     val ausdruck = evaluiereAusdruck(konvertierung.ausdruck)
     typisierer.typisiereTypKnoten(konvertierung.typ)
-    if (!ausdruck.istKonvertierbar(konvertierung.typ.typ!!)){
+    val konvertierungsTyp = konvertierung.typ.typ!!
+    if (!ausdruck.definierteKonvertierungen.contains(konvertierungsTyp)){
       throw GermanScriptFehler.KonvertierungsFehler(konvertierung.typ.name.bezeichner.toUntyped(),
-          ausdruck, konvertierung.typ.typ!!)
+          ausdruck, konvertierungsTyp)
     }
 
-//    if (!ausdruck.definierteKonvertierungen.contains(typ)){
-//      throw Error("Keine Konvertierung möglich!!")
-//    }
-
-    return konvertierung.typ.typ!!
+    return konvertierungsTyp
   }
 }
 
 fun main() {
-  val typPrüfer = TypPrüfer("./iterationen/iter_1/code.gms")
+  val typPrüfer = TypPrüfer("./iterationen/iter_2/code.gms")
   typPrüfer.prüfe()
   typPrüfer.logger.print()
 }

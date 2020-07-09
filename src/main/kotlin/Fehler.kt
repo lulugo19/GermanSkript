@@ -3,8 +3,7 @@ sealed class GermanScriptFehler(private val fehlerName: String, val token: Token
 
   override val message: String?
     get() {
-      val pos = token.anfang
-      val vorspann = "$fehlerName in '${token.dateiPfad}' (${pos.zeile}, ${pos.spalte}): "
+      val vorspann = "$fehlerName in ${token.position}: "
       return vorspann + "\n" + nachricht.lines().joinToString("\n", "\t")
     }
 
@@ -60,7 +59,7 @@ sealed class GermanScriptFehler(private val fehlerName: String, val token: Token
 
   class UnbekanntesWort(token: Token): GermanScriptFehler("Unbekanntes Wort", token) {
     override val nachricht: String
-      get() = "Das Wort ${token.wert} ist unbekannt. Füge eine Deklinationsanweisung für das Wort hinzu!"
+      get() = "Das Wort '${token.wert}' ist unbekannt. Füge eine Deklinationsanweisung für das Wort '${token.wert}' hinzu!"
   }
 
   sealed class GrammatikFehler(token: Token): GermanScriptFehler("Grammatikfehler",token) {
@@ -100,12 +99,23 @@ sealed class GermanScriptFehler(private val fehlerName: String, val token: Token
   sealed class DoppelteDefinition(token: Token): GermanScriptFehler("Definitionsfehler", token) {
     class Funktion(token: Token, private val definition: AST.Definition.Funktion): DoppelteDefinition(token) {
       override val nachricht: String
-        get() = "Die Funktion '${definition.vollerName}' ist schon in Zeile ${definition.name.anfang.zeile} definiert."
+        get() = "Die Funktion '${definition.vollerName}' ist schon in ${definition.name.position} definiert."
     }
+
+    class Klasse(token: Token, private val definition: AST.Definition.Klasse): DoppelteDefinition(token) {
+      override val nachricht: String
+        get() = "Die Klasse '${token.wert}' ist schon in ${definition.name.bezeichner.position} definiert."
+    }
+
     class UnveränderlicheVariable(token: Token): DoppelteDefinition(token){
       override val nachricht: String
         get() = "Die Variable '${token.wert}' kann nicht erneut zugewiesen werden, da sie unveränderlich ist."
     }
+  }
+
+  class ReservierterTypName(token: Token): GermanScriptFehler("Reservierter Typname", token) {
+    override val nachricht: String
+      get() = "Der Name '${token.wert}' kann nicht als Klassenname verwendet werden, da dieser ein reservierter Typname ist."
   }
 
   sealed class Undefiniert(token: Token): GermanScriptFehler("Undefiniert Fehler", token) {

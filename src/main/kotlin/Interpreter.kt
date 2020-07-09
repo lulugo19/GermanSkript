@@ -28,7 +28,7 @@ class AufrufStapel {
 
   private fun funktionsAufrufZuString(funktionsAufruf: AST.FunktionsAufruf): String {
     val token = funktionsAufruf.verb
-    return "${funktionsAufruf.vollerName} in '${token.dateiPfad}' ${token.anfang}"
+    return "${funktionsAufruf.vollerName} in ${token.position}"
   }
 }
 

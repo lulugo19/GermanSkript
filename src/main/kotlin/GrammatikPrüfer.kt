@@ -13,6 +13,7 @@ class GrammatikPrüfer(dateiPfad: String): PipelineKomponente(dateiPfad) {
     ast.visit() { knoten ->
       when (knoten) {
         is AST.Definition.Funktion -> prüfeFunktionsDefinition(knoten)
+        is AST.Definition.Klasse -> prüfeKlassenDefinition(knoten)
         is AST.Satz.VariablenDeklaration -> prüfeVariablendeklaration(knoten)
         is AST.Satz.BedingungsTerm -> prüfeKontextbasiertenAusdruck(knoten.bedingung, null, EnumSet.of(Kasus.NOMINATIV))
         is AST.Satz.Zurückgabe -> prüfeKontextbasiertenAusdruck(knoten.ausdruck, null, EnumSet.of(Kasus.AKKUSATIV))
@@ -141,7 +142,6 @@ class GrammatikPrüfer(dateiPfad: String): PipelineKomponente(dateiPfad) {
     prüfeKontextbasiertenAusdruck(konvertierung.ausdruck, kontextNomen, fälle)
   }
   // endregion
-
   private fun prüfeVariablendeklaration(variablenDeklaration: AST.Satz.VariablenDeklaration) {
     val nomen = variablenDeklaration.name
     prüfeNomen(nomen, EnumSet.of(Kasus.NOMINATIV))
@@ -186,6 +186,12 @@ class GrammatikPrüfer(dateiPfad: String): PipelineKomponente(dateiPfad) {
     }
   }
 
+  private fun prüfePräpositionsParameter(präposition: AST.Definition.PräpositionsParameter) {
+    for (parameter in präposition.parameter) {
+      prüfeParameter(parameter, präposition.präposition.fälle)
+    }
+  }
+
   private fun prüfeFunktionsDefinition(funktionsDefinition: AST.Definition.Funktion) {
     if (funktionsDefinition.rückgabeTyp != null) {
       prüfeNomen(funktionsDefinition.rückgabeTyp.name, EnumSet.of(Kasus.NOMINATIV))
@@ -199,11 +205,16 @@ class GrammatikPrüfer(dateiPfad: String): PipelineKomponente(dateiPfad) {
     // logger.addLine("geprüft: $funktionsDefinition")
   }
 
-  private fun prüfePräpositionsParameter(präposition: AST.Definition.PräpositionsParameter) {
-    for (parameter in präposition.parameter) {
-      prüfeParameter(parameter, präposition.präposition.fälle)
+  private fun prüfeKlassenDefinition(klasse: AST.Definition.Klasse) {
+    prüfeNomen(klasse.name, EnumSet.of(Kasus.NOMINATIV))
+    prüfeNumerus(klasse.name, Numerus.SINGULAR)
+
+    for (feld in klasse.felder) {
+      prüfeNomen(feld.typKnoten.name, EnumSet.of(Kasus.DATIV))
+      prüfeNomen(feld.name, EnumSet.of(Kasus.NOMINATIV))
     }
   }
+
 
   private fun prüfeArgument(argument: AST.Argument, fälle: EnumSet<Kasus>) {
     prüfeNomen(argument.name, fälle)

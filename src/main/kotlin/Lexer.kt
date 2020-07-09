@@ -66,11 +66,15 @@ data class Token(val typ: TokenTyp, val wert: String, val dateiPfad: String, val
             return "($zeile, $spalte)"
         }
     }
+
+    val position: String = "'$dateiPfad' $anfang"
 }
 
 // für den Parser gedacht
 data class TypedToken<out T : TokenTyp>(val typ: T, val wert: String, val dateiPfad: String, val anfang: Token.Position, val ende: Token.Position) {
     fun toUntyped()  = Token(typ, wert, dateiPfad, anfang, ende)
+
+    val position: String = "'$dateiPfad' $anfang"
 }
 
 sealed class TokenTyp(val anzeigeName: String) {
