@@ -15,7 +15,8 @@ enum class ASTKnotenID {
   FÜR_JEDE_SCHLEIFE,
   SCHLEIFENKONTROLLE,
   LISTE,
-  LISTEN_ELEMENT
+  LISTEN_ELEMENT,
+  KLASSEN_DEFINITION
 }
 
 class Parser(dateiPfad: String): PipelineKomponente(dateiPfad) {
@@ -89,20 +90,11 @@ private sealed class SubParser<T: AST>() {
     return token
   }
 
-  protected fun parseNomen(): AST.Nomen {
-    val vornomen = parseOptional<TokenTyp.VORNOMEN>()
+  protected inline fun<reified VornomenT: TokenTyp.VORNOMEN> parseNomen(mitVornomen: Boolean, erwartetesVornomen: String): AST.Nomen {
+    val vornomen = if (mitVornomen) expect<VornomenT>(erwartetesVornomen) else null
     if (vornomen != null && vornomen.typ == TokenTyp.VORNOMEN.JEDE) {
       throw GermanScriptFehler.SyntaxFehler.ParseFehler(vornomen.toUntyped(), null,
           "Das Pronomen '${vornomen.wert}' darf nur in Für-Jede-Schleifen vorkommen.")
-    }
-    val bezeichner = expect<TokenTyp.BEZEICHNER_GROSS>("Bezeichner")
-    return AST.Nomen(vornomen, bezeichner)
-  }
-
-  protected fun parseNomen(vornomenTyp: TokenTyp.VORNOMEN): AST.Nomen {
-    val vornomen = parseOptional<TokenTyp.VORNOMEN>()
-    if (vornomen != null && vornomen.typ != vornomenTyp) {
-      throw GermanScriptFehler.SyntaxFehler.ParseFehler(vornomen.toUntyped(), vornomenTyp.anzeigeName)
     }
     val bezeichner = expect<TokenTyp.BEZEICHNER_GROSS>("Bezeichner")
     return AST.Nomen(vornomen, bezeichner)
@@ -112,9 +104,11 @@ private sealed class SubParser<T: AST>() {
     if (canBeEmpty && peekType() !is StartTokenT) {
       return emptyList()
     }
+    überspringeLeereZeilen()
     val liste = mutableListOf(elementParser())
-    while (peekType() is TokenTyp.KOMMA) {
+    while (peekType() is TrennerT) {
       next()
+      überspringeLeereZeilen()
       liste.add(elementParser())
     }
     return liste
@@ -124,9 +118,11 @@ private sealed class SubParser<T: AST>() {
     if (canBeEmpty && peekType() is EndTokenT) {
       return emptyList()
     }
+    überspringeLeereZeilen()
     val liste = mutableListOf(elementParser())
     while (peekType() is TrennerT) {
       next()
+      überspringeLeereZeilen()
       liste.add(elementParser())
     }
     return liste
@@ -136,9 +132,11 @@ private sealed class SubParser<T: AST>() {
     if (canBeEmpty && peekType() !is T) {
       return emptyList()
     }
+    überspringeLeereZeilen()
     val liste = mutableListOf<TypedToken<T>>()
     while (peekType() is TrennerT) {
       next()
+      überspringeLeereZeilen()
       liste.add(expect(erwartet))
     }
     return liste
@@ -177,18 +175,18 @@ private sealed class SubParser<T: AST>() {
 
   protected fun parseNomenAusdruck(nomen: AST.Nomen, inBinärenAusdruck: Boolean): AST.Ausdruck {
     val ausdruck = when (nomen.vornomen!!.typ) {
-      is TokenTyp.VORNOMEN.ARTIKEL_BESTIMMT -> when(peekType()) {
+      is TokenTyp.VORNOMEN.ARTIKEL.BESTIMMT -> when(peekType()) {
         is TokenTyp.OFFENE_ECKIGE_KLAMMER -> subParse(NomenAusdruck.ListenElement(nomen))
         else -> AST.Ausdruck.Variable(nomen)
       }
-      is TokenTyp.VORNOMEN.ARTIKEL_UNBESTIMMT -> subParse(NomenAusdruck.Liste(nomen))
+      is TokenTyp.VORNOMEN.ARTIKEL.UNBESTIMMT -> subParse(NomenAusdruck.Liste(nomen))
       is TokenTyp.VORNOMEN.JEDE -> throw GermanScriptFehler.SyntaxFehler.ParseFehler(nomen.vornomen.toUntyped())
     }
 
     return when(peekType()){
       is TokenTyp.ALS -> {
         next()
-        val typ = parseNomen()
+        val typ = parseNomen<TokenTyp.VORNOMEN>(false, "Vornomen")
         AST.Ausdruck.Konvertierung(ausdruck, AST.TypKnoten(typ))
       }
       is TokenTyp.OPERATOR -> {
@@ -204,6 +202,8 @@ private sealed class SubParser<T: AST>() {
     expect<TokenTyp.PUNKT>(".")
     return result
   }
+
+  protected fun parseSätze(): List<AST.Satz> =  parseBereich { subParse(Programm) }.sätze
   // endregion
 
   object Programm: SubParser<AST.Programm>() {
@@ -232,7 +232,7 @@ private sealed class SubParser<T: AST>() {
       val nextToken = peek()
       return when (nextToken.typ) {
         is TokenTyp.INTERN -> subParse(Satz.Intern)
-        is TokenTyp.VORNOMEN.ARTIKEL_BESTIMMT, is TokenTyp.VORNOMEN.ARTIKEL_UNBESTIMMT -> subParse(Satz.VariablenDeklaration)
+        is TokenTyp.VORNOMEN.ARTIKEL.BESTIMMT, is TokenTyp.VORNOMEN.ARTIKEL.UNBESTIMMT -> subParse(Satz.VariablenDeklaration)
         is TokenTyp.WENN -> subParse(Satz.Bedingung)
         is TokenTyp.SOLANGE -> subParse(Satz.SolangeSchleife)
         is TokenTyp.FORTFAHREN, is TokenTyp.ABBRECHEN -> subParse(Satz.SchleifenKontrolle)
@@ -248,8 +248,9 @@ private sealed class SubParser<T: AST>() {
 
     fun parseDefinition(): AST.Definition? {
       return when(peekType()) {
-        is TokenTyp.VERB -> subParse(Definition.Funktion)
         is TokenTyp.DEKLINATION -> subParse(Definition.DeklinationsDefinition)
+        is TokenTyp.NOMEN -> subParse(Definition.Klasse)
+        is TokenTyp.VERB -> subParse(Definition.Funktion)
         else -> null
       }
     }
@@ -292,8 +293,8 @@ private sealed class SubParser<T: AST>() {
         is TokenTyp.ZAHL -> AST.Ausdruck.Zahl(next().toTyped())
         is TokenTyp.BOOLEAN -> AST.Ausdruck.Boolean(next().toTyped())
         is TokenTyp.BEZEICHNER_KLEIN -> AST.Ausdruck.FunktionsAufruf(subParse(FunktionsAufruf))
-        is TokenTyp.BEZEICHNER_GROSS -> AST.Ausdruck.Variable(parseNomen())
-        is TokenTyp.VORNOMEN -> parseNomenAusdruck(parseNomen(), true)
+        is TokenTyp.BEZEICHNER_GROSS -> AST.Ausdruck.Variable(parseNomen<TokenTyp.VORNOMEN>(false, "Vornomen"))
+        is TokenTyp.VORNOMEN -> parseNomenAusdruck(parseNomen<TokenTyp.VORNOMEN>(true, "Vornomen"), true)
         is TokenTyp.OFFENE_KLAMMER -> {
           next()
           parseImpl().also { expect<TokenTyp.GESCHLOSSENE_KLAMMER>("')'") }
@@ -315,7 +316,7 @@ private sealed class SubParser<T: AST>() {
       return when (peekType()){
         is TokenTyp.ALS -> {
           next()
-          val typ = parseNomen()
+          val typ = parseNomen<TokenTyp.VORNOMEN>(false, "Vornomen")
           AST.Ausdruck.Konvertierung(ausdruck,AST.TypKnoten(typ))
         }
         else -> ausdruck
@@ -362,7 +363,7 @@ private sealed class SubParser<T: AST>() {
     }
 
     fun parseArgument(): AST.Argument {
-      val nomen = parseNomen()
+      val nomen = parseNomen<TokenTyp.VORNOMEN>(true, "Vornomen")
       var wert = parseNomenAusdruck(nomen, false)
       if (wert is AST.Ausdruck.Variable) {
         wert = when(peekType()) {
@@ -380,7 +381,7 @@ private sealed class SubParser<T: AST>() {
 
     fun parsePräpositionsArgumente(): List<AST.PräpositionsArgumente> {
       return parsePräpositionsListe(
-              {parseListeMitStart<AST.Argument, TokenTyp.KOMMA, TokenTyp.VORNOMEN.ARTIKEL_BESTIMMT>(false, ::parseArgument)}
+              {parseListeMitStart<AST.Argument, TokenTyp.KOMMA, TokenTyp.VORNOMEN.ARTIKEL.BESTIMMT>(false, ::parseArgument)}
       ) {
         präposition, argumente -> AST.PräpositionsArgumente(AST.Präposition(präposition), argumente)
       }
@@ -412,7 +413,7 @@ private sealed class SubParser<T: AST>() {
         get() = ASTKnotenID.VARIABLEN_DEKLARATION
 
       override fun parseImpl(): AST.Satz.VariablenDeklaration {
-        val name = parseNomen()
+        val name = parseNomen<TokenTyp.VORNOMEN>(true, "Vornomen")
         val zuweisung = expect<TokenTyp.ZUWEISUNG>("Zuweisung")
         val ausdruck = subParse(Ausdruck())
         return AST.Satz.VariablenDeklaration(name, zuweisung, ausdruck)
@@ -453,7 +454,7 @@ private sealed class SubParser<T: AST>() {
 
         expect<TokenTyp.WENN>("'wenn'")
         var bedingung = subParse(Ausdruck())
-        var sätze = parseBereich { subParse(Programm) }.sätze
+        var sätze = parseSätze()
 
         bedingungen += AST.Satz.BedingungsTerm(bedingung, sätze)
 
@@ -466,7 +467,7 @@ private sealed class SubParser<T: AST>() {
           }
           expect<TokenTyp.WENN>("'wenn'")
           bedingung = subParse(Ausdruck())
-          sätze = parseBereich { subParse(Programm) }.sätze
+          sätze = parseSätze()
           val bedingungsTerm = AST.Satz.BedingungsTerm(bedingung, sätze)
           bedingungen += bedingungsTerm
           überspringeLeereZeilen()
@@ -482,7 +483,7 @@ private sealed class SubParser<T: AST>() {
       override fun parseImpl(): AST.Satz.SolangeSchleife {
         expect<TokenTyp.SOLANGE>("'solange'")
         val bedingung = subParse(Ausdruck())
-        val sätze = parseBereich { subParse(Programm) }.sätze
+        val sätze = parseSätze()
         return AST.Satz.SolangeSchleife(AST.Satz.BedingungsTerm(bedingung, sätze))
       }
     }
@@ -493,7 +494,10 @@ private sealed class SubParser<T: AST>() {
 
       override fun parseImpl(): AST.Satz.FürJedeSchleife {
         parseKleinesSchlüsselwort("für")
-        val nomen = parseNomen(TokenTyp.VORNOMEN.JEDE)
+        val nomen = AST.Nomen(
+            expect<TokenTyp.VORNOMEN.JEDE>("'jeder' oder 'jede' oder 'jedes'"),
+            expect("Bezeichner")
+        )
         val peekToken = peek()
         var liste: AST.Ausdruck.Liste? = null
         var binder = nomen
@@ -502,11 +506,15 @@ private sealed class SubParser<T: AST>() {
           is TokenTyp.BEZEICHNER_GROSS -> binder = AST.Nomen(null, next().toTyped())
           is TokenTyp.BEZEICHNER_KLEIN -> {
             parseKleinesSchlüsselwort("in")
-            liste = subParse(NomenAusdruck.Liste(parseNomen()))
+            liste = subParse(
+                NomenAusdruck.Liste(parseNomen<TokenTyp.VORNOMEN.ARTIKEL.UNBESTIMMT>(
+                    true, "unbestimmter Artikel")
+                )
+            )
           }
           else -> throw GermanScriptFehler.SyntaxFehler.ParseFehler(next(), "':' oder 'in'")
         }
-        val sätze = parseBereich { subParse(Programm) }.sätze
+        val sätze = parseSätze()
         return AST.Satz.FürJedeSchleife(binder, if(liste == null) nomen else null, liste, sätze)
       }
     }
@@ -540,6 +548,13 @@ private sealed class SubParser<T: AST>() {
       if (depth != 1) {
         throw GermanScriptFehler.SyntaxFehler.UngültigerBereich(next(), "Definitionen können nur im globalem Bereich geschrieben werden.")
       }
+    }
+
+    protected inline fun<reified VornomenT: TokenTyp.VORNOMEN> parseTypUndName(erwartetesVornomen: String): AST.Definition.TypUndName {
+      val typ = parseNomen<VornomenT>(true, erwartetesVornomen)
+      val bezeichner = parseOptional<TokenTyp.BEZEICHNER_GROSS>()
+      val name = if (bezeichner != null) AST.Nomen(null, bezeichner) else typ
+      return AST.Definition.TypUndName(AST.TypKnoten(typ), name)
     }
 
     object DeklinationsDefinition: Definition<AST.Definition.DeklinationsDefinition>() {
@@ -597,7 +612,9 @@ private sealed class SubParser<T: AST>() {
         expect<TokenTyp.VERB>("Verb")
         val rückgabeTyp = parseOptional<TypedToken<TokenTyp.BEZEICHNER_GROSS>, TokenTyp.OFFENE_KLAMMER>(::parseRückgabeTyp)
         val name = expect<TokenTyp.BEZEICHNER_KLEIN>("bezeichner")
-        val objekt = parseOptional<AST.Definition.Parameter, TokenTyp.VORNOMEN.ARTIKEL_BESTIMMT>(::parseParameter)
+        val objekt = parseOptional<AST.Definition.TypUndName, TokenTyp.VORNOMEN.ARTIKEL.BESTIMMT> {
+          parseTypUndName<TokenTyp.VORNOMEN.ARTIKEL.BESTIMMT>("bestimmter Artikel")
+        }
         val präpositionsParameter = parsePräpositionsParameter()
         val suffix = parseOptional<TokenTyp.BEZEICHNER_KLEIN>()
         val programm = parseBereich {subParse(Programm)}
@@ -611,19 +628,42 @@ private sealed class SubParser<T: AST>() {
         return typ
       }
 
-      fun parseParameter(): AST.Definition.Parameter {
-        val typ = parseNomen()
-        val bezeichner = parseOptional<TokenTyp.BEZEICHNER_GROSS>()
-        val name = if (bezeichner != null) AST.Nomen(null, bezeichner) else typ
-        return AST.Definition.Parameter(AST.TypKnoten(typ), name)
-      }
-
       fun parsePräpositionsParameter(): List<AST.Definition.PräpositionsParameter> {
-        return parsePräpositionsListe(
-                { parseListeMitStart<AST.Definition.Parameter, TokenTyp.KOMMA, TokenTyp.VORNOMEN.ARTIKEL_BESTIMMT>(false, ::parseParameter) }
+        return parsePräpositionsListe({
+          parseListeMitStart<AST.Definition.TypUndName, TokenTyp.KOMMA, TokenTyp.VORNOMEN.ARTIKEL.BESTIMMT>(false) {
+            parseTypUndName<TokenTyp.VORNOMEN.ARTIKEL.BESTIMMT>("bestimmter Artikel")
+          }
+        }
         ) {
           präposition, parameter -> AST.Definition.PräpositionsParameter(AST.Präposition(präposition), parameter)
         }
+      }
+    }
+
+    object Klasse: Definition<AST.Definition.Klasse>() {
+      override val id: ASTKnotenID
+        get() = ASTKnotenID.KLASSEN_DEFINITION
+
+      override fun parseImpl(): AST.Definition.Klasse {
+        expect<TokenTyp.NOMEN>("'Nomen'")
+        val name = AST.Nomen(null, expect("Bezeichner"))
+        val elternKlasse = when (peekType()) {
+          is TokenTyp.ALS -> next().let { AST.TypKnoten(AST.Nomen(null, expect("Bezeichner"))) }
+          else -> null
+        }
+        val felder = when(peekType()) {
+          is TokenTyp.BEZEICHNER_KLEIN -> {
+            parseKleinesSchlüsselwort("mit")
+            überspringeLeereZeilen()
+            parseListeMitStart<AST.Definition.TypUndName, TokenTyp.KOMMA, TokenTyp.VORNOMEN.ARTIKEL>(false) {
+              parseTypUndName<TokenTyp.VORNOMEN.ARTIKEL>("Artikel")
+            }
+          }
+          else -> emptyList()
+        }
+
+        val konstruktor = parseSätze()
+        return AST.Definition.Klasse(name, elternKlasse, felder, konstruktor)
       }
 
     }

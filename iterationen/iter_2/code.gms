@@ -27,6 +27,14 @@ Verb(Zahl) fakultät von der Zahl:
 schreibe die Zeichenfolge "Die Fakulät von der Zahl 6 ist: "
 schreibe die Zahl (fakultät von der Zahl 6)
 
+// Klassendefinition
+Deklination Duden(Person)
+Nomen Person mit
+    der Zeichenfolge Name,
+    der Zeichenfolge Nachname,
+    der Zahl Alter:
+.
+
 // Stack Overflow Handling
 schreibe den Bereich "Stack Overflow"
 Verb rekursiv eins:

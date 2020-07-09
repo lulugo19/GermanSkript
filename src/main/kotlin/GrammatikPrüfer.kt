@@ -176,13 +176,13 @@ class GrammatikPrüfer(dateiPfad: String): PipelineKomponente(dateiPfad) {
   }
 
 
-  private fun prüfeParameter(parameter: AST.Definition.Parameter, fälle: EnumSet<Kasus>) {
+  private fun prüfeParameter(parameter: AST.Definition.TypUndName, fälle: EnumSet<Kasus>) {
     val nomen = parameter.typKnoten.name
     prüfeNomen(nomen, fälle)
     prüfeNomen(parameter.name, EnumSet.of(Kasus.NOMINATIV))
     if (parameter.name.vornomenString == null) {
       val paramName = parameter.name
-      paramName.vornomenString = holeVornomen(TokenTyp.VORNOMEN.ARTIKEL_BESTIMMT, nomen.fälle.first(), paramName.genus!!, paramName.numerus!!)
+      paramName.vornomenString = holeVornomen(TokenTyp.VORNOMEN.ARTIKEL.BESTIMMT, nomen.fälle.first(), paramName.genus!!, paramName.numerus!!)
     }
   }
 
@@ -235,14 +235,14 @@ class GrammatikPrüfer(dateiPfad: String): PipelineKomponente(dateiPfad) {
 }
 
 private val VORNOMEN_TABELLE = mapOf<TokenTyp.VORNOMEN, Array<Array<String>>>(
-    TokenTyp.VORNOMEN.ARTIKEL_BESTIMMT to arrayOf(
+    TokenTyp.VORNOMEN.ARTIKEL.BESTIMMT to arrayOf(
         arrayOf("der", "die", "das", "die"),
         arrayOf("des", "der", "des", "der"),
         arrayOf("dem", "der", "dem", "den"),
         arrayOf("den", "die", "das", "die")
     ),
 
-    TokenTyp.VORNOMEN.ARTIKEL_UNBESTIMMT to arrayOf(
+    TokenTyp.VORNOMEN.ARTIKEL.UNBESTIMMT to arrayOf(
         arrayOf("ein", "eine", "ein", "einige"),
         arrayOf("eines", "einer", "eines", "einiger"),
         arrayOf("einem", "einer", "einem", "einigen"),

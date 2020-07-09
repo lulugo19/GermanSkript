@@ -101,7 +101,7 @@ Nomen Person mit
     // jener VollerName ist Vorname + " " + Nachname
 .
 
-Nomen Student mit 
+Nomen Student als Person mit 
     einer Zeichenfolge Studiengang,
     einer Zahl Semester:.
 ```
@@ -179,7 +179,6 @@ Client: verbinde dich
 -[ ] Implementierung von Symbolen (große Bezeichner mit nur einem Buchstaben)
 -[x] erstes Element vom binären Ausdruck als NomenAusdruck
 -[ ] Fehlermeldungen
--[ ] Wrapper um BigDecimal als Germanscript Zahlentyp
 -[ ] Klassendefinition
 -[ ] Klassen
 -[ ] Methoden

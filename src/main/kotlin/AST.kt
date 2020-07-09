@@ -1,3 +1,4 @@
+import java.lang.reflect.Parameter
 import java.util.*
 
 fun <T: AST> List<T>.visit(onVisit: (AST) -> Boolean): Boolean {
@@ -88,28 +89,28 @@ sealed class AST {
       data class Duden(val wort: TypedToken<TokenTyp.BEZEICHNER_GROSS>): DeklinationsDefinition()
     }
 
-    data class Parameter(
+    data class TypUndName(
         val typKnoten: TypKnoten,
         val name: Nomen
     )
 
     data class PräpositionsParameter(
         val präposition: Präposition,
-        val parameter: List<Parameter>
+        val parameter: List<TypUndName>
     )
 
     data class Funktion(
         val rückgabeTyp: TypKnoten?,
         val name: TypedToken<TokenTyp.BEZEICHNER_KLEIN>,
-        val objekt: Parameter?,
+        val objekt: TypUndName?,
         val präpositionsParameter: List<PräpositionsParameter>,
         val suffix: TypedToken<TokenTyp.BEZEICHNER_KLEIN>?,
         val sätze: List<Satz>,
         var vollerName: String? = null
     ) : Definition() {
 
-      private val _parameter: MutableList<Parameter> = mutableListOf()
-      val parameter: List<Parameter> = _parameter
+      private val _parameter: MutableList<TypUndName> = mutableListOf()
+      val parameter: List<TypUndName> = _parameter
 
       init {
         if (objekt != null) {
@@ -123,6 +124,18 @@ sealed class AST {
       override val children: Sequence<AST>
         get() = sequence {
           yieldAll(sätze)
+        }
+    }
+
+    data class Klasse(
+        val name: Nomen,
+        val elternKlasse: TypKnoten?,
+        val felder: List<TypUndName>,
+        val konstruktor: List<Satz>
+    ): AST.Definition() {
+      override val children: Sequence<AST>
+        get() = sequence {
+          yieldAll(konstruktor)
         }
     }
   }

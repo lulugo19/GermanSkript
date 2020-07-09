@@ -102,8 +102,10 @@ sealed class TokenTyp(val anzeigeName: String) {
     data class ZUWEISUNG(val numerus: EnumSet<Numerus>): TokenTyp("'ist' oder 'sind' oder '='")
 
     sealed class VORNOMEN(anzeigeName: String): TokenTyp(anzeigeName) {
-        object ARTIKEL_BESTIMMT: VORNOMEN("bestimmter Artikel")
-        object ARTIKEL_UNBESTIMMT: VORNOMEN("unbestimmter Artikel")
+        sealed class ARTIKEL(anzeigeName: String): VORNOMEN(anzeigeName) {
+            object BESTIMMT: ARTIKEL("bestimmter Artikel")
+            object UNBESTIMMT: ARTIKEL("unbestimmter Artikel")
+        }
         object JEDE: VORNOMEN("'jeder' oder 'jede' oder 'jedes'")
     }
 
@@ -212,18 +214,18 @@ private val WORT_MAPPING = mapOf<String, TokenTyp>(
     "modulo" to TokenTyp.OPERATOR(Operator.MODULO),
 
     // Vornomen
-    "der" to TokenTyp.VORNOMEN.ARTIKEL_BESTIMMT,
-    "die" to TokenTyp.VORNOMEN.ARTIKEL_BESTIMMT,
-    "das" to TokenTyp.VORNOMEN.ARTIKEL_BESTIMMT,
-    "den" to TokenTyp.VORNOMEN.ARTIKEL_BESTIMMT,
-    "dem" to TokenTyp.VORNOMEN.ARTIKEL_BESTIMMT,
-    "ein" to TokenTyp.VORNOMEN.ARTIKEL_UNBESTIMMT,
-    "eine" to TokenTyp.VORNOMEN.ARTIKEL_UNBESTIMMT,
-    "eines" to TokenTyp.VORNOMEN.ARTIKEL_UNBESTIMMT,
-    "einer" to TokenTyp.VORNOMEN.ARTIKEL_UNBESTIMMT,
-    "einige" to TokenTyp.VORNOMEN.ARTIKEL_UNBESTIMMT,
-    "einigen" to TokenTyp.VORNOMEN.ARTIKEL_UNBESTIMMT,
-    "einiger" to TokenTyp.VORNOMEN.ARTIKEL_UNBESTIMMT,
+    "der" to TokenTyp.VORNOMEN.ARTIKEL.BESTIMMT,
+    "die" to TokenTyp.VORNOMEN.ARTIKEL.BESTIMMT,
+    "das" to TokenTyp.VORNOMEN.ARTIKEL.BESTIMMT,
+    "den" to TokenTyp.VORNOMEN.ARTIKEL.BESTIMMT,
+    "dem" to TokenTyp.VORNOMEN.ARTIKEL.BESTIMMT,
+    "ein" to TokenTyp.VORNOMEN.ARTIKEL.UNBESTIMMT,
+    "eine" to TokenTyp.VORNOMEN.ARTIKEL.UNBESTIMMT,
+    "eines" to TokenTyp.VORNOMEN.ARTIKEL.UNBESTIMMT,
+    "einer" to TokenTyp.VORNOMEN.ARTIKEL.UNBESTIMMT,
+    "einige" to TokenTyp.VORNOMEN.ARTIKEL.UNBESTIMMT,
+    "einigen" to TokenTyp.VORNOMEN.ARTIKEL.UNBESTIMMT,
+    "einiger" to TokenTyp.VORNOMEN.ARTIKEL.UNBESTIMMT,
 
     "jede" to TokenTyp.VORNOMEN.JEDE,
     "jeden" to TokenTyp.VORNOMEN.JEDE,
