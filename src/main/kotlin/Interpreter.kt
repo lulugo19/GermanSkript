@@ -1,26 +1,4 @@
-import java.text.DecimalFormat
 import java.util.*
-import kotlin.collections.HashMap
-import kotlin.math.pow
-
-sealed class Wert {
-  data class Zeichenfolge(val zeichenfolge: String): Wert() {
-    override fun toString(): String = zeichenfolge
-  }
-
-  data class Zahl(val zahl: Double): Wert() {
-    object Format {
-      val dec = DecimalFormat("#,###.##")
-    }
-    override fun toString(): String = Format.dec.format(zahl)
-  }
-
-  data class Boolean(val boolean: kotlin.Boolean): Wert() {
-    override fun toString(): String = boolean.toString()
-  }
-
-  data class Liste(val elemente: List<Wert>): Wert()
-}
 
 class Interpreter(dateiPfad: String): ProgrammDurchlaufer<Wert>(dateiPfad) {
   val typPrüfer = TypPrüfer(dateiPfad)
@@ -124,15 +102,15 @@ class Interpreter(dateiPfad: String): ProgrammDurchlaufer<Wert>(dateiPfad) {
   // region Ausdrücke
 
   override fun evaluiereZeichenfolge(ausdruck: AST.Ausdruck.Zeichenfolge): Wert {
-    return Wert.Zeichenfolge(ausdruck.zeichenfolge.typ.zeichenfolge)
+    return ausdruck.zeichenfolge.typ.zeichenfolge
   }
 
   override fun evaluiereZahl(ausdruck: AST.Ausdruck.Zahl): Wert {
-    return Wert.Zahl(ausdruck.zahl.typ.zahl)
+    return ausdruck.zahl.typ.zahl
   }
 
   override fun evaluiereBoolean(ausdruck: AST.Ausdruck.Boolean): Wert {
-    return Wert.Boolean(ausdruck.boolean.typ.boolean)
+    return ausdruck.boolean.typ.boolean
   }
 
   override fun evaluiereListe(ausdruck: AST.Ausdruck.Liste): Wert {
@@ -153,31 +131,31 @@ class Interpreter(dateiPfad: String): ProgrammDurchlaufer<Wert>(dateiPfad) {
 
   private fun zeichenFolgenOperation(operator: Operator, links: Wert.Zeichenfolge, rechts: Wert.Zeichenfolge): Wert {
     return when (operator) {
-      Operator.GLEICH -> Wert.Boolean(links.zeichenfolge == rechts.zeichenfolge)
-      Operator.UNGLEICH -> Wert.Boolean(links.zeichenfolge != rechts.zeichenfolge)
-      Operator.GRÖßER -> Wert.Boolean(links.zeichenfolge > rechts.zeichenfolge)
-      Operator.KLEINER -> Wert.Boolean(links.zeichenfolge < rechts.zeichenfolge)
-      Operator.GRÖSSER_GLEICH -> Wert.Boolean(links.zeichenfolge >= rechts.zeichenfolge)
-      Operator.KLEINER_GLEICH -> Wert.Boolean(links.zeichenfolge <= rechts.zeichenfolge)
-      Operator.PLUS -> Wert.Zeichenfolge(links.zeichenfolge + rechts.zeichenfolge)
+      Operator.GLEICH -> Wert.Boolean(links == rechts)
+      Operator.UNGLEICH -> Wert.Boolean(links != rechts)
+      Operator.GRÖßER -> Wert.Boolean(links > rechts)
+      Operator.KLEINER -> Wert.Boolean(links < rechts)
+      Operator.GRÖSSER_GLEICH -> Wert.Boolean(links >= rechts)
+      Operator.KLEINER_GLEICH -> Wert.Boolean(links <= rechts)
+      Operator.PLUS -> Wert.Zeichenfolge(links + rechts)
       else -> throw Error("Operator $operator ist für den Typen Zeichenfolge nicht definiert.")
     }
   }
 
   private fun zahlOperation(operator: Operator, links: Wert.Zahl, rechts: Wert.Zahl): Wert {
     return when(operator) {
-      Operator.GLEICH -> Wert.Boolean(links.zahl == rechts.zahl)
-      Operator.UNGLEICH -> Wert.Boolean(links.zahl != rechts.zahl)
-      Operator.GRÖßER -> Wert.Boolean(links.zahl > rechts.zahl)
-      Operator.KLEINER -> Wert.Boolean(links.zahl < rechts.zahl)
-      Operator.GRÖSSER_GLEICH -> Wert.Boolean(links.zahl >= rechts.zahl)
-      Operator.KLEINER_GLEICH -> Wert.Boolean(links.zahl <= rechts.zahl)
-      Operator.PLUS -> Wert.Zahl(links.zahl + rechts.zahl)
-      Operator.MINUS -> Wert.Zahl(links.zahl - rechts.zahl)
-      Operator.MAL -> Wert.Zahl(links.zahl * rechts.zahl)
-      Operator.GETEILT -> Wert.Zahl(links.zahl / rechts.zahl)
-      Operator.MODULO -> Wert.Zahl(links.zahl % rechts.zahl)
-      Operator.HOCH -> Wert.Zahl(links.zahl.pow(rechts.zahl))
+      Operator.GLEICH -> Wert.Boolean(links == rechts)
+      Operator.UNGLEICH -> Wert.Boolean(links != rechts)
+      Operator.GRÖßER -> Wert.Boolean(links > rechts)
+      Operator.KLEINER -> Wert.Boolean(links < rechts)
+      Operator.GRÖSSER_GLEICH -> Wert.Boolean(links >= rechts)
+      Operator.KLEINER_GLEICH -> Wert.Boolean(links <= rechts)
+      Operator.PLUS -> links + rechts
+      Operator.MINUS -> links - rechts
+      Operator.MAL -> links * rechts
+      Operator.GETEILT -> links / rechts
+      Operator.MODULO -> links % rechts
+      Operator.HOCH -> links.pow(rechts)
       else -> throw Error("Operator $operator ist für den Typen Zahl nicht definiert.")
     }
   }
@@ -201,13 +179,13 @@ class Interpreter(dateiPfad: String): ProgrammDurchlaufer<Wert>(dateiPfad) {
 
   override fun evaluiereMinus(minus: AST.Ausdruck.Minus): Wert.Zahl {
     val ausdruck = evaluiereAusdruck(minus.ausdruck) as Wert.Zahl
-    return Wert.Zahl(-ausdruck.zahl)
+    return -ausdruck
   }
 
   override fun evaluiereListenElement(listenElement: AST.Ausdruck.ListenElement): Wert {
     val liste = evaluiereVariable(listenElement.singular.nominativPlural!!) as Wert.Liste
     val index = evaluiereAusdruck(listenElement.index) as Wert.Zahl
-    return liste.elemente[index.zahl.toInt()]
+    return liste.elemente[index.toInt()]
   }
   // endregion
 
@@ -236,12 +214,12 @@ class Interpreter(dateiPfad: String): ProgrammDurchlaufer<Wert>(dateiPfad) {
   val konvertierungsTabelle = mapOf<Typ, (Wert)-> Wert>(
           Typ.Zahl to {
             wert -> when (wert){
-            is Wert.Zeichenfolge -> Wert.Zahl(wert.zeichenfolge.toDouble())
+            is Wert.Zeichenfolge -> Wert.Zahl(wert.wert)
             is Wert.Boolean -> {
               if (wert.boolean){
-                Wert.Zahl(1.0)
+                Wert.Zahl("1")
               }else{
-                Wert.Zahl(0.0)
+                Wert.Zahl("0")
               }
             }
             else -> wert
@@ -258,8 +236,8 @@ class Interpreter(dateiPfad: String): ProgrammDurchlaufer<Wert>(dateiPfad) {
 
           Typ.Boolean to {
             wert -> when(wert){
-            is Wert.Zahl -> Wert.Boolean(wert.zahl != 0.0)
-            is Wert.Zeichenfolge -> Wert.Boolean(wert.zeichenfolge.isNotEmpty())
+            is Wert.Zahl -> Wert.Boolean(wert.isZero())
+            is Wert.Zeichenfolge -> Wert.Boolean(wert.wert.isNotEmpty())
             else -> wert
           }
           }

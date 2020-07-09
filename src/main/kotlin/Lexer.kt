@@ -126,9 +126,9 @@ sealed class TokenTyp(val anzeigeName: String) {
     data class BEZEICHNER_GROSS(val name: String): TokenTyp("Bezeichner")
 
     // Literale
-    data class BOOLEAN(val boolean: Boolean): TokenTyp("'richtig' oder 'falsch'")
-    data class ZAHL(val zahl: Double): TokenTyp("Zahl")
-    data class ZEICHENFOLGE(val zeichenfolge: String): TokenTyp("Zeichenfolge")
+    data class BOOLEAN(val boolean: Wert.Boolean): TokenTyp("'richtig' oder 'falsch'")
+    data class ZAHL(val zahl: Wert.Zahl): TokenTyp("Zahl")
+    data class ZEICHENFOLGE(val zeichenfolge: Wert.Zeichenfolge): TokenTyp("Zeichenfolge")
 
     object UNDEFINIERT: TokenTyp("undefiniert")
 }
@@ -192,8 +192,8 @@ private val WORT_MAPPING = mapOf<String, TokenTyp>(
     "als" to TokenTyp.ALS,
     "Modul" to TokenTyp.MODUL,
     // Werte
-    "wahr" to TokenTyp.BOOLEAN(true),
-    "falsch" to TokenTyp.BOOLEAN(false),
+    "wahr" to TokenTyp.BOOLEAN(Wert.Boolean(true)),
+    "falsch" to TokenTyp.BOOLEAN(Wert.Boolean(false)),
 
     // Operatoren
     "ist" to TokenTyp.ZUWEISUNG(EnumSet.of(Numerus.SINGULAR)),
@@ -353,8 +353,6 @@ class Lexer(datei: String): PipelineKomponente(datei) {
         yield(Token(tokenTyp, symbolString, currentFile, startPos, endPos))
     }
 
-    private val ZAHLEN_PATTERN = """(0|[1-9]\d?\d?(\.\d{3})+|[1-9]\d*)(\,\d+)?""".toRegex()
-
     private fun zahl(): Sequence<Token> = sequence {
         val startPos = currentTokenPos
         var zahlenString = ""
@@ -373,14 +371,12 @@ class Lexer(datei: String): PipelineKomponente(datei) {
         }
 
         val endPos = currentTokenPos
-        val zahl = zahlenString.replace(".", "").replace(',', '.').toDouble()
-        val token = Token(TokenTyp.ZAHL(zahl), zahlenString, currentFile, startPos, endPos)
-
-        if (!zahlenString.matches(ZAHLEN_PATTERN)) {
+        try {
+            yield(Token(TokenTyp.ZAHL(Wert.Zahl(zahlenString)), zahlenString, currentFile, startPos, endPos))
+        } catch (error: Exception) {
             val fehlerToken = Token(TokenTyp.FEHLER, zahlenString, currentFile, startPos, endPos)
             throw GermanScriptFehler.SyntaxFehler.LexerFehler(fehlerToken)
         }
-        yield(token)
     }
 
     private fun zeichenfolge(): Sequence<Token> = sequence {
@@ -395,12 +391,12 @@ class Lexer(datei: String): PipelineKomponente(datei) {
         }
         next()
         val endPos = currentTokenPos
-        val token = Token(TokenTyp.ZEICHENFOLGE(zeichenfolge), '"' + zeichenfolge + '"', currentFile, startPos, endPos)
+        val token = Token(TokenTyp.ZEICHENFOLGE(Wert.Zeichenfolge(zeichenfolge)), '"' + zeichenfolge + '"', currentFile, startPos, endPos)
         yield(token)
     }
 
     private val NOMEN_PATTERN = """[A-ZÖÄÜ][\wöäüß]*""".toRegex()
-    private val VERB_PATTERN = """[a-zöäü][\wöäüß]*[\?!]?""".toRegex()
+    private val VERB_PATTERN = """[a-zöäü][\wöäüß]*""".toRegex()
 
     private fun wort(): Sequence<Token> = sequence {
         val firstWordStartPos = currentTokenPos

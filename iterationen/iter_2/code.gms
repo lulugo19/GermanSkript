@@ -7,8 +7,8 @@ Verb schreibe die Zeichenfolge Bereich:
 
 //Typ-Umwandlung
 schreibe den Bereich "Typ-Umwandlung"
-die Zahl ist 3
-schreibe die Zeile die Zahl als Zeichenfolge
+die Zahl ist 4^2
+schreibe die Zeile (die Zahl als Zeichenfolge)
 
 // Binärer Ausdruck
 // Es ist jetzt möglich dass bei einem binären Ausdruck als Argument der erste Operand als Parametername erkannt wird
