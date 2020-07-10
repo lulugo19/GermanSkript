@@ -19,11 +19,7 @@ class GrammatikPrüfer(dateiPfad: String): PipelineKomponente(dateiPfad) {
         is AST.Satz.Zurückgabe -> prüfeKontextbasiertenAusdruck(knoten.ausdruck, null, EnumSet.of(Kasus.AKKUSATIV))
         is AST.Satz.FürJedeSchleife -> prüfeFürJedeSchleife(knoten)
         is AST.Satz.FunktionsAufruf -> prüfeFunktionsAufruf(knoten.aufruf)
-        is AST.Ausdruck.FunktionsAufruf -> prüfeFunktionsAufruf(knoten.aufruf)
-        is AST.Ausdruck -> when (knoten) {
-            is AST.Ausdruck.Minus -> prüfeMinus(knoten)
-            else -> return@visit false
-        }
+        is AST.Ausdruck -> return@visit false
       }
       // visit everything
       true
@@ -91,21 +87,13 @@ class GrammatikPrüfer(dateiPfad: String): PipelineKomponente(dateiPfad) {
     }
   }
 
-  // TODO: eventuell entfernen
-  private fun prüfeKontextbasierteKindAusdrücke(knoten: AST.Satz, kontextNomen: AST.Nomen?, fälle: EnumSet<Kasus>) {
-    for (child in knoten.children) {
-      if (child is AST.Ausdruck) {
-        prüfeKontextbasiertenAusdruck(child, kontextNomen, fälle)
-      }
-    }
-  }
-
   // region kontextbasierte Ausdrücke
   private fun prüfeKontextbasiertenAusdruck(ausdruck: AST.Ausdruck, kontextNomen: AST.Nomen?, fälle: EnumSet<Kasus>) {
     when (ausdruck) {
       is AST.Ausdruck.Variable -> prüfeVariable(ausdruck, kontextNomen, fälle)
       is AST.Ausdruck.Liste ->  prüfeListe(ausdruck, kontextNomen, fälle)
       is AST.Ausdruck.ListenElement -> prüfeListenElement(ausdruck, kontextNomen, fälle)
+      is AST.Ausdruck.ObjektInstanziierung -> prüfeObjektinstanziierung(ausdruck, kontextNomen, fälle)
       is AST.Ausdruck.Konvertierung -> prüfeKonvertierung(ausdruck, kontextNomen, fälle)
       is AST.Ausdruck.BinärerAusdruck -> prüfeBinärenAusdruck(ausdruck, kontextNomen, fälle)
       is AST.Ausdruck.FunktionsAufruf -> prüfeFunktionsAufruf(ausdruck.aufruf)
@@ -125,6 +113,18 @@ class GrammatikPrüfer(dateiPfad: String): PipelineKomponente(dateiPfad) {
     prüfeNumerus(liste.pluralTyp, Numerus.PLURAL)
     if (kontextNomen != null) {
       prüfeNumerus(kontextNomen, Numerus.PLURAL)
+    }
+    liste.elemente.forEach {element -> prüfeKontextbasiertenAusdruck(element, null, EnumSet.of(Kasus.NOMINATIV))}
+  }
+
+  private fun prüfeObjektinstanziierung(instanziierung: AST.Ausdruck.ObjektInstanziierung, kontextNomen: AST.Nomen?, fälle: EnumSet<Kasus>) {
+    prüfeNomen(instanziierung.klasse.name, fälle)
+    if (kontextNomen != null) {
+      prüfeNumerus(kontextNomen, Numerus.SINGULAR)
+    }
+    for (feldZuweisung in instanziierung.feldZuweisungen) {
+      prüfeNomen(feldZuweisung.name, EnumSet.of(Kasus.DATIV))
+      prüfeKontextbasiertenAusdruck(feldZuweisung.wert, feldZuweisung.name, EnumSet.of(Kasus.NOMINATIV))
     }
   }
 

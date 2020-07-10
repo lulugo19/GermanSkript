@@ -44,6 +44,9 @@ Verb begrüße die Person mit der Zeichenfolge Begrüßung:
     schreibe die Zeile die Begrüßung + " Person"
 .
 
+die Person ist eine Person mit dem Namen "Lukas", dem Nachnamen "Gobelet", dem Alter 22
+begrüße die Person mit der Begrüßung "Hello Germanscript"
+/*
 // Stack Overflow Handling
 schreibe den Bereich "Stack Overflow"
 Verb rekursiv eins:
@@ -53,3 +56,4 @@ Verb rekursiv zwei:
     rekursiv eins
 .
 rekursiv eins
+*/

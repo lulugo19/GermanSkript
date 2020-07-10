@@ -16,7 +16,8 @@ enum class ASTKnotenID {
   SCHLEIFENKONTROLLE,
   LISTE,
   LISTEN_ELEMENT,
-  KLASSEN_DEFINITION
+  KLASSEN_DEFINITION,
+  OBJEKT_INSTANZIIERUNG
 }
 
 class Parser(dateiPfad: String): PipelineKomponente(dateiPfad) {
@@ -179,7 +180,13 @@ private sealed class SubParser<T: AST>() {
         is TokenTyp.OFFENE_ECKIGE_KLAMMER -> subParse(NomenAusdruck.ListenElement(nomen))
         else -> AST.Ausdruck.Variable(nomen)
       }
-      is TokenTyp.VORNOMEN.ARTIKEL.UNBESTIMMT -> subParse(NomenAusdruck.Liste(nomen))
+      is TokenTyp.VORNOMEN.ARTIKEL.UNBESTIMMT ->  {
+        if (peekType(1) is TokenTyp.OFFENE_ECKIGE_KLAMMER) {
+          subParse(NomenAusdruck.Liste(nomen))
+        } else {
+          subParse(NomenAusdruck.ObjektInstanziierung(nomen))
+        }
+      }
       is TokenTyp.VORNOMEN.JEDE -> throw GermanScriptFehler.SyntaxFehler.ParseFehler(nomen.vornomen.toUntyped())
     }
 
@@ -194,6 +201,23 @@ private sealed class SubParser<T: AST>() {
       }
       else -> ausdruck
     }
+  }
+
+  fun parseArgument(): AST.Argument {
+    val nomen = parseNomen<TokenTyp.VORNOMEN>(true, "Vornomen")
+    var wert = parseNomenAusdruck(nomen, false)
+    if (wert is AST.Ausdruck.Variable) {
+      wert = when(peekType()) {
+        is TokenTyp.NEUE_ZEILE,
+        is TokenTyp.PUNKT,
+        is TokenTyp.KOMMA,
+        is TokenTyp.BEZEICHNER_KLEIN,
+        is TokenTyp.GESCHLOSSENE_KLAMMER -> wert
+
+        else -> subParse(Ausdruck())
+      }
+    }
+    return AST.Argument(nomen, wert)
   }
 
   protected fun<T: AST> parseBereich(parser: () -> T): T {
@@ -348,6 +372,23 @@ private sealed class SubParser<T: AST>() {
         return AST.Ausdruck.ListenElement(nomen, index)
       }
     }
+
+    class ObjektInstanziierung(nomen: AST.Nomen): NomenAusdruck<AST.Ausdruck.ObjektInstanziierung>(nomen) {
+      override val id: ASTKnotenID
+        get() = ASTKnotenID.OBJEKT_INSTANZIIERUNG
+
+      override fun parseImpl(): AST.Ausdruck.ObjektInstanziierung {
+        val feldZuweisungen = when (peekType()) {
+          is TokenTyp.BEZEICHNER_KLEIN -> {
+            parseKleinesSchlüsselwort("mit")
+            parseListeMitStart<AST.Argument, TokenTyp.KOMMA, TokenTyp.VORNOMEN>(false, ::parseArgument)
+          }
+          else -> emptyList()
+        }
+
+        return AST.Ausdruck.ObjektInstanziierung(AST.TypKnoten(nomen), feldZuweisungen)
+      }
+    }
   }
 
   object FunktionsAufruf: SubParser<AST.FunktionsAufruf>() {
@@ -360,23 +401,6 @@ private sealed class SubParser<T: AST>() {
       val präpositionen = parsePräpositionsArgumente()
       val suffix = parseOptional<TokenTyp.BEZEICHNER_KLEIN>()
       return AST.FunktionsAufruf(verb, objekt, präpositionen, suffix)
-    }
-
-    fun parseArgument(): AST.Argument {
-      val nomen = parseNomen<TokenTyp.VORNOMEN>(true, "Vornomen")
-      var wert = parseNomenAusdruck(nomen, false)
-      if (wert is AST.Ausdruck.Variable) {
-        wert = when(peekType()) {
-          is TokenTyp.NEUE_ZEILE,
-          is TokenTyp.PUNKT,
-          is TokenTyp.KOMMA,
-          is TokenTyp.BEZEICHNER_KLEIN,
-          is TokenTyp.GESCHLOSSENE_KLAMMER -> wert
-
-          else -> subParse(Ausdruck())
-        }
-      }
-      return AST.Argument(nomen, wert)
     }
 
     fun parsePräpositionsArgumente(): List<AST.PräpositionsArgumente> {

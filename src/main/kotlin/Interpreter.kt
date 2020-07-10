@@ -157,6 +157,15 @@ class Interpreter(dateiPfad: String): ProgrammDurchlaufer<Wert>(dateiPfad) {
     return Wert.Liste(ausdruck.elemente.map(::evaluiereAusdruck))
   }
 
+  override fun evaluiereObjektInstanziierung(instanziierung: AST.Ausdruck.ObjektInstanziierung): Wert {
+    val felder = hashMapOf<String, Wert>()
+    for (zuweisung in instanziierung.feldZuweisungen) {
+      felder[zuweisung.name.nominativ!!] = evaluiereAusdruck(zuweisung.wert)
+    }
+    val klassenDefinition = (instanziierung.klasse.typ!! as Typ.Klasse).definition
+    return Wert.Objekt(klassenDefinition, felder)
+  }
+
   override  fun evaluiereBinärenAusdruck(ausdruck: AST.Ausdruck.BinärerAusdruck): Wert {
     val links = evaluiereAusdruck(ausdruck.links)
     val rechts = evaluiereAusdruck(ausdruck.rechts)
@@ -172,6 +181,7 @@ class Interpreter(dateiPfad: String): ProgrammDurchlaufer<Wert>(dateiPfad) {
       }
       is Wert.Boolean -> booleanOperation(operator, links, rechts as Wert.Boolean)
       is Wert.Liste -> listenOperation(operator, links, rechts as Wert.Liste)
+      else -> throw Exception("Typprüfer sollte disen Fehler verhindern.")
     }
   }
 

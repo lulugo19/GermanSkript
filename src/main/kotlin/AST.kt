@@ -1,4 +1,3 @@
-import java.lang.reflect.Parameter
 import java.util.*
 
 fun <T: AST> List<T>.visit(onVisit: (AST) -> Boolean): Boolean {
@@ -300,5 +299,15 @@ sealed class AST {
         val ausdruck: Ausdruck,
         val typ: TypKnoten
     ):Ausdruck()
+
+    data class ObjektInstanziierung(
+        val klasse: TypKnoten,
+        val feldZuweisungen: List<Argument>
+    ): Ausdruck() {
+      override val children: Sequence<AST>
+        get() = sequence {
+          yieldAll(feldZuweisungen)
+        }
+    }
   }
 }

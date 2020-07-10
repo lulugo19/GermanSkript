@@ -130,6 +130,37 @@ class TypPrüfer(dateiPfad: String): ProgrammDurchlaufer<Typ>(dateiPfad) {
     return (liste as Typ.Liste).elementTyp
   }
 
+  override fun evaluiereObjektInstanziierung(instanziierung: AST.Ausdruck.ObjektInstanziierung): Typ {
+    typisierer.typisiereTypKnoten(instanziierung.klasse)
+    val klasse = instanziierung.klasse.typ!!
+    if (klasse !is Typ.Klasse) {
+      throw GermanScriptFehler.ReservierterTypName(instanziierung.klasse.name.bezeichner.toUntyped())
+    }
+    val definition = klasse.definition
+
+    // die Feldzuweisungen müssen mit der Instanzzierung übereinstimmen, Außerdem müssen die Namen übereinstimmen
+    for (i in definition.felder.indices) {
+      val feld = definition.felder[i]
+      if (i >= instanziierung.feldZuweisungen.size) {
+        throw GermanScriptFehler.FeldFehler.FeldVergessen(instanziierung.klasse.name.bezeichner.toUntyped(), feld.name.nominativ!!)
+      }
+      val zuweisung = instanziierung.feldZuweisungen[i]
+
+      if (feld.name.nominativ != zuweisung.name.nominativ) {
+        GermanScriptFehler.FeldFehler.UnerwarteterFeldName(zuweisung.name.bezeichner.toUntyped(), feld.name.nominativ!!)
+      }
+
+      // die Typen müssen übereinstimmen
+      ausdruckMussTypSein(zuweisung.wert, feld.typKnoten.typ!!)
+    }
+
+    if (instanziierung.feldZuweisungen.size > definition.felder.size) {
+      throw GermanScriptFehler.FeldFehler.UnerwartetesFeld(
+          instanziierung.feldZuweisungen[definition.felder.size].name.bezeichner.toUntyped())
+    }
+    return klasse
+  }
+
   override fun evaluiereBinärenAusdruck(ausdruck: AST.Ausdruck.BinärerAusdruck): Typ {
     val linkerTyp = evaluiereAusdruck(ausdruck.links)
     val operator = ausdruck.operator.typ.operator

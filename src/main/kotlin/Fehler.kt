@@ -145,6 +145,25 @@ sealed class GermanScriptFehler(private val fehlerName: String, val token: Token
       get() = "Falscher Typ. Erwartet wird der Typ '${erwarteterTyp.name}'."
   }
 
+  sealed class FeldFehler(token: Token): GermanScriptFehler("Feldfehler", token) {
+    class UnerwarteterFeldName(token: Token, private val erwarteterFeldName: String): FeldFehler(token) {
+      override val nachricht: String
+        get() = "Unerwarteter Feldname '${token.wert}'. Es wird das Feld mit dem Namen '$erwarteterFeldName' erwartet."
+
+    }
+
+    class FeldVergessen(token: Token, private val erwarteterFeldName: String): FeldFehler(token) {
+      override val nachricht: String
+        get() = "Es wird das Feld mit dem Namen '$erwarteterFeldName' erwartet. Doch es wurde vergessen."
+
+    }
+
+    class UnerwartetesFeld(token: Token): FeldFehler(token) {
+      override val nachricht: String
+        get() = "Unerwartetes Feld '${token.wert}'. Es wird kein Feld erwartet."
+    }
+  }
+
   class KonvertierungsFehler(token: Token, private val von: Typ, private val zu: Typ): GermanScriptFehler("Konvertierungsfehler", token) {
     override val nachricht: String
       get() = "Die Konvertierung von $von zu $zu ist nicht möglich."

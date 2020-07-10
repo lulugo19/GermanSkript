@@ -38,6 +38,8 @@ class Definierer(dateiPfad: String): PipelineKomponente(dateiPfad) {
     }
   }
 
+  val klassenDefinitionen get(): Sequence<AST.Definition.Klasse> = klassenDefinitionsMapping.values.asSequence()
+
   fun gebeKlassenDefinitionenAus() {
     klassenDefinitionsMapping.forEach {(name, definition) ->
       println("$name: $definition")

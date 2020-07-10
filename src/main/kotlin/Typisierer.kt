@@ -5,8 +5,7 @@ sealed class Typ(val name: String) {
   val logger = SimpleLogger()
 
   abstract val definierteOperatoren: Map<Operator, Typ>
-  abstract val definierteKonvertierungen: Set<Typ>
-  abstract fun istKonvertierbar(typ: Typ): kotlin.Boolean
+  abstract val definierteKonvertierungen: MutableSet<Typ>
 
   object Zahl : Typ("Zahl") {
     override val definierteOperatoren: Map<Operator, Typ>
@@ -24,14 +23,11 @@ sealed class Typ(val name: String) {
           Operator.UNGLEICH to Boolean,
           Operator.GLEICH to Boolean
       )
-    override val definierteKonvertierungen: Set<Typ>
-      get() = setOf(
+    override val definierteKonvertierungen: MutableSet<Typ>
+      get() = mutableSetOf(
           Zeichenfolge,
           Boolean
       )
-
-    override fun istKonvertierbar(typ: Typ): kotlin.Boolean = typ is Zeichenfolge || typ is Boolean
-
   }
 
   object Zeichenfolge : Typ("Zeichenfolge") {
@@ -45,12 +41,10 @@ sealed class Typ(val name: String) {
           Operator.GRÖSSER_GLEICH to Boolean,
           Operator.KLEINER_GLEICH to Boolean
       )
-    override val definierteKonvertierungen: Set<Typ>
-      get() = setOf(
+    override val definierteKonvertierungen: MutableSet<Typ>
+      get() = mutableSetOf(
           Zahl
       )
-
-    override fun istKonvertierbar(typ: Typ): kotlin.Boolean = typ is Zahl
   }
 
   object Boolean : Typ("Boolean") {
@@ -61,13 +55,11 @@ sealed class Typ(val name: String) {
           Operator.GLEICH to Boolean,
           Operator.UNGLEICH to Boolean
       )
-    override val definierteKonvertierungen: Set<Typ>
-      get() = setOf(
+    override val definierteKonvertierungen: MutableSet<Typ>
+      get() = mutableSetOf(
           Zeichenfolge,
           Zahl
       )
-
-    override fun istKonvertierbar(typ: Typ): kotlin.Boolean = typ is Zeichenfolge || typ is Zahl
   }
 
   data class Liste(val elementTyp: Typ) : Typ("Liste($elementTyp)") {
@@ -75,11 +67,18 @@ sealed class Typ(val name: String) {
       get() = mapOf(
           Operator.PLUS to Liste(elementTyp)
       )
-    override val definierteKonvertierungen: Set<Typ>
-      get() = setOf()
-
-    override fun istKonvertierbar(typ: Typ): kotlin.Boolean = false
+    override val definierteKonvertierungen: MutableSet<Typ>
+      get() = mutableSetOf()
   }
+
+  data class Klasse(val definition: AST.Definition.Klasse): Typ(definition.name.nominativ!!) {
+    override val definierteOperatoren: Map<Operator, Typ>
+      get() = mapOf()
+
+    override val definierteKonvertierungen: MutableSet<Typ>
+      get() = mutableSetOf()
+  }
+  
 }
 
 class Typisierer(dateiPfad: String): PipelineKomponente(dateiPfad) {
@@ -89,6 +88,7 @@ class Typisierer(dateiPfad: String): PipelineKomponente(dateiPfad) {
   fun typisiere() {
     definierer.definiere()
     definierer.funktionsDefinitionen.forEach(::typisiereFunktion)
+    definierer.klassenDefinitionen.forEach(::typisiereKlasse)
   }
 
   fun bestimmeTypen(nomen: AST.Nomen): Typ {
@@ -105,10 +105,7 @@ class Typisierer(dateiPfad: String): PipelineKomponente(dateiPfad) {
       "Zahl" -> Typ.Zahl
       "Zeichenfolge"  -> Typ.Zeichenfolge
       "Boolean" -> Typ.Boolean
-      "Zahlen" -> Typ.Liste(Typ.Zahl)
-      "Zeichenfolgen" -> Typ.Liste(Typ.Zeichenfolge)
-      "Booleans" -> Typ.Liste(Typ.Boolean)
-      else -> null
+      else -> Typ.Klasse(definierer.holeKlassenDefinition(typ))
     }
   }
 
@@ -125,9 +122,15 @@ class Typisierer(dateiPfad: String): PipelineKomponente(dateiPfad) {
       typisiereTypKnoten(parameter.typKnoten)
     }
   }
+
+  private fun typisiereKlasse(klasse: AST.Definition.Klasse) {
+    for (feld in klasse.felder) {
+      typisiereTypKnoten(feld.typKnoten)
+    }
+  }
 }
 
 fun main() {
-  val typisierer = Typisierer("./iterationen/iter_1/code.gms")
+  val typisierer = Typisierer("./iterationen/iter_2/code.gms")
   typisierer.typisiere()
 }
