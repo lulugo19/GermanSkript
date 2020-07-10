@@ -166,6 +166,11 @@ class Interpreter(dateiPfad: String): ProgrammDurchlaufer<Wert>(dateiPfad) {
     return Wert.Objekt(klassenDefinition, felder)
   }
 
+  override fun evaluiereFeldZugriff(feldzugriff: AST.Ausdruck.Feldzugriff): Wert {
+    val objekt = evaluiereAusdruck(feldzugriff.objekt) as Wert.Objekt
+    return objekt.felder.getValue(feldzugriff.feldName.nominativ!!)
+  }
+
   override  fun evaluiereBinärenAusdruck(ausdruck: AST.Ausdruck.BinärerAusdruck): Wert {
     val links = evaluiereAusdruck(ausdruck.links)
     val rechts = evaluiereAusdruck(ausdruck.rechts)
@@ -228,7 +233,7 @@ class Interpreter(dateiPfad: String): ProgrammDurchlaufer<Wert>(dateiPfad) {
 
   private fun listenOperation(operator: Operator, links: Wert.Liste, rechts: Wert.Liste): Wert {
     return when (operator) {
-      Operator.PLUS -> Wert.Liste(links.elemente + rechts.elemente)
+      Operator.PLUS ->links + rechts
       else -> throw Exception("Operator $operator ist für den Typen Liste nicht definiert.")
     }
   }

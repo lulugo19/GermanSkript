@@ -28,11 +28,13 @@ schreibe die Zeichenfolge "Die Fakulät von der Zahl 6 ist: "
 schreibe die Zahl (fakultät von der Zahl 6)
 
 // Klassendefinition
+schreibe den Bereich "Objekt einer Klasse instanziieren"
 Deklination Femininum Singular(Person, Person, Person, Person) Plural(Personen, Personen, Personen, Personen)
 Deklination Maskulinum Singular(Name, Namens, Namen, Namen) Plural(Namen, Namen, Namen, Namen)
 Deklination Maskulinum Singular(Nachname, Nachnamens, Nachnamen, Nachnamen) Plural(Nachnamen, Nachnamen, Nachnamen, Nachnamen)
 Deklination Neutrum Singular(Alter, Alters, Alter, Alter) Plural(Alter, Alter, Alter, Alter)
 Deklination Femininum Singular(Begrüßung, Begrüßung, Begrüßung, Begrüßung) Plural(Begrüßungen, Begrüßungen, Begrüßungen, Begrüßungen)
+Deklination Maskulinum Singular(Abschied, Abschiedes, Abschied, Abschied) Plural(Abschiede, Abschiede, Abschieden, Abschiede)
 
 Nomen Person mit
     der Zeichenfolge Name,
@@ -40,12 +42,12 @@ Nomen Person mit
     der Zahl Alter:
 .
 
-Verb begrüße die Person mit der Zeichenfolge Begrüßung:
-    schreibe die Zeile die Begrüßung + " Person"
+Verb begrüße die Person mit der Zeichenfolge Begrüßung, der Zeichenfolge Abschied:
+    schreibe die Zeile die Begrüßung + " " + den Namen der Person + ". " + den Abschied + "."
 .
 
 die Person ist eine Person mit dem Namen "Lukas", dem Nachnamen "Gobelet", dem Alter 22
-begrüße die Person mit der Begrüßung "Hello Germanscript"
+begrüße die Person mit der Begrüßung "Hey", dem Abschied "Bye"
 /*
 // Stack Overflow Handling
 schreibe den Bereich "Stack Overflow"

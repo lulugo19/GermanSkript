@@ -309,5 +309,12 @@ sealed class AST {
           yieldAll(feldZuweisungen)
         }
     }
+
+    data class Feldzugriff(
+        val feldName: Nomen,
+        val objekt: Ausdruck
+    ): Ausdruck() {
+      override val children = sequenceOf(objekt)
+    }
   }
 }

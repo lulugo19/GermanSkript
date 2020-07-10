@@ -17,7 +17,8 @@ enum class ASTKnotenID {
   LISTE,
   LISTEN_ELEMENT,
   KLASSEN_DEFINITION,
-  OBJEKT_INSTANZIIERUNG
+  OBJEKT_INSTANZIIERUNG,
+  FELD_ZUGRIFF
 }
 
 class Parser(dateiPfad: String): PipelineKomponente(dateiPfad) {
@@ -176,12 +177,21 @@ private sealed class SubParser<T: AST>() {
 
   protected fun parseNomenAusdruck(nomen: AST.Nomen, inBinärenAusdruck: Boolean): AST.Ausdruck {
     val ausdruck = when (nomen.vornomen!!.typ) {
-      is TokenTyp.VORNOMEN.ARTIKEL.BESTIMMT -> when(peekType()) {
-        is TokenTyp.OFFENE_ECKIGE_KLAMMER -> subParse(NomenAusdruck.ListenElement(nomen))
-        else -> AST.Ausdruck.Variable(nomen)
+      is TokenTyp.VORNOMEN.ARTIKEL.BESTIMMT -> {
+        val nächstesToken = peek()
+        when (nächstesToken.typ) {
+          is TokenTyp.OFFENE_ECKIGE_KLAMMER -> subParse(NomenAusdruck.ListenElement(nomen))
+          is TokenTyp.VORNOMEN.ARTIKEL -> {
+            when (nächstesToken.wert) {
+              "des", "der" -> subParse(NomenAusdruck.Feldzugriff(nomen, inBinärenAusdruck))
+              else -> AST.Ausdruck.Variable(nomen)
+            }
+          }
+          else -> AST.Ausdruck.Variable(nomen)
+        }
       }
       is TokenTyp.VORNOMEN.ARTIKEL.UNBESTIMMT ->  {
-        if (peekType(1) is TokenTyp.OFFENE_ECKIGE_KLAMMER) {
+        if (peekType() is TokenTyp.OFFENE_ECKIGE_KLAMMER) {
           subParse(NomenAusdruck.Liste(nomen))
         } else {
           subParse(NomenAusdruck.ObjektInstanziierung(nomen))
@@ -387,6 +397,16 @@ private sealed class SubParser<T: AST>() {
         }
 
         return AST.Ausdruck.ObjektInstanziierung(AST.TypKnoten(nomen), feldZuweisungen)
+      }
+    }
+
+    class Feldzugriff(nomen: AST.Nomen, private val inBinärenAusdruck: Boolean): NomenAusdruck<AST.Ausdruck.Feldzugriff>(nomen) {
+      override val id: ASTKnotenID
+        get() = ASTKnotenID.FELD_ZUGRIFF
+
+      override fun parseImpl(): AST.Ausdruck.Feldzugriff {
+        val objekt = parseNomenAusdruck(parseNomen<TokenTyp.VORNOMEN.ARTIKEL>(true, "Artikel"), inBinärenAusdruck)
+        return AST.Ausdruck.Feldzugriff(nomen, objekt)
       }
     }
   }

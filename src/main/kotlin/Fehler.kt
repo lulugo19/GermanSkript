@@ -118,6 +118,7 @@ sealed class GermanScriptFehler(private val fehlerName: String, val token: Token
       get() = "Der Name '${token.wert}' kann nicht als Klassenname verwendet werden, da dieser ein reservierter Typname ist."
   }
 
+
   sealed class Undefiniert(token: Token): GermanScriptFehler("Undefiniert Fehler", token) {
     class Funktion(token: Token, private val funktionsAufruf: AST.FunktionsAufruf): Undefiniert(token) {
       override val nachricht: String
@@ -138,11 +139,23 @@ sealed class GermanScriptFehler(private val fehlerName: String, val token: Token
       override val nachricht: String
         get() = "Der Operator '${token.wert}' ist für den Typen '$typ' nicht definiert."
     }
+
+    class Feld(token: Token, private val klasse: String): Undefiniert(token) {
+      override val nachricht: String
+        get() = "Das Feld '${token.wert}' ist für die Klasse '$klasse' nicht definiert."
+    }
   }
 
-  class TypFehler(token: Token, private val erwarteterTyp: Typ): GermanScriptFehler("Typfehler", token) {
-    override val nachricht: String
-      get() = "Falscher Typ. Erwartet wird der Typ '${erwarteterTyp.name}'."
+  sealed class TypFehler(token: Token): GermanScriptFehler("Typfehler", token) {
+    class FalscherTyp(token: Token, private val erwarteterTyp: Typ): TypFehler(token) {
+      override val nachricht: String
+        get() = "Falscher Typ. Erwartet wird der Typ '${erwarteterTyp.name}'."
+    }
+
+    class KlasseErwartet(token: Token): TypFehler(token) {
+      override val nachricht: String
+        get() = "Es wird ein Klassen-Typ (Objekt) erwartet und kein primitiver Typ (Zahl, Zeichenfolge, Boolean)."
+    }
   }
 
   sealed class FeldFehler(token: Token): GermanScriptFehler("Feldfehler", token) {

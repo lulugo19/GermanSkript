@@ -15,7 +15,7 @@ class TypPrüfer(dateiPfad: String): ProgrammDurchlaufer<Typ>(dateiPfad) {
 
   private fun ausdruckMussTypSein(ausdruck: AST.Ausdruck, erwarteterTyp: Typ): Typ {
     if (evaluiereAusdruck(ausdruck) != erwarteterTyp) {
-      throw GermanScriptFehler.TypFehler(holeErstesTokenVonAusdruck(ausdruck), erwarteterTyp)
+      throw GermanScriptFehler.TypFehler.FalscherTyp(holeErstesTokenVonAusdruck(ausdruck), erwarteterTyp)
     }
     return erwarteterTyp
   }
@@ -134,7 +134,7 @@ class TypPrüfer(dateiPfad: String): ProgrammDurchlaufer<Typ>(dateiPfad) {
     typisierer.typisiereTypKnoten(instanziierung.klasse)
     val klasse = instanziierung.klasse.typ!!
     if (klasse !is Typ.Klasse) {
-      throw GermanScriptFehler.ReservierterTypName(instanziierung.klasse.name.bezeichner.toUntyped())
+      throw GermanScriptFehler.TypFehler.KlasseErwartet(instanziierung.klasse.name.bezeichner.toUntyped())
     }
     val definition = klasse.definition
 
@@ -159,6 +159,19 @@ class TypPrüfer(dateiPfad: String): ProgrammDurchlaufer<Typ>(dateiPfad) {
           instanziierung.feldZuweisungen[definition.felder.size].name.bezeichner.toUntyped())
     }
     return klasse
+  }
+
+  override fun evaluiereFeldZugriff(feldzugriff: AST.Ausdruck.Feldzugriff): Typ {
+    val klasse = evaluiereAusdruck(feldzugriff.objekt)
+    if (klasse !is Typ.Klasse) {
+      throw GermanScriptFehler.TypFehler.KlasseErwartet(holeErstesTokenVonAusdruck(feldzugriff.objekt))
+    }
+    for (feld in klasse.definition.felder) {
+      if (feldzugriff.feldName.nominativ!! == feld.name.nominativ!!) {
+        return feld.typKnoten.typ!!
+      }
+    }
+    throw GermanScriptFehler.Undefiniert.Feld(feldzugriff.feldName.bezeichner.toUntyped(), klasse.name)
   }
 
   override fun evaluiereBinärenAusdruck(ausdruck: AST.Ausdruck.BinärerAusdruck): Typ {

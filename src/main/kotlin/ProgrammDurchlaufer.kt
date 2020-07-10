@@ -53,6 +53,7 @@ abstract  class ProgrammDurchlaufer<T>(dateiPfad: String): PipelineKomponente(da
       is AST.Ausdruck.Minus -> holeErstesTokenVonAusdruck(ausdruck.ausdruck)
       is AST.Ausdruck.Konvertierung -> holeErstesTokenVonAusdruck(ausdruck.ausdruck)
       is AST.Ausdruck.ObjektInstanziierung -> ausdruck.klasse.name.bezeichner.toUntyped()
+      is AST.Ausdruck.Feldzugriff -> ausdruck.feldName.bezeichner.toUntyped()
     }
   }
 
@@ -88,6 +89,7 @@ abstract  class ProgrammDurchlaufer<T>(dateiPfad: String): PipelineKomponente(da
       is AST.Ausdruck.Minus -> evaluiereMinus(ausdruck)
       is AST.Ausdruck.Konvertierung -> evaluiereKonvertierung(ausdruck)
       is AST.Ausdruck.ObjektInstanziierung -> evaluiereObjektInstanziierung(ausdruck)
+      is AST.Ausdruck.Feldzugriff -> evaluiereFeldZugriff(ausdruck)
     }
   }
 
@@ -108,4 +110,5 @@ abstract  class ProgrammDurchlaufer<T>(dateiPfad: String): PipelineKomponente(da
   protected abstract fun evaluiereMinus(minus: AST.Ausdruck.Minus): T
   protected abstract fun evaluiereKonvertierung(konvertierung: AST.Ausdruck.Konvertierung): T
   protected abstract fun evaluiereObjektInstanziierung(instanziierung: AST.Ausdruck.ObjektInstanziierung): T
+  protected abstract fun evaluiereFeldZugriff(feldzugriff: AST.Ausdruck.Feldzugriff): T
 }
