@@ -1,7 +1,9 @@
 import java.util.*
 import kotlin.collections.HashMap
 
-typealias Bereich<T> = HashMap<String, T>
+class Bereich<T>(val methodenBlockObjekt: T?) {
+  val variablen = HashMap<String, T>()
+}
 
 class Umgebung<T>() {
   private val bereiche = Stack<Bereich<T>>()
@@ -14,30 +16,32 @@ class Umgebung<T>() {
 
   fun leseVariable(varName: String): T? {
     for (bereich in bereiche) {
-      bereich[varName]?.also { return it }
+      bereich.variablen[varName]?.also { return it }
     }
     return null
   }
 
   fun schreibeVariable(varName: AST.Nomen, wert: T) {
-    bereiche.peek()!![varName.nominativ!!] = wert
+    bereiche.peek()!!.variablen[varName.nominativ!!] = wert
   }
 
   fun überschreibeVariable(varName: AST.Nomen, wert: T) {
-    val bereich = bereiche.findLast {it.containsKey(varName.nominativ!!) }
+    val bereich = bereiche.findLast {it.variablen.containsKey(varName.nominativ!!) }
     if (bereich != null) {
-      bereich[varName.nominativ!!] = wert
+      bereich.variablen[varName.nominativ!!] = wert
     } else {
       // Fallback
       schreibeVariable(varName, wert)
     }
   }
 
-  fun pushBereich() {
-    bereiche.push(Bereich())
+  fun pushBereich(methodenBlockObjekt: T? = null) {
+    bereiche.push(Bereich(methodenBlockObjekt))
   }
 
   fun popBereich() {
     bereiche.pop()
   }
+
+  fun holeMethodenBlockObjekt(): T? = bereiche.findLast { it.methodenBlockObjekt != null }?.methodenBlockObjekt
 }

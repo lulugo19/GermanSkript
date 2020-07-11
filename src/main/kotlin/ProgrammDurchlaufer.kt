@@ -6,7 +6,6 @@ interface IObjekt {
 
 abstract  class ProgrammDurchlaufer<T, ObjektT: IObjekt>(dateiPfad: String): PipelineKomponente(dateiPfad ) {
   protected val stack = Stack<Umgebung<T>>()
-  private val methodenBlockStack = Stack<T>()
 
   abstract val ast: AST.Programm
   abstract val definierer: Definierer
@@ -72,13 +71,13 @@ abstract  class ProgrammDurchlaufer<T, ObjektT: IObjekt>(dateiPfad: String): Pip
   }
 
   private fun durchlaufeFunktionsAufruf(funktionsAufruf: AST.FunktionsAufruf, istAusdruck: Boolean): T? {
-    if (methodenBlockStack.isNotEmpty()) {
-      val methodenBlockVariable = methodenBlockStack.peek()
+    val methodenBlockObjekt = stack.peek().holeMethodenBlockObjekt()
+    if (methodenBlockObjekt != null) {
       funktionsAufruf.vollerName = definierer.getVollerNameVonFunktionsAufruf(funktionsAufruf)
       @Suppress("UNCHECKED_CAST")
-      if ((methodenBlockVariable as ObjektT).klassenDefinition.methoden.containsKey(funktionsAufruf.vollerName!!)) {
-        val methodenDefinition = methodenBlockVariable.klassenDefinition.methoden.getValue(funktionsAufruf.vollerName!!).funktion
-        return durchlaufeMethodenOderFunktionsAufruf(methodenBlockVariable, funktionsAufruf, methodenDefinition , istAusdruck)
+      if ((methodenBlockObjekt as ObjektT).klassenDefinition.methoden.containsKey(funktionsAufruf.vollerName!!)) {
+        val methodenDefinition = methodenBlockObjekt.klassenDefinition.methoden.getValue(funktionsAufruf.vollerName!!).funktion
+        return durchlaufeMethodenOderFunktionsAufruf(methodenBlockObjekt, funktionsAufruf, methodenDefinition , istAusdruck)
       }
     }
     val funktionsDefinition = definierer.holeFunktionsDefinition(funktionsAufruf)
@@ -90,9 +89,9 @@ abstract  class ProgrammDurchlaufer<T, ObjektT: IObjekt>(dateiPfad: String): Pip
     if (wert !is IObjekt) {
       throw GermanScriptFehler.TypFehler.Objekt(methodenBlock.name.bezeichner.toUntyped())
     }
-    methodenBlockStack.push(wert)
+    stack.peek().pushBereich(wert)
     durchlaufeSätze(methodenBlock.sätze, true)
-    methodenBlockStack.pop()
+    stack.peek().popBereich()
   }
 
   protected abstract fun sollSätzeAbbrechen(): Boolean
