@@ -176,25 +176,22 @@ private sealed class SubParser<T: AST>() {
   }
 
   protected fun parseNomenAusdruck(nomen: AST.Nomen, inBinärenAusdruck: Boolean): AST.Ausdruck {
+    val nächstesToken = peek()
     val ausdruck = when (nomen.vornomen!!.typ) {
-      is TokenTyp.VORNOMEN.ARTIKEL.BESTIMMT -> {
-        val nächstesToken = peek()
-        when (nächstesToken.typ) {
-          is TokenTyp.OFFENE_ECKIGE_KLAMMER -> subParse(NomenAusdruck.ListenElement(nomen))
-          is TokenTyp.VORNOMEN.ARTIKEL -> {
-            when (nächstesToken.wert) {
-              "des", "der" -> subParse(NomenAusdruck.Feldzugriff(nomen, inBinärenAusdruck))
-              else -> AST.Ausdruck.Variable(nomen)
-            }
+      is TokenTyp.VORNOMEN.ARTIKEL.BESTIMMT -> when (nächstesToken.typ) {
+        is TokenTyp.OFFENE_ECKIGE_KLAMMER -> subParse(NomenAusdruck.ListenElement(nomen))
+        is TokenTyp.VORNOMEN.ARTIKEL -> {
+          when (nächstesToken.wert) {
+            "des", "der" -> subParse(NomenAusdruck.Feldzugriff(nomen, inBinärenAusdruck))
+            else -> AST.Ausdruck.Variable(nomen)
           }
-          else -> AST.Ausdruck.Variable(nomen)
         }
+        else -> AST.Ausdruck.Variable(nomen)
       }
       is TokenTyp.VORNOMEN.ARTIKEL.UNBESTIMMT ->  {
-        if (peekType() is TokenTyp.OFFENE_ECKIGE_KLAMMER) {
-          subParse(NomenAusdruck.Liste(nomen))
-        } else {
-          subParse(NomenAusdruck.ObjektInstanziierung(nomen))
+        when (nächstesToken.typ) {
+          is TokenTyp.OFFENE_ECKIGE_KLAMMER -> subParse(NomenAusdruck.Liste(nomen))
+          else -> subParse(NomenAusdruck.ObjektInstanziierung(nomen))
         }
       }
       is TokenTyp.VORNOMEN.JEDE -> throw GermanScriptFehler.SyntaxFehler.ParseFehler(nomen.vornomen.toUntyped())
