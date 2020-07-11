@@ -12,7 +12,8 @@ class GrammatikPrüfer(dateiPfad: String): PipelineKomponente(dateiPfad) {
 
     ast.visit() { knoten ->
       when (knoten) {
-        is AST.Definition.Funktion -> prüfeFunktionsDefinition(knoten)
+        is AST.Definition.FunktionOderMethode.Funktion -> prüfeFunktionsDefinition(knoten)
+        is AST.Definition.FunktionOderMethode.Methode -> prüfeMethodenDefinition(knoten)
         is AST.Definition.Klasse -> prüfeKlassenDefinition(knoten)
         is AST.Satz.VariablenDeklaration -> prüfeVariablendeklaration(knoten)
         is AST.Satz.BedingungsTerm -> prüfeKontextbasiertenAusdruck(knoten.bedingung, null, EnumSet.of(Kasus.NOMINATIV))
@@ -201,7 +202,7 @@ class GrammatikPrüfer(dateiPfad: String): PipelineKomponente(dateiPfad) {
     }
   }
 
-  private fun prüfeFunktionsDefinition(funktionsDefinition: AST.Definition.Funktion) {
+  private fun prüfeFunktionsDefinition(funktionsDefinition: AST.Definition.FunktionOderMethode.Funktion) {
     if (funktionsDefinition.rückgabeTyp != null) {
       prüfeNomen(funktionsDefinition.rückgabeTyp.name, EnumSet.of(Kasus.NOMINATIV))
     }
@@ -212,6 +213,11 @@ class GrammatikPrüfer(dateiPfad: String): PipelineKomponente(dateiPfad) {
       prüfePräpositionsParameter(präposition)
     }
     // logger.addLine("geprüft: $funktionsDefinition")
+  }
+
+  private fun prüfeMethodenDefinition(methodenDefinition: AST.Definition.FunktionOderMethode.Methode){
+    prüfeNomen(methodenDefinition.klasse.name, EnumSet.of(Kasus.NOMINATIV))
+    prüfeFunktionsDefinition(methodenDefinition.funktion)
   }
 
   private fun prüfeKlassenDefinition(klasse: AST.Definition.Klasse) {

@@ -97,9 +97,14 @@ sealed class GermanScriptFehler(private val fehlerName: String, val token: Token
   }
 
   sealed class DoppelteDefinition(token: Token): GermanScriptFehler("Definitionsfehler", token) {
-    class Funktion(token: Token, private val definition: AST.Definition.Funktion): DoppelteDefinition(token) {
+    class Funktion(token: Token, private val definition: AST.Definition.FunktionOderMethode.Funktion): DoppelteDefinition(token) {
       override val nachricht: String
         get() = "Die Funktion '${definition.vollerName}' ist schon in ${definition.name.position} definiert."
+    }
+
+    class Methode(token: Token, private val definition: AST.Definition.FunktionOderMethode.Methode, private val klassenName: String): DoppelteDefinition(token) {
+      override val nachricht: String
+        get() = "Die Methode '${definition.funktion.vollerName}' für die Klasse '$klassenName' ist schon in ${definition.funktion.name.position} definiert."
     }
 
     class Klasse(token: Token, private val definition: AST.Definition.Klasse): DoppelteDefinition(token) {

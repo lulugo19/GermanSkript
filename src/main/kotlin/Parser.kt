@@ -7,6 +7,7 @@ enum class ASTKnotenID {
   VARIABLEN_DEKLARATION,
   FUNKTIONS_AUFRUF,
   FUNKTIONS_DEFINITION,
+  METHODEN_DEFINITION,
   INTERN,
   DEKLINATION,
   ZURÜCKGABE,
@@ -82,6 +83,24 @@ private sealed class SubParser<T: AST>() {
     while (peekType() is TokenTyp.NEUE_ZEILE) {
       next()
     }
+  }
+
+  protected fun parseFunktionOderMethode(): AST.Definition.FunktionOderMethode{
+    expect<TokenTyp.VERB>("Verb")
+    var rückgabetyp:TypedToken<TokenTyp.BEZEICHNER_GROSS>? = null
+    if (peekType() is TokenTyp.OFFENE_KLAMMER){
+      next()
+      rückgabetyp = expect<TokenTyp.BEZEICHNER_GROSS>("Bezeichner")
+      expect<TokenTyp.GESCHLOSSENE_KLAMMER>(")")
+    }
+
+    val nächstesToken = peek()
+    if (nächstesToken.wert == "für"){
+      next()
+      val klasse = parseNomen<TokenTyp.VORNOMEN>(false, "")
+      return AST.Definition.FunktionOderMethode.Methode(subParse(Definition.Funktion(ASTKnotenID.METHODEN_DEFINITION, rückgabetyp)), AST.TypKnoten(klasse))
+    }
+    return subParse(Definition.Funktion(ASTKnotenID.FUNKTIONS_DEFINITION, rückgabetyp))
   }
 
   protected fun parseKleinesSchlüsselwort(schlüsselwort: String): TypedToken<TokenTyp.BEZEICHNER_KLEIN> {
@@ -281,7 +300,7 @@ private sealed class SubParser<T: AST>() {
       return when(peekType()) {
         is TokenTyp.DEKLINATION -> subParse(Definition.DeklinationsDefinition)
         is TokenTyp.NOMEN -> subParse(Definition.Klasse)
-        is TokenTyp.VERB -> subParse(Definition.Funktion)
+        is TokenTyp.VERB -> parseFunktionOderMethode()
         else -> null
       }
     }
@@ -515,6 +534,7 @@ private sealed class SubParser<T: AST>() {
         }
         return AST.Satz.Bedingung(bedingungen, null)
       }
+
     }
 
     object SolangeSchleife: SubParser<AST.Satz.SolangeSchleife>() {
@@ -645,13 +665,9 @@ private sealed class SubParser<T: AST>() {
       }
     }
 
-    object Funktion: Definition<AST.Definition.Funktion>() {
-      override val id: ASTKnotenID
-        get() = ASTKnotenID.FUNKTIONS_DEFINITION
+    class Funktion(override val id: ASTKnotenID, private val rückgabeTyp: TypedToken<TokenTyp.BEZEICHNER_GROSS>?): Definition<AST.Definition.FunktionOderMethode.Funktion>() {
 
-      override fun parseImpl(): AST.Definition.Funktion {
-        expect<TokenTyp.VERB>("Verb")
-        val rückgabeTyp = parseOptional<TypedToken<TokenTyp.BEZEICHNER_GROSS>, TokenTyp.OFFENE_KLAMMER>(::parseRückgabeTyp)
+      override fun parseImpl(): AST.Definition.FunktionOderMethode.Funktion {
         val name = expect<TokenTyp.BEZEICHNER_KLEIN>("bezeichner")
         val objekt = parseOptional<AST.Definition.TypUndName, TokenTyp.VORNOMEN.ARTIKEL.BESTIMMT> {
           parseTypUndName<TokenTyp.VORNOMEN.ARTIKEL.BESTIMMT>("bestimmter Artikel")
@@ -659,7 +675,7 @@ private sealed class SubParser<T: AST>() {
         val präpositionsParameter = parsePräpositionsParameter()
         val suffix = parseOptional<TokenTyp.BEZEICHNER_KLEIN>()
         val programm = parseBereich {subParse(Programm)}
-        return AST.Definition.Funktion(rückgabeTyp?.let { AST.TypKnoten(AST.Nomen(null, it)) }, name, objekt, präpositionsParameter, suffix, programm.sätze)
+        return AST.Definition.FunktionOderMethode.Funktion(rückgabeTyp?.let { AST.TypKnoten(AST.Nomen(null, it)) }, name, objekt, präpositionsParameter, suffix, programm.sätze)
       }
 
       fun parseRückgabeTyp(): TypedToken<TokenTyp.BEZEICHNER_GROSS> {

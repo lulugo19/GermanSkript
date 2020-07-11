@@ -1,4 +1,5 @@
 import java.util.*
+import kotlin.collections.HashMap
 
 fun <T: AST> List<T>.visit(onVisit: (AST) -> Boolean): Boolean {
   for (element in this) {
@@ -97,33 +98,45 @@ sealed class AST {
         val präposition: Präposition,
         val parameter: List<TypUndName>
     )
+    sealed class FunktionOderMethode(): Definition(){
+      data class Funktion(
+              val rückgabeTyp: TypKnoten?,
+              val name: TypedToken<TokenTyp.BEZEICHNER_KLEIN>,
+              val objekt: TypUndName?,
+              val präpositionsParameter: List<PräpositionsParameter>,
+              val suffix: TypedToken<TokenTyp.BEZEICHNER_KLEIN>?,
+              val sätze: List<Satz>,
+              var vollerName: String? = null
+      ):FunktionOderMethode() {
 
-    data class Funktion(
-        val rückgabeTyp: TypKnoten?,
-        val name: TypedToken<TokenTyp.BEZEICHNER_KLEIN>,
-        val objekt: TypUndName?,
-        val präpositionsParameter: List<PräpositionsParameter>,
-        val suffix: TypedToken<TokenTyp.BEZEICHNER_KLEIN>?,
-        val sätze: List<Satz>,
-        var vollerName: String? = null
-    ) : Definition() {
+        private val _parameter: MutableList<TypUndName> = mutableListOf()
+        val parameter: List<TypUndName> = _parameter
 
-      private val _parameter: MutableList<TypUndName> = mutableListOf()
-      val parameter: List<TypUndName> = _parameter
-
-      init {
-        if (objekt != null) {
-          _parameter.add(objekt)
+        init {
+          if (objekt != null) {
+            _parameter.add(objekt)
+          }
+          for (präposition in präpositionsParameter) {
+            _parameter.addAll(präposition.parameter)
+          }
         }
-        for (präposition in präpositionsParameter) {
-          _parameter.addAll(präposition.parameter)
-        }
+
+        override val children: Sequence<AST>
+          get() = sequence {
+            yieldAll(sätze)
+          }
       }
 
-      override val children: Sequence<AST>
-        get() = sequence {
-          yieldAll(sätze)
-        }
+      data class Methode(
+              val funktion: Funktion,
+              val klasse: TypKnoten
+      ): FunktionOderMethode() {
+        override val children: Sequence<AST>
+          get() = sequence {
+            yieldAll(funktion.sätze)
+          }
+      }
+
     }
 
     data class Klasse(
@@ -132,6 +145,7 @@ sealed class AST {
         val felder: List<TypUndName>,
         val konstruktor: List<Satz>
     ): AST.Definition() {
+      val methoden: HashMap<String, FunktionOderMethode.Methode> = HashMap()
       override val children: Sequence<AST>
         get() = sequence {
           yieldAll(konstruktor)

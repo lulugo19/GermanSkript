@@ -1,7 +1,7 @@
 class Definierer(dateiPfad: String): PipelineKomponente(dateiPfad) {
   val grammatikPrüfer = GrammatikPrüfer(dateiPfad)
   val ast = grammatikPrüfer.ast
-  private val funktionsDefinitionsMapping = hashMapOf<String, AST.Definition.Funktion>()
+  private val funktionsDefinitionsMapping = hashMapOf<String, AST.Definition.FunktionOderMethode.Funktion>()
   private val klassenDefinitionsMapping = hashMapOf<String, AST.Definition.Klasse>()
 
   fun definiere() {
@@ -10,14 +10,19 @@ class Definierer(dateiPfad: String): PipelineKomponente(dateiPfad) {
     // definiere Funktionen und Klassen
     ast.definitionen.visit { knoten ->
       when (knoten) {
-        is AST.Definition.Funktion -> definiereFunktion(knoten)
+        is AST.Definition.FunktionOderMethode.Funktion -> definiereFunktion(knoten)
         is AST.Definition.Klasse -> definiereKlasse(knoten)
       }
       return@visit false
     }
+    ast.definitionen.visit { knoten ->
+      if(knoten is AST.Definition.FunktionOderMethode.Methode) definiereMethode(knoten)
+
+      return@visit false
+    }
   }
 
-  fun holeFunktionsDefinition(funktionsAufruf: AST.FunktionsAufruf): AST.Definition.Funktion {
+  fun holeFunktionsDefinition(funktionsAufruf: AST.FunktionsAufruf): AST.Definition.FunktionOderMethode.Funktion {
     if (funktionsAufruf.vollerName == null) {
       funktionsAufruf.vollerName = getVollerNameVonFunktionsAufruf(funktionsAufruf)
     }
@@ -30,7 +35,7 @@ class Definierer(dateiPfad: String): PipelineKomponente(dateiPfad) {
     return klassenDefinitionsMapping.getValue(vollerName)
   }
 
-  val funktionsDefinitionen get(): Sequence<AST.Definition.Funktion> = funktionsDefinitionsMapping.values.asSequence()
+  val funktionsDefinitionen get(): Sequence<AST.Definition.FunktionOderMethode.Funktion> = funktionsDefinitionsMapping.values.asSequence()
 
   fun gebeFunktionsDefinitionenAus() {
     funktionsDefinitionsMapping.forEach { (vollerName, definition) ->
@@ -46,7 +51,7 @@ class Definierer(dateiPfad: String): PipelineKomponente(dateiPfad) {
     }
   }
 
-  private fun definiereFunktion(funktionsDefinition: AST.Definition.Funktion) {
+  private fun definiereFunktion(funktionsDefinition: AST.Definition.FunktionOderMethode.Funktion) {
     val vollerName = getVollerNameVonDefinition(funktionsDefinition)
     if (funktionsDefinitionsMapping.containsKey(vollerName)) {
       throw GermanScriptFehler.DoppelteDefinition.Funktion(
@@ -58,7 +63,26 @@ class Definierer(dateiPfad: String): PipelineKomponente(dateiPfad) {
     funktionsDefinitionsMapping[vollerName] = funktionsDefinition
   }
 
-  private fun getVollerNameVonDefinition(funktionsDefinition: AST.Definition.Funktion): String {
+  private fun definiereMethode(methodenDefinition: AST.Definition.FunktionOderMethode.Methode) {
+    val vollerName = getVollerNameVonDefinition(methodenDefinition.funktion)
+    val klasse = try {
+      holeKlassenDefinition(methodenDefinition.klasse.name.nominativ!!)
+    } catch (error: Exception ) {
+      throw GermanScriptFehler.Undefiniert.Typ(methodenDefinition.klasse.name.bezeichner.toUntyped())
+    }
+
+    if (klasse.methoden.containsKey(vollerName)) {
+      throw GermanScriptFehler.DoppelteDefinition.Methode(
+              methodenDefinition.funktion.name.toUntyped(),
+              klasse.methoden.getValue(vollerName),
+              klasse.name.nominativ!!
+      )
+    }
+    methodenDefinition.funktion.vollerName = vollerName
+    klasse.methoden[vollerName] = methodenDefinition
+  }
+
+  private fun getVollerNameVonDefinition(funktionsDefinition: AST.Definition.FunktionOderMethode.Funktion): String {
     var vollerName = funktionsDefinition.name.wert
     if (funktionsDefinition.objekt != null) {
       val objekt = funktionsDefinition.objekt

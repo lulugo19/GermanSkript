@@ -23,7 +23,7 @@ class TypPrüfer(dateiPfad: String): ProgrammDurchlaufer<Typ>(dateiPfad) {
   // breche niemals Sätze ab
   override fun sollSätzeAbbrechen(): Boolean = false
 
-  private fun prüfeFunktion(funktion: AST.Definition.Funktion) {
+  private fun prüfeFunktion(funktion: AST.Definition.FunktionOderMethode.Funktion) {
     logger.addLine("")
     logger.addLine("_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-")
     val funktionsUmgebung = Umgebung<Typ>()
@@ -63,7 +63,7 @@ class TypPrüfer(dateiPfad: String): ProgrammDurchlaufer<Typ>(dateiPfad) {
   }
 
   override fun durchlaufeZurückgabe(zurückgabe: AST.Satz.Zurückgabe) {
-    val funktionsDefinition = zurückgabe.findNodeInParents<AST.Definition.Funktion>()!!
+    val funktionsDefinition = zurückgabe.findNodeInParents<AST.Definition.FunktionOderMethode.Funktion>()!!
     val rückgabeTyp = funktionsDefinition.rückgabeTyp
     if (funktionsDefinition.rückgabeTyp == null) {
       throw GermanScriptFehler.SyntaxFehler.RückgabeTypFehler(holeErstesTokenVonAusdruck(zurückgabe.ausdruck))

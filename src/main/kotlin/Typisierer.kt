@@ -88,7 +88,12 @@ class Typisierer(dateiPfad: String): PipelineKomponente(dateiPfad) {
   fun typisiere() {
     definierer.definiere()
     definierer.funktionsDefinitionen.forEach(::typisiereFunktion)
-    definierer.klassenDefinitionen.forEach(::typisiereKlasse)
+    definierer.klassenDefinitionen.forEach{
+      typisiereKlasse(it)
+      it.methoden.values.forEach{ methode ->
+        typisiereFunktion(methode.funktion)
+      }
+    }
   }
 
   fun bestimmeTypen(nomen: AST.Nomen): Typ {
@@ -115,7 +120,7 @@ class Typisierer(dateiPfad: String): PipelineKomponente(dateiPfad) {
     }
   }
 
-  private fun typisiereFunktion(funktion: AST.Definition.Funktion) {
+  private fun typisiereFunktion(funktion: AST.Definition.FunktionOderMethode.Funktion) {
     typisiereTypKnoten(funktion.rückgabeTyp)
     typisiereTypKnoten(funktion.objekt?.typKnoten)
     for (parameter in funktion.parameter) {
