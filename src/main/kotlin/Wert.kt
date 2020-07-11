@@ -70,5 +70,5 @@ sealed class Wert {
     operator fun plus(liste: Liste) = Liste(this.elemente + liste.elemente)
   }
 
-  class Objekt(val klassenDefinition: AST.Definition.Klasse, val felder: HashMap<String, Wert>): Wert()
+  class Objekt(override val klassenDefinition: AST.Definition.Klasse, val felder: HashMap<String, Wert>): Wert(), IObjekt
 }

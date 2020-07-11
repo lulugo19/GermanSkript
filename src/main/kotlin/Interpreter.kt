@@ -32,9 +32,10 @@ class AufrufStapel {
   }
 }
 
-class Interpreter(dateiPfad: String): ProgrammDurchlaufer<Wert>(dateiPfad) {
+class Interpreter(dateiPfad: String): ProgrammDurchlaufer<Wert, Wert.Objekt>(dateiPfad) {
   val typPrüfer = TypPrüfer(dateiPfad)
-  val definierer = typPrüfer.definierer
+
+  override val definierer = typPrüfer.definierer
   override val ast: AST.Programm = typPrüfer.ast
 
   private var rückgabeWert: Wert? = null
@@ -69,7 +70,7 @@ class Interpreter(dateiPfad: String): ProgrammDurchlaufer<Wert>(dateiPfad) {
       }
   }
 
-  override fun durchlaufeFunktionsAufruf(funktionsAufruf: AST.FunktionsAufruf, istAusdruck: Boolean): Wert? {
+  override fun durchlaufeMethodenOderFunktionsAufruf(objekt: Wert?, funktionsAufruf: AST.FunktionsAufruf, funktionsDefinition: AST.Definition.FunktionOderMethode.Funktion, istAusdruck: Boolean): Wert? {
     val funktionsUmgebung = Umgebung<Wert>()
     funktionsUmgebung.pushBereich()
     for (argument in funktionsAufruf.argumente) {
@@ -79,7 +80,6 @@ class Interpreter(dateiPfad: String): ProgrammDurchlaufer<Wert>(dateiPfad) {
     aufrufStapel.push(funktionsAufruf)
     stack.push(funktionsUmgebung)
     rückgabeWert = null
-    val funktionsDefinition = definierer.holeFunktionsDefinition(funktionsAufruf)
     if (funktionsDefinition.sätze.isNotEmpty() && funktionsDefinition.sätze.first() is AST.Satz.Intern) {
       interneFunktionen.getValue(funktionsAufruf.vollerName!!)()
     } else {
@@ -162,7 +162,7 @@ class Interpreter(dateiPfad: String): ProgrammDurchlaufer<Wert>(dateiPfad) {
     for (zuweisung in instanziierung.feldZuweisungen) {
       felder[zuweisung.name.nominativ!!] = evaluiereAusdruck(zuweisung.wert)
     }
-    val klassenDefinition = (instanziierung.klasse.typ!! as Typ.Klasse).definition
+    val klassenDefinition = (instanziierung.klasse.typ!! as Typ.Klasse).klassenDefinition
     return Wert.Objekt(klassenDefinition, felder)
   }
 
@@ -325,7 +325,9 @@ fun main() {
   try {
     interpreter.interpretiere()
   } catch (fehler: GermanScriptFehler) {
-    System.err.println(fehler.message!!)
+    // Anstatt zu werfen gebe Fehler später einfach aus
+    //System.err.println(fehler.message!!)
+    throw fehler
   }
 }
 

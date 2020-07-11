@@ -1,15 +1,15 @@
 import java.util.*
 
-abstract  class ProgrammDurchlaufer<T>(dateiPfad: String): PipelineKomponente(dateiPfad ) {
+interface IObjekt {
+  val klassenDefinition: AST.Definition.Klasse
+}
+
+abstract  class ProgrammDurchlaufer<T, ObjektT: IObjekt>(dateiPfad: String): PipelineKomponente(dateiPfad ) {
   protected val stack = Stack<Umgebung<T>>()
-  private val methodenStack = Stack<T>()
-  val methodenVariable: T? get() = if (methodenStack.empty()){
-    null
-  } else {
-    methodenStack.peek()
-  }
+  private val methodenBlockStack = Stack<T>()
 
   abstract val ast: AST.Programm
+  abstract val definierer: Definierer
 
   protected fun durchlaufe(sätze: List<AST.Satz>, umgebung: Umgebung<T>, clearStack: Boolean) {
     if (clearStack) {
@@ -30,9 +30,7 @@ abstract  class ProgrammDurchlaufer<T>(dateiPfad: String): PipelineKomponente(da
       }
       when (satz) {
         is AST.Satz.VariablenDeklaration -> durchlaufeVariablenDeklaration(satz)
-        is AST.Satz.FunktionsAufruf -> {
-          durchlaufeFunktionsAufruf(satz.aufruf, false)
-        }
+        is AST.Satz.FunktionsAufruf ->  durchlaufeFunktionsAufruf(satz.aufruf, false)
         is AST.Satz.MethodenBlock -> durchlaufeMethodenBlock(satz)
         is AST.Satz.Zurückgabe -> durchlaufeZurückgabe(satz)
         is AST.Satz.Bedingung -> durchlaufeBedingungsSatz(satz)
@@ -73,15 +71,32 @@ abstract  class ProgrammDurchlaufer<T>(dateiPfad: String): PipelineKomponente(da
     }
   }
 
+  private fun durchlaufeFunktionsAufruf(funktionsAufruf: AST.FunktionsAufruf, istAusdruck: Boolean): T? {
+    if (methodenBlockStack.isNotEmpty()) {
+      val methodenBlockVariable = methodenBlockStack.peek()
+      funktionsAufruf.vollerName = definierer.getVollerNameVonFunktionsAufruf(funktionsAufruf)
+      @Suppress("UNCHECKED_CAST")
+      if ((methodenBlockVariable as ObjektT).klassenDefinition.methoden.containsKey(funktionsAufruf.vollerName!!)) {
+        val methodenDefinition = methodenBlockVariable.klassenDefinition.methoden.getValue(funktionsAufruf.vollerName!!).funktion
+        return durchlaufeMethodenOderFunktionsAufruf(methodenBlockVariable, funktionsAufruf, methodenDefinition , istAusdruck)
+      }
+    }
+    val funktionsDefinition = definierer.holeFunktionsDefinition(funktionsAufruf)
+    return durchlaufeMethodenOderFunktionsAufruf(null, funktionsAufruf, funktionsDefinition, istAusdruck)
+  }
+
   private fun durchlaufeMethodenBlock(methodenBlock: AST.Satz.MethodenBlock){
-    val wert = evaluiereVariable(methodenBlock.name.nominativ!!)
-    methodenStack.push(wert)
+    val wert = evaluiereVariable(methodenBlock.name)
+    if (wert !is IObjekt) {
+      throw GermanScriptFehler.TypFehler.Objekt(methodenBlock.name.bezeichner.toUntyped())
+    }
+    methodenBlockStack.push(wert)
     durchlaufeSätze(methodenBlock.sätze, true)
-    methodenStack.pop()
+    methodenBlockStack.pop()
   }
 
   protected abstract fun sollSätzeAbbrechen(): Boolean
-  protected abstract fun durchlaufeFunktionsAufruf(funktionsAufruf: AST.FunktionsAufruf, istAusdruck: Boolean): T?
+  protected abstract fun durchlaufeMethodenOderFunktionsAufruf(objekt: T?, funktionsAufruf: AST.FunktionsAufruf, funktionsDefinition: AST.Definition.FunktionOderMethode.Funktion, istAusdruck: Boolean): T?
   protected abstract fun durchlaufeZurückgabe(zurückgabe: AST.Satz.Zurückgabe)
   protected abstract fun durchlaufeBedingungsSatz(bedingungsSatz: AST.Satz.Bedingung)
   protected abstract fun durchlaufeAbbrechen()
@@ -95,7 +110,7 @@ abstract  class ProgrammDurchlaufer<T>(dateiPfad: String): PipelineKomponente(da
       is AST.Ausdruck.Zeichenfolge -> evaluiereZeichenfolge(ausdruck)
       is AST.Ausdruck.Zahl -> evaluiereZahl(ausdruck)
       is AST.Ausdruck.Boolean -> evaluiereBoolean(ausdruck)
-      is AST.Ausdruck.Variable -> evaluiereVariable(ausdruck)
+      is AST.Ausdruck.Variable -> evaluiereVariable(ausdruck.name)
       is AST.Ausdruck.Liste -> evaluiereListe(ausdruck)
       is AST.Ausdruck.ListenElement -> evaluiereListenElement(ausdruck)
       is AST.Ausdruck.FunktionsAufruf -> durchlaufeFunktionsAufruf(ausdruck.aufruf, true)!!
@@ -107,8 +122,8 @@ abstract  class ProgrammDurchlaufer<T>(dateiPfad: String): PipelineKomponente(da
     }
   }
 
-  fun evaluiereVariable(variable: AST.Ausdruck.Variable): T {
-    return stack.peek().leseVariable(variable.name)
+  fun evaluiereVariable(name: AST.Nomen): T {
+    return stack.peek().leseVariable(name)
   }
 
   fun evaluiereVariable(variable: String): T? {

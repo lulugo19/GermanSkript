@@ -1,8 +1,8 @@
 import util.SimpleLogger
 
-class TypPrüfer(dateiPfad: String): ProgrammDurchlaufer<Typ>(dateiPfad) {
+class TypPrüfer(dateiPfad: String): ProgrammDurchlaufer<Typ, Typ.Klasse>(dateiPfad) {
   val typisierer = Typisierer(dateiPfad)
-  val definierer = typisierer.definierer
+  override val definierer = typisierer.definierer
   val logger = SimpleLogger()
 
   override val ast: AST.Programm get() = typisierer.ast
@@ -39,27 +39,15 @@ class TypPrüfer(dateiPfad: String): ProgrammDurchlaufer<Typ>(dateiPfad) {
     logger.addLine("____________________________________________________________________")
   }
 
-  override fun durchlaufeFunktionsAufruf(funktionsAufruf: AST.FunktionsAufruf, istAusdruck: Boolean): Typ? {
-    logger.addLine("")
-    var funktionsDefinition: AST.Definition.FunktionOderMethode.Funktion? = null
-    if (methodenVariable != null){
-      val klasse = (methodenVariable as Typ.Klasse).definition
-      if (klasse.methoden.containsKey(funktionsAufruf.vollerName!!)){
-        funktionsDefinition = klasse.methoden.getValue(funktionsAufruf.vollerName!!).funktion
-
-      }
-    }else{
-      funktionsDefinition= definierer.holeFunktionsDefinition(funktionsAufruf)
+  override fun durchlaufeMethodenOderFunktionsAufruf(objekt: Typ?, funktionsAufruf: AST.FunktionsAufruf, funktionsDefinition: AST.Definition.FunktionOderMethode.Funktion, istAusdruck: Boolean): Typ? {
+    if (istAusdruck && funktionsDefinition.rückgabeTyp == null) {
+      throw GermanScriptFehler.SyntaxFehler.FunktionAlsAusdruckFehler(funktionsDefinition.name.toUntyped())
     }
 
-    if (istAusdruck && funktionsDefinition!!.rückgabeTyp == null) {
-      throw GermanScriptFehler.SyntaxFehler.FunktionAlsAusdruckFehler(funktionsDefinition!!.name.toUntyped())
-    }
-
-    val parameter = funktionsDefinition!!.parameter
+    val parameter = funktionsDefinition.parameter
     val argumente = funktionsAufruf.argumente
     if (argumente.size != parameter.size) {
-      throw GermanScriptFehler.SyntaxFehler.AnzahlDerParameterFehler(funktionsDefinition!!.name.toUntyped())
+      throw GermanScriptFehler.SyntaxFehler.AnzahlDerParameterFehler(funktionsDefinition.name.toUntyped())
     }
     var argumenteString = ""
     for (i in argumente.indices) {
@@ -69,7 +57,7 @@ class TypPrüfer(dateiPfad: String): ProgrammDurchlaufer<Typ>(dateiPfad) {
     logger.addLine("Funktionsaufruf(${funktionsAufruf.vollerName})[$argumenteString]")
 //    logger.addLine("____________________________________________________________________")
 
-    return funktionsDefinition!!.rückgabeTyp?.typ
+    return funktionsDefinition.rückgabeTyp?.typ
   }
 
   override fun durchlaufeZurückgabe(zurückgabe: AST.Satz.Zurückgabe) {
@@ -144,9 +132,9 @@ class TypPrüfer(dateiPfad: String): ProgrammDurchlaufer<Typ>(dateiPfad) {
     typisierer.typisiereTypKnoten(instanziierung.klasse)
     val klasse = instanziierung.klasse.typ!!
     if (klasse !is Typ.Klasse) {
-      throw GermanScriptFehler.TypFehler.KlasseErwartet(instanziierung.klasse.name.bezeichner.toUntyped())
+      throw GermanScriptFehler.TypFehler.Objekt(instanziierung.klasse.name.bezeichner.toUntyped())
     }
-    val definition = klasse.definition
+    val definition = klasse.klassenDefinition
 
     // die Feldzuweisungen müssen mit der Instanzzierung übereinstimmen, Außerdem müssen die Namen übereinstimmen
     for (i in definition.felder.indices) {
@@ -174,9 +162,9 @@ class TypPrüfer(dateiPfad: String): ProgrammDurchlaufer<Typ>(dateiPfad) {
   override fun evaluiereFeldZugriff(feldzugriff: AST.Ausdruck.Feldzugriff): Typ {
     val klasse = evaluiereAusdruck(feldzugriff.objekt)
     if (klasse !is Typ.Klasse) {
-      throw GermanScriptFehler.TypFehler.KlasseErwartet(holeErstesTokenVonAusdruck(feldzugriff.objekt))
+      throw GermanScriptFehler.TypFehler.Objekt(holeErstesTokenVonAusdruck(feldzugriff.objekt))
     }
-    for (feld in klasse.definition.felder) {
+    for (feld in klasse.klassenDefinition.felder) {
       if (feldzugriff.feldName.nominativ!! == feld.name.nominativ!!) {
         return feld.typKnoten.typ!!
       }

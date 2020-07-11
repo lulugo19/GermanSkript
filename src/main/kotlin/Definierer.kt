@@ -104,7 +104,7 @@ class Definierer(dateiPfad: String): PipelineKomponente(dateiPfad) {
     return vollerName
   }
 
-  private fun getVollerNameVonFunktionsAufruf(funktionsAufruf: AST.FunktionsAufruf): String {
+  fun getVollerNameVonFunktionsAufruf(funktionsAufruf: AST.FunktionsAufruf): String {
     // erkläre die Zeichenfolge mit der Zahl über die Zeile der Mond nach die Welt
     var vollerName = funktionsAufruf.verb.wert
     if (funktionsAufruf.objekt != null) {

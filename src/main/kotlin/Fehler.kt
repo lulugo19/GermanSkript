@@ -157,9 +157,9 @@ sealed class GermanScriptFehler(private val fehlerName: String, val token: Token
         get() = "Falscher Typ. Erwartet wird der Typ '${erwarteterTyp.name}'."
     }
 
-    class KlasseErwartet(token: Token): TypFehler(token) {
+    class Objekt(token: Token): TypFehler(token) {
       override val nachricht: String
-        get() = "Es wird ein Klassen-Typ (Objekt) erwartet und kein primitiver Typ (Zahl, Zeichenfolge, Boolean)."
+        get() = "Es wird ein Objekt erwartet und kein primitiver Wert (Zahl, Zeichenfolge, Boolean)."
     }
   }
 

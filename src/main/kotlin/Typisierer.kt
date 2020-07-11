@@ -71,7 +71,7 @@ sealed class Typ(val name: String) {
       get() = mutableSetOf()
   }
 
-  data class Klasse(val definition: AST.Definition.Klasse): Typ(definition.name.nominativ!!) {
+  data class Klasse(override val klassenDefinition: AST.Definition.Klasse): Typ(klassenDefinition.name.nominativ!!), IObjekt {
     override val definierteOperatoren: Map<Operator, Typ>
       get() = mapOf()
 
