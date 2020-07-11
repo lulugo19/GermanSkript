@@ -46,8 +46,23 @@ Verb begrüße die Person mit der Zeichenfolge Begrüßung, der Zeichenfolge Abs
     schreibe die Zeile die Begrüßung + " " + den Namen der Person + ". " + den Abschied + "."
 .
 
+
+// Methodendefinition
+Verb für Person stelle vor:
+    schreibe die Zeile "Hallo, ich bin " + mein Name
+.
+
 die Person ist eine Person mit dem Namen "Lukas", dem Nachnamen "Gobelet", dem Alter 22
 begrüße die Person mit der Begrüßung "Hey", dem Abschied "Bye"
+
+/*
+// Methodenblock
+Person:
+    stelle vor
+    schreibe die Zeile deinen Namen
+!
+*/
+
 /*
 // Stack Overflow Handling
 schreibe den Bereich "Stack Overflow"

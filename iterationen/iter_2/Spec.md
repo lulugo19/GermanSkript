@@ -179,6 +179,9 @@ Client: verbinde dich
 -[ ] Implementierung von Symbolen (große Bezeichner mit nur einem Buchstaben)
 -[x] erstes Element vom binären Ausdruck als NomenAusdruck
 -[ ] Fehlermeldungen
--[ ] Klassendefinition
--[ ] Klassen
--[ ] Methoden
+-[x] Klassendefinition
+-[x] Klassen
+- Methoden
+    - [ ] Methodendefinition
+    - [ ] Methodenblock
+    - [ ] Feldzugriff mit 'dein'
