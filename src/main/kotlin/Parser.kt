@@ -8,6 +8,7 @@ enum class ASTKnotenID {
   FUNKTIONS_AUFRUF,
   FUNKTIONS_DEFINITION,
   METHODEN_DEFINITION,
+  METHODEN_BLOCK,
   INTERN,
   DEKLINATION,
   ZURÜCKGABE,
@@ -246,14 +247,18 @@ private sealed class SubParser<T: AST>() {
     return AST.Argument(nomen, wert)
   }
 
-  protected fun<T: AST> parseBereich(parser: () -> T): T {
+  protected fun<T: AST> parseBereich(erwartetesEndToken: TokenTyp = TokenTyp.PUNKT, parser: () -> T): T {
     expect<TokenTyp.DOPPELPUNKT>(":")
     val result = parser()
-    expect<TokenTyp.PUNKT>(".")
+    überspringeLeereZeilen()
+    val endToken = next()
+    if (endToken.typ != erwartetesEndToken){
+      throw GermanScriptFehler.SyntaxFehler.ParseFehler(endToken, erwartetesEndToken.anzeigeName)
+    }
     return result
   }
 
-  protected fun parseSätze(): List<AST.Satz> =  parseBereich { subParse(Programm) }.sätze
+  protected fun parseSätze(endToken: TokenTyp = TokenTyp.PUNKT): List<AST.Satz> =  parseBereich(endToken) { subParse(Programm) }.sätze
   // endregion
 
   object Programm: SubParser<AST.Programm>() {
@@ -270,7 +275,7 @@ private sealed class SubParser<T: AST>() {
           parseSatz()?.also { sätze += it } != null -> Unit
           parseDefinition()?.also { definitionen += it } != null -> Unit
           else -> when (peekType()) {
-            is TokenTyp.EOF, TokenTyp.PUNKT -> break@loop
+            is TokenTyp.EOF, TokenTyp.PUNKT, TokenTyp.AUSRUFEZEICHEN -> break@loop
             else -> throw GermanScriptFehler.SyntaxFehler.ParseFehler(next())
           }
         }
@@ -292,6 +297,7 @@ private sealed class SubParser<T: AST>() {
             "für" -> subParse(Satz.FürJedeSchleife)
             else -> subParse(Satz.FunktionsAufruf)
           }
+        is TokenTyp.BEZEICHNER_GROSS -> subParse(Satz.MethodenBlock)
         else -> null
       }
     }
@@ -485,6 +491,17 @@ private sealed class SubParser<T: AST>() {
         get() = ASTKnotenID.FUNKTIONS_AUFRUF
 
       override fun parseImpl(): AST.Satz.FunktionsAufruf = AST.Satz.FunktionsAufruf(subParse(SubParser.FunktionsAufruf))
+    }
+
+    object MethodenBlock: Satz<AST.Satz.MethodenBlock>() {
+      override val id: ASTKnotenID
+        get() = ASTKnotenID.METHODEN_BLOCK
+
+      override fun parseImpl(): AST.Satz.MethodenBlock {
+        val name = parseNomen<TokenTyp.VORNOMEN>(false, "")
+        val sätze = parseSätze(TokenTyp.AUSRUFEZEICHEN)
+        return AST.Satz.MethodenBlock(name, sätze)
+      }
     }
 
     object Zurückgabe: Satz<AST.Satz.Zurückgabe>() {

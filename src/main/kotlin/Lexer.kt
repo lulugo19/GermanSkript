@@ -120,6 +120,7 @@ sealed class TokenTyp(val anzeigeName: String) {
     object GESCHLOSSENE_ECKIGE_KLAMMER: TokenTyp("']'")
     object KOMMA: TokenTyp("','")
     object PUNKT: TokenTyp("'.'")
+    object AUSRUFEZEICHEN: TokenTyp("'!'")
     object DOPPELPUNKT: TokenTyp("':'")
     object DOPPEL_DOPPELPUNKT: TokenTyp("'::'")
     object SEMIKOLON: TokenTyp("';'") // Semikolon
@@ -149,7 +150,7 @@ private val SYMBOL_MAPPING = mapOf<Char, TokenTyp>(
     ';' to TokenTyp.SEMIKOLON,
     '.' to TokenTyp.PUNKT,
     ':' to TokenTyp.DOPPELPUNKT,
-    '!' to TokenTyp.OPERATOR(Operator.NEGATION),
+    '!' to TokenTyp.AUSRUFEZEICHEN,
     ';' to TokenTyp.SEMIKOLON,
     '+' to TokenTyp.OPERATOR(Operator.PLUS),
     '-' to TokenTyp.OPERATOR(Operator.MINUS),

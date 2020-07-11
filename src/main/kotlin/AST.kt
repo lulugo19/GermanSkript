@@ -222,6 +222,13 @@ sealed class AST {
       override val children: Sequence<AST> get() = sequenceOf(aufruf)
     }
 
+    data class MethodenBlock(val name: Nomen, val sätze: List<Satz>): Satz(){
+      override val children: Sequence<AST>
+        get() = sequence {
+          yieldAll(sätze)
+        }
+    }
+
     data class Zurückgabe(val ausdruck: Ausdruck): Satz() {
       override val children: Sequence<AST> get() = sequenceOf(ausdruck)
     }

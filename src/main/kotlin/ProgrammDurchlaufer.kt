@@ -2,8 +2,14 @@ import java.util.*
 
 abstract  class ProgrammDurchlaufer<T>(dateiPfad: String): PipelineKomponente(dateiPfad ) {
   protected val stack = Stack<Umgebung<T>>()
-  abstract val ast: AST.Programm
+  private val methodenStack = Stack<T>()
+  val methodenVariable: T? get() = if (methodenStack.empty()){
+    null
+  } else {
+    methodenStack.peek()
+  }
 
+  abstract val ast: AST.Programm
 
   protected fun durchlaufe(sätze: List<AST.Satz>, umgebung: Umgebung<T>, clearStack: Boolean) {
     if (clearStack) {
@@ -27,6 +33,7 @@ abstract  class ProgrammDurchlaufer<T>(dateiPfad: String): PipelineKomponente(da
         is AST.Satz.FunktionsAufruf -> {
           durchlaufeFunktionsAufruf(satz.aufruf, false)
         }
+        is AST.Satz.MethodenBlock -> durchlaufeMethodenBlock(satz)
         is AST.Satz.Zurückgabe -> durchlaufeZurückgabe(satz)
         is AST.Satz.Bedingung -> durchlaufeBedingungsSatz(satz)
         is AST.Satz.SolangeSchleife -> durchlaufeSolangeSchleife(satz)
@@ -64,6 +71,13 @@ abstract  class ProgrammDurchlaufer<T>(dateiPfad: String): PipelineKomponente(da
     } else {
       stack.peek().überschreibeVariable(deklaration.name, wert)
     }
+  }
+
+  private fun durchlaufeMethodenBlock(methodenBlock: AST.Satz.MethodenBlock){
+    val wert = evaluiereVariable(methodenBlock.name.nominativ!!)
+    methodenStack.push(wert)
+    durchlaufeSätze(methodenBlock.sätze, true)
+    methodenStack.pop()
   }
 
   protected abstract fun sollSätzeAbbrechen(): Boolean

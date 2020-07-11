@@ -41,15 +41,25 @@ class TypPrüfer(dateiPfad: String): ProgrammDurchlaufer<Typ>(dateiPfad) {
 
   override fun durchlaufeFunktionsAufruf(funktionsAufruf: AST.FunktionsAufruf, istAusdruck: Boolean): Typ? {
     logger.addLine("")
-    val funktionsDefinition = definierer.holeFunktionsDefinition(funktionsAufruf)
-    if (istAusdruck && funktionsDefinition.rückgabeTyp == null) {
-      throw GermanScriptFehler.SyntaxFehler.FunktionAlsAusdruckFehler(funktionsDefinition.name.toUntyped())
+    var funktionsDefinition: AST.Definition.FunktionOderMethode.Funktion? = null
+    if (methodenVariable != null){
+      val klasse = (methodenVariable as Typ.Klasse).definition
+      if (klasse.methoden.containsKey(funktionsAufruf.vollerName!!)){
+        funktionsDefinition = klasse.methoden.getValue(funktionsAufruf.vollerName!!).funktion
+
+      }
+    }else{
+      funktionsDefinition= definierer.holeFunktionsDefinition(funktionsAufruf)
     }
 
-    val parameter = funktionsDefinition.parameter
+    if (istAusdruck && funktionsDefinition!!.rückgabeTyp == null) {
+      throw GermanScriptFehler.SyntaxFehler.FunktionAlsAusdruckFehler(funktionsDefinition!!.name.toUntyped())
+    }
+
+    val parameter = funktionsDefinition!!.parameter
     val argumente = funktionsAufruf.argumente
     if (argumente.size != parameter.size) {
-      throw GermanScriptFehler.SyntaxFehler.AnzahlDerParameterFehler(funktionsDefinition.name.toUntyped())
+      throw GermanScriptFehler.SyntaxFehler.AnzahlDerParameterFehler(funktionsDefinition!!.name.toUntyped())
     }
     var argumenteString = ""
     for (i in argumente.indices) {
@@ -59,7 +69,7 @@ class TypPrüfer(dateiPfad: String): ProgrammDurchlaufer<Typ>(dateiPfad) {
     logger.addLine("Funktionsaufruf(${funktionsAufruf.vollerName})[$argumenteString]")
 //    logger.addLine("____________________________________________________________________")
 
-    return funktionsDefinition.rückgabeTyp?.typ
+    return funktionsDefinition!!.rückgabeTyp?.typ
   }
 
   override fun durchlaufeZurückgabe(zurückgabe: AST.Satz.Zurückgabe) {

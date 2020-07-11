@@ -20,6 +20,7 @@ class GrammatikPrüfer(dateiPfad: String): PipelineKomponente(dateiPfad) {
         is AST.Satz.Zurückgabe -> prüfeKontextbasiertenAusdruck(knoten.ausdruck, null, EnumSet.of(Kasus.AKKUSATIV))
         is AST.Satz.FürJedeSchleife -> prüfeFürJedeSchleife(knoten)
         is AST.Satz.FunktionsAufruf -> prüfeFunktionsAufruf(knoten.aufruf)
+        is AST.Satz.MethodenBlock -> prüfeNomen(knoten.name, EnumSet.of(Kasus.NOMINATIV))
         is AST.Ausdruck -> return@visit false
       }
       // visit everything

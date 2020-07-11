@@ -55,13 +55,14 @@ Verb für Person stelle vor:
 die Person ist eine Person mit dem Namen "Lukas", dem Nachnamen "Gobelet", dem Alter 22
 begrüße die Person mit der Begrüßung "Hey", dem Abschied "Bye"
 
-/*
+
 // Methodenblock
 Person:
     stelle vor
-    schreibe die Zeile deinen Namen
+    schreibe die Zeile "deinen Namen"
 !
-*/
+
+
 
 /*
 // Stack Overflow Handling

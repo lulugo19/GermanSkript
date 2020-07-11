@@ -22,7 +22,7 @@ class Definierer(dateiPfad: String): PipelineKomponente(dateiPfad) {
     }
   }
 
-  fun holeFunktionsDefinition(funktionsAufruf: AST.FunktionsAufruf): AST.Definition.FunktionOderMethode.Funktion {
+  fun holeFunktionsDefinition(funktionsAufruf: AST.FunktionsAufruf): AST.Definition.FunktionOderMethode.Funktion{
     if (funktionsAufruf.vollerName == null) {
       funktionsAufruf.vollerName = getVollerNameVonFunktionsAufruf(funktionsAufruf)
     }
