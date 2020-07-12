@@ -1,16 +1,19 @@
 import java.text.ParseException
 import java.util.*
 
+data class AufrufStapelElement(val funktionsAufruf: AST.FunktionsAufruf, val objekt: Wert.Objekt?)
+
 class AufrufStapel {
   private object Static {
     const val CALL_STACK_OUTPUT_LIMIT = 50
   }
 
-  private val stapel = Stack<AST.FunktionsAufruf>()
+  private val stapel = Stack<AufrufStapelElement>()
 
-  fun top(): AST.FunktionsAufruf = stapel.peek()
-  fun push(funktionsAufruf: AST.FunktionsAufruf): Unit = stapel.push(funktionsAufruf).let { Unit }
-  fun pop(): AST.FunktionsAufruf = stapel.pop()
+  fun top(): AufrufStapelElement = stapel.peek()
+  fun push(funktionsAufruf: AST.FunktionsAufruf, objekt: Wert.Objekt?): Unit =
+      stapel.push(AufrufStapelElement(funktionsAufruf, objekt)).let { Unit }
+  fun pop(): AufrufStapelElement = stapel.pop()
 
   override fun toString(): String {
     if (stapel.isEmpty()) {
@@ -22,13 +25,20 @@ class AufrufStapel {
         "",
         Static.CALL_STACK_OUTPUT_LIMIT,
         "...",
-        ::funktionsAufrufZuString
+        ::aufrufStapelElementToSting
     )
   }
 
-  private fun funktionsAufrufZuString(funktionsAufruf: AST.FunktionsAufruf): String {
+  private fun aufrufStapelElementToSting(element: AufrufStapelElement): String {
+    val funktionsAufruf = element.funktionsAufruf
     val token = funktionsAufruf.verb
-    return "${funktionsAufruf.vollerName} in ${token.position}"
+    var zeichenfolge = "${funktionsAufruf.vollerName} in ${token.position}"
+    if (element.objekt != null) {
+      val klassenName = element.objekt.klassenDefinition.name.nominativ!!
+      zeichenfolge = "für $klassenName: $zeichenfolge"
+    }
+
+    return zeichenfolge
   }
 }
 
@@ -47,7 +57,10 @@ class Interpreter(dateiPfad: String): ProgrammDurchlaufer<Wert, Wert.Objekt>(dat
     try {
       durchlaufe(ast.sätze, Umgebung(), true)
     } catch (stackOverflow: StackOverflowError) {
-      throw GermanScriptFehler.LaufzeitFehler(aufrufStapel.top().verb.toUntyped(), aufrufStapel, "Stack Overflow")
+      throw GermanScriptFehler.LaufzeitFehler(
+          aufrufStapel.top().funktionsAufruf.verb.toUntyped(),
+          aufrufStapel,
+          "Stack Overflow")
     }
   }
 
@@ -77,7 +90,7 @@ class Interpreter(dateiPfad: String): ProgrammDurchlaufer<Wert, Wert.Objekt>(dat
       val argumentWert = evaluiereAusdruck(argument.wert)
       funktionsUmgebung.schreibeVariable(argument.name, argumentWert)
     }
-    aufrufStapel.push(funktionsAufruf)
+    aufrufStapel.push(funktionsAufruf, objekt?.let { it as Wert.Objekt })
     stack.push(funktionsUmgebung)
     rückgabeWert = null
     if (funktionsDefinition.sätze.isNotEmpty() && funktionsDefinition.sätze.first() is AST.Satz.Intern) {
@@ -168,6 +181,16 @@ class Interpreter(dateiPfad: String): ProgrammDurchlaufer<Wert, Wert.Objekt>(dat
 
   override fun evaluiereEigenschaftsZugriff(eigenschaftsZugriff: AST.Ausdruck.EigenschaftsZugriff): Wert {
     val objekt = evaluiereAusdruck(eigenschaftsZugriff.objekt) as Wert.Objekt
+    return objekt.eigenschaften.getValue(eigenschaftsZugriff.eigenschaftsName.nominativ!!)
+  }
+
+  override fun evaluiereSelbstEigenschaftsZugriff(eigenschaftsZugriff: AST.Ausdruck.SelbstEigenschaftsZugriff): Wert {
+    val objekt = aufrufStapel.top().objekt!!
+    return objekt.eigenschaften.getValue(eigenschaftsZugriff.eigenschaftsName.nominativ!!)
+  }
+
+  override fun evaluiereMethodenBlockEigenschaftsZugriff(eigenschaftsZugriff: AST.Ausdruck.MethodenBlockEigenschaftsZugriff): Wert {
+    val objekt = stack.peek().holeMethodenBlockObjekt()!! as Wert.Objekt
     return objekt.eigenschaften.getValue(eigenschaftsZugriff.eigenschaftsName.nominativ!!)
   }
 

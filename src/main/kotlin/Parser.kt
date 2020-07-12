@@ -219,15 +219,16 @@ private sealed class SubParser<T: AST>() {
         is TokenTyp.OFFENE_ECKIGE_KLAMMER -> subParse(NomenAusdruck.ListenElement(nomen))
         is TokenTyp.VORNOMEN.ARTIKEL -> {
           when (nächstesToken.wert) {
-            "des", "der" -> subParse(NomenAusdruck.EigenschaftsZugriff(nomen, inBinärenAusdruck))
-            "meiner", "meines" -> TODO()
-            "deiner", "deines" -> TODO()
+            "des", "der", "meiner", "meines", "deiner", "deines" -> subParse(NomenAusdruck.EigenschaftsZugriff(nomen, inBinärenAusdruck))
             else -> AST.Ausdruck.Variable(nomen)
           }
         }
-        is TokenTyp.VORNOMEN.POSSESSIV_PRONOMEN.MEIN -> TODO()
-        is TokenTyp.VORNOMEN.POSSESSIV_PRONOMEN.DEIN -> TODO()
-        else -> AST.Ausdruck.Variable(nomen)
+        else -> when(nomen.vornomen.typ) {
+          TokenTyp.VORNOMEN.ARTIKEL.BESTIMMT -> AST.Ausdruck.Variable(nomen)
+          TokenTyp.VORNOMEN.POSSESSIV_PRONOMEN.MEIN -> AST.Ausdruck.SelbstEigenschaftsZugriff(nomen)
+          TokenTyp.VORNOMEN.POSSESSIV_PRONOMEN.DEIN -> AST.Ausdruck.MethodenBlockEigenschaftsZugriff(nomen)
+          else -> throw GermanScriptFehler.SyntaxFehler.ParseFehler(nomen.vornomen.toUntyped(), "bestimmter Artikel oder Possessivpronomen")
+        }
       }
       is TokenTyp.VORNOMEN.ARTIKEL.UNBESTIMMT ->  {
         when (nächstesToken.typ) {
@@ -236,8 +237,8 @@ private sealed class SubParser<T: AST>() {
         }
       }
       is TokenTyp.VORNOMEN.JEDE -> throw GermanScriptFehler.SyntaxFehler.ParseFehler(nomen.vornomen.toUntyped())
-      TokenTyp.VORNOMEN.POSSESSIV_PRONOMEN.MEIN -> TODO()
-      TokenTyp.VORNOMEN.POSSESSIV_PRONOMEN.DEIN -> TODO()
+      TokenTyp.VORNOMEN.POSSESSIV_PRONOMEN.MEIN -> AST.Ausdruck.SelbstEigenschaftsZugriff(nomen)
+      TokenTyp.VORNOMEN.POSSESSIV_PRONOMEN.DEIN -> AST.Ausdruck.MethodenBlockEigenschaftsZugriff(nomen)
     }
 
     return when(peekType()){
@@ -450,8 +451,19 @@ private sealed class SubParser<T: AST>() {
         get() = ASTKnotenID.EIGENSCHAFTS_ZUGRIFF
 
       override fun parseImpl(): AST.Ausdruck.EigenschaftsZugriff {
-        val objekt = parseNomenAusdruck(parseNomen<TokenTyp.VORNOMEN.ARTIKEL>(true, "Artikel"), inBinärenAusdruck)
-        return AST.Ausdruck.EigenschaftsZugriff(nomen, objekt)
+        return if (nomen.vornomen!!.typ is TokenTyp.VORNOMEN.POSSESSIV_PRONOMEN) {
+          val eigenschaft = parseNomen<TokenTyp.VORNOMEN>(false, "")
+          val vornomenTyp = nomen.vornomen.typ
+          val objekt = if (vornomenTyp is TokenTyp.VORNOMEN.POSSESSIV_PRONOMEN.MEIN) {
+            AST.Ausdruck.SelbstEigenschaftsZugriff(eigenschaft)
+          } else {
+            AST.Ausdruck.MethodenBlockEigenschaftsZugriff(eigenschaft)
+          }
+          AST.Ausdruck.EigenschaftsZugriff(nomen, objekt)
+        } else {
+          val objekt = parseNomenAusdruck(parseNomen<TokenTyp.VORNOMEN.ARTIKEL>(true, "Artikel"), inBinärenAusdruck)
+          AST.Ausdruck.EigenschaftsZugriff(nomen, objekt)
+        }
       }
     }
   }

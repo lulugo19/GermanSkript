@@ -58,6 +58,8 @@ abstract  class ProgrammDurchlaufer<T, ObjektT: IObjekt>(dateiPfad: String): Pip
       is AST.Ausdruck.Konvertierung -> holeErstesTokenVonAusdruck(ausdruck.ausdruck)
       is AST.Ausdruck.ObjektInstanziierung -> ausdruck.klasse.name.bezeichner.toUntyped()
       is AST.Ausdruck.EigenschaftsZugriff -> ausdruck.eigenschaftsName.bezeichner.toUntyped()
+      is AST.Ausdruck.SelbstEigenschaftsZugriff -> ausdruck.eigenschaftsName.bezeichner.toUntyped()
+      is AST.Ausdruck.MethodenBlockEigenschaftsZugriff -> ausdruck.eigenschaftsName.bezeichner.toUntyped()
     }
   }
 
@@ -118,6 +120,8 @@ abstract  class ProgrammDurchlaufer<T, ObjektT: IObjekt>(dateiPfad: String): Pip
       is AST.Ausdruck.Konvertierung -> evaluiereKonvertierung(ausdruck)
       is AST.Ausdruck.ObjektInstanziierung -> evaluiereObjektInstanziierung(ausdruck)
       is AST.Ausdruck.EigenschaftsZugriff -> evaluiereEigenschaftsZugriff(ausdruck)
+      is AST.Ausdruck.SelbstEigenschaftsZugriff -> evaluiereSelbstEigenschaftsZugriff(ausdruck)
+      is AST.Ausdruck.MethodenBlockEigenschaftsZugriff -> evaluiereMethodenBlockEigenschaftsZugriff(ausdruck)
     }
   }
 
@@ -139,4 +143,6 @@ abstract  class ProgrammDurchlaufer<T, ObjektT: IObjekt>(dateiPfad: String): Pip
   protected abstract fun evaluiereKonvertierung(konvertierung: AST.Ausdruck.Konvertierung): T
   protected abstract fun evaluiereObjektInstanziierung(instanziierung: AST.Ausdruck.ObjektInstanziierung): T
   protected abstract fun evaluiereEigenschaftsZugriff(eigenschaftsZugriff: AST.Ausdruck.EigenschaftsZugriff): T
+  protected abstract fun evaluiereSelbstEigenschaftsZugriff(eigenschaftsZugriff: AST.Ausdruck.SelbstEigenschaftsZugriff): T
+  protected abstract fun evaluiereMethodenBlockEigenschaftsZugriff(eigenschaftsZugriff: AST.Ausdruck.MethodenBlockEigenschaftsZugriff): T
 }

@@ -337,5 +337,13 @@ sealed class AST {
     ): Ausdruck() {
       override val children = sequenceOf(objekt)
     }
+
+    data class MethodenBlockEigenschaftsZugriff(
+        val eigenschaftsName: Nomen
+    ): Ausdruck()
+
+    data class SelbstEigenschaftsZugriff(
+        val eigenschaftsName: Nomen
+    ): Ausdruck()
   }
 }

@@ -164,12 +164,27 @@ class TypPrüfer(dateiPfad: String): ProgrammDurchlaufer<Typ, Typ.Klasse>(dateiP
     if (klasse !is Typ.Klasse) {
       throw GermanScriptFehler.TypFehler.Objekt(holeErstesTokenVonAusdruck(eigenschaftsZugriff.objekt))
     }
+    return  überprüfeEigenschaftInKlasse(eigenschaftsZugriff.eigenschaftsName, klasse)
+  }
+
+  override fun evaluiereSelbstEigenschaftsZugriff(eigenschaftsZugriff: AST.Ausdruck.SelbstEigenschaftsZugriff): Typ {
+    val methodenDefinition = eigenschaftsZugriff.findNodeInParents<AST.Definition.FunktionOderMethode.Methode>()!!
+    val klasse = methodenDefinition.klasse.typ!! as Typ.Klasse
+    return überprüfeEigenschaftInKlasse(eigenschaftsZugriff.eigenschaftsName, klasse)
+  }
+
+  override fun evaluiereMethodenBlockEigenschaftsZugriff(eigenschaftsZugriff: AST.Ausdruck.MethodenBlockEigenschaftsZugriff): Typ {
+    val methodenBlockObjekt = stack.peek().holeMethodenBlockObjekt() as Typ.Klasse
+    return überprüfeEigenschaftInKlasse(eigenschaftsZugriff.eigenschaftsName, methodenBlockObjekt)
+  }
+
+  private fun überprüfeEigenschaftInKlasse(eigenschaftsName: AST.Nomen, klasse: Typ.Klasse): Typ {
     for (eigenschaft in klasse.klassenDefinition.eigenschaften) {
-      if (eigenschaftsZugriff.eigenschaftsName.nominativ!! == eigenschaft.name.nominativ!!) {
+      if (eigenschaftsName.nominativ!! == eigenschaft.name.nominativ!!) {
         return eigenschaft.typKnoten.typ!!
       }
     }
-    throw GermanScriptFehler.Undefiniert.Eigenschaft(eigenschaftsZugriff.eigenschaftsName.bezeichner.toUntyped(), klasse.name)
+    throw GermanScriptFehler.Undefiniert.Eigenschaft(eigenschaftsName.bezeichner.toUntyped(), klasse.name)
   }
 
   override fun evaluiereBinärenAusdruck(ausdruck: AST.Ausdruck.BinärerAusdruck): Typ {

@@ -49,7 +49,7 @@ Verb begrüße die Person mit der Zeichenfolge Begrüßung, der Zeichenfolge Abs
 
 // Methodendefinition
 Verb für Person stelle vor:
-    schreibe die Zeile "Hallo, ich bin " //+ mein Name
+    schreibe die Zeile "Hallo, ich bin " + meinen Namen
 .
 
 die Person ist eine Person mit dem Namen "Lukas", dem Nachnamen "Gobelet", dem Alter 22
@@ -59,7 +59,7 @@ begrüße die Person mit der Begrüßung "Hey", dem Abschied "Bye"
 // Methodenblock
 Person:
     stelle vor
-    schreibe die Zeile "deinen Namen"
+    schreibe die Zeile dein Name
 !
 
 

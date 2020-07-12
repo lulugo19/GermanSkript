@@ -97,6 +97,8 @@ class GrammatikPrüfer(dateiPfad: String): PipelineKomponente(dateiPfad) {
       is AST.Ausdruck.ListenElement -> prüfeListenElement(ausdruck, kontextNomen, fälle)
       is AST.Ausdruck.ObjektInstanziierung -> prüfeObjektinstanziierung(ausdruck, kontextNomen, fälle)
       is AST.Ausdruck.EigenschaftsZugriff -> prüfeEigenschaftsZugriff(ausdruck, kontextNomen, fälle)
+      is AST.Ausdruck.MethodenBlockEigenschaftsZugriff -> prüfeNomenKontextBasiert(ausdruck.eigenschaftsName, kontextNomen, fälle)
+      is AST.Ausdruck.SelbstEigenschaftsZugriff -> prüfeNomenKontextBasiert(ausdruck.eigenschaftsName, kontextNomen, fälle)
       is AST.Ausdruck.Konvertierung -> prüfeKonvertierung(ausdruck, kontextNomen, fälle)
       is AST.Ausdruck.BinärerAusdruck -> prüfeBinärenAusdruck(ausdruck, kontextNomen, fälle)
       is AST.Ausdruck.FunktionsAufruf -> prüfeFunktionsAufruf(ausdruck.aufruf)
@@ -132,11 +134,19 @@ class GrammatikPrüfer(dateiPfad: String): PipelineKomponente(dateiPfad) {
   }
 
   private fun prüfeEigenschaftsZugriff(eigenschaftsZugriff: AST.Ausdruck.EigenschaftsZugriff, kontextNomen: AST.Nomen?, fälle: EnumSet<Kasus>) {
-    prüfeNomen(eigenschaftsZugriff.eigenschaftsName, fälle)
-    if (kontextNomen != null) {
-      prüfeNumerus(kontextNomen, eigenschaftsZugriff.eigenschaftsName.numerus!!)
-    }
+    prüfeNomenKontextBasiert(eigenschaftsZugriff.eigenschaftsName, kontextNomen, fälle)
     prüfeKontextbasiertenAusdruck(eigenschaftsZugriff.objekt, null, EnumSet.of(Kasus.GENITIV))
+  }
+
+  private fun prüfeNomenKontextBasiert(
+      nomen: AST.Nomen,
+      kontextNomen: AST.Nomen?,
+      fälle: EnumSet<Kasus>)
+  {
+    prüfeNomen(nomen, fälle)
+    if (kontextNomen != null) {
+      prüfeNumerus(kontextNomen, nomen.numerus!!)
+    }
   }
 
   private fun prüfeListenElement(listenElement: AST.Ausdruck.ListenElement, kontextNomen: AST.Nomen?, fälle: EnumSet<Kasus>) {
@@ -281,6 +291,20 @@ private val VORNOMEN_TABELLE = mapOf<TokenTyp.VORNOMEN, Array<Array<String>>>(
         arrayOf("jedes", "jeder", "jedes", "aller"),
         arrayOf("jedem", "jeder", "jedem", "allen"),
         arrayOf("jeden", "jede", "jedes", "alle")
+    ),
+
+    TokenTyp.VORNOMEN.POSSESSIV_PRONOMEN.MEIN to arrayOf(
+        arrayOf("mein", "meine", "mein", "meine"),
+        arrayOf("meines", "meiner", "meines", "meiner"),
+        arrayOf("meinem", "meiner", "meinem", "meinen"),
+        arrayOf("meinen", "meine", "mein", "meine")
+    ),
+
+    TokenTyp.VORNOMEN.POSSESSIV_PRONOMEN.DEIN to arrayOf(
+        arrayOf("dein", "deine", "dein", "deine"),
+        arrayOf("deines", "deiner", "deines", "deiner"),
+        arrayOf("deinem", "deiner", "deinem", "deinen"),
+        arrayOf("deinen", "deine", "dein", "deine")
     )
 )
 
