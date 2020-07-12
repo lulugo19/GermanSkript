@@ -8,6 +8,7 @@ class TypPrüfer(dateiPfad: String): ProgrammDurchlaufer<Typ>(dateiPfad) {
   val ast: AST.Programm get() = typisierer.ast
 
   private var zuÜberprüfendeKlasse: AST.Definition.Klasse? = null
+  private var zuÜberprüfendeFunktion: AST.Definition.FunktionOderMethode.Funktion? = null
 
   fun prüfe() {
     typisierer.typisiere()
@@ -36,6 +37,7 @@ class TypPrüfer(dateiPfad: String): ProgrammDurchlaufer<Typ>(dateiPfad) {
       funktionsUmgebung.schreibeVariable(parameter.name, parameter.typKnoten.typ!!)
     }
     umgebung = funktionsUmgebung
+    zuÜberprüfendeFunktion = funktion
     durchlaufeSätze(funktion.sätze)
   }
 
@@ -100,13 +102,9 @@ class TypPrüfer(dateiPfad: String): ProgrammDurchlaufer<Typ>(dateiPfad) {
   }
 
   override fun durchlaufeZurückgabe(zurückgabe: AST.Satz.Zurückgabe) {
-    val funktionsDefinition = zurückgabe.findNodeInParents<AST.Definition.FunktionOderMethode.Funktion>()!!
-    val rückgabeTyp = funktionsDefinition.rückgabeTyp
-    if (funktionsDefinition.rückgabeTyp == null) {
-      throw GermanScriptFehler.SyntaxFehler.RückgabeTypFehler(holeErstesTokenVonAusdruck(zurückgabe.ausdruck))
-    }
-    logger.addLine("-> $rückgabeTyp")
-    ausdruckMussTypSein(zurückgabe.ausdruck, rückgabeTyp!!.typ!!)
+    val rückgabeTyp = zuÜberprüfendeFunktion?.rückgabeTyp
+        ?: throw GermanScriptFehler.SyntaxFehler.RückgabeTypFehler(holeErstesTokenVonAusdruck(zurückgabe.ausdruck))
+    ausdruckMussTypSein(zurückgabe.ausdruck, rückgabeTyp.typ!!)
   }
 
   private fun prüfeBedingung(bedingung: AST.Satz.BedingungsTerm) {

@@ -62,6 +62,15 @@ Person:
     schreibe die Zeile "Hey wie geht's denn " + deinen Namen + "?"
 !
 
+// Symbole
+Deklination Femininum Singular(Summe, Summe, Summe, Summe) Plural(Summen, Summen, Summen, Summen)
+schreibe den Bereich "Symbol-Test"
+die Zahlen sind einige Zahlen[1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+eine Summe ist 0
+für jede Zahl X:
+    eine Summe ist die Summe plus das X
+.
+schreibe die Zeile "Die Summe ist: " + die Summe als Zeichenfolge
 
 
 /*

@@ -176,8 +176,8 @@ private sealed class SubParser<T: AST>() {
     if (canBeEmpty && peekType() !is T) {
       return emptyList()
     }
+    val liste = mutableListOf<TypedToken<T>>(expect(erwartet))
     überspringeLeereZeilen()
-    val liste = mutableListOf<TypedToken<T>>()
     while (peekType() is TrennerT) {
       next()
       überspringeLeereZeilen()
@@ -378,7 +378,6 @@ private sealed class SubParser<T: AST>() {
         is TokenTyp.ZAHL -> AST.Ausdruck.Zahl(next().toTyped())
         is TokenTyp.BOOLEAN -> AST.Ausdruck.Boolean(next().toTyped())
         is TokenTyp.BEZEICHNER_KLEIN -> AST.Ausdruck.FunktionsAufruf(subParse(FunktionsAufruf))
-        is TokenTyp.BEZEICHNER_GROSS -> AST.Ausdruck.Variable(parseNomen<TokenTyp.VORNOMEN>(false, "Vornomen"))
         is TokenTyp.VORNOMEN -> parseNomenAusdruck(parseNomen<TokenTyp.VORNOMEN>(true, "Vornomen"), true)
         is TokenTyp.OFFENE_KLAMMER -> {
           next()
@@ -396,6 +395,7 @@ private sealed class SubParser<T: AST>() {
             AST.Ausdruck.Minus(parseEinzelnerAusdruck())
           }
         }
+        is TokenTyp.BEZEICHNER_GROSS -> throw GermanScriptFehler.SyntaxFehler.ParseFehler(next(), "Artikel", "Vor einem Nomen muss ein Artikel stehen.")
         else -> throw GermanScriptFehler.SyntaxFehler.ParseFehler(next())
       }
       return when (peekType()){
@@ -688,27 +688,39 @@ private sealed class SubParser<T: AST>() {
         }
       }
 
+      // parst einfach einen Bezeichner passt, aber auf dass der Bezeichner mehr als einen Buchstaben hat
+      private fun parseWort(): String {
+        val wort = expect<TokenTyp.BEZEICHNER_GROSS>("Bezeichner")
+        if (wort.wert.length <= 1) {
+          throw GermanScriptFehler.SyntaxFehler.ParseFehler(wort.toUntyped(), "Wort",
+              "Ein Nomen in einer Deklinationsanweisungen muss mehr als einen Buchstaben haben.\n" +
+                  "Bezeichner die nur einen Buchstaben haben, sind Symbole und können ohne Deklination " +
+                  "im Singular überall als Bezeichner verwendet werden.")
+        }
+        return wort.wert
+      }
+
       private fun parseDeklination(): AST.Definition.DeklinationsDefinition.Definition {
         val genus = expect<TokenTyp.GENUS>("Genus").typ.genus
         expect<TokenTyp.SINGULAR>("'Singular'")
         expect<TokenTyp.OFFENE_KLAMMER>("'('")
-        val nominativS = expect<TokenTyp.BEZEICHNER_GROSS>("Bezeichner").wert
+        val nominativS = parseWort()
         expect<TokenTyp.KOMMA>("','")
-        val genitivS = expect<TokenTyp.BEZEICHNER_GROSS>("Bezeichner").wert
+        val genitivS = parseWort()
         expect<TokenTyp.KOMMA>("','")
-        val dativS = expect<TokenTyp.BEZEICHNER_GROSS>("Bezeichner").wert
+        val dativS = parseWort()
         expect<TokenTyp.KOMMA>("','")
-        val akkusativS = expect<TokenTyp.BEZEICHNER_GROSS>("Bezeichner").wert
+        val akkusativS = parseWort()
         expect<TokenTyp.GESCHLOSSENE_KLAMMER>("')'")
         expect<TokenTyp.PLURAL>("'Plural'")
         expect<TokenTyp.OFFENE_KLAMMER>("'('")
-        val nominativP = expect<TokenTyp.BEZEICHNER_GROSS>("Bezeichner").wert
+        val nominativP = parseWort()
         expect<TokenTyp.KOMMA>("','")
-        val genitivP = expect<TokenTyp.BEZEICHNER_GROSS>("Bezeichner").wert
+        val genitivP = parseWort()
         expect<TokenTyp.KOMMA>("','")
-        val dativP = expect<TokenTyp.BEZEICHNER_GROSS>("Bezeichner").wert
+        val dativP = parseWort()
         expect<TokenTyp.KOMMA>("','")
-        val akkusativP = expect<TokenTyp.BEZEICHNER_GROSS>("Bezeichner").wert
+        val akkusativP = parseWort()
         expect<TokenTyp.GESCHLOSSENE_KLAMMER>("')'")
         return AST.Definition.DeklinationsDefinition.Definition(Deklination(genus,
                 arrayOf(nominativS, genitivS, dativS, akkusativS, nominativP, genitivP, dativP, akkusativP)))

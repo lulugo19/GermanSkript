@@ -32,24 +32,34 @@ class GrammatikPrüfer(dateiPfad: String): PipelineKomponente(dateiPfad) {
     if (nomen.geprüft) {
       return
     }
-    val deklanation = deklanierer.holeDeklination(nomen)
-    val numerus = deklanation.getNumerus(nomen.bezeichner.wert)
-    nomen.numerus = numerus
-    nomen.nominativ = deklanation.getForm(Kasus.NOMINATIV, numerus)
-    nomen.nominativSingular = deklanation.getForm(Kasus.NOMINATIV, Numerus.SINGULAR)
-    nomen.nominativPlural = deklanation.getForm(Kasus.NOMINATIV, Numerus.PLURAL)
-    nomen.genus = deklanation.genus
-    for (kasus in fälle) {
-      val erwarteteForm = deklanation.getForm(kasus, numerus)
-      if (nomen.bezeichner.wert == erwarteteForm) {
-        nomen.fälle.add(kasus)
+    // Bezeichner mit nur einem Buchstaben sind Symbole
+    if (nomen.bezeichner.wert.length == 1) {
+      val symbol = nomen.bezeichner.wert
+      nomen.numerus = Numerus.SINGULAR
+      nomen.nominativ = symbol
+      nomen.nominativSingular = symbol
+      nomen.genus = Genus.NEUTRUM
+      nomen.fälle.addAll(fälle)
+    } else {
+      val deklanation = deklanierer.holeDeklination(nomen)
+      val numerus = deklanation.getNumerus(nomen.bezeichner.wert)
+      nomen.numerus = numerus
+      nomen.nominativ = deklanation.getForm(Kasus.NOMINATIV, numerus)
+      nomen.nominativSingular = deklanation.getForm(Kasus.NOMINATIV, Numerus.SINGULAR)
+      nomen.nominativPlural = deklanation.getForm(Kasus.NOMINATIV, Numerus.PLURAL)
+      nomen.genus = deklanation.genus
+      for (kasus in fälle) {
+        val erwarteteForm = deklanation.getForm(kasus, numerus)
+        if (nomen.bezeichner.wert == erwarteteForm) {
+          nomen.fälle.add(kasus)
+        }
       }
-    }
-    if (nomen.fälle.isEmpty()) {
-      // TODO: berücksichtige auch die möglichen anderen Fälle in der Fehlermeldung
-      val kasus = fälle.first()
-      val erwarteteForm = deklanation.getForm(kasus, numerus)
-      throw GermanScriptFehler.GrammatikFehler.FormFehler.FalschesNomen(nomen.bezeichner.toUntyped(), kasus, nomen, erwarteteForm)
+      if (nomen.fälle.isEmpty()) {
+        // TODO: berücksichtige auch die möglichen anderen Fälle in der Fehlermeldung
+        val kasus = fälle.first()
+        val erwarteteForm = deklanation.getForm(kasus, numerus)
+        throw GermanScriptFehler.GrammatikFehler.FormFehler.FalschesNomen(nomen.bezeichner.toUntyped(), kasus, nomen, erwarteteForm)
+      }
     }
     prüfeVornomen(nomen)
   }
