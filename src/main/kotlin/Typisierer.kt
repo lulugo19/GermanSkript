@@ -71,14 +71,13 @@ sealed class Typ(val name: String) {
       get() = mutableSetOf()
   }
 
-  data class Klasse(override val klassenDefinition: AST.Definition.Klasse): Typ(klassenDefinition.name.nominativ!!), IObjekt {
+  data class Klasse(val klassenDefinition: AST.Definition.Klasse): Typ(klassenDefinition.name.nominativ!!) {
     override val definierteOperatoren: Map<Operator, Typ>
       get() = mapOf()
 
     override val definierteKonvertierungen: MutableSet<Typ>
       get() = mutableSetOf()
   }
-  
 }
 
 class Typisierer(dateiPfad: String): PipelineKomponente(dateiPfad) {

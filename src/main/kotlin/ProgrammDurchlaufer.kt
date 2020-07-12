@@ -1,27 +1,13 @@
-import java.util.*
-
-interface IObjekt {
-  val klassenDefinition: AST.Definition.Klasse
-}
-
-abstract  class ProgrammDurchlaufer<T, ObjektT: IObjekt>(dateiPfad: String): PipelineKomponente(dateiPfad ) {
-  protected val stack = Stack<Umgebung<T>>()
-
-  abstract val ast: AST.Programm
+abstract  class ProgrammDurchlaufer<T>(dateiPfad: String): PipelineKomponente(dateiPfad ) {
   abstract val definierer: Definierer
 
-  protected fun durchlaufe(sätze: List<AST.Satz>, umgebung: Umgebung<T>, clearStack: Boolean) {
-    if (clearStack) {
-      stack.clear()
-    }
-    stack.push(umgebung)
-    durchlaufeSätze(sätze, umgebung.istLeer)
-  }
+  protected abstract val umgebung: Umgebung<T>
 
   // region Sätze
-  protected fun durchlaufeSätze(sätze: List<AST.Satz>, neuerBereich: Boolean)  {
+  protected fun durchlaufeSätze(sätze: List<AST.Satz>)  {
+    val neuerBereich = umgebung.istLeer
     if (neuerBereich) {
-      stack.peek().pushBereich()
+      umgebung.pushBereich()
     }
     for (satz in sätze) {
       if (sollSätzeAbbrechen()) {
@@ -29,7 +15,7 @@ abstract  class ProgrammDurchlaufer<T, ObjektT: IObjekt>(dateiPfad: String): Pip
       }
       when (satz) {
         is AST.Satz.VariablenDeklaration -> durchlaufeVariablenDeklaration(satz)
-        is AST.Satz.FunktionsAufruf ->  durchlaufeFunktionsAufruf(satz.aufruf, false)
+        is AST.Satz.FunktionsAufruf -> durchlaufeFunktionsAufruf(satz.aufruf, false)
         is AST.Satz.MethodenBlock -> durchlaufeMethodenBlock(satz)
         is AST.Satz.Zurückgabe -> durchlaufeZurückgabe(satz)
         is AST.Satz.Bedingung -> durchlaufeBedingungsSatz(satz)
@@ -37,10 +23,11 @@ abstract  class ProgrammDurchlaufer<T, ObjektT: IObjekt>(dateiPfad: String): Pip
         is AST.Satz.FürJedeSchleife -> durchlaufeFürJedeSchleife(satz)
         is AST.Satz.SchleifenKontrolle.Abbrechen -> durchlaufeAbbrechen()
         is AST.Satz.SchleifenKontrolle.Fortfahren -> durchlaufeFortfahren()
+        is AST.Satz.Intern -> durchlaufeIntern()
       }
     }
     if (neuerBereich) {
-      stack.peek().popBereich()
+      umgebung.popBereich()
     }
   }
 
@@ -66,65 +53,30 @@ abstract  class ProgrammDurchlaufer<T, ObjektT: IObjekt>(dateiPfad: String): Pip
   private fun durchlaufeVariablenDeklaration(deklaration: AST.Satz.VariablenDeklaration) {
     val wert = evaluiereAusdruck(deklaration.ausdruck)
     if (deklaration.name.vornomen!!.typ is TokenTyp.VORNOMEN.ARTIKEL.BESTIMMT) {
-      stack.peek().schreibeVariable(deklaration.name, wert)
+      umgebung.schreibeVariable(deklaration.name, wert)
     } else {
-      stack.peek().überschreibeVariable(deklaration.name, wert)
+      umgebung.überschreibeVariable(deklaration.name, wert)
     }
-  }
-
-  private fun durchlaufeFunktionsAufruf(funktionsAufruf: AST.FunktionsAufruf, istAusdruck: Boolean): T? {
-    // TODO: Dieses ganze Checking könnte eigenlich in den TypeChecker
-    // dieser würde dann Informationen an die Aufrufe hinzufügen, dann müsste der Interpreter diese Checks nicht nochmal machen!
-    val methodenBlockObjekt = stack.peek().holeMethodenBlockObjekt()
-    if (funktionsAufruf.vollerName == null) {
-      funktionsAufruf.vollerName = definierer.getVollerNameVonFunktionsAufruf(funktionsAufruf)
-    }
-    if (methodenBlockObjekt != null) {
-      @Suppress("UNCHECKED_CAST")
-      if ((methodenBlockObjekt as ObjektT).klassenDefinition.methoden.containsKey(funktionsAufruf.vollerName!!)) {
-        val methodenDefinition = methodenBlockObjekt.klassenDefinition.methoden.getValue(funktionsAufruf.vollerName!!).funktion
-        return durchlaufeMethodenOderFunktionsAufruf(methodenBlockObjekt, funktionsAufruf, methodenDefinition, false, istAusdruck)
-      }
-      if (funktionsAufruf.reflexivPronomen != null && funktionsAufruf.reflexivPronomen.typ == TokenTyp.REFLEXIV_PRONOMEN.DICH) {
-        throw GermanScriptFehler.Undefiniert.Methode(funktionsAufruf.verb.toUntyped(),
-            funktionsAufruf,
-            methodenBlockObjekt.klassenDefinition.name.nominativ!!)
-      }
-    }
-    val äußereMethode = funktionsAufruf.findNodeInParents<AST.Definition.FunktionOderMethode.Methode>()
-    if (äußereMethode != null) {
-      println(äußereMethode)
-      val klasse = (äußereMethode.klasse.typ!! as ObjektT).klassenDefinition
-      if (klasse.methoden.containsKey(funktionsAufruf.vollerName!!)) {
-        val methodenDefinition = klasse.methoden.getValue(funktionsAufruf.vollerName!!).funktion
-        return durchlaufeMethodenOderFunktionsAufruf(null, funktionsAufruf, methodenDefinition, true, istAusdruck)
-      }
-      if (funktionsAufruf.reflexivPronomen != null && funktionsAufruf.reflexivPronomen.typ == TokenTyp.REFLEXIV_PRONOMEN.MICH) {
-        throw  GermanScriptFehler.Undefiniert.Methode(funktionsAufruf.verb.toUntyped(), funktionsAufruf, klasse.name.nominativ!!)
-      }
-    }
-    val funktionsDefinition = definierer.holeFunktionsDefinition(funktionsAufruf)
-    return durchlaufeMethodenOderFunktionsAufruf(null, funktionsAufruf, funktionsDefinition, false, istAusdruck)
   }
 
   private fun durchlaufeMethodenBlock(methodenBlock: AST.Satz.MethodenBlock){
     val wert = evaluiereVariable(methodenBlock.name)
-    if (wert !is IObjekt) {
-      throw GermanScriptFehler.TypFehler.Objekt(methodenBlock.name.bezeichner.toUntyped())
-    }
-    stack.peek().pushBereich(wert)
-    durchlaufeSätze(methodenBlock.sätze, true)
-    stack.peek().popBereich()
+    bevorDurchlaufeMethodenBlock(methodenBlock, wert)
+    umgebung.pushBereich(wert)
+    durchlaufeSätze(methodenBlock.sätze)
+    umgebung.popBereich()
   }
 
+  protected abstract fun bevorDurchlaufeMethodenBlock(methodenBlock: AST.Satz.MethodenBlock, blockObjekt: T?)
   protected abstract fun sollSätzeAbbrechen(): Boolean
-  protected abstract fun durchlaufeMethodenOderFunktionsAufruf(objekt: T?, funktionsAufruf: AST.FunktionsAufruf, funktionsDefinition: AST.Definition.FunktionOderMethode.Funktion, selbstReferenz: Boolean, istAusdruck: Boolean): T?
+  protected abstract fun durchlaufeFunktionsAufruf(funktionsAufruf: AST.FunktionsAufruf, istAusdruck: Boolean): T?
   protected abstract fun durchlaufeZurückgabe(zurückgabe: AST.Satz.Zurückgabe)
   protected abstract fun durchlaufeBedingungsSatz(bedingungsSatz: AST.Satz.Bedingung)
   protected abstract fun durchlaufeAbbrechen()
   protected abstract fun durchlaufeFortfahren()
   protected abstract fun durchlaufeSolangeSchleife(schleife: AST.Satz.SolangeSchleife)
   protected abstract fun durchlaufeFürJedeSchleife(schleife: AST.Satz.FürJedeSchleife)
+  protected abstract fun durchlaufeIntern()
 
   // endregion
   protected fun evaluiereAusdruck(ausdruck: AST.Ausdruck): T {
@@ -147,11 +99,11 @@ abstract  class ProgrammDurchlaufer<T, ObjektT: IObjekt>(dateiPfad: String): Pip
   }
 
   fun evaluiereVariable(name: AST.Nomen): T {
-    return stack.peek().leseVariable(name)
+    return umgebung.leseVariable(name)
   }
 
   fun evaluiereVariable(variable: String): T? {
-    return stack.peek().leseVariable(variable)
+    return umgebung.leseVariable(variable)
   }
 
   protected abstract fun evaluiereZeichenfolge(ausdruck: AST.Ausdruck.Zeichenfolge): T

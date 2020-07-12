@@ -1,16 +1,22 @@
 import util.SimpleLogger
 
-class TypPrüfer(dateiPfad: String): ProgrammDurchlaufer<Typ, Typ.Klasse>(dateiPfad) {
+class TypPrüfer(dateiPfad: String): ProgrammDurchlaufer<Typ>(dateiPfad) {
   val typisierer = Typisierer(dateiPfad)
   override val definierer = typisierer.definierer
+  override var umgebung = Umgebung<Typ>()
   val logger = SimpleLogger()
+  val ast: AST.Programm get() = typisierer.ast
 
-  override val ast: AST.Programm get() = typisierer.ast
+  private var zuÜberprüfendeKlasse: AST.Definition.Klasse? = null
 
   fun prüfe() {
     typisierer.typisiere()
-    durchlaufe(ast.sätze, Umgebung(), true)
+    durchlaufeSätze(ast.sätze)
     definierer.funktionsDefinitionen.forEach(::prüfeFunktion)
+    definierer.klassenDefinitionen.forEach { klasse ->
+      zuÜberprüfendeKlasse = klasse
+      klasse.methoden.values.forEach {methode -> prüfeFunktion(methode.funktion)}
+    }
   }
 
   private fun ausdruckMussTypSein(ausdruck: AST.Ausdruck, erwarteterTyp: Typ): Typ {
@@ -24,22 +30,57 @@ class TypPrüfer(dateiPfad: String): ProgrammDurchlaufer<Typ, Typ.Klasse>(dateiP
   override fun sollSätzeAbbrechen(): Boolean = false
 
   private fun prüfeFunktion(funktion: AST.Definition.FunktionOderMethode.Funktion) {
-    logger.addLine("")
-    logger.addLine("_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-")
     val funktionsUmgebung = Umgebung<Typ>()
     funktionsUmgebung.pushBereich()
-    var variablenString = ""
     for (parameter in funktion.parameter) {
       funktionsUmgebung.schreibeVariable(parameter.name, parameter.typKnoten.typ!!)
-      variablenString += "${parameter.name.nominativ!!} :${parameter.typKnoten.typ!!}"
     }
-    logger.addLine("Funktionsdefinition(${funktion.name.wert})[$variablenString]")
-    logger.addLine("Sätze:")
-    durchlaufe(funktion.sätze, funktionsUmgebung, true)
-    logger.addLine("____________________________________________________________________")
+    umgebung = funktionsUmgebung
+    durchlaufeSätze(funktion.sätze)
   }
 
-  override fun durchlaufeMethodenOderFunktionsAufruf(objekt: Typ?, funktionsAufruf: AST.FunktionsAufruf, funktionsDefinition: AST.Definition.FunktionOderMethode.Funktion, selbstReferenz: Boolean, istAusdruck: Boolean): Typ? {
+  override fun durchlaufeFunktionsAufruf(funktionsAufruf: AST.FunktionsAufruf, istAusdruck: Boolean): Typ? {
+    if (funktionsAufruf.vollerName == null) {
+      funktionsAufruf.vollerName = definierer.getVollerNameVonFunktionsAufruf(funktionsAufruf)
+    }
+    logger.addLine("prüfe Funktionsaufruf in ${funktionsAufruf.verb.position}: ${funktionsAufruf.vollerName!!}")
+    val methodenBlockObjekt = umgebung.holeMethodenBlockObjekt()
+
+    // ist Methodenaufruf
+    if (methodenBlockObjekt is Typ.Klasse) {
+      if (methodenBlockObjekt.klassenDefinition.methoden.containsKey(funktionsAufruf.vollerName!!)) {
+        val methodenDefinition = methodenBlockObjekt.klassenDefinition.methoden.getValue(funktionsAufruf.vollerName!!).funktion
+        funktionsAufruf.funktionsDefinition = methodenDefinition
+        funktionsAufruf.istMethodenAufruf = true
+      }
+      else if (funktionsAufruf.reflexivPronomen != null && funktionsAufruf.reflexivPronomen.typ == TokenTyp.REFLEXIV_PRONOMEN.DICH) {
+        throw GermanScriptFehler.Undefiniert.Methode(funktionsAufruf.verb.toUntyped(),
+            funktionsAufruf,
+            methodenBlockObjekt.klassenDefinition.name.nominativ!!)
+      }
+    }
+
+    // ist Methoden-Selbst-Aufruf
+    if (funktionsAufruf.funktionsDefinition == null) {
+      if (zuÜberprüfendeKlasse != null) {
+        val klasse = zuÜberprüfendeKlasse!!
+        if (klasse.methoden.containsKey(funktionsAufruf.vollerName!!)) {
+          funktionsAufruf.funktionsDefinition = klasse.methoden.getValue(funktionsAufruf.vollerName!!).funktion
+          funktionsAufruf.istMethodenAufruf = true
+          funktionsAufruf.istSelbstAufruf = true
+        } else if (funktionsAufruf.reflexivPronomen != null && funktionsAufruf.reflexivPronomen.typ == TokenTyp.REFLEXIV_PRONOMEN.MICH) {
+          throw  GermanScriptFehler.Undefiniert.Methode(funktionsAufruf.verb.toUntyped(), funktionsAufruf, klasse.name.nominativ!!)
+        }
+      }
+    }
+
+    // ist normale Funktion
+    if (funktionsAufruf.funktionsDefinition == null) {
+      funktionsAufruf.funktionsDefinition = definierer.holeFunktionsDefinition(funktionsAufruf)
+    }
+
+    val funktionsDefinition = funktionsAufruf.funktionsDefinition!!
+
     if (istAusdruck && funktionsDefinition.rückgabeTyp == null) {
       throw GermanScriptFehler.SyntaxFehler.FunktionAlsAusdruckFehler(funktionsDefinition.name.toUntyped())
     }
@@ -49,13 +90,11 @@ class TypPrüfer(dateiPfad: String): ProgrammDurchlaufer<Typ, Typ.Klasse>(dateiP
     if (argumente.size != parameter.size) {
       throw GermanScriptFehler.SyntaxFehler.AnzahlDerParameterFehler(funktionsDefinition.name.toUntyped())
     }
-    var argumenteString = ""
+
+    // stimmen die Argument Typen mit den Parameter Typen überein?
     for (i in argumente.indices) {
       ausdruckMussTypSein(argumente[i].wert, parameter[i].typKnoten.typ!!)
-      argumenteString += "${argumente[i].name.nominativ} :${parameter[i].typKnoten.typ!!}"
     }
-    logger.addLine("Funktionsaufruf(${funktionsAufruf.vollerName})[$argumenteString]")
-//    logger.addLine("____________________________________________________________________")
 
     return funktionsDefinition.rückgabeTyp?.typ
   }
@@ -72,12 +111,12 @@ class TypPrüfer(dateiPfad: String): ProgrammDurchlaufer<Typ, Typ.Klasse>(dateiP
 
   private fun prüfeBedingung(bedingung: AST.Satz.BedingungsTerm) {
     ausdruckMussTypSein(bedingung.bedingung, Typ.Boolean)
-    durchlaufeSätze(bedingung.sätze, true)
+    durchlaufeSätze(bedingung.sätze)
   }
 
   override fun durchlaufeBedingungsSatz(bedingungsSatz: AST.Satz.Bedingung) {
     bedingungsSatz.bedingungen.forEach(::prüfeBedingung)
-    bedingungsSatz.sonst?.also {durchlaufeSätze(it, true)}
+    bedingungsSatz.sonst?.also {durchlaufeSätze(it)}
   }
 
   override fun durchlaufeSolangeSchleife(schleife: AST.Satz.SolangeSchleife) {
@@ -90,10 +129,21 @@ class TypPrüfer(dateiPfad: String): ProgrammDurchlaufer<Typ, Typ.Klasse>(dateiP
     } else {
       evaluiereListenSingular(schleife.singular!!)
     }
-    stack.peek().pushBereich()
-    stack.peek().schreibeVariable(schleife.binder, elementTyp)
-    durchlaufeSätze(schleife.sätze, false)
-    stack.peek().popBereich()
+    umgebung.pushBereich()
+    umgebung.schreibeVariable(schleife.binder, elementTyp)
+    durchlaufeSätze(schleife.sätze)
+    umgebung.popBereich()
+  }
+
+  override fun durchlaufeIntern() {
+    // Hier muss nichts gemacht werden
+    // die internen Sachen sind schon von kotlin Typ-gecheckt :)
+  }
+
+  override fun bevorDurchlaufeMethodenBlock(methodenBlock: AST.Satz.MethodenBlock, blockObjekt: Typ?) {
+    if (blockObjekt !is Typ.Klasse) {
+      throw GermanScriptFehler.TypFehler.ObjektErwartet(methodenBlock.name.bezeichner.toUntyped())
+    }
   }
 
   override fun durchlaufeAbbrechen() {
@@ -132,7 +182,7 @@ class TypPrüfer(dateiPfad: String): ProgrammDurchlaufer<Typ, Typ.Klasse>(dateiP
     typisierer.typisiereTypKnoten(instanziierung.klasse)
     val klasse = instanziierung.klasse.typ!!
     if (klasse !is Typ.Klasse) {
-      throw GermanScriptFehler.TypFehler.Objekt(instanziierung.klasse.name.bezeichner.toUntyped())
+      throw GermanScriptFehler.TypFehler.ObjektErwartet(instanziierung.klasse.name.bezeichner.toUntyped())
     }
     val definition = klasse.klassenDefinition
 
@@ -162,7 +212,7 @@ class TypPrüfer(dateiPfad: String): ProgrammDurchlaufer<Typ, Typ.Klasse>(dateiP
   override fun evaluiereEigenschaftsZugriff(eigenschaftsZugriff: AST.Ausdruck.EigenschaftsZugriff): Typ {
     val klasse = evaluiereAusdruck(eigenschaftsZugriff.objekt)
     if (klasse !is Typ.Klasse) {
-      throw GermanScriptFehler.TypFehler.Objekt(holeErstesTokenVonAusdruck(eigenschaftsZugriff.objekt))
+      throw GermanScriptFehler.TypFehler.ObjektErwartet(holeErstesTokenVonAusdruck(eigenschaftsZugriff.objekt))
     }
     return  überprüfeEigenschaftInKlasse(eigenschaftsZugriff.eigenschaftsName, klasse)
   }
@@ -174,7 +224,7 @@ class TypPrüfer(dateiPfad: String): ProgrammDurchlaufer<Typ, Typ.Klasse>(dateiP
   }
 
   override fun evaluiereMethodenBlockEigenschaftsZugriff(eigenschaftsZugriff: AST.Ausdruck.MethodenBlockEigenschaftsZugriff): Typ {
-    val methodenBlockObjekt = stack.peek().holeMethodenBlockObjekt() as Typ.Klasse
+    val methodenBlockObjekt = umgebung.holeMethodenBlockObjekt() as Typ.Klasse
     return überprüfeEigenschaftInKlasse(eigenschaftsZugriff.eigenschaftsName, methodenBlockObjekt)
   }
 

@@ -260,6 +260,9 @@ sealed class AST {
   ): AST() {
     private val _argumente: MutableList<Argument> = mutableListOf()
     val argumente: List<Argument> = _argumente
+    var funktionsDefinition: Definition.FunktionOderMethode.Funktion? = null
+    var istMethodenAufruf: Boolean = false
+    var istSelbstAufruf: Boolean = false
 
     init {
       if (objekt != null) {

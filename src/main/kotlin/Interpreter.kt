@@ -1,72 +1,90 @@
 import java.text.ParseException
 import java.util.*
 
-data class AufrufStapelElement(val funktionsAufruf: AST.FunktionsAufruf, val objekt: Wert.Objekt?)
-
-class AufrufStapel {
-  private object Static {
-    const val CALL_STACK_OUTPUT_LIMIT = 50
-  }
-
-  private val stapel = Stack<AufrufStapelElement>()
-
-  fun top(): AufrufStapelElement = stapel.peek()
-  fun push(funktionsAufruf: AST.FunktionsAufruf, objekt: Wert.Objekt?): Unit =
-      stapel.push(AufrufStapelElement(funktionsAufruf, objekt)).let { Unit }
-  fun pop(): AufrufStapelElement = stapel.pop()
-
-  override fun toString(): String {
-    if (stapel.isEmpty()) {
-      return ""
-    }
-    return "Aufrufstapel:\n"+ stapel.reversed().joinToString(
-        "\n",
-        "\t",
-        "",
-        Static.CALL_STACK_OUTPUT_LIMIT,
-        "...",
-        ::aufrufStapelElementToSting
-    )
-  }
-
-  private fun aufrufStapelElementToSting(element: AufrufStapelElement): String {
-    val funktionsAufruf = element.funktionsAufruf
-    val token = funktionsAufruf.verb
-    var zeichenfolge = "${funktionsAufruf.vollerName} in ${token.position}"
-    if (element.objekt != null) {
-      val klassenName = element.objekt.klassenDefinition.name.nominativ!!
-      zeichenfolge = "für $klassenName: $zeichenfolge"
-    }
-
-    return zeichenfolge
-  }
-}
-
-class Interpreter(dateiPfad: String): ProgrammDurchlaufer<Wert, Wert.Objekt>(dateiPfad) {
+class Interpreter(dateiPfad: String): ProgrammDurchlaufer<Wert>(dateiPfad) {
   val typPrüfer = TypPrüfer(dateiPfad)
 
   override val definierer = typPrüfer.definierer
-  override val ast: AST.Programm = typPrüfer.ast
+  val ast: AST.Programm = typPrüfer.ast
 
   private var rückgabeWert: Wert? = null
   private val flags = EnumSet.noneOf(Flag::class.java)
   private val aufrufStapel = AufrufStapel()
 
+  override val umgebung: Umgebung<Wert> get() = aufrufStapel.top().umgebung
+
   fun interpretiere() {
     typPrüfer.prüfe()
     try {
-      durchlaufe(ast.sätze, Umgebung(), true)
+      durchlaufeSätze(ast.sätze)
     } catch (stackOverflow: StackOverflowError) {
+      //TODO: handle StackOverflow
+      /*
       throw GermanScriptFehler.LaufzeitFehler(
-          aufrufStapel.top().funktionsAufruf.verb.toUntyped(),
-          aufrufStapel,
+          aufrufStapel.top().funktionsAufruf?.verb?.toUntyped(),
+          aufrufStapel.toString(),
           "Stack Overflow")
+
+       */
+      throw stackOverflow
     }
   }
 
-  enum class Flag {
+  private enum class Flag {
     SCHLEIFE_ABBRECHEN,
     SCHLEIFE_FORTFAHREN,
+  }
+
+  private class AufrufStapelElement(val funktionsAufruf: AST.FunktionsAufruf?, val objekt: Wert.Objekt?, val umgebung: Umgebung<Wert>)
+
+  companion object {
+    private const val CALL_STACK_OUTPUT_LIMIT = 50
+  }
+
+  private inner class AufrufStapel {
+    private val stapel = Stack<AufrufStapelElement>()
+
+    init {
+      stapel.push(AufrufStapelElement(null, null, Umgebung()))
+    }
+
+    fun top(): AufrufStapelElement = stapel.peek()
+    fun push(funktionsAufruf: AST.FunktionsAufruf, neueUmgebung: Umgebung<Wert>) {
+      val objekt = when {
+        funktionsAufruf.istSelbstAufruf -> stapel.peek().objekt
+        funktionsAufruf.istMethodenAufruf -> umgebung.holeMethodenBlockObjekt() as Wert.Objekt
+        else -> null
+      }
+      stapel.push(AufrufStapelElement(funktionsAufruf, objekt, neueUmgebung))
+    }
+
+    fun pop(): AufrufStapelElement = stapel.pop()
+
+    override fun toString(): String {
+      if (stapel.isEmpty()) {
+        return ""
+      }
+      return "Aufrufstapel:\n"+ stapel.drop(1).reversed().joinToString(
+          "\n",
+          "\t",
+          "",
+          CALL_STACK_OUTPUT_LIMIT,
+          "...",
+          ::aufrufStapelElementToString
+      )
+    }
+
+    private fun aufrufStapelElementToString(element: AufrufStapelElement): String {
+      val funktionsAufruf = element.funktionsAufruf!!
+      val token = funktionsAufruf.verb
+      var zeichenfolge = "${funktionsAufruf.vollerName} in ${token.position}"
+      if (element.objekt != null) {
+        val klassenName = element.objekt.klassenDefinition.name.nominativ!!
+        zeichenfolge = "für $klassenName: $zeichenfolge"
+      }
+
+      return zeichenfolge
+    }
   }
 
   override fun sollSätzeAbbrechen(): Boolean {
@@ -76,29 +94,23 @@ class Interpreter(dateiPfad: String): ProgrammDurchlaufer<Wert, Wert.Objekt>(dat
   // region Sätze
   private fun durchlaufeBedingung(bedingung: AST.Satz.BedingungsTerm): Boolean {
       return if ((evaluiereAusdruck(bedingung.bedingung) as Wert.Boolean).boolean) {
-        durchlaufeSätze(bedingung.sätze, true)
+        durchlaufeSätze(bedingung.sätze)
         true
       } else {
         false
       }
   }
 
-  override fun durchlaufeMethodenOderFunktionsAufruf(objekt: Wert?, funktionsAufruf: AST.FunktionsAufruf, funktionsDefinition: AST.Definition.FunktionOderMethode.Funktion, selbstReferenz: Boolean, istAusdruck: Boolean): Wert? {
-    val funktionsUmgebung = Umgebung<Wert>()
-    funktionsUmgebung.pushBereich()
-    for (argument in funktionsAufruf.argumente) {
-      val argumentWert = evaluiereAusdruck(argument.wert)
-      funktionsUmgebung.schreibeVariable(argument.name, argumentWert)
-    }
-    aufrufStapel.push(funktionsAufruf, objekt?.let { it as Wert.Objekt })
-    stack.push(funktionsUmgebung)
+  override fun durchlaufeFunktionsAufruf(funktionsAufruf: AST.FunktionsAufruf, istAusdruck: Boolean): Wert? {
     rückgabeWert = null
-    if (funktionsDefinition.sätze.isNotEmpty() && funktionsDefinition.sätze.first() is AST.Satz.Intern) {
-      interneFunktionen.getValue(funktionsAufruf.vollerName!!)()
-    } else {
-      durchlaufeSätze(funktionsDefinition.sätze, false)
+    val neueUmgebung = Umgebung<Wert>()
+    neueUmgebung.pushBereich()
+    for (argument in funktionsAufruf.argumente) {
+      neueUmgebung.schreibeVariable(argument.name, evaluiereAusdruck(argument.wert))
     }
-    stack.pop()
+    val funktionsDefinition = funktionsAufruf.funktionsDefinition!!
+    aufrufStapel.push(funktionsAufruf, neueUmgebung)
+    durchlaufeSätze(funktionsDefinition.sätze)
     aufrufStapel.pop()
     return funktionsDefinition.rückgabeTyp?.let { rückgabeWert }
   }
@@ -112,14 +124,14 @@ class Interpreter(dateiPfad: String): ProgrammDurchlaufer<Wert, Wert.Objekt>(dat
     val inBedingung = bedingungsSatz.bedingungen.any(::durchlaufeBedingung)
 
     if (!inBedingung && bedingungsSatz.sonst != null ) {
-      durchlaufeSätze(bedingungsSatz.sonst, true)
+      durchlaufeSätze(bedingungsSatz.sonst)
     }
   }
 
   override fun durchlaufeSolangeSchleife(schleife: AST.Satz.SolangeSchleife) {
     while (!flags.contains(Flag.SCHLEIFE_ABBRECHEN) && (evaluiereAusdruck(schleife.bedingung.bedingung) as Wert.Boolean).boolean) {
       flags.remove(Flag.SCHLEIFE_FORTFAHREN)
-      durchlaufeSätze(schleife.bedingung.sätze, true)
+      durchlaufeSätze(schleife.bedingung.sätze)
     }
     flags.remove(Flag.SCHLEIFE_ABBRECHEN)
   }
@@ -130,17 +142,24 @@ class Interpreter(dateiPfad: String): ProgrammDurchlaufer<Wert, Wert.Objekt>(dat
     } else {
       evaluiereVariable(schleife.singular!!.nominativPlural!!)!! as Wert.Liste
     }
-    stack.peek().pushBereich()
+    umgebung.pushBereich()
     for (element in liste.elemente) {
       flags.remove(Flag.SCHLEIFE_FORTFAHREN)
-      stack.peek().überschreibeVariable(schleife.binder, element)
-      durchlaufeSätze(schleife.sätze, false)
+      umgebung.überschreibeVariable(schleife.binder, element)
+      durchlaufeSätze(schleife.sätze)
       if (flags.contains(Flag.SCHLEIFE_ABBRECHEN)) {
         flags.remove(Flag.SCHLEIFE_ABBRECHEN)
         break
       }
     }
-    stack.peek().popBereich()
+    umgebung.popBereich()
+  }
+
+  override fun durchlaufeIntern() = interneFunktionen.getValue(aufrufStapel.top().funktionsAufruf!!.vollerName!!)()
+
+
+  override fun bevorDurchlaufeMethodenBlock(methodenBlock: AST.Satz.MethodenBlock, blockObjekt: Wert?) {
+    // mache nichts hier, das ist eigentlich nur für den Typprüfer gedacht
   }
 
   override fun durchlaufeAbbrechen() {
@@ -190,7 +209,7 @@ class Interpreter(dateiPfad: String): ProgrammDurchlaufer<Wert, Wert.Objekt>(dat
   }
 
   override fun evaluiereMethodenBlockEigenschaftsZugriff(eigenschaftsZugriff: AST.Ausdruck.MethodenBlockEigenschaftsZugriff): Wert {
-    val objekt = stack.peek().holeMethodenBlockObjekt()!! as Wert.Objekt
+    val objekt = umgebung.holeMethodenBlockObjekt()!! as Wert.Objekt
     return objekt.eigenschaften.getValue(eigenschaftsZugriff.eigenschaftsName.nominativ!!)
   }
 
@@ -202,7 +221,7 @@ class Interpreter(dateiPfad: String): ProgrammDurchlaufer<Wert, Wert.Objekt>(dat
       is Wert.Zeichenfolge -> zeichenFolgenOperation(operator, links, rechts as Wert.Zeichenfolge)
       is Wert.Zahl -> {
         if ((rechts as Wert.Zahl).isZero() && operator == Operator.GETEILT) {
-          throw GermanScriptFehler.LaufzeitFehler(holeErstesTokenVonAusdruck(ausdruck.rechts), aufrufStapel,
+          throw GermanScriptFehler.LaufzeitFehler(holeErstesTokenVonAusdruck(ausdruck.rechts), aufrufStapel.toString(),
             "Division durch 0. Es kann nicht durch 0 dividiert werden.")
         }
         zahlOperation(operator, links, rechts)
@@ -271,7 +290,7 @@ class Interpreter(dateiPfad: String): ProgrammDurchlaufer<Wert, Wert.Objekt>(dat
     val index = (evaluiereAusdruck(listenElement.index) as Wert.Zahl).toInt()
     if (index >= liste.elemente.size) {
       throw GermanScriptFehler.LaufzeitFehler(holeErstesTokenVonAusdruck(listenElement.index),
-        aufrufStapel,"Index außerhalb des Bereichs. Der Index ist $index, doch die Länge der Liste ist ${liste.elemente.size}.\n")
+        aufrufStapel.toString(),"Index außerhalb des Bereichs. Der Index ist $index, doch die Länge der Liste ist ${liste.elemente.size}.\n")
     }
     return liste.elemente[index]
   }
@@ -280,17 +299,17 @@ class Interpreter(dateiPfad: String): ProgrammDurchlaufer<Wert, Wert.Objekt>(dat
   // region interne Funktionen
   private val interneFunktionen = mapOf<String, () -> (Unit)>(
       "schreibe die Zeichenfolge" to {
-        val zeichenfolge = stack.peek().leseVariable("Zeichenfolge") as Wert.Zeichenfolge
+        val zeichenfolge = umgebung.leseVariable("Zeichenfolge") as Wert.Zeichenfolge
         print(zeichenfolge)
       },
 
       "schreibe die Zeile" to {
-        val zeile = stack.peek().leseVariable("Zeile") as Wert.Zeichenfolge
+        val zeile = umgebung.leseVariable("Zeile") as Wert.Zeichenfolge
         println(zeile)
       },
 
       "schreibe die Zahl" to {
-        val zahl = stack.peek().leseVariable("Zahl") as Wert.Zahl
+        val zahl = umgebung.leseVariable("Zahl") as Wert.Zahl
         println(zahl)
       },
 
@@ -316,7 +335,7 @@ class Interpreter(dateiPfad: String): ProgrammDurchlaufer<Wert, Wert.Objekt>(dat
           Wert.Zahl(wert.zeichenfolge)
         }
         catch (parseFehler: ParseException) {
-          throw GermanScriptFehler.LaufzeitFehler(konvertierung.typ.name.bezeichner.toUntyped(), aufrufStapel,
+          throw GermanScriptFehler.LaufzeitFehler(konvertierung.typ.name.bezeichner.toUntyped(), aufrufStapel.toString(),
               "Die Zeichenfolge '${wert.zeichenfolge}' kann nicht in eine Zahl konvertiert werden.")
         }
       }

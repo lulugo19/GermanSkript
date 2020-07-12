@@ -162,7 +162,7 @@ sealed class GermanScriptFehler(private val fehlerName: String, val token: Token
         get() = "Falscher Typ. Erwartet wird der Typ '${erwarteterTyp.name}'."
     }
 
-    class Objekt(token: Token): TypFehler(token) {
+    class ObjektErwartet(token: Token): TypFehler(token) {
       override val nachricht: String
         get() = "Es wird ein Objekt erwartet und kein primitiver Wert (Zahl, Zeichenfolge, Boolean)."
     }
@@ -192,8 +192,8 @@ sealed class GermanScriptFehler(private val fehlerName: String, val token: Token
       get() = "Die Konvertierung von $von zu $zu ist nicht möglich."
   }
 
-  class LaufzeitFehler(token: Token, val aufrufStapel: AufrufStapel, val fehlerMeldung: String): GermanScriptFehler("Laufzeitfehler", token) {
+  class LaufzeitFehler(token: Token, val aufrufStapelString: String, val fehlerMeldung: String): GermanScriptFehler("Laufzeitfehler", token) {
     override val nachricht: String
-      get() = "$fehlerMeldung\n$aufrufStapel"
+      get() = "$fehlerMeldung\n$aufrufStapelString"
   }
 }
