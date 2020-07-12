@@ -136,40 +136,40 @@ class TypPrüfer(dateiPfad: String): ProgrammDurchlaufer<Typ, Typ.Klasse>(dateiP
     }
     val definition = klasse.klassenDefinition
 
-    // die Feldzuweisungen müssen mit der Instanzzierung übereinstimmen, Außerdem müssen die Namen übereinstimmen
-    for (i in definition.felder.indices) {
-      val feld = definition.felder[i]
-      if (i >= instanziierung.feldZuweisungen.size) {
-        throw GermanScriptFehler.FeldFehler.FeldVergessen(instanziierung.klasse.name.bezeichner.toUntyped(), feld.name.nominativ!!)
+    // die Eigenschaftszuweisungen müssen mit der Instanzzierung übereinstimmen, Außerdem müssen die Namen übereinstimmen
+    for (i in definition.eigenschaften.indices) {
+      val eigenschaft = definition.eigenschaften[i]
+      if (i >= instanziierung.eigenschaftsZuweisungen.size) {
+        throw GermanScriptFehler.EigenschaftsFehler.EigenschaftsVergessen(instanziierung.klasse.name.bezeichner.toUntyped(), eigenschaft.name.nominativ!!)
       }
-      val zuweisung = instanziierung.feldZuweisungen[i]
+      val zuweisung = instanziierung.eigenschaftsZuweisungen[i]
 
-      if (feld.name.nominativ != zuweisung.name.nominativ) {
-        GermanScriptFehler.FeldFehler.UnerwarteterFeldName(zuweisung.name.bezeichner.toUntyped(), feld.name.nominativ!!)
+      if (eigenschaft.name.nominativ != zuweisung.name.nominativ) {
+        GermanScriptFehler.EigenschaftsFehler.UnerwarteterEigenschaftsName(zuweisung.name.bezeichner.toUntyped(), eigenschaft.name.nominativ!!)
       }
 
       // die Typen müssen übereinstimmen
-      ausdruckMussTypSein(zuweisung.wert, feld.typKnoten.typ!!)
+      ausdruckMussTypSein(zuweisung.wert, eigenschaft.typKnoten.typ!!)
     }
 
-    if (instanziierung.feldZuweisungen.size > definition.felder.size) {
-      throw GermanScriptFehler.FeldFehler.UnerwartetesFeld(
-          instanziierung.feldZuweisungen[definition.felder.size].name.bezeichner.toUntyped())
+    if (instanziierung.eigenschaftsZuweisungen.size > definition.eigenschaften.size) {
+      throw GermanScriptFehler.EigenschaftsFehler.UnerwarteteEigenschaft(
+          instanziierung.eigenschaftsZuweisungen[definition.eigenschaften.size].name.bezeichner.toUntyped())
     }
     return klasse
   }
 
-  override fun evaluiereFeldZugriff(feldzugriff: AST.Ausdruck.Feldzugriff): Typ {
-    val klasse = evaluiereAusdruck(feldzugriff.objekt)
+  override fun evaluiereEigenschaftsZugriff(eigenschaftsZugriff: AST.Ausdruck.EigenschaftsZugriff): Typ {
+    val klasse = evaluiereAusdruck(eigenschaftsZugriff.objekt)
     if (klasse !is Typ.Klasse) {
-      throw GermanScriptFehler.TypFehler.Objekt(holeErstesTokenVonAusdruck(feldzugriff.objekt))
+      throw GermanScriptFehler.TypFehler.Objekt(holeErstesTokenVonAusdruck(eigenschaftsZugriff.objekt))
     }
-    for (feld in klasse.klassenDefinition.felder) {
-      if (feldzugriff.feldName.nominativ!! == feld.name.nominativ!!) {
-        return feld.typKnoten.typ!!
+    for (eigenschaft in klasse.klassenDefinition.eigenschaften) {
+      if (eigenschaftsZugriff.eigenschaftsName.nominativ!! == eigenschaft.name.nominativ!!) {
+        return eigenschaft.typKnoten.typ!!
       }
     }
-    throw GermanScriptFehler.Undefiniert.Feld(feldzugriff.feldName.bezeichner.toUntyped(), klasse.name)
+    throw GermanScriptFehler.Undefiniert.Eigenschaft(eigenschaftsZugriff.eigenschaftsName.bezeichner.toUntyped(), klasse.name)
   }
 
   override fun evaluiereBinärenAusdruck(ausdruck: AST.Ausdruck.BinärerAusdruck): Typ {

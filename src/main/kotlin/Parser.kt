@@ -20,7 +20,7 @@ enum class ASTKnotenID {
   LISTEN_ELEMENT,
   KLASSEN_DEFINITION,
   OBJEKT_INSTANZIIERUNG,
-  FELD_ZUGRIFF
+  EIGENSCHAFTS_ZUGRIFF
 }
 
 class Parser(dateiPfad: String): PipelineKomponente(dateiPfad) {
@@ -118,6 +118,23 @@ private sealed class SubParser<T: AST>() {
       throw GermanScriptFehler.SyntaxFehler.ParseFehler(vornomen.toUntyped(), null,
           "Das Pronomen '${vornomen.wert}' darf nur in Für-Jede-Schleifen vorkommen.")
     }
+    if (vornomen != null && vornomen is TokenTyp.VORNOMEN.POSSESSIV_PRONOMEN) {
+      // 'mein' darf nur in Methodendefinition vorkommen und 'dein' nur in Methodenblock
+      when (vornomen.typ) {
+        is TokenTyp.VORNOMEN.POSSESSIV_PRONOMEN.MEIN -> {
+          if (!hierarchyContainsNode(ASTKnotenID.METHODEN_DEFINITION)) {
+            throw GermanScriptFehler.SyntaxFehler.ParseFehler(vornomen.toUntyped(), null,
+              "Das Possessivpronomen '${vornomen.wert}' darf nur in Methodendefinitionen verwendet werden.")
+          }
+        }
+        is TokenTyp.VORNOMEN.POSSESSIV_PRONOMEN.DEIN -> {
+          if (!hierarchyContainsNode(ASTKnotenID.METHODEN_BLOCK)) {
+            throw GermanScriptFehler.SyntaxFehler.ParseFehler(vornomen.toUntyped(), null,
+              "Das Possessivpronomen '${vornomen.wert}' darf nur in Methodenblöcken verwendet werden.")
+          }
+        }
+      }
+    }
     val bezeichner = expect<TokenTyp.BEZEICHNER_GROSS>("Bezeichner")
     return AST.Nomen(vornomen, bezeichner)
   }
@@ -202,10 +219,14 @@ private sealed class SubParser<T: AST>() {
         is TokenTyp.OFFENE_ECKIGE_KLAMMER -> subParse(NomenAusdruck.ListenElement(nomen))
         is TokenTyp.VORNOMEN.ARTIKEL -> {
           when (nächstesToken.wert) {
-            "des", "der" -> subParse(NomenAusdruck.Feldzugriff(nomen, inBinärenAusdruck))
+            "des", "der" -> subParse(NomenAusdruck.EigenschaftsZugriff(nomen, inBinärenAusdruck))
+            "meiner", "meines" -> TODO()
+            "deiner", "deines" -> TODO()
             else -> AST.Ausdruck.Variable(nomen)
           }
         }
+        is TokenTyp.VORNOMEN.POSSESSIV_PRONOMEN.MEIN -> TODO()
+        is TokenTyp.VORNOMEN.POSSESSIV_PRONOMEN.DEIN -> TODO()
         else -> AST.Ausdruck.Variable(nomen)
       }
       is TokenTyp.VORNOMEN.ARTIKEL.UNBESTIMMT ->  {
@@ -215,6 +236,8 @@ private sealed class SubParser<T: AST>() {
         }
       }
       is TokenTyp.VORNOMEN.JEDE -> throw GermanScriptFehler.SyntaxFehler.ParseFehler(nomen.vornomen.toUntyped())
+      TokenTyp.VORNOMEN.POSSESSIV_PRONOMEN.MEIN -> TODO()
+      TokenTyp.VORNOMEN.POSSESSIV_PRONOMEN.DEIN -> TODO()
     }
 
     return when(peekType()){
@@ -410,7 +433,7 @@ private sealed class SubParser<T: AST>() {
         get() = ASTKnotenID.OBJEKT_INSTANZIIERUNG
 
       override fun parseImpl(): AST.Ausdruck.ObjektInstanziierung {
-        val feldZuweisungen = when (peekType()) {
+        val eigenschaftsZuweisungen = when (peekType()) {
           is TokenTyp.BEZEICHNER_KLEIN -> {
             parseKleinesSchlüsselwort("mit")
             parseListeMitStart<AST.Argument, TokenTyp.KOMMA, TokenTyp.VORNOMEN>(false, ::parseArgument)
@@ -418,17 +441,17 @@ private sealed class SubParser<T: AST>() {
           else -> emptyList()
         }
 
-        return AST.Ausdruck.ObjektInstanziierung(AST.TypKnoten(nomen), feldZuweisungen)
+        return AST.Ausdruck.ObjektInstanziierung(AST.TypKnoten(nomen), eigenschaftsZuweisungen)
       }
     }
 
-    class Feldzugriff(nomen: AST.Nomen, private val inBinärenAusdruck: Boolean): NomenAusdruck<AST.Ausdruck.Feldzugriff>(nomen) {
+    class EigenschaftsZugriff(nomen: AST.Nomen, private val inBinärenAusdruck: Boolean): NomenAusdruck<AST.Ausdruck.EigenschaftsZugriff>(nomen) {
       override val id: ASTKnotenID
-        get() = ASTKnotenID.FELD_ZUGRIFF
+        get() = ASTKnotenID.EIGENSCHAFTS_ZUGRIFF
 
-      override fun parseImpl(): AST.Ausdruck.Feldzugriff {
+      override fun parseImpl(): AST.Ausdruck.EigenschaftsZugriff {
         val objekt = parseNomenAusdruck(parseNomen<TokenTyp.VORNOMEN.ARTIKEL>(true, "Artikel"), inBinärenAusdruck)
-        return AST.Ausdruck.Feldzugriff(nomen, objekt)
+        return AST.Ausdruck.EigenschaftsZugriff(nomen, objekt)
       }
     }
   }
@@ -725,7 +748,7 @@ private sealed class SubParser<T: AST>() {
           is TokenTyp.ALS -> next().let { AST.TypKnoten(AST.Nomen(null, expect("Bezeichner"))) }
           else -> null
         }
-        val felder = when(peekType()) {
+        val eingenschaften = when(peekType()) {
           is TokenTyp.BEZEICHNER_KLEIN -> {
             parseKleinesSchlüsselwort("mit")
             überspringeLeereZeilen()
@@ -737,7 +760,7 @@ private sealed class SubParser<T: AST>() {
         }
 
         val konstruktor = parseSätze()
-        return AST.Definition.Klasse(name, elternKlasse, felder, konstruktor)
+        return AST.Definition.Klasse(name, elternKlasse, eingenschaften, konstruktor)
       }
 
     }

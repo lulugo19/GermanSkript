@@ -110,6 +110,10 @@ sealed class TokenTyp(val anzeigeName: String) {
             object BESTIMMT: ARTIKEL("bestimmter Artikel")
             object UNBESTIMMT: ARTIKEL("unbestimmter Artikel")
         }
+        sealed class POSSESSIV_PRONOMEN(pronomen: String): VORNOMEN("Possesivpronomen ('$pronomen')") {
+            object MEIN: POSSESSIV_PRONOMEN("Ich")
+            object DEIN: POSSESSIV_PRONOMEN("Du")
+        }
         object JEDE: VORNOMEN("'jeder' oder 'jede' oder 'jedes'")
     }
 
@@ -219,6 +223,7 @@ private val WORT_MAPPING = mapOf<String, TokenTyp>(
     "modulo" to TokenTyp.OPERATOR(Operator.MODULO),
 
     // Vornomen
+    // Artikel
     "der" to TokenTyp.VORNOMEN.ARTIKEL.BESTIMMT,
     "die" to TokenTyp.VORNOMEN.ARTIKEL.BESTIMMT,
     "das" to TokenTyp.VORNOMEN.ARTIKEL.BESTIMMT,
@@ -231,6 +236,21 @@ private val WORT_MAPPING = mapOf<String, TokenTyp>(
     "einige" to TokenTyp.VORNOMEN.ARTIKEL.UNBESTIMMT,
     "einigen" to TokenTyp.VORNOMEN.ARTIKEL.UNBESTIMMT,
     "einiger" to TokenTyp.VORNOMEN.ARTIKEL.UNBESTIMMT,
+
+    // Possesivpronomen
+    "mein" to TokenTyp.VORNOMEN.POSSESSIV_PRONOMEN.MEIN,
+    "meine" to TokenTyp.VORNOMEN.POSSESSIV_PRONOMEN.MEIN,
+    "meines" to TokenTyp.VORNOMEN.POSSESSIV_PRONOMEN.MEIN,
+    "meiner" to TokenTyp.VORNOMEN.POSSESSIV_PRONOMEN.MEIN,
+    "meinem" to TokenTyp.VORNOMEN.POSSESSIV_PRONOMEN.MEIN,
+    "meinen" to TokenTyp.VORNOMEN.POSSESSIV_PRONOMEN.MEIN,
+
+    "dein" to TokenTyp.VORNOMEN.POSSESSIV_PRONOMEN.DEIN,
+    "deine" to TokenTyp.VORNOMEN.POSSESSIV_PRONOMEN.DEIN,
+    "deines" to TokenTyp.VORNOMEN.POSSESSIV_PRONOMEN.DEIN,
+    "deiner" to TokenTyp.VORNOMEN.POSSESSIV_PRONOMEN.DEIN,
+    "deinem" to TokenTyp.VORNOMEN.POSSESSIV_PRONOMEN.DEIN,
+    "deinen" to TokenTyp.VORNOMEN.POSSESSIV_PRONOMEN.DEIN,
 
     "jede" to TokenTyp.VORNOMEN.JEDE,
     "jeden" to TokenTyp.VORNOMEN.JEDE,

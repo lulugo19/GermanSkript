@@ -142,7 +142,7 @@ sealed class AST {
     data class Klasse(
         val name: Nomen,
         val elternKlasse: TypKnoten?,
-        val felder: List<TypUndName>,
+        val eigenschaften: List<TypUndName>,
         val konstruktor: List<Satz>
     ): AST.Definition() {
       val methoden: HashMap<String, FunktionOderMethode.Methode> = HashMap()
@@ -323,16 +323,16 @@ sealed class AST {
 
     data class ObjektInstanziierung(
         val klasse: TypKnoten,
-        val feldZuweisungen: List<Argument>
+        val eigenschaftsZuweisungen: List<Argument>
     ): Ausdruck() {
       override val children: Sequence<AST>
         get() = sequence {
-          yieldAll(feldZuweisungen)
+          yieldAll(eigenschaftsZuweisungen)
         }
     }
 
-    data class Feldzugriff(
-        val feldName: Nomen,
+    data class EigenschaftsZugriff(
+        val eigenschaftsName: Nomen,
         val objekt: Ausdruck
     ): Ausdruck() {
       override val children = sequenceOf(objekt)

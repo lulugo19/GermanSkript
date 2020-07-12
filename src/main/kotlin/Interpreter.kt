@@ -158,17 +158,17 @@ class Interpreter(dateiPfad: String): ProgrammDurchlaufer<Wert, Wert.Objekt>(dat
   }
 
   override fun evaluiereObjektInstanziierung(instanziierung: AST.Ausdruck.ObjektInstanziierung): Wert {
-    val felder = hashMapOf<String, Wert>()
-    for (zuweisung in instanziierung.feldZuweisungen) {
-      felder[zuweisung.name.nominativ!!] = evaluiereAusdruck(zuweisung.wert)
+    val eigenschaften = hashMapOf<String, Wert>()
+    for (zuweisung in instanziierung.eigenschaftsZuweisungen) {
+      eigenschaften[zuweisung.name.nominativ!!] = evaluiereAusdruck(zuweisung.wert)
     }
     val klassenDefinition = (instanziierung.klasse.typ!! as Typ.Klasse).klassenDefinition
-    return Wert.Objekt(klassenDefinition, felder)
+    return Wert.Objekt(klassenDefinition, eigenschaften)
   }
 
-  override fun evaluiereFeldZugriff(feldzugriff: AST.Ausdruck.Feldzugriff): Wert {
-    val objekt = evaluiereAusdruck(feldzugriff.objekt) as Wert.Objekt
-    return objekt.felder.getValue(feldzugriff.feldName.nominativ!!)
+  override fun evaluiereEigenschaftsZugriff(eigenschaftsZugriff: AST.Ausdruck.EigenschaftsZugriff): Wert {
+    val objekt = evaluiereAusdruck(eigenschaftsZugriff.objekt) as Wert.Objekt
+    return objekt.eigenschaften.getValue(eigenschaftsZugriff.eigenschaftsName.nominativ!!)
   }
 
   override  fun evaluiereBinärenAusdruck(ausdruck: AST.Ausdruck.BinärerAusdruck): Wert {

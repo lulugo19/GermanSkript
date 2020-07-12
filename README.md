@@ -60,9 +60,9 @@ Außerdem ist auch noch die Form des Artikels wichtig, jenachdem in welchem Fall
 | ------------ | --------------------- | ---------------- | -------------- | ---------- | --------- | ------- | ------ |
 | Nominativ  | bestimmt | `ArtikelNb` | Variablendeklaration bestimmt | der | die | das | die |
 | Nominativ | unbestimmt | `ArtikelNu` | Variablendeklaration unbestimmt | ein | eine | ein | einige |
-| Genitiv | bestimmt | `ArtikelGb` | Feldzugriff, Destrukturierung | des | der | des | der |
+| Genitiv | bestimmt | `ArtikelGb` | Eigenschaftszugriff, Destrukturierung | des | der | des | der |
 | Genitiv | unbestimmt | `ArtikelGu` |  | eines | einer | eines | einiger |
-| Dativ  | bestimmt | `ArtikelDb` | Feldzugriff, Destrukturierung, Konstruktor, Argumente | dem | der | dem | den |
+| Dativ  | bestimmt | `ArtikelDb` | Destrukturierung, Konstruktor, Argumente | dem | der | dem | den |
 | Dativ  | unbestimmt | `ArtikelDu` |  | einem | einer | einem | einigen |
 | Akkusativ  | bestimmt | `ArtikelAb` | Eigenschaftsdefinition, Aufzählungsdefinition, Methodenaufruf | den | die | das | die |
 | Akkusativ  | unbestimmt | `ArtikelAu` | Typdefinition, Alias, Eigenschaftsdefinition, Aufzählungsdefinition, Methodenaufruf | einen | eine | ein | einige |
@@ -359,9 +359,9 @@ stelle den Gegenstand Tisch her
 
 ### Definieren einer Klasse
 
-`Nomen BezeichnerP [als TypP] [mit Felder]: Konstruktor.`
+`Nomen BezeichnerP [als TypP] [mit Eigenschaften]: Konstruktor.`
 
-Felder: `Kommaliste(ArtikelD TypD [BezeichnerP])`
+Eigenschaften: `Kommaliste(ArtikelD TypD [BezeichnerP])`
 
 #### Konstruktor
 
@@ -369,7 +369,7 @@ Konstruktor: `Sätze`
 
 Der Konstruktor ist dafür da das Objekt zu initialisieren.
 In dem Konstruktor können die Demonstativpronomen `diese` oder `jene`
-verwendet werden um Felder zu erstellen, auf die man von außen nicht zugreifen kann.
+verwendet werden um Eigenschaften zu erstellen, auf die man von außen nicht zugreifen kann.
 
 Der Konstruktor ist eine spezielle [Methode](#definieren-einer-methode) und es gelten
 die Regeln für Methoden.
@@ -398,20 +398,16 @@ Man würde eine HTTP-Anfrage an den Duden senden.
 ### Instanziieren eines Objekts einer Klasse
 `Bezeichner [mit Kommaliste(ArtikelDb BezeichnerD [AusdruckD])`]
 
-Die Felder können in beliebiger Reihenfolge stehen.
 
 Beispiel:
 
 `die Person Donald ist eine Person mit dem Vornamen "Donald", dem Nachnamen "Duck", dem Alter 42`
 
-### Zugriff auf Felder eines Objekts
-mit dem Genitiv: `Feld ArtikelGb AusdruckG`
+### Zugriff auf Eigenschaften eines Objekts
+mit dem Genitiv: `Artikelb Eigenschaft ArtikelGb AusdruckG`
 
-Beispiel: `Name des Lukas`
+Beispiel: `der Name der Person`
 
-mit dem Dativ `Feld von ArtikelDb AusdruckD`
-
-Beispiel: `Name von dem Lukas`
 
 ### Definieren einer Methode
 
@@ -421,6 +417,7 @@ Das Verb einer Methode sollte im Imperativ stehen. Außerdem kann das Verb optio
 der dann bei dem Methodenaufruf am Ende stehen muss.
 
 Innerhalb einer Methode kann man direkt ohne Methodenblock auf eigene Methoden zugreifen.
+Auf die Eigenschaften des eigenen Objekts kann innerhalb einer Methode mit `mein` zugegriffen werden.
 
 Beispiel:
 ```
@@ -437,7 +434,7 @@ des Objekts, auf den man die Methode/n aufrufen möchte. Innerhalb des Blocks ka
 aufrufen. Hat eine Funktion die gleiche Signatur wie eine Methode, wird die Funktion überschattet. Der Block endet diesmal nicht
 mit einem `.` sondern einem `!`.
 
-In Methodenblöcken kann auf Felder des Objekts mit `dein` zugegriffen werden. Wenn das Objekt eine Liste ist wird stattdessen `eure` verwendet.
+In Methodenblöcken kann auf Eigenschaften des Objekts mit `dein` zugegriffen werden. Wenn das Objekt eine Liste ist wird stattdessen `eure` verwendet.
 
 Wenn in einer Methodendefinition `mir` (Dativ) oder `mich` (Akkusativ) verwendet wurde, wird diese bei allen Objekten mit `dir`
 oder `dich` und bei Listen mit `euch` oder `euren` ersetzt.

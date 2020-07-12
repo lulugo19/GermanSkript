@@ -6,13 +6,13 @@
 - Typ-Umwandlung
 - Klassen
     - Definition
-        - Felder
+        - Eigenschaften
         - (Konstruktor)
     - Instanziierung
 - Methoden
     - Definition
     - Methodenblock
-- Zugriff auf Felder
+- Zugriff auf Eigenschaften
 
 ## Symbole
 Symbole sind Nomen mit nur einem Buchstaben also `X`, `Y`, `A`, `Z`, ...
@@ -75,9 +75,9 @@ drucke die Zeichenfolge Lukas als Zeichenfolge // Lukas Gobelet
 
 ### Definieren einer Klasse
 
-`Nomen BezeichnerP [als KlasseP] [mit Felder]: Konstruktor.`
+`Nomen BezeichnerP [als KlasseP] [mit Eigenschaften]: Konstruktor.`
 
-Felder: `Kommaliste(ArtikelD TypD [BezeichnerP])`
+Eigenschaften: `Kommaliste(ArtikelD TypD [BezeichnerP])`
 
 #### Konstruktor
 
@@ -85,7 +85,7 @@ Konstruktor: `Sätze`
 
 Der Konstruktor ist dafür da das Objekt zu initialisieren.
 In dem Konstruktor können die Demonstativpronomen `diese` oder `jene`
-verwendet werden um Felder zu erstellen, auf die man von außen nicht zugreifen kann.
+verwendet werden um Eigenschaften zu erstellen, auf die man von außen nicht zugreifen kann.
 
 Der Konstruktor ist eine spezielle [Methode](#definieren-einer-methode) und es gelten
 die Regeln für Methoden.
@@ -110,20 +110,16 @@ Nomen Student als Person mit
 ### Instanziieren eines Objekts einer Klasse
 `Bezeichner [mit Kommaliste(ArtikelDb BezeichnerD [AusdruckD])`]
 
-Die Felder können in beliebiger Reihenfolge stehen.
+Die Eigenschaften können in beliebiger Reihenfolge stehen.
 
 Beispiel:
 
 `die Person Donald ist eine Person mit dem Vornamen "Donald", dem Nachnamen "Duck", dem Alter 42`
 
-### Zugriff auf Felder eines Objekts
-mit dem Genitiv: `ArtikelNb Feld ArtikelGb AusdruckG`
+### Zugriff auf Eigenschaften eines Objekts
+mit dem Genitiv: `ArtikelNb Eigenschaft ArtikelGb AusdruckG`
 
-Beispiel: `der Name des Lukas`
-
-mit dem Dativ `ArtikelNb Feld von ArtikelDb AusdruckD`
-
-Beispiel: `der Name von dem Lukas`
+Beispiel: `der Name der Person`
 
 ## Methoden
 
@@ -135,6 +131,7 @@ Das Verb einer Methode sollte im Imperativ stehen. Außerdem kann das Verb optio
 der dann bei dem Methodenaufruf am Ende stehen muss.
 
 Innerhalb einer Methode kann man direkt ohne Methodenblock auf eigene Methoden zugreifen.
+Auf die eigenen Eigenschaften kann innerhalb einer Methode mit `mein` zugegriffen werden.
 
 Beispiel:
 ```
@@ -151,7 +148,7 @@ des Objekts, auf den man die Methode/n aufrufen möchte. Innerhalb des Blocks ka
 aufrufen. Hat eine Funktion die gleiche Signatur wie eine Methode, wird die Funktion überschattet. Der Block endet diesmal nicht
 mit einem `.` sondern einem `!`.
 
-In Methodenblöcken kann auf Felder des Objekts mit `dein` zugegriffen werden. Wenn das Objekt eine Liste ist wird stattdessen `eure` verwendet.
+In Methodenblöcken kann auf Eigenschaften des Objekts mit `dein` zugegriffen werden. Wenn das Objekt eine Liste ist wird stattdessen `eure` verwendet.
 
 Wenn in einer Methodendefinition `mir` (Dativ) oder `mich` (Akkusativ) verwendet wurde, wird diese bei allen Objekten mit `dir`
 oder `dich` und bei Listen mit `euch` oder `euren` ersetzt.
@@ -182,6 +179,7 @@ Client: verbinde dich
 -[x] Klassendefinition
 -[x] Klassen
 - Methoden
-    - [ ] Methodendefinition
-    - [ ] Methodenblock
-    - [ ] Feldzugriff mit 'dein'
+    - [x] Methodendefinition
+    - [x] Methodenblock
+    - [ ] Eigenschaftszugriff mit `mein`
+    - [ ] Eigenschaftszugriff mit `dein`

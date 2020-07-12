@@ -96,7 +96,7 @@ class GrammatikPrüfer(dateiPfad: String): PipelineKomponente(dateiPfad) {
       is AST.Ausdruck.Liste ->  prüfeListe(ausdruck, kontextNomen, fälle)
       is AST.Ausdruck.ListenElement -> prüfeListenElement(ausdruck, kontextNomen, fälle)
       is AST.Ausdruck.ObjektInstanziierung -> prüfeObjektinstanziierung(ausdruck, kontextNomen, fälle)
-      is AST.Ausdruck.Feldzugriff -> prüfeFeldZugriff(ausdruck, kontextNomen, fälle)
+      is AST.Ausdruck.EigenschaftsZugriff -> prüfeEigenschaftsZugriff(ausdruck, kontextNomen, fälle)
       is AST.Ausdruck.Konvertierung -> prüfeKonvertierung(ausdruck, kontextNomen, fälle)
       is AST.Ausdruck.BinärerAusdruck -> prüfeBinärenAusdruck(ausdruck, kontextNomen, fälle)
       is AST.Ausdruck.FunktionsAufruf -> prüfeFunktionsAufruf(ausdruck.aufruf)
@@ -125,18 +125,18 @@ class GrammatikPrüfer(dateiPfad: String): PipelineKomponente(dateiPfad) {
     if (kontextNomen != null) {
       prüfeNumerus(kontextNomen, Numerus.SINGULAR)
     }
-    for (feldZuweisung in instanziierung.feldZuweisungen) {
-      prüfeNomen(feldZuweisung.name, EnumSet.of(Kasus.DATIV))
-      prüfeKontextbasiertenAusdruck(feldZuweisung.wert, feldZuweisung.name, EnumSet.of(Kasus.NOMINATIV))
+    for (eigenschaftsZuweisung in instanziierung.eigenschaftsZuweisungen) {
+      prüfeNomen(eigenschaftsZuweisung.name, EnumSet.of(Kasus.DATIV))
+      prüfeKontextbasiertenAusdruck(eigenschaftsZuweisung.wert, eigenschaftsZuweisung.name, EnumSet.of(Kasus.NOMINATIV))
     }
   }
 
-  private fun prüfeFeldZugriff(feldzugriff: AST.Ausdruck.Feldzugriff, kontextNomen: AST.Nomen?, fälle: EnumSet<Kasus>) {
-    prüfeNomen(feldzugriff.feldName, fälle)
+  private fun prüfeEigenschaftsZugriff(eigenschaftsZugriff: AST.Ausdruck.EigenschaftsZugriff, kontextNomen: AST.Nomen?, fälle: EnumSet<Kasus>) {
+    prüfeNomen(eigenschaftsZugriff.eigenschaftsName, fälle)
     if (kontextNomen != null) {
-      prüfeNumerus(kontextNomen, feldzugriff.feldName.numerus!!)
+      prüfeNumerus(kontextNomen, eigenschaftsZugriff.eigenschaftsName.numerus!!)
     }
-    prüfeKontextbasiertenAusdruck(feldzugriff.objekt, null, EnumSet.of(Kasus.GENITIV))
+    prüfeKontextbasiertenAusdruck(eigenschaftsZugriff.objekt, null, EnumSet.of(Kasus.GENITIV))
   }
 
   private fun prüfeListenElement(listenElement: AST.Ausdruck.ListenElement, kontextNomen: AST.Nomen?, fälle: EnumSet<Kasus>) {
@@ -225,9 +225,9 @@ class GrammatikPrüfer(dateiPfad: String): PipelineKomponente(dateiPfad) {
     prüfeNomen(klasse.name, EnumSet.of(Kasus.NOMINATIV))
     prüfeNumerus(klasse.name, Numerus.SINGULAR)
 
-    for (feld in klasse.felder) {
-      prüfeNomen(feld.typKnoten.name, EnumSet.of(Kasus.DATIV))
-      prüfeNomen(feld.name, EnumSet.of(Kasus.NOMINATIV))
+    for (eigenschaft in klasse.eigenschaften) {
+      prüfeNomen(eigenschaft.typKnoten.name, EnumSet.of(Kasus.DATIV))
+      prüfeNomen(eigenschaft.name, EnumSet.of(Kasus.NOMINATIV))
     }
   }
 

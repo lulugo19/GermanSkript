@@ -145,9 +145,9 @@ sealed class GermanScriptFehler(private val fehlerName: String, val token: Token
         get() = "Der Operator '${token.wert}' ist für den Typen '$typ' nicht definiert."
     }
 
-    class Feld(token: Token, private val klasse: String): Undefiniert(token) {
+    class Eigenschaft(token: Token, private val klasse: String): Undefiniert(token) {
       override val nachricht: String
-        get() = "Das Feld '${token.wert}' ist für die Klasse '$klasse' nicht definiert."
+        get() = "Die Eigenschaft '${token.wert}' ist für die Klasse '$klasse' nicht definiert."
     }
   }
 
@@ -163,22 +163,22 @@ sealed class GermanScriptFehler(private val fehlerName: String, val token: Token
     }
   }
 
-  sealed class FeldFehler(token: Token): GermanScriptFehler("Feldfehler", token) {
-    class UnerwarteterFeldName(token: Token, private val erwarteterFeldName: String): FeldFehler(token) {
+  sealed class EigenschaftsFehler(token: Token): GermanScriptFehler("Eigenschaftsfehler", token) {
+    class UnerwarteterEigenschaftsName(token: Token, private val erwarteteEigenschaft: String): EigenschaftsFehler(token) {
       override val nachricht: String
-        get() = "Unerwarteter Feldname '${token.wert}'. Es wird das Feld mit dem Namen '$erwarteterFeldName' erwartet."
+        get() = "Unerwartete Eigenschaft '${token.wert}'. Es wird die Eigenschaft '$erwarteteEigenschaft' erwartet."
 
     }
 
-    class FeldVergessen(token: Token, private val erwarteterFeldName: String): FeldFehler(token) {
+    class EigenschaftsVergessen(token: Token, private val erwarteteEigenschaft: String): EigenschaftsFehler(token) {
       override val nachricht: String
-        get() = "Es wird das Feld mit dem Namen '$erwarteterFeldName' erwartet. Doch es wurde vergessen."
+        get() = "Es wird die Eigenschaft '$erwarteteEigenschaft' erwartet. Doch sie wurde vergessen."
 
     }
 
-    class UnerwartetesFeld(token: Token): FeldFehler(token) {
+    class UnerwarteteEigenschaft(token: Token): EigenschaftsFehler(token) {
       override val nachricht: String
-        get() = "Unerwartetes Feld '${token.wert}'. Es wird kein Feld erwartet."
+        get() = "Unerwartetes Eigenschaft '${token.wert}'. Es wird keine Eigenschaft erwartet."
     }
   }
 

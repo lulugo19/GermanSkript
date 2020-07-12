@@ -129,8 +129,8 @@ class Typisierer(dateiPfad: String): PipelineKomponente(dateiPfad) {
   }
 
   private fun typisiereKlasse(klasse: AST.Definition.Klasse) {
-    for (feld in klasse.felder) {
-      typisiereTypKnoten(feld.typKnoten)
+    for (eigenschaft in klasse.eigenschaften) {
+      typisiereTypKnoten(eigenschaft.typKnoten)
     }
   }
 }
