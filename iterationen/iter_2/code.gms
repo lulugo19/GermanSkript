@@ -48,7 +48,7 @@ Verb begrüße die Person mit der Zeichenfolge Begrüßung, der Zeichenfolge Abs
 
 
 // Methodendefinition
-Verb für Person stelle vor:
+Verb für Person stelle mich vor:
     schreibe die Zeile "Hallo, ich bin " + meinen Namen
 .
 
@@ -58,8 +58,8 @@ begrüße die Person mit der Begrüßung "Hey", dem Abschied "Bye"
 
 // Methodenblock
 Person:
-    stelle vor
-    schreibe die Zeile dein Name
+    stelle dich vor
+    schreibe die Zeile "Hey wie geht's denn " + deinen Namen + "?"
 !
 
 

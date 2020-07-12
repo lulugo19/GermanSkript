@@ -130,6 +130,11 @@ sealed class GermanScriptFehler(private val fehlerName: String, val token: Token
         get() = "Die Funktion '${funktionsAufruf.vollerName!!}' ist nicht definiert."
     }
 
+    class Methode(token: Token, private val methodenAufruf: AST.FunktionsAufruf, private val klassenName: String): Undefiniert(token) {
+      override val nachricht: String
+        get() = "Die Methode 'für $klassenName: ${methodenAufruf.vollerName!!}' ist nicht definiert."
+    }
+
     class Variable(token: Token, private val name: String = token.wert): Undefiniert(token) {
       override val nachricht: String
         get() = "Die Variable '$name' ist nicht definiert.'"

@@ -128,8 +128,9 @@ sealed class AST {
       }
 
       data class Methode(
-              val funktion: Funktion,
-              val klasse: TypKnoten
+          val funktion: Funktion,
+          val klasse: TypKnoten,
+          val reflexivPronomen: TypedToken<TokenTyp.REFLEXIV_PRONOMEN>?
       ): FunktionOderMethode() {
         override val children: Sequence<AST>
           get() = sequence {
@@ -252,6 +253,7 @@ sealed class AST {
   data class FunktionsAufruf(
       val verb: TypedToken<TokenTyp.BEZEICHNER_KLEIN>,
       val objekt: Argument?,
+      val reflexivPronomen: TypedToken<TokenTyp.REFLEXIV_PRONOMEN>?,
       val präpositionsArgumente: List<PräpositionsArgumente>,
       val suffix: TypedToken<TokenTyp.BEZEICHNER_KLEIN>?,
       var vollerName: String? = null

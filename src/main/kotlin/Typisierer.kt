@@ -91,6 +91,7 @@ class Typisierer(dateiPfad: String): PipelineKomponente(dateiPfad) {
     definierer.klassenDefinitionen.forEach{
       typisiereKlasse(it)
       it.methoden.values.forEach{ methode ->
+        methode.klasse.typ = Typ.Klasse(it)
         typisiereFunktion(methode.funktion)
       }
     }

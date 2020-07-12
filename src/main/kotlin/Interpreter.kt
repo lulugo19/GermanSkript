@@ -83,7 +83,7 @@ class Interpreter(dateiPfad: String): ProgrammDurchlaufer<Wert, Wert.Objekt>(dat
       }
   }
 
-  override fun durchlaufeMethodenOderFunktionsAufruf(objekt: Wert?, funktionsAufruf: AST.FunktionsAufruf, funktionsDefinition: AST.Definition.FunktionOderMethode.Funktion, istAusdruck: Boolean): Wert? {
+  override fun durchlaufeMethodenOderFunktionsAufruf(objekt: Wert?, funktionsAufruf: AST.FunktionsAufruf, funktionsDefinition: AST.Definition.FunktionOderMethode.Funktion, selbstReferenz: Boolean, istAusdruck: Boolean): Wert? {
     val funktionsUmgebung = Umgebung<Wert>()
     funktionsUmgebung.pushBereich()
     for (argument in funktionsAufruf.argumente) {

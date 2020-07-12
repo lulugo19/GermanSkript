@@ -99,9 +99,14 @@ private sealed class SubParser<T: AST>() {
     if (nächstesToken.wert == "für"){
       next()
       val klasse = parseNomen<TokenTyp.VORNOMEN>(false, "")
-      return AST.Definition.FunktionOderMethode.Methode(subParse(Definition.Funktion(ASTKnotenID.METHODEN_DEFINITION, rückgabetyp)), AST.TypKnoten(klasse))
+      val reflexivPronomen = peek(1).let { token ->
+        if (token.typ is TokenTyp.REFLEXIV_PRONOMEN.MICH) token.toTyped<TokenTyp.REFLEXIV_PRONOMEN.MICH>() else null
+      }
+      return AST.Definition.FunktionOderMethode.Methode(
+          subParse(Definition.Funktion(ASTKnotenID.METHODEN_DEFINITION, rückgabetyp, reflexivPronomen != null)),
+          AST.TypKnoten(klasse), reflexivPronomen)
     }
-    return subParse(Definition.Funktion(ASTKnotenID.FUNKTIONS_DEFINITION, rückgabetyp))
+    return subParse(Definition.Funktion(ASTKnotenID.FUNKTIONS_DEFINITION, rückgabetyp, false))
   }
 
   protected fun parseKleinesSchlüsselwort(schlüsselwort: String): TypedToken<TokenTyp.BEZEICHNER_KLEIN> {
@@ -475,9 +480,10 @@ private sealed class SubParser<T: AST>() {
     override fun parseImpl(): AST.FunktionsAufruf {
       val verb = expect<TokenTyp.BEZEICHNER_KLEIN>("bezeichner")
       val objekt = parseOptional<AST.Argument, TokenTyp.VORNOMEN>(::parseArgument)
+      val reflexivPronomen = if (objekt == null) parseOptional<TokenTyp.REFLEXIV_PRONOMEN>() else null
       val präpositionen = parsePräpositionsArgumente()
       val suffix = parseOptional<TokenTyp.BEZEICHNER_KLEIN>()
-      return AST.FunktionsAufruf(verb, objekt, präpositionen, suffix)
+      return AST.FunktionsAufruf(verb, objekt, reflexivPronomen, präpositionen, suffix)
     }
 
     fun parsePräpositionsArgumente(): List<AST.PräpositionsArgumente> {
@@ -717,12 +723,16 @@ private sealed class SubParser<T: AST>() {
       }
     }
 
-    class Funktion(override val id: ASTKnotenID, private val rückgabeTyp: TypedToken<TokenTyp.BEZEICHNER_GROSS>?): Definition<AST.Definition.FunktionOderMethode.Funktion>() {
+    class Funktion(override val id: ASTKnotenID, private val rückgabeTyp: TypedToken<TokenTyp.BEZEICHNER_GROSS>?, private val hatReflexivPronomen: Boolean): Definition<AST.Definition.FunktionOderMethode.Funktion>() {
 
       override fun parseImpl(): AST.Definition.FunktionOderMethode.Funktion {
         val name = expect<TokenTyp.BEZEICHNER_KLEIN>("bezeichner")
-        val objekt = parseOptional<AST.Definition.TypUndName, TokenTyp.VORNOMEN.ARTIKEL.BESTIMMT> {
-          parseTypUndName<TokenTyp.VORNOMEN.ARTIKEL.BESTIMMT>("bestimmter Artikel")
+        val objekt = if (hatReflexivPronomen) {
+          next()
+          null
+        } else {
+        parseOptional<AST.Definition.TypUndName, TokenTyp.VORNOMEN.ARTIKEL.BESTIMMT> {
+          parseTypUndName<TokenTyp.VORNOMEN.ARTIKEL.BESTIMMT>("bestimmter Artikel") }
         }
         val präpositionsParameter = parsePräpositionsParameter()
         val suffix = parseOptional<TokenTyp.BEZEICHNER_KLEIN>()

@@ -39,7 +39,7 @@ class TypPrüfer(dateiPfad: String): ProgrammDurchlaufer<Typ, Typ.Klasse>(dateiP
     logger.addLine("____________________________________________________________________")
   }
 
-  override fun durchlaufeMethodenOderFunktionsAufruf(objekt: Typ?, funktionsAufruf: AST.FunktionsAufruf, funktionsDefinition: AST.Definition.FunktionOderMethode.Funktion, istAusdruck: Boolean): Typ? {
+  override fun durchlaufeMethodenOderFunktionsAufruf(objekt: Typ?, funktionsAufruf: AST.FunktionsAufruf, funktionsDefinition: AST.Definition.FunktionOderMethode.Funktion, selbstReferenz: Boolean, istAusdruck: Boolean): Typ? {
     if (istAusdruck && funktionsDefinition.rückgabeTyp == null) {
       throw GermanScriptFehler.SyntaxFehler.FunktionAlsAusdruckFehler(funktionsDefinition.name.toUntyped())
     }

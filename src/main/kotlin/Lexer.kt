@@ -117,6 +117,11 @@ sealed class TokenTyp(val anzeigeName: String) {
         object JEDE: VORNOMEN("'jeder' oder 'jede' oder 'jedes'")
     }
 
+    sealed class REFLEXIV_PRONOMEN(pronomen: String): TokenTyp("Reflexivpronomen ('$pronomen')") {
+        object MICH: REFLEXIV_PRONOMEN("Ich")
+        object DICH: REFLEXIV_PRONOMEN("Du")
+    }
+
     //Symbole
     object OFFENE_KLAMMER: TokenTyp("'('")
     object GESCHLOSSENE_KLAMMER: TokenTyp("')'")
@@ -237,7 +242,7 @@ private val WORT_MAPPING = mapOf<String, TokenTyp>(
     "einigen" to TokenTyp.VORNOMEN.ARTIKEL.UNBESTIMMT,
     "einiger" to TokenTyp.VORNOMEN.ARTIKEL.UNBESTIMMT,
 
-    // Possesivpronomen
+    // Possessivpronomen
     "mein" to TokenTyp.VORNOMEN.POSSESSIV_PRONOMEN.MEIN,
     "meine" to TokenTyp.VORNOMEN.POSSESSIV_PRONOMEN.MEIN,
     "meines" to TokenTyp.VORNOMEN.POSSESSIV_PRONOMEN.MEIN,
@@ -251,6 +256,12 @@ private val WORT_MAPPING = mapOf<String, TokenTyp>(
     "deiner" to TokenTyp.VORNOMEN.POSSESSIV_PRONOMEN.DEIN,
     "deinem" to TokenTyp.VORNOMEN.POSSESSIV_PRONOMEN.DEIN,
     "deinen" to TokenTyp.VORNOMEN.POSSESSIV_PRONOMEN.DEIN,
+
+    // Reflexivpronomen
+    "mich" to TokenTyp.REFLEXIV_PRONOMEN.MICH,
+    "mir" to TokenTyp.REFLEXIV_PRONOMEN.MICH,
+    "dich" to TokenTyp.REFLEXIV_PRONOMEN.DICH,
+    "dir" to TokenTyp.REFLEXIV_PRONOMEN.DICH,
 
     "jede" to TokenTyp.VORNOMEN.JEDE,
     "jeden" to TokenTyp.VORNOMEN.JEDE,

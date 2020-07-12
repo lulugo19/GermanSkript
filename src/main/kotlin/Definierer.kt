@@ -1,3 +1,5 @@
+import java.lang.Error
+
 class Definierer(dateiPfad: String): PipelineKomponente(dateiPfad) {
   val grammatikPrüfer = GrammatikPrüfer(dateiPfad)
   val ast = grammatikPrüfer.ast
@@ -52,7 +54,7 @@ class Definierer(dateiPfad: String): PipelineKomponente(dateiPfad) {
   }
 
   private fun definiereFunktion(funktionsDefinition: AST.Definition.FunktionOderMethode.Funktion) {
-    val vollerName = getVollerNameVonDefinition(funktionsDefinition)
+    val vollerName = getVollerNameVonFunktionsDefinition(funktionsDefinition, null)
     if (funktionsDefinitionsMapping.containsKey(vollerName)) {
       throw GermanScriptFehler.DoppelteDefinition.Funktion(
           funktionsDefinition.name.toUntyped(),
@@ -64,7 +66,7 @@ class Definierer(dateiPfad: String): PipelineKomponente(dateiPfad) {
   }
 
   private fun definiereMethode(methodenDefinition: AST.Definition.FunktionOderMethode.Methode) {
-    val vollerName = getVollerNameVonDefinition(methodenDefinition.funktion)
+    val vollerName = getVollerNameVonFunktionsDefinition(methodenDefinition.funktion, methodenDefinition.reflexivPronomen)
     val klasse = try {
       holeKlassenDefinition(methodenDefinition.klasse.name.nominativ!!)
     } catch (error: Exception ) {
@@ -82,11 +84,14 @@ class Definierer(dateiPfad: String): PipelineKomponente(dateiPfad) {
     klasse.methoden[vollerName] = methodenDefinition
   }
 
-  private fun getVollerNameVonDefinition(funktionsDefinition: AST.Definition.FunktionOderMethode.Funktion): String {
+  private fun getVollerNameVonFunktionsDefinition(funktionsDefinition: AST.Definition.FunktionOderMethode.Funktion, reflexivPronomen: TypedToken<TokenTyp.REFLEXIV_PRONOMEN>?): String {
     var vollerName = funktionsDefinition.name.wert
     if (funktionsDefinition.objekt != null) {
       val objekt = funktionsDefinition.objekt
       vollerName += " " + objekt.name.vornomenString!! + " " + objekt.name.bezeichner.wert
+    }
+    else if (reflexivPronomen != null) {
+      vollerName += " ${reflexivPronomen.wert}"
     }
     for (präposition in funktionsDefinition.präpositionsParameter) {
       vollerName += " " + präposition.präposition.präposition.wert
@@ -110,6 +115,18 @@ class Definierer(dateiPfad: String): PipelineKomponente(dateiPfad) {
     if (funktionsAufruf.objekt != null) {
       val objekt = funktionsAufruf.objekt
       vollerName += " " + objekt.name.vornomenString!! + " " + objekt.name.bezeichner.wert
+    } else if (funktionsAufruf.reflexivPronomen != null) {
+      val reflexivPronomen = funktionsAufruf.reflexivPronomen
+      val pronomen = if(reflexivPronomen.typ == TokenTyp.REFLEXIV_PRONOMEN.MICH) {
+        reflexivPronomen.wert
+      } else {
+        when (reflexivPronomen.wert) {
+          "dich" -> "mich"
+          "dir" -> "mir"
+          else -> throw Exception("Dieser Fall sollte nie auftreten.")
+        }
+      }
+      vollerName += " $pronomen"
     }
     for (präposition in funktionsAufruf.präpositionsArgumente) {
       vollerName += " " + präposition.präposition.präposition.wert
