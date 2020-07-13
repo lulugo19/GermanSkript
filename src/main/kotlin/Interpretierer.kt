@@ -5,7 +5,7 @@ class Interpretierer(dateiPfad: String): ProgrammDurchlaufer<Wert>(dateiPfad) {
   val typPrüfer = TypPrüfer(dateiPfad)
 
   override val definierer = typPrüfer.definierer
-  val ast: AST.Programm = typPrüfer.ast
+  val ast: AST.Aufruf.Programm = typPrüfer.ast
 
   private var rückgabeWert: Wert? = null
   private val flags = EnumSet.noneOf(Flag::class.java)
@@ -16,17 +16,13 @@ class Interpretierer(dateiPfad: String): ProgrammDurchlaufer<Wert>(dateiPfad) {
   fun interpretiere() {
     typPrüfer.prüfe()
     try {
+      aufrufStapel.push(ast, Umgebung())
       durchlaufeSätze(ast.sätze)
     } catch (stackOverflow: StackOverflowError) {
-      //TODO: handle StackOverflow
-      /*
       throw GermanScriptFehler.LaufzeitFehler(
-          aufrufStapel.top().funktionsAufruf?.verb?.toUntyped(),
+          aufrufStapel.top().aufruf.token,
           aufrufStapel.toString(),
           "Stack Overflow")
-
-       */
-      throw stackOverflow
     }
   }
 
@@ -35,8 +31,7 @@ class Interpretierer(dateiPfad: String): ProgrammDurchlaufer<Wert>(dateiPfad) {
     SCHLEIFE_FORTFAHREN,
   }
 
-  private class AufrufStapelElement(val funktionsAufruf: AST.FunktionsAufruf?, val objekt: Wert.Objekt?, val umgebung: Umgebung<Wert>)
-
+  private class AufrufStapelElement(val aufruf: AST.Aufruf, val objekt: Wert.Objekt?, val umgebung: Umgebung<Wert>)
   companion object {
     private const val CALL_STACK_OUTPUT_LIMIT = 50
   }
@@ -44,17 +39,17 @@ class Interpretierer(dateiPfad: String): ProgrammDurchlaufer<Wert>(dateiPfad) {
   private inner class AufrufStapel {
     private val stapel = Stack<AufrufStapelElement>()
 
-    init {
-      stapel.push(AufrufStapelElement(null, null, Umgebung()))
-    }
-
     fun top(): AufrufStapelElement = stapel.peek()
-    fun push(funktionsAufruf: AST.FunktionsAufruf, neueUmgebung: Umgebung<Wert>) {
-      val objekt = when (funktionsAufruf.aufrufTyp) {
-        FunktionsAufrufTyp.FUNKTIONS_AUFRUF -> null
-        FunktionsAufrufTyp.METHODEN_SELBST_AUFRUF -> top().objekt
-        FunktionsAufrufTyp.METHODEN_BLOCK_AUFRUF -> top().umgebung.holeMethodenBlockObjekt()
-        FunktionsAufrufTyp.METHODEN_OBJEKT_AUFRUF -> evaluiereAusdruck(funktionsAufruf.objekt!!.wert)
+    fun push(funktionsAufruf: AST.Aufruf, neueUmgebung: Umgebung<Wert>, konstruktorObjekt: Wert.Objekt? = null) {
+      val objekt = when (funktionsAufruf) {
+        is AST.Aufruf.Programm -> null
+        is AST.Aufruf.Funktion -> when (funktionsAufruf.aufrufTyp) {
+          FunktionsAufrufTyp.FUNKTIONS_AUFRUF -> null
+          FunktionsAufrufTyp.METHODEN_SELBST_AUFRUF -> top().objekt
+          FunktionsAufrufTyp.METHODEN_BLOCK_AUFRUF -> top().umgebung.holeMethodenBlockObjekt()
+          FunktionsAufrufTyp.METHODEN_OBJEKT_AUFRUF -> evaluiereAusdruck(funktionsAufruf.objekt!!.wert)
+        }
+        is AST.Aufruf.Konstruktor -> konstruktorObjekt
       } as Wert.Objekt?
       stapel.push(AufrufStapelElement(funktionsAufruf, objekt, neueUmgebung))
     }
@@ -76,9 +71,8 @@ class Interpretierer(dateiPfad: String): ProgrammDurchlaufer<Wert>(dateiPfad) {
     }
 
     private fun aufrufStapelElementToString(element: AufrufStapelElement): String {
-      val funktionsAufruf = element.funktionsAufruf!!
-      val token = funktionsAufruf.verb
-      var zeichenfolge = "${funktionsAufruf.vollerName} in ${token.position}"
+      val aufruf = element.aufruf
+      var zeichenfolge = "${aufruf.vollerName} in ${aufruf.token}"
       if (element.objekt != null) {
         val klassenName = element.objekt.klassenDefinition.name.nominativ!!
         zeichenfolge = "für $klassenName: $zeichenfolge"
@@ -102,7 +96,7 @@ class Interpretierer(dateiPfad: String): ProgrammDurchlaufer<Wert>(dateiPfad) {
       }
   }
 
-  override fun durchlaufeFunktionsAufruf(funktionsAufruf: AST.FunktionsAufruf, istAusdruck: Boolean): Wert? {
+  override fun durchlaufeFunktionsAufruf(funktionsAufruf: AST.Aufruf.Funktion, istAusdruck: Boolean): Wert? {
     rückgabeWert = null
     val neueUmgebung = Umgebung<Wert>()
     neueUmgebung.pushBereich()
@@ -156,7 +150,7 @@ class Interpretierer(dateiPfad: String): ProgrammDurchlaufer<Wert>(dateiPfad) {
     umgebung.popBereich()
   }
 
-  override fun durchlaufeIntern() = interneFunktionen.getValue(aufrufStapel.top().funktionsAufruf!!.vollerName!!)()
+  override fun durchlaufeIntern() = interneFunktionen.getValue(aufrufStapel.top().aufruf.vollerName!!)()
 
 
   override fun bevorDurchlaufeMethodenBlock(methodenBlock: AST.Satz.MethodenBlock, blockObjekt: Wert?) {
@@ -196,7 +190,12 @@ class Interpretierer(dateiPfad: String): ProgrammDurchlaufer<Wert>(dateiPfad) {
       eigenschaften[zuweisung.name.nominativ!!] = evaluiereAusdruck(zuweisung.wert)
     }
     val klassenDefinition = (instanziierung.klasse.typ!! as Typ.Klasse).klassenDefinition
-    return Wert.Objekt(klassenDefinition, eigenschaften)
+    val objekt = Wert.Objekt(klassenDefinition, eigenschaften)
+    val konstruktor = klassenDefinition.konstruktor
+    aufrufStapel.push(klassenDefinition.konstruktor, Umgebung(), objekt)
+    durchlaufeSätze(konstruktor.sätze)
+    aufrufStapel.pop()
+    return objekt
   }
 
   override fun evaluiereEigenschaftsZugriff(eigenschaftsZugriff: AST.Ausdruck.EigenschaftsZugriff): Wert {

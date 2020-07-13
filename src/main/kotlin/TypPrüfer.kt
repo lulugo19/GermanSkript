@@ -5,7 +5,7 @@ class TypPrüfer(dateiPfad: String): ProgrammDurchlaufer<Typ>(dateiPfad) {
   override val definierer = typisierer.definierer
   override var umgebung = Umgebung<Typ>()
   val logger = SimpleLogger()
-  val ast: AST.Programm get() = typisierer.ast
+  val ast: AST.Aufruf.Programm get() = typisierer.ast
 
   private var zuÜberprüfendeKlasse: AST.Definition.Klasse? = null
   private var zuÜberprüfendeFunktion: AST.Definition.FunktionOderMethode.Funktion? = null
@@ -16,6 +16,7 @@ class TypPrüfer(dateiPfad: String): ProgrammDurchlaufer<Typ>(dateiPfad) {
     definierer.funktionsDefinitionen.forEach(::prüfeFunktion)
     definierer.klassenDefinitionen.forEach { klasse ->
       zuÜberprüfendeKlasse = klasse
+      durchlaufeSätze(klasse.konstruktor.sätze)
       klasse.methoden.values.forEach {methode -> prüfeFunktion(methode.funktion)}
     }
   }
@@ -41,7 +42,7 @@ class TypPrüfer(dateiPfad: String): ProgrammDurchlaufer<Typ>(dateiPfad) {
     durchlaufeSätze(funktion.sätze)
   }
 
-  override fun durchlaufeFunktionsAufruf(funktionsAufruf: AST.FunktionsAufruf, istAusdruck: Boolean): Typ? {
+  override fun durchlaufeFunktionsAufruf(funktionsAufruf: AST.Aufruf.Funktion, istAusdruck: Boolean): Typ? {
     if (funktionsAufruf.vollerName == null) {
       funktionsAufruf.vollerName = definierer.holeVollenNamenVonFunktionsAufruf(funktionsAufruf, false)
     }
@@ -86,7 +87,6 @@ class TypPrüfer(dateiPfad: String): ProgrammDurchlaufer<Typ>(dateiPfad) {
     } catch (fehler: GermanScriptFehler.Undefiniert.Funktion) {
       fehler
     }
-
 
     // ist Methoden-Objekt-Aufruf als letzte Möglichkeit
     // das bedeutet Funktionsnamen gehen vor Methoden-Objekt-Aufrufen
@@ -243,27 +243,25 @@ class TypPrüfer(dateiPfad: String): ProgrammDurchlaufer<Typ>(dateiPfad) {
     if (klasse !is Typ.Klasse) {
       throw GermanScriptFehler.TypFehler.ObjektErwartet(holeErstesTokenVonAusdruck(eigenschaftsZugriff.objekt))
     }
-    return  überprüfeEigenschaftInKlasse(eigenschaftsZugriff.eigenschaftsName, klasse)
+    return  überprüfeEigenschaftInKlasse(eigenschaftsZugriff.eigenschaftsName, klasse.klassenDefinition)
   }
 
   override fun evaluiereSelbstEigenschaftsZugriff(eigenschaftsZugriff: AST.Ausdruck.SelbstEigenschaftsZugriff): Typ {
-    val methodenDefinition = eigenschaftsZugriff.findNodeInParents<AST.Definition.FunktionOderMethode.Methode>()!!
-    val klasse = methodenDefinition.klasse.typ!! as Typ.Klasse
-    return überprüfeEigenschaftInKlasse(eigenschaftsZugriff.eigenschaftsName, klasse)
+    return überprüfeEigenschaftInKlasse(eigenschaftsZugriff.eigenschaftsName, zuÜberprüfendeKlasse!!)
   }
 
   override fun evaluiereMethodenBlockEigenschaftsZugriff(eigenschaftsZugriff: AST.Ausdruck.MethodenBlockEigenschaftsZugriff): Typ {
     val methodenBlockObjekt = umgebung.holeMethodenBlockObjekt() as Typ.Klasse
-    return überprüfeEigenschaftInKlasse(eigenschaftsZugriff.eigenschaftsName, methodenBlockObjekt)
+    return überprüfeEigenschaftInKlasse(eigenschaftsZugriff.eigenschaftsName, methodenBlockObjekt.klassenDefinition)
   }
 
-  private fun überprüfeEigenschaftInKlasse(eigenschaftsName: AST.Nomen, klasse: Typ.Klasse): Typ {
-    for (eigenschaft in klasse.klassenDefinition.eigenschaften) {
+  private fun überprüfeEigenschaftInKlasse(eigenschaftsName: AST.Nomen, klasse: AST.Definition.Klasse): Typ {
+    for (eigenschaft in klasse.eigenschaften) {
       if (eigenschaftsName.nominativ!! == eigenschaft.name.nominativ!!) {
         return eigenschaft.typKnoten.typ!!
       }
     }
-    throw GermanScriptFehler.Undefiniert.Eigenschaft(eigenschaftsName.bezeichner.toUntyped(), klasse.name)
+    throw GermanScriptFehler.Undefiniert.Eigenschaft(eigenschaftsName.bezeichner.toUntyped(), klasse.name.nominativ!!)
   }
 
   override fun evaluiereBinärenAusdruck(ausdruck: AST.Ausdruck.BinärerAusdruck): Typ {

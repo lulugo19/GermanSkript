@@ -40,9 +40,10 @@ Nomen Person mit
     der Zeichenfolge Name,
     der Zeichenfolge Nachname,
     der Zahl Alter:
+
+    schreibe die Zeile "die Person " + "'" + meinen Namen + " " + meinen Nachnamen + "' wurde erstellt!"
 .
 die Person ist eine Person mit dem Namen "Lukas", dem Nachnamen "Gobelet", dem Alter 22
-schreibe die Zeile "die Person " + "'" + den Namen der Person + " " + den Nachnamen der Person + "' wurde erstellt!"
 
 // Funktion mit einem Objekt aufrufen
 schreibe den Bereich "Funktion mit einem Objekt als Argument aufrufen"

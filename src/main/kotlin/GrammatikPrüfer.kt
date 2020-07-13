@@ -263,7 +263,7 @@ class GrammatikPrüfer(dateiPfad: String): PipelineKomponente(dateiPfad) {
     }
   }
 
-  private fun prüfeFunktionsAufruf(funktionsAufruf: AST.FunktionsAufruf) {
+  private fun prüfeFunktionsAufruf(funktionsAufruf: AST.Aufruf.Funktion) {
     if (funktionsAufruf.objekt != null) {
       prüfeArgument(funktionsAufruf.objekt, EnumSet.of(Kasus.AKKUSATIV, Kasus.DATIV))
     }

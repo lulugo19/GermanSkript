@@ -22,7 +22,7 @@ class Definierer(dateiPfad: String): PipelineKomponente(dateiPfad) {
     }
   }
 
-  fun holeFunktionsDefinition(funktionsAufruf: AST.FunktionsAufruf): AST.Definition.FunktionOderMethode.Funktion{
+  fun holeFunktionsDefinition(funktionsAufruf: AST.Aufruf.Funktion): AST.Definition.FunktionOderMethode.Funktion{
     if (funktionsAufruf.vollerName == null) {
       funktionsAufruf.vollerName = holeVollenNamenVonFunktionsAufruf(funktionsAufruf, false)
     }
@@ -109,7 +109,7 @@ class Definierer(dateiPfad: String): PipelineKomponente(dateiPfad) {
     return vollerName
   }
 
-  fun holeVollenNamenVonFunktionsAufruf(funktionsAufruf: AST.FunktionsAufruf, ersetzeObjektMitReflexivPronomen: Boolean): String {
+  fun holeVollenNamenVonFunktionsAufruf(funktionsAufruf: AST.Aufruf.Funktion, ersetzeObjektMitReflexivPronomen: Boolean): String {
     // erkläre die Zeichenfolge mit der Zahl über die Zeile der Mond nach die Welt
     var vollerName = funktionsAufruf.verb.wert
     if (funktionsAufruf.objekt != null) {

@@ -2,7 +2,6 @@ import kotlinx.coroutines.*
 import java.io.File
 import java.util.LinkedList
 import java.lang.Integer.min
-import kotlin.math.floor
 
 data class Deklination(
     val genus: Genus,

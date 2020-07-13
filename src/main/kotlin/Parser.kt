@@ -24,9 +24,9 @@ enum class ASTKnotenID {
 }
 
 class Parser(dateiPfad: String): PipelineKomponente(dateiPfad) {
-  fun parse(): AST.Programm {
+  fun parse(): AST.Aufruf.Programm {
     val tokens = Peekable(Lexer(dateiPfad).tokeniziere().iterator())
-    val ast = SubParser.Programm.parse(tokens, Stack())
+    val ast = SubParser.Programm(true).parse(tokens, Stack())
     if (tokens.peek(0)!!.typ !is TokenTyp.EOF) {
       throw GermanScriptFehler.SyntaxFehler.ParseFehler(tokens.next()!!, "EOF")
     }
@@ -127,9 +127,9 @@ private sealed class SubParser<T: AST>() {
       // 'mein' darf nur in Methodendefinition vorkommen und 'dein' nur in Methodenblock
       when (vornomen.typ) {
         is TokenTyp.VORNOMEN.POSSESSIV_PRONOMEN.MEIN -> {
-          if (!hierarchyContainsNode(ASTKnotenID.METHODEN_DEFINITION)) {
+          if (!hierarchyContainsAnyNode(ASTKnotenID.METHODEN_DEFINITION, ASTKnotenID.KLASSEN_DEFINITION)) {
             throw GermanScriptFehler.SyntaxFehler.ParseFehler(vornomen.toUntyped(), null,
-              "Das Possessivpronomen '${vornomen.wert}' darf nur in Methodendefinitionen verwendet werden.")
+              "Das Possessivpronomen '${vornomen.wert}' darf nur in Methodendefinitionen oder in Konstruktoren verwendet werden.")
           }
         }
         is TokenTyp.VORNOMEN.POSSESSIV_PRONOMEN.DEIN -> {
@@ -287,14 +287,15 @@ private sealed class SubParser<T: AST>() {
     return result
   }
 
-  protected fun parseSätze(endToken: TokenTyp = TokenTyp.PUNKT): List<AST.Satz> =  parseBereich(endToken) { subParse(Programm) }.sätze
+  protected fun parseSätze(endToken: TokenTyp = TokenTyp.PUNKT): List<AST.Satz> =  parseBereich(endToken) { subParse(Programm(false)) }.sätze
   // endregion
 
-  object Programm: SubParser<AST.Programm>() {
+  class Programm(private val istProgrammStart: Boolean): SubParser<AST.Aufruf.Programm>() {
     override val id: ASTKnotenID
       get() = ASTKnotenID.PROGRAMM
 
-    override fun parseImpl(): AST.Programm {
+    override fun parseImpl(): AST.Aufruf.Programm {
+      val programmStart = if (istProgrammStart) next() else null
       val definitionen = mutableListOf<AST.Definition>()
       val sätze = mutableListOf<AST.Satz>()
 
@@ -309,7 +310,7 @@ private sealed class SubParser<T: AST>() {
           }
         }
       }
-      return AST.Programm(definitionen, sätze)
+      return AST.Aufruf.Programm(programmStart, definitionen, sätze)
     }
 
     fun parseSatz(): AST.Satz? {
@@ -476,17 +477,17 @@ private sealed class SubParser<T: AST>() {
     }
   }
 
-  object FunktionsAufruf: SubParser<AST.FunktionsAufruf>() {
+  object FunktionsAufruf: SubParser<AST.Aufruf.Funktion>() {
     override val id: ASTKnotenID
       get() = ASTKnotenID.FUNKTIONS_AUFRUF
 
-    override fun parseImpl(): AST.FunktionsAufruf {
+    override fun parseImpl(): AST.Aufruf.Funktion {
       val verb = expect<TokenTyp.BEZEICHNER_KLEIN>("bezeichner")
       val objekt = parseOptional<AST.Argument, TokenTyp.VORNOMEN>(::parseArgument)
       val reflexivPronomen = if (objekt == null) parseOptional<TokenTyp.REFLEXIV_PRONOMEN>() else null
       val präpositionen = parsePräpositionsArgumente()
       val suffix = parseOptional<TokenTyp.BEZEICHNER_KLEIN>()
-      return AST.FunktionsAufruf(verb, objekt, reflexivPronomen, präpositionen, suffix)
+      return AST.Aufruf.Funktion(verb, objekt, reflexivPronomen, präpositionen, suffix)
     }
 
     fun parsePräpositionsArgumente(): List<AST.PräpositionsArgumente> {
@@ -583,7 +584,7 @@ private sealed class SubParser<T: AST>() {
         while (peekType() is TokenTyp.SONST) {
           expect<TokenTyp.SONST>("'sonst'")
           if (peekType() !is TokenTyp.WENN) {
-            sätze = parseBereich {subParse(Programm)}.sätze
+            sätze = parseSätze()
             return AST.Satz.Bedingung(bedingungen, sätze)
           }
           expect<TokenTyp.WENN>("'wenn'")
@@ -751,8 +752,10 @@ private sealed class SubParser<T: AST>() {
         }
         val präpositionsParameter = parsePräpositionsParameter()
         val suffix = parseOptional<TokenTyp.BEZEICHNER_KLEIN>()
-        val programm = parseBereich {subParse(Programm)}
-        return AST.Definition.FunktionOderMethode.Funktion(rückgabeTyp?.let { AST.TypKnoten(AST.Nomen(null, it)) }, name, objekt, präpositionsParameter, suffix, programm.sätze)
+        val sätze = parseSätze()
+        return AST.Definition.FunktionOderMethode.Funktion(
+            rückgabeTyp?.let { AST.TypKnoten(AST.Nomen(null, it)) },
+            name, objekt, präpositionsParameter, suffix, sätze)
       }
 
       fun parseRückgabeTyp(): TypedToken<TokenTyp.BEZEICHNER_GROSS> {
@@ -796,8 +799,8 @@ private sealed class SubParser<T: AST>() {
           else -> emptyList()
         }
 
-        val konstruktor = parseSätze()
-        return AST.Definition.Klasse(name, elternKlasse, eingenschaften, konstruktor)
+        val konstruktorSätze = parseSätze()
+        return AST.Definition.Klasse(name, elternKlasse, eingenschaften, AST.Aufruf.Konstruktor(name, konstruktorSätze))
       }
 
     }

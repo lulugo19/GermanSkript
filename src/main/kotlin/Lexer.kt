@@ -81,6 +81,7 @@ sealed class TokenTyp(val anzeigeName: String) {
     override fun toString(): String = javaClass.simpleName
 
     object FEHLER: TokenTyp("'Fehler'")
+    object PROGRAMM_START: TokenTyp("'Programmstart'")
 
     // Schlüsselwörter
     object DEKLINATION: TokenTyp("'Deklination'")
@@ -283,8 +284,9 @@ class Lexer(datei: String): PipelineKomponente(datei) {
     private val bearbeiteteDateien = mutableSetOf<String>()
 
     fun tokeniziere(): Sequence<Token> = sequence {
-        dateiPfadSchlange.add("./stdbib/stdbib.gms")
+        yield(Token(TokenTyp.PROGRAMM_START, "Programmstart", dateiPfad, Token.Position(0, 0), Token.Position(0, 0)))
         dateiPfadSchlange.add(dateiPfad)
+        dateiPfadSchlange.add("./stdbib/stdbib.gms")
         while (dateiPfadSchlange.isNotEmpty()) {
             val nächsteDatei = dateiPfadSchlange.remove()
             bearbeiteteDateien.add(nächsteDatei)

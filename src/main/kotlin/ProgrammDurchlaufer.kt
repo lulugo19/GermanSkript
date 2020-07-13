@@ -69,7 +69,7 @@ abstract  class ProgrammDurchlaufer<T>(dateiPfad: String): PipelineKomponente(da
 
   protected abstract fun bevorDurchlaufeMethodenBlock(methodenBlock: AST.Satz.MethodenBlock, blockObjekt: T?)
   protected abstract fun sollSätzeAbbrechen(): Boolean
-  protected abstract fun durchlaufeFunktionsAufruf(funktionsAufruf: AST.FunktionsAufruf, istAusdruck: Boolean): T?
+  protected abstract fun durchlaufeFunktionsAufruf(funktionsAufruf: AST.Aufruf.Funktion, istAusdruck: Boolean): T?
   protected abstract fun durchlaufeZurückgabe(zurückgabe: AST.Satz.Zurückgabe)
   protected abstract fun durchlaufeBedingungsSatz(bedingungsSatz: AST.Satz.Bedingung)
   protected abstract fun durchlaufeAbbrechen()
