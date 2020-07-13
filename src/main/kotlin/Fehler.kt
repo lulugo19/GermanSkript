@@ -111,11 +111,11 @@ sealed class GermanScriptFehler(private val fehlerName: String, val token: Token
       override val nachricht: String
         get() = "Die Klasse '${token.wert}' ist schon in ${definition.name.bezeichner.position} definiert."
     }
+  }
 
-    class UnveränderlicheVariable(token: Token): DoppelteDefinition(token){
-      override val nachricht: String
-        get() = "Die Variable '${token.wert}' kann nicht erneut zugewiesen werden, da sie unveränderlich ist."
-    }
+  class UnveränderlicheVariable(token: Token): GermanScriptFehler("Variablenfehler", token){
+    override val nachricht: String
+      get() = "Die Variable '${token.wert}' kann nicht erneut zugewiesen werden, da sie unveränderlich ist."
   }
 
   class ReservierterTypName(token: Token): GermanScriptFehler("Reservierter Typname", token) {

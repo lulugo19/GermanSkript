@@ -35,11 +35,28 @@ class TypPrüfer(dateiPfad: String): ProgrammDurchlaufer<Typ>(dateiPfad) {
     val funktionsUmgebung = Umgebung<Typ>()
     funktionsUmgebung.pushBereich()
     for (parameter in funktion.parameter) {
-      funktionsUmgebung.schreibeVariable(parameter.name, parameter.typKnoten.typ!!)
+      funktionsUmgebung.schreibeVariable(parameter.name, parameter.typKnoten.typ!!, false)
     }
     umgebung = funktionsUmgebung
     zuÜberprüfendeFunktion = funktion
     durchlaufeSätze(funktion.sätze)
+  }
+
+  override fun durchlaufeVariablenDeklaration(deklaration: AST.Satz.VariablenDeklaration) {
+    if (deklaration.name.vornomen!!.typ is TokenTyp.VORNOMEN.ARTIKEL.BESTIMMT) {
+      val wert = evaluiereAusdruck(deklaration.ausdruck)
+      umgebung.schreibeVariable(deklaration.name, wert, false)
+    } else {
+      // hier müssen wir überprüfen ob der Typ der Variable, die überschrieben werden sollen gleich
+      // dem neuen Wert ist
+      val vorherigerTyp = umgebung.leseVariable(deklaration.name.nominativ!!)
+      val wert = if (vorherigerTyp != null) {
+        ausdruckMussTypSein(deklaration.ausdruck, vorherigerTyp)
+      } else {
+        evaluiereAusdruck(deklaration.ausdruck)
+      }
+      umgebung.überschreibeVariable(deklaration.name, wert)
+    }
   }
 
   override fun durchlaufeFunktionsAufruf(funktionsAufruf: AST.Aufruf.Funktion, istAusdruck: Boolean): Typ? {
@@ -159,7 +176,7 @@ class TypPrüfer(dateiPfad: String): ProgrammDurchlaufer<Typ>(dateiPfad) {
       evaluiereListenSingular(schleife.singular!!)
     }
     umgebung.pushBereich()
-    umgebung.schreibeVariable(schleife.binder, elementTyp)
+    umgebung.schreibeVariable(schleife.binder, elementTyp, false)
     durchlaufeSätze(schleife.sätze)
     umgebung.popBereich()
   }

@@ -8,13 +8,13 @@ Verb schreibe die Zeichenfolge Bereich:
 //Typ-Umwandlung
 schreibe den Bereich "Typ-Umwandlung"
 die Zeichenfolge ist "1,7239"
-die Zahl ist die Zeichenfolge als Zahl
+eine Zahl ist die Zeichenfolge als Zahl
 schreibe die Zahl
 
 // Binärer Ausdruck
 // Es ist jetzt möglich dass bei einem binären Ausdruck als Argument der erste Operand als Parametername erkannt wird
 schreibe den Bereich "Binärer Ausdruck"
-die Zahl ist 5
+eine Zahl ist 5
 schreibe die Zahl (die Zahl * 5) // so musste man es vorher schreiben
 schreibe die Zahl * 5            // jetzt kann man es so schreiben
 

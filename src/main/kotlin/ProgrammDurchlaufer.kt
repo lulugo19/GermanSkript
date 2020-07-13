@@ -50,15 +50,6 @@ abstract  class ProgrammDurchlaufer<T>(dateiPfad: String): PipelineKomponente(da
     }
   }
 
-  private fun durchlaufeVariablenDeklaration(deklaration: AST.Satz.VariablenDeklaration) {
-    val wert = evaluiereAusdruck(deklaration.ausdruck)
-    if (deklaration.name.vornomen!!.typ is TokenTyp.VORNOMEN.ARTIKEL.BESTIMMT) {
-      umgebung.schreibeVariable(deklaration.name, wert)
-    } else {
-      umgebung.überschreibeVariable(deklaration.name, wert)
-    }
-  }
-
   private fun durchlaufeMethodenBlock(methodenBlock: AST.Satz.MethodenBlock){
     val wert = evaluiereVariable(methodenBlock.name)
     bevorDurchlaufeMethodenBlock(methodenBlock, wert)
@@ -70,6 +61,7 @@ abstract  class ProgrammDurchlaufer<T>(dateiPfad: String): PipelineKomponente(da
   protected abstract fun bevorDurchlaufeMethodenBlock(methodenBlock: AST.Satz.MethodenBlock, blockObjekt: T?)
   protected abstract fun sollSätzeAbbrechen(): Boolean
   protected abstract fun durchlaufeFunktionsAufruf(funktionsAufruf: AST.Aufruf.Funktion, istAusdruck: Boolean): T?
+  protected abstract fun durchlaufeVariablenDeklaration(deklaration: AST.Satz.VariablenDeklaration)
   protected abstract fun durchlaufeZurückgabe(zurückgabe: AST.Satz.Zurückgabe)
   protected abstract fun durchlaufeBedingungsSatz(bedingungsSatz: AST.Satz.Bedingung)
   protected abstract fun durchlaufeAbbrechen()

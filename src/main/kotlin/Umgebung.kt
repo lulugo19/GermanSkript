@@ -21,8 +21,12 @@ class Umgebung<T>() {
     return null
   }
 
-  fun schreibeVariable(varName: AST.Nomen, wert: T) {
-    bereiche.peek()!!.variablen[varName.nominativ!!] = wert
+  fun schreibeVariable(varName: AST.Nomen, wert: T, überschreibe: Boolean) {
+    val variablen = bereiche.peek()!!.variablen
+    if (!überschreibe && variablen.containsKey(varName.nominativ!!)) {
+      throw GermanScriptFehler.UnveränderlicheVariable(varName.bezeichner.toUntyped())
+    }
+    variablen[varName.nominativ!!] = wert
   }
 
   fun überschreibeVariable(varName: AST.Nomen, wert: T) {
@@ -31,7 +35,7 @@ class Umgebung<T>() {
       bereich.variablen[varName.nominativ!!] = wert
     } else {
       // Fallback
-      schreibeVariable(varName, wert)
+      schreibeVariable(varName, wert, true)
     }
   }
 

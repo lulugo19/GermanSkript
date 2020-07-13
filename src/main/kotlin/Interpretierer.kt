@@ -96,12 +96,19 @@ class Interpretierer(dateiPfad: String): ProgrammDurchlaufer<Wert>(dateiPfad) {
       }
   }
 
+  override fun durchlaufeVariablenDeklaration(deklaration: AST.Satz.VariablenDeklaration) {
+    val wert = evaluiereAusdruck(deklaration.ausdruck)
+    // Da der Typprüfer schon überprüft ob Variablen überschrieben werden können
+    // werden hier die Variablen immer überschrieben
+    umgebung.schreibeVariable(deklaration.name, wert, true)
+  }
+
   override fun durchlaufeFunktionsAufruf(funktionsAufruf: AST.Aufruf.Funktion, istAusdruck: Boolean): Wert? {
     rückgabeWert = null
     val neueUmgebung = Umgebung<Wert>()
     neueUmgebung.pushBereich()
     for (argument in funktionsAufruf.argumente) {
-      neueUmgebung.schreibeVariable(argument.name, evaluiereAusdruck(argument.wert))
+      neueUmgebung.schreibeVariable(argument.name, evaluiereAusdruck(argument.wert), false)
     }
     val funktionsDefinition = funktionsAufruf.funktionsDefinition!!
     aufrufStapel.push(funktionsAufruf, neueUmgebung)
@@ -372,5 +379,3 @@ fun main() {
     throw fehler
   }
 }
-
-
