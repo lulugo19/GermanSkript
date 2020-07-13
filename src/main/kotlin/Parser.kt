@@ -253,7 +253,7 @@ private sealed class SubParser<T: AST>() {
         AST.Ausdruck.Konvertierung(ausdruck, AST.TypKnoten(typ))
       }
       is TokenTyp.OPERATOR -> {
-         if (inBinärenAusdruck) ausdruck else subParse(Ausdruck(ausdruck))
+         if (inBinärenAusdruck) ausdruck else subParse(Ausdruck(true, ausdruck))
       }
       else -> ausdruck
     }
@@ -270,7 +270,7 @@ private sealed class SubParser<T: AST>() {
         is TokenTyp.BEZEICHNER_KLEIN,
         is TokenTyp.GESCHLOSSENE_KLAMMER -> wert
 
-        else -> subParse(Ausdruck())
+        else -> subParse(Ausdruck(false))
       }
     }
     return AST.Argument(nomen, wert)
@@ -341,17 +341,17 @@ private sealed class SubParser<T: AST>() {
     }
   }
 
-  class Ausdruck(private val linkerAusdruck: AST.Ausdruck? = null): SubParser<AST.Ausdruck>() {
+  class Ausdruck constructor(private val mitVornomen: Boolean, private val linkerAusdruck: AST.Ausdruck? = null): SubParser<AST.Ausdruck>() {
     override val id: ASTKnotenID
       get() = ASTKnotenID.AUSDRUCK
 
     override fun parseImpl(): AST.Ausdruck {
-      return parseBinärenAusdruck(0.0, linkerAusdruck)
+      return parseBinärenAusdruck(0.0, mitVornomen, linkerAusdruck)
     }
 
     // pratt parsing: https://matklad.github.io/2020/04/13/simple-but-powerful-pratt-parsing.html
-    private fun parseBinärenAusdruck(minBindungskraft: Double, links: AST.Ausdruck? = null) : AST.Ausdruck {
-      var links = links?: parseEinzelnerAusdruck()
+    private fun parseBinärenAusdruck(minBindungskraft: Double, mitArtikel: Boolean, links: AST.Ausdruck? = null) : AST.Ausdruck {
+      var links = links?: parseEinzelnerAusdruck(mitArtikel)
 
       loop@ while (true) {
         val operator = when (val tokenTyp = peekType()) {
@@ -365,14 +365,14 @@ private sealed class SubParser<T: AST>() {
           break
         }
         val operatorToken = expect<TokenTyp.OPERATOR>("Operator")
-        val rechts = parseBinärenAusdruck(rechteBindungsKraft)
+        val rechts = parseBinärenAusdruck(rechteBindungsKraft, mitArtikel)
         links = AST.Ausdruck.BinärerAusdruck(operatorToken, links, rechts, minBindungskraft == 0.0)
       }
 
       return links
     }
 
-    private fun parseEinzelnerAusdruck(): AST.Ausdruck {
+    private fun parseEinzelnerAusdruck(mitArtikel: Boolean): AST.Ausdruck {
       val ausdruck = when (val tokenTyp = peekType()) {
         is TokenTyp.ZEICHENFOLGE -> AST.Ausdruck.Zeichenfolge(next().toTyped())
         is TokenTyp.ZAHL -> AST.Ausdruck.Zahl(next().toTyped())
@@ -392,10 +392,13 @@ private sealed class SubParser<T: AST>() {
             throw GermanScriptFehler.SyntaxFehler.ParseFehler(next(), null)
           } else {
             next()
-            AST.Ausdruck.Minus(parseEinzelnerAusdruck())
+            AST.Ausdruck.Minus(parseEinzelnerAusdruck(false))
           }
         }
-        is TokenTyp.BEZEICHNER_GROSS -> throw GermanScriptFehler.SyntaxFehler.ParseFehler(next(), "Artikel", "Vor einem Nomen muss ein Artikel stehen.")
+        is TokenTyp.BEZEICHNER_GROSS -> if (mitArtikel)
+            throw GermanScriptFehler.SyntaxFehler.ParseFehler(next(), "Artikel", "Vor einem Nomen muss ein Artikel stehen.")
+          else
+            AST.Ausdruck.Variable(parseNomen<TokenTyp.VORNOMEN>(false, ""))
         else -> throw GermanScriptFehler.SyntaxFehler.ParseFehler(next())
       }
       return when (peekType()){
@@ -416,7 +419,7 @@ private sealed class SubParser<T: AST>() {
 
       override fun parseImpl(): AST.Ausdruck.Liste {
         expect<TokenTyp.OFFENE_ECKIGE_KLAMMER>("'['")
-        val elemente = parseListeMitEnde<AST.Ausdruck, TokenTyp.KOMMA, TokenTyp.GESCHLOSSENE_ECKIGE_KLAMMER>(true) {subParse(Ausdruck())}
+        val elemente = parseListeMitEnde<AST.Ausdruck, TokenTyp.KOMMA, TokenTyp.GESCHLOSSENE_ECKIGE_KLAMMER>(true) {subParse(Ausdruck(true))}
         expect<TokenTyp.GESCHLOSSENE_ECKIGE_KLAMMER>("']'")
         return AST.Ausdruck.Liste(nomen, elemente)
       }
@@ -428,7 +431,7 @@ private sealed class SubParser<T: AST>() {
 
       override fun parseImpl(): AST.Ausdruck.ListenElement {
         expect<TokenTyp.OFFENE_ECKIGE_KLAMMER>("'['")
-        val index = subParse(Ausdruck())
+        val index = subParse(Ausdruck(false))
         expect<TokenTyp.GESCHLOSSENE_ECKIGE_KLAMMER>("']'")
         return AST.Ausdruck.ListenElement(nomen, index)
       }
@@ -522,7 +525,7 @@ private sealed class SubParser<T: AST>() {
       override fun parseImpl(): AST.Satz.VariablenDeklaration {
         val name = parseNomen<TokenTyp.VORNOMEN>(true, "Vornomen")
         val zuweisung = expect<TokenTyp.ZUWEISUNG>("Zuweisung")
-        val ausdruck = subParse(Ausdruck())
+        val ausdruck = subParse(Ausdruck(true))
         return AST.Satz.VariablenDeklaration(name, zuweisung, ausdruck)
       }
     }
@@ -557,7 +560,7 @@ private sealed class SubParser<T: AST>() {
 
       override fun parseImpl(): AST.Satz.Zurückgabe {
         parseKleinesSchlüsselwort("gebe")
-        val ausdruck = subParse(Ausdruck())
+        val ausdruck = subParse(Ausdruck(true))
         parseKleinesSchlüsselwort("zurück")
         return AST.Satz.Zurückgabe(ausdruck)
       }
@@ -571,7 +574,7 @@ private sealed class SubParser<T: AST>() {
         val bedingungen = mutableListOf<AST.Satz.BedingungsTerm>()
 
         expect<TokenTyp.WENN>("'wenn'")
-        var bedingung = subParse(Ausdruck())
+        var bedingung = subParse(Ausdruck(true))
         var sätze = parseSätze()
 
         bedingungen += AST.Satz.BedingungsTerm(bedingung, sätze)
@@ -584,7 +587,7 @@ private sealed class SubParser<T: AST>() {
             return AST.Satz.Bedingung(bedingungen, sätze)
           }
           expect<TokenTyp.WENN>("'wenn'")
-          bedingung = subParse(Ausdruck())
+          bedingung = subParse(Ausdruck(true))
           sätze = parseSätze()
           val bedingungsTerm = AST.Satz.BedingungsTerm(bedingung, sätze)
           bedingungen += bedingungsTerm
@@ -601,7 +604,7 @@ private sealed class SubParser<T: AST>() {
 
       override fun parseImpl(): AST.Satz.SolangeSchleife {
         expect<TokenTyp.SOLANGE>("'solange'")
-        val bedingung = subParse(Ausdruck())
+        val bedingung = subParse(Ausdruck(true))
         val sätze = parseSätze()
         return AST.Satz.SolangeSchleife(AST.Satz.BedingungsTerm(bedingung, sätze))
       }
