@@ -43,17 +43,17 @@ class TypPrüfer(dateiPfad: String): ProgrammDurchlaufer<Typ>(dateiPfad) {
 
   override fun durchlaufeFunktionsAufruf(funktionsAufruf: AST.FunktionsAufruf, istAusdruck: Boolean): Typ? {
     if (funktionsAufruf.vollerName == null) {
-      funktionsAufruf.vollerName = definierer.getVollerNameVonFunktionsAufruf(funktionsAufruf)
+      funktionsAufruf.vollerName = definierer.holeVollenNamenVonFunktionsAufruf(funktionsAufruf, false)
     }
     logger.addLine("prüfe Funktionsaufruf in ${funktionsAufruf.verb.position}: ${funktionsAufruf.vollerName!!}")
     val methodenBlockObjekt = umgebung.holeMethodenBlockObjekt()
 
-    // ist Methodenaufruf
+    // ist Methodenaufruf von Block-Variable
     if (methodenBlockObjekt is Typ.Klasse) {
       if (methodenBlockObjekt.klassenDefinition.methoden.containsKey(funktionsAufruf.vollerName!!)) {
         val methodenDefinition = methodenBlockObjekt.klassenDefinition.methoden.getValue(funktionsAufruf.vollerName!!).funktion
         funktionsAufruf.funktionsDefinition = methodenDefinition
-        funktionsAufruf.istMethodenAufruf = true
+        funktionsAufruf.aufrufTyp = FunktionsAufrufTyp.METHODEN_BLOCK_AUFRUF
       }
       else if (funktionsAufruf.reflexivPronomen != null && funktionsAufruf.reflexivPronomen.typ == TokenTyp.REFLEXIV_PRONOMEN.DICH) {
         throw GermanScriptFehler.Undefiniert.Methode(funktionsAufruf.verb.toUntyped(),
@@ -68,8 +68,7 @@ class TypPrüfer(dateiPfad: String): ProgrammDurchlaufer<Typ>(dateiPfad) {
         val klasse = zuÜberprüfendeKlasse!!
         if (klasse.methoden.containsKey(funktionsAufruf.vollerName!!)) {
           funktionsAufruf.funktionsDefinition = klasse.methoden.getValue(funktionsAufruf.vollerName!!).funktion
-          funktionsAufruf.istMethodenAufruf = true
-          funktionsAufruf.istSelbstAufruf = true
+          funktionsAufruf.aufrufTyp = FunktionsAufrufTyp.METHODEN_SELBST_AUFRUF
         } else if (funktionsAufruf.reflexivPronomen != null && funktionsAufruf.reflexivPronomen.typ == TokenTyp.REFLEXIV_PRONOMEN.MICH) {
           throw  GermanScriptFehler.Undefiniert.Methode(funktionsAufruf.verb.toUntyped(), funktionsAufruf, klasse.name.nominativ!!)
         }
@@ -77,8 +76,36 @@ class TypPrüfer(dateiPfad: String): ProgrammDurchlaufer<Typ>(dateiPfad) {
     }
 
     // ist normale Funktion
-    if (funktionsAufruf.funktionsDefinition == null) {
-      funktionsAufruf.funktionsDefinition = definierer.holeFunktionsDefinition(funktionsAufruf)
+    val undefiniertFehler = try {
+      if (funktionsAufruf.funktionsDefinition == null) {
+        funktionsAufruf.funktionsDefinition = definierer.holeFunktionsDefinition(funktionsAufruf)
+        null
+      } else {
+        null
+      }
+    } catch (fehler: GermanScriptFehler.Undefiniert.Funktion) {
+      fehler
+    }
+
+
+    // ist Methoden-Objekt-Aufruf als letzte Möglichkeit
+    // das bedeutet Funktionsnamen gehen vor Methoden-Objekt-Aufrufen
+    if (funktionsAufruf.funktionsDefinition == null && funktionsAufruf.objekt != null) {
+      try {
+        val klasse = typisierer.bestimmeTypen(funktionsAufruf.objekt.name)
+        if (klasse is Typ.Klasse) {
+          val methodenName = definierer.holeVollenNamenVonFunktionsAufruf(funktionsAufruf, true)
+          val klassenDefinition = klasse.klassenDefinition
+          if (klassenDefinition.methoden.containsKey(methodenName)) {
+            funktionsAufruf.vollerName = methodenName
+            funktionsAufruf.funktionsDefinition = klassenDefinition.methoden.getValue(methodenName).funktion
+            funktionsAufruf.aufrufTyp = FunktionsAufrufTyp.METHODEN_OBJEKT_AUFRUF
+          }
+        }
+      } catch (fehler: GermanScriptFehler.Undefiniert.Typ) {
+        // fange einfach nur den Fehler auf
+        throw undefiniertFehler!!
+      }
     }
 
     val funktionsDefinition = funktionsAufruf.funktionsDefinition!!
@@ -89,12 +116,16 @@ class TypPrüfer(dateiPfad: String): ProgrammDurchlaufer<Typ>(dateiPfad) {
 
     val parameter = funktionsDefinition.parameter
     val argumente = funktionsAufruf.argumente
-    if (argumente.size != parameter.size) {
+    val anzahlArgumente = argumente.size - if (funktionsAufruf.aufrufTyp == FunktionsAufrufTyp.METHODEN_OBJEKT_AUFRUF) 1 else 0
+    if (anzahlArgumente != parameter.size) {
       throw GermanScriptFehler.SyntaxFehler.AnzahlDerParameterFehler(funktionsDefinition.name.toUntyped())
     }
 
     // stimmen die Argument Typen mit den Parameter Typen überein?
     for (i in argumente.indices) {
+      if (funktionsAufruf.aufrufTyp == FunktionsAufrufTyp.METHODEN_OBJEKT_AUFRUF && i == 0) {
+        continue
+      }
       ausdruckMussTypSein(argumente[i].wert, parameter[i].typKnoten.typ!!)
     }
 

@@ -1,5 +1,3 @@
-import java.lang.Error
-
 class Definierer(dateiPfad: String): PipelineKomponente(dateiPfad) {
   val grammatikPrüfer = GrammatikPrüfer(dateiPfad)
   val ast = grammatikPrüfer.ast
@@ -26,7 +24,7 @@ class Definierer(dateiPfad: String): PipelineKomponente(dateiPfad) {
 
   fun holeFunktionsDefinition(funktionsAufruf: AST.FunktionsAufruf): AST.Definition.FunktionOderMethode.Funktion{
     if (funktionsAufruf.vollerName == null) {
-      funktionsAufruf.vollerName = getVollerNameVonFunktionsAufruf(funktionsAufruf)
+      funktionsAufruf.vollerName = holeVollenNamenVonFunktionsAufruf(funktionsAufruf, false)
     }
     return funktionsDefinitionsMapping.getOrElse(funktionsAufruf.vollerName!!) {
       throw GermanScriptFehler.Undefiniert.Funktion(funktionsAufruf.verb.toUntyped(), funktionsAufruf)
@@ -54,7 +52,7 @@ class Definierer(dateiPfad: String): PipelineKomponente(dateiPfad) {
   }
 
   private fun definiereFunktion(funktionsDefinition: AST.Definition.FunktionOderMethode.Funktion) {
-    val vollerName = getVollerNameVonFunktionsDefinition(funktionsDefinition, null)
+    val vollerName = holeVollenNameVonFunktionsDefinition(funktionsDefinition, null)
     if (funktionsDefinitionsMapping.containsKey(vollerName)) {
       throw GermanScriptFehler.DoppelteDefinition.Funktion(
           funktionsDefinition.name.toUntyped(),
@@ -66,7 +64,7 @@ class Definierer(dateiPfad: String): PipelineKomponente(dateiPfad) {
   }
 
   private fun definiereMethode(methodenDefinition: AST.Definition.FunktionOderMethode.Methode) {
-    val vollerName = getVollerNameVonFunktionsDefinition(methodenDefinition.funktion, methodenDefinition.reflexivPronomen)
+    val vollerName = holeVollenNameVonFunktionsDefinition(methodenDefinition.funktion, methodenDefinition.reflexivPronomen)
     val klasse = try {
       holeKlassenDefinition(methodenDefinition.klasse.name.nominativ!!)
     } catch (error: Exception ) {
@@ -84,7 +82,9 @@ class Definierer(dateiPfad: String): PipelineKomponente(dateiPfad) {
     klasse.methoden[vollerName] = methodenDefinition
   }
 
-  private fun getVollerNameVonFunktionsDefinition(funktionsDefinition: AST.Definition.FunktionOderMethode.Funktion, reflexivPronomen: TypedToken<TokenTyp.REFLEXIV_PRONOMEN>?): String {
+  private fun holeVollenNameVonFunktionsDefinition(
+      funktionsDefinition: AST.Definition.FunktionOderMethode.Funktion,
+      reflexivPronomen: TypedToken<TokenTyp.REFLEXIV_PRONOMEN>?): String {
     var vollerName = funktionsDefinition.name.wert
     if (funktionsDefinition.objekt != null) {
       val objekt = funktionsDefinition.objekt
@@ -109,12 +109,21 @@ class Definierer(dateiPfad: String): PipelineKomponente(dateiPfad) {
     return vollerName
   }
 
-  fun getVollerNameVonFunktionsAufruf(funktionsAufruf: AST.FunktionsAufruf): String {
+  fun holeVollenNamenVonFunktionsAufruf(funktionsAufruf: AST.FunktionsAufruf, ersetzeObjektMitReflexivPronomen: Boolean): String {
     // erkläre die Zeichenfolge mit der Zahl über die Zeile der Mond nach die Welt
     var vollerName = funktionsAufruf.verb.wert
     if (funktionsAufruf.objekt != null) {
       val objekt = funktionsAufruf.objekt
-      vollerName += " " + objekt.name.vornomenString!! + " " + objekt.name.bezeichner.wert
+      if (ersetzeObjektMitReflexivPronomen) {
+        val reflexivPronomen = when (objekt.name.fälle.first()) {
+          Kasus.AKKUSATIV -> "mich"
+          Kasus.DATIV -> "mir"
+          else -> throw Exception("Dieser Fall sollte nie eintreten, da der Grammatikprüfer dies überprüfen sollte. ${objekt.name.bezeichner}")
+        }
+        vollerName += " $reflexivPronomen"
+      } else {
+        vollerName += " " + objekt.name.vornomenString!! + " " + objekt.name.bezeichner.wert
+      }
     } else if (funktionsAufruf.reflexivPronomen != null) {
       val reflexivPronomen = funktionsAufruf.reflexivPronomen
       val pronomen = if(reflexivPronomen.typ == TokenTyp.REFLEXIV_PRONOMEN.MICH) {

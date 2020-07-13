@@ -110,7 +110,11 @@ class Typisierer(dateiPfad: String): PipelineKomponente(dateiPfad) {
       "Zahl" -> Typ.Zahl
       "Zeichenfolge"  -> Typ.Zeichenfolge
       "Boolean" -> Typ.Boolean
-      else -> Typ.Klasse(definierer.holeKlassenDefinition(typ))
+      else -> try {
+        Typ.Klasse(definierer.holeKlassenDefinition(typ))
+      } catch (fehler: NoSuchElementException) {
+        null
+      }
     }
   }
 

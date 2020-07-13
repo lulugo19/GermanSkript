@@ -8,6 +8,13 @@ fun <T: AST> List<T>.visit(onVisit: (AST) -> Boolean): Boolean {
   return true
 }
 
+enum class FunktionsAufrufTyp {
+  FUNKTIONS_AUFRUF,
+  METHODEN_SELBST_AUFRUF,
+  METHODEN_BLOCK_AUFRUF,
+  METHODEN_OBJEKT_AUFRUF,
+}
+
 sealed class AST {
   open val children = emptySequence<AST>()
   var parent: AST? = null
@@ -66,7 +73,7 @@ sealed class AST {
     var numerus: Numerus? = null
     var fälle: EnumSet<Kasus> = EnumSet.noneOf(Kasus::class.java)
 
-    val geprüft = nominativ != null
+    val geprüft get() = nominativ != null
   }
 
 
@@ -261,8 +268,7 @@ sealed class AST {
     private val _argumente: MutableList<Argument> = mutableListOf()
     val argumente: List<Argument> = _argumente
     var funktionsDefinition: Definition.FunktionOderMethode.Funktion? = null
-    var istMethodenAufruf: Boolean = false
-    var istSelbstAufruf: Boolean = false
+    var aufrufTyp: FunktionsAufrufTyp = FunktionsAufrufTyp.FUNKTIONS_AUFRUF
 
     init {
       if (objekt != null) {

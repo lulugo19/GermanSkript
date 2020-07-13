@@ -265,7 +265,7 @@ class GrammatikPrüfer(dateiPfad: String): PipelineKomponente(dateiPfad) {
 
   private fun prüfeFunktionsAufruf(funktionsAufruf: AST.FunktionsAufruf) {
     if (funktionsAufruf.objekt != null) {
-      prüfeArgument(funktionsAufruf.objekt, EnumSet.of(Kasus.AKKUSATIV))
+      prüfeArgument(funktionsAufruf.objekt, EnumSet.of(Kasus.AKKUSATIV, Kasus.DATIV))
     }
     for (präposition in funktionsAufruf.präpositionsArgumente) {
       prüfePräpositionsArgumente(präposition)

@@ -1,7 +1,7 @@
 import java.text.ParseException
 import java.util.*
 
-class Interpreter(dateiPfad: String): ProgrammDurchlaufer<Wert>(dateiPfad) {
+class Interpretierer(dateiPfad: String): ProgrammDurchlaufer<Wert>(dateiPfad) {
   val typPrüfer = TypPrüfer(dateiPfad)
 
   override val definierer = typPrüfer.definierer
@@ -50,11 +50,12 @@ class Interpreter(dateiPfad: String): ProgrammDurchlaufer<Wert>(dateiPfad) {
 
     fun top(): AufrufStapelElement = stapel.peek()
     fun push(funktionsAufruf: AST.FunktionsAufruf, neueUmgebung: Umgebung<Wert>) {
-      val objekt = when {
-        funktionsAufruf.istSelbstAufruf -> stapel.peek().objekt
-        funktionsAufruf.istMethodenAufruf -> umgebung.holeMethodenBlockObjekt() as Wert.Objekt
-        else -> null
-      }
+      val objekt = when (funktionsAufruf.aufrufTyp) {
+        FunktionsAufrufTyp.FUNKTIONS_AUFRUF -> null
+        FunktionsAufrufTyp.METHODEN_SELBST_AUFRUF -> top().objekt
+        FunktionsAufrufTyp.METHODEN_BLOCK_AUFRUF -> top().umgebung.holeMethodenBlockObjekt()
+        FunktionsAufrufTyp.METHODEN_OBJEKT_AUFRUF -> evaluiereAusdruck(funktionsAufruf.objekt!!.wert)
+      } as Wert.Objekt?
       stapel.push(AufrufStapelElement(funktionsAufruf, objekt, neueUmgebung))
     }
 
@@ -363,7 +364,7 @@ class Interpreter(dateiPfad: String): ProgrammDurchlaufer<Wert>(dateiPfad) {
 }
 
 fun main() {
-  val interpreter = Interpreter("./iterationen/iter_2/code.gms")
+  val interpreter = Interpretierer("./iterationen/iter_2/code.gms")
   try {
     interpreter.interpretiere()
   } catch (fehler: GermanScriptFehler) {
