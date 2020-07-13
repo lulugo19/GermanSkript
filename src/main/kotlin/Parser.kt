@@ -119,10 +119,6 @@ private sealed class SubParser<T: AST>() {
 
   protected inline fun<reified VornomenT: TokenTyp.VORNOMEN> parseNomen(mitVornomen: Boolean, erwartetesVornomen: String): AST.Nomen {
     val vornomen = if (mitVornomen) expect<VornomenT>(erwartetesVornomen) else null
-    if (vornomen != null && vornomen.typ == TokenTyp.VORNOMEN.JEDE) {
-      throw GermanScriptFehler.SyntaxFehler.ParseFehler(vornomen.toUntyped(), null,
-          "Das Pronomen '${vornomen.wert}' darf nur in Für-Jede-Schleifen vorkommen.")
-    }
     if (vornomen != null && vornomen is TokenTyp.VORNOMEN.POSSESSIV_PRONOMEN) {
       // 'mein' darf nur in Methodendefinition vorkommen und 'dein' nur in Methodenblock
       when (vornomen.typ) {
@@ -241,7 +237,6 @@ private sealed class SubParser<T: AST>() {
           else -> subParse(NomenAusdruck.ObjektInstanziierung(nomen))
         }
       }
-      is TokenTyp.VORNOMEN.JEDE -> throw GermanScriptFehler.SyntaxFehler.ParseFehler(nomen.vornomen.toUntyped())
       TokenTyp.VORNOMEN.POSSESSIV_PRONOMEN.MEIN -> AST.Ausdruck.SelbstEigenschaftsZugriff(nomen)
       TokenTyp.VORNOMEN.POSSESSIV_PRONOMEN.DEIN -> AST.Ausdruck.MethodenBlockEigenschaftsZugriff(nomen)
     }
@@ -524,10 +519,17 @@ private sealed class SubParser<T: AST>() {
         get() = ASTKnotenID.VARIABLEN_DEKLARATION
 
       override fun parseImpl(): AST.Satz.VariablenDeklaration {
-        val name = parseNomen<TokenTyp.VORNOMEN>(true, "Vornomen")
+        val artikel = expect<TokenTyp.VORNOMEN.ARTIKEL>("Artikel")
+        val neu = if (artikel.typ == TokenTyp.VORNOMEN.ARTIKEL.UNBESTIMMT) {
+          parseOptional<TokenTyp.NEU>()
+        } else {
+          null
+        }
+        val name = expect<TokenTyp.BEZEICHNER_GROSS>("Bezeichner")
+        val nomen = AST.Nomen(artikel, name)
         val zuweisung = expect<TokenTyp.ZUWEISUNG>("Zuweisung")
         val ausdruck = subParse(Ausdruck(true))
-        return AST.Satz.VariablenDeklaration(name, zuweisung, ausdruck)
+        return AST.Satz.VariablenDeklaration(nomen, neu, zuweisung, ausdruck)
       }
     }
 
@@ -617,28 +619,21 @@ private sealed class SubParser<T: AST>() {
 
       override fun parseImpl(): AST.Satz.FürJedeSchleife {
         parseKleinesSchlüsselwort("für")
-        val nomen = AST.Nomen(
-            expect<TokenTyp.VORNOMEN.JEDE>("'jeder' oder 'jede' oder 'jedes'"),
-            expect("Bezeichner")
-        )
-        val peekToken = peek()
-        var liste: AST.Ausdruck.Liste? = null
-        var binder = nomen
-        when (peekToken.typ) {
-          is TokenTyp.DOPPELPUNKT -> null
-          is TokenTyp.BEZEICHNER_GROSS -> binder = AST.Nomen(null, next().toTyped())
+        val jede = expect<TokenTyp.JEDE>("'jeden', 'jede' oder 'jedes'")
+        val singular = parseNomen<TokenTyp.VORNOMEN>(false, "")
+        val binder = when (peekType()) {
+          is TokenTyp.BEZEICHNER_GROSS -> AST.Nomen(null, next().toTyped())
+          else -> singular
+        }
+        val liste = when(peekType()) {
           is TokenTyp.BEZEICHNER_KLEIN -> {
             parseKleinesSchlüsselwort("in")
-            liste = subParse(
-                NomenAusdruck.Liste(parseNomen<TokenTyp.VORNOMEN.ARTIKEL.UNBESTIMMT>(
-                    true, "unbestimmter Artikel")
-                )
-            )
+            subParse(Ausdruck(true))
           }
-          else -> throw GermanScriptFehler.SyntaxFehler.ParseFehler(next(), "':' oder 'in'")
+          else -> null
         }
         val sätze = parseSätze()
-        return AST.Satz.FürJedeSchleife(binder, if(liste == null) nomen else null, liste, sätze)
+        return AST.Satz.FürJedeSchleife(jede, singular, binder, liste, sätze)
       }
     }
 

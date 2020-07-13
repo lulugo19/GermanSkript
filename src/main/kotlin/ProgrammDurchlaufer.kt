@@ -4,8 +4,7 @@ abstract  class ProgrammDurchlaufer<T>(dateiPfad: String): PipelineKomponente(da
   protected abstract val umgebung: Umgebung<T>
 
   // region Sätze
-  protected fun durchlaufeSätze(sätze: List<AST.Satz>)  {
-    val neuerBereich = umgebung.istLeer
+  protected fun durchlaufeSätze(sätze: List<AST.Satz>, neuerBereich: Boolean)  {
     if (neuerBereich) {
       umgebung.pushBereich()
     }
@@ -54,7 +53,7 @@ abstract  class ProgrammDurchlaufer<T>(dateiPfad: String): PipelineKomponente(da
     val wert = evaluiereVariable(methodenBlock.name)
     bevorDurchlaufeMethodenBlock(methodenBlock, wert)
     umgebung.pushBereich(wert)
-    durchlaufeSätze(methodenBlock.sätze)
+    durchlaufeSätze(methodenBlock.sätze, true)
     umgebung.popBereich()
   }
 
@@ -90,12 +89,12 @@ abstract  class ProgrammDurchlaufer<T>(dateiPfad: String): PipelineKomponente(da
     }
   }
 
-  fun evaluiereVariable(name: AST.Nomen): T {
-    return umgebung.leseVariable(name)
+  private fun evaluiereVariable(name: AST.Nomen): T {
+    return umgebung.leseVariable(name).wert
   }
 
   fun evaluiereVariable(variable: String): T? {
-    return umgebung.leseVariable(variable)
+    return umgebung.leseVariable(variable)?.wert
   }
 
   protected abstract fun evaluiereZeichenfolge(ausdruck: AST.Ausdruck.Zeichenfolge): T

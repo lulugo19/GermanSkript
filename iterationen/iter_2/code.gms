@@ -107,6 +107,17 @@ für jede Zahl X:
 .
 schreibe die Zeile "Die Summe ist: " + die Summe als Zeichenfolge
 
+// Variablendeklrationen
+Deklination Femininum Singular(Variable, Variable, Variable, Variable) Plural(Variablen, Variablen, Variablen, Variablen)
+eine Variable ist "Erste Variable"
+wenn wahr:
+    schreibe die Zeile Variable // Erste Variable
+    eine Variable ist "Zweite Variable"
+    schreibe die Zeile Variable // Zweite Variable
+    eine neue Variable ist "Dritte Variable"
+    schreibe die Zeile Variable // Dritte Variable
+.
+schreibe die Zeile Variable // Zweite Variable
 
 /*
 // Stack Overflow Handling

@@ -17,7 +17,7 @@ class Interpretierer(dateiPfad: String): ProgrammDurchlaufer<Wert>(dateiPfad) {
     typPrüfer.prüfe()
     try {
       aufrufStapel.push(ast, Umgebung())
-      durchlaufeSätze(ast.sätze)
+      durchlaufeSätze(ast.sätze, true)
     } catch (stackOverflow: StackOverflowError) {
       throw GermanScriptFehler.LaufzeitFehler(
           aufrufStapel.top().aufruf.token,
@@ -89,7 +89,7 @@ class Interpretierer(dateiPfad: String): ProgrammDurchlaufer<Wert>(dateiPfad) {
   // region Sätze
   private fun durchlaufeBedingung(bedingung: AST.Satz.BedingungsTerm): Boolean {
       return if ((evaluiereAusdruck(bedingung.bedingung) as Wert.Boolean).boolean) {
-        durchlaufeSätze(bedingung.sätze)
+        durchlaufeSätze(bedingung.sätze, true)
         true
       } else {
         false
@@ -100,7 +100,11 @@ class Interpretierer(dateiPfad: String): ProgrammDurchlaufer<Wert>(dateiPfad) {
     val wert = evaluiereAusdruck(deklaration.ausdruck)
     // Da der Typprüfer schon überprüft ob Variablen überschrieben werden können
     // werden hier die Variablen immer überschrieben
-    umgebung.schreibeVariable(deklaration.name, wert, true)
+    if (deklaration.name.unveränderlich || deklaration.neu != null) {
+      umgebung.schreibeVariable(deklaration.name, wert, !deklaration.name.unveränderlich)
+    } else {
+      umgebung.überschreibeVariable(deklaration.name, wert)
+    }
   }
 
   override fun durchlaufeFunktionsAufruf(funktionsAufruf: AST.Aufruf.Funktion, istAusdruck: Boolean): Wert? {
@@ -112,7 +116,7 @@ class Interpretierer(dateiPfad: String): ProgrammDurchlaufer<Wert>(dateiPfad) {
     }
     val funktionsDefinition = funktionsAufruf.funktionsDefinition!!
     aufrufStapel.push(funktionsAufruf, neueUmgebung)
-    durchlaufeSätze(funktionsDefinition.sätze)
+    durchlaufeSätze(funktionsDefinition.sätze, false)
     aufrufStapel.pop()
     return funktionsDefinition.rückgabeTyp?.let { rückgabeWert }
   }
@@ -126,14 +130,14 @@ class Interpretierer(dateiPfad: String): ProgrammDurchlaufer<Wert>(dateiPfad) {
     val inBedingung = bedingungsSatz.bedingungen.any(::durchlaufeBedingung)
 
     if (!inBedingung && bedingungsSatz.sonst != null ) {
-      durchlaufeSätze(bedingungsSatz.sonst)
+      durchlaufeSätze(bedingungsSatz.sonst, true)
     }
   }
 
   override fun durchlaufeSolangeSchleife(schleife: AST.Satz.SolangeSchleife) {
     while (!flags.contains(Flag.SCHLEIFE_ABBRECHEN) && (evaluiereAusdruck(schleife.bedingung.bedingung) as Wert.Boolean).boolean) {
       flags.remove(Flag.SCHLEIFE_FORTFAHREN)
-      durchlaufeSätze(schleife.bedingung.sätze)
+      durchlaufeSätze(schleife.bedingung.sätze, true)
     }
     flags.remove(Flag.SCHLEIFE_ABBRECHEN)
   }
@@ -142,13 +146,13 @@ class Interpretierer(dateiPfad: String): ProgrammDurchlaufer<Wert>(dateiPfad) {
     val liste = if (schleife.liste != null)  {
       evaluiereAusdruck(schleife.liste) as Wert.Liste
     } else {
-      evaluiereVariable(schleife.singular!!.nominativPlural!!)!! as Wert.Liste
+      evaluiereVariable(schleife.singular.nominativPlural!!)!! as Wert.Liste
     }
     umgebung.pushBereich()
     for (element in liste.elemente) {
       flags.remove(Flag.SCHLEIFE_FORTFAHREN)
       umgebung.überschreibeVariable(schleife.binder, element)
-      durchlaufeSätze(schleife.sätze)
+      durchlaufeSätze(schleife.sätze, true)
       if (flags.contains(Flag.SCHLEIFE_ABBRECHEN)) {
         flags.remove(Flag.SCHLEIFE_ABBRECHEN)
         break
@@ -174,7 +178,6 @@ class Interpretierer(dateiPfad: String): ProgrammDurchlaufer<Wert>(dateiPfad) {
   // endregion
 
   // region Ausdrücke
-
   override fun evaluiereZeichenfolge(ausdruck: AST.Ausdruck.Zeichenfolge): Wert {
     return ausdruck.zeichenfolge.typ.zeichenfolge
   }
@@ -200,7 +203,7 @@ class Interpretierer(dateiPfad: String): ProgrammDurchlaufer<Wert>(dateiPfad) {
     val objekt = Wert.Objekt(klassenDefinition, eigenschaften)
     val konstruktor = klassenDefinition.konstruktor
     aufrufStapel.push(klassenDefinition.konstruktor, Umgebung(), objekt)
-    durchlaufeSätze(konstruktor.sätze)
+    durchlaufeSätze(konstruktor.sätze, true)
     aufrufStapel.pop()
     return objekt
   }
@@ -306,17 +309,17 @@ class Interpretierer(dateiPfad: String): ProgrammDurchlaufer<Wert>(dateiPfad) {
   // region interne Funktionen
   private val interneFunktionen = mapOf<String, () -> (Unit)>(
       "schreibe die Zeichenfolge" to {
-        val zeichenfolge = umgebung.leseVariable("Zeichenfolge") as Wert.Zeichenfolge
+        val zeichenfolge = umgebung.leseVariable("Zeichenfolge")!!.wert as Wert.Zeichenfolge
         print(zeichenfolge)
       },
 
       "schreibe die Zeile" to {
-        val zeile = umgebung.leseVariable("Zeile") as Wert.Zeichenfolge
+        val zeile = umgebung.leseVariable("Zeile")!!.wert as Wert.Zeichenfolge
         println(zeile)
       },
 
       "schreibe die Zahl" to {
-        val zahl = umgebung.leseVariable("Zahl") as Wert.Zahl
+        val zahl = umgebung.leseVariable("Zahl")!!.wert as Wert.Zahl
         println(zahl)
       },
 

@@ -60,6 +60,7 @@ sealed class AST {
     var fälle: EnumSet<Kasus> = EnumSet.noneOf(Kasus::class.java)
 
     val geprüft get() = nominativ != null
+    val unveränderlich = vornomen?.typ == TokenTyp.VORNOMEN.ARTIKEL.BESTIMMT
   }
 
 
@@ -154,7 +155,9 @@ sealed class AST {
     data class TypUndName(
         val typKnoten: TypKnoten,
         val name: Nomen
-    )
+    ) {
+      val istUnveränderlich get() = name.vornomen!!.typ == TokenTyp.VORNOMEN.ARTIKEL.BESTIMMT
+    }
 
     data class PräpositionsParameter(
         val präposition: Präposition,
@@ -218,6 +221,7 @@ sealed class AST {
 
     data class VariablenDeklaration(
         val name: Nomen,
+        val neu: TypedToken<TokenTyp.NEU>?,
         val zuweisungsOperator: TypedToken<TokenTyp.ZUWEISUNG>,
         val ausdruck: Ausdruck
     ): Satz() {
@@ -255,9 +259,10 @@ sealed class AST {
     }
 
     data class FürJedeSchleife(
+        val jede: TypedToken<TokenTyp.JEDE>,
+        val singular: Nomen,
         val binder: Nomen,
-        val singular: Nomen?,
-        val liste: Ausdruck.Liste?,
+        val liste: Ausdruck?,
         val sätze: List<Satz>
     ): Satz() {
       override val children = sequence {

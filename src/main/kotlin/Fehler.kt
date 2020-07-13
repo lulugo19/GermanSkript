@@ -89,11 +89,6 @@ sealed class GermanScriptFehler(private val fehlerName: String, val token: Token
       override val nachricht: String
         get() = "Falscher Numerus. Das Nomen muss im ${numerus.anzeigeName} '$erwartetesNomen' stehen."
     }
-
-    class FalschesSingular(token: Token, private val plural: String, private val erwartet: String): GrammatikFehler(token) {
-      override val nachricht: String
-        get() = "Falsches Singular. Das Singular von '$plural' ist im Akkusativ '$erwartet'."
-    }
   }
 
   sealed class DoppelteDefinition(token: Token): GermanScriptFehler("Definitionsfehler", token) {
@@ -113,9 +108,8 @@ sealed class GermanScriptFehler(private val fehlerName: String, val token: Token
     }
   }
 
-  class UnveränderlicheVariable(token: Token): GermanScriptFehler("Variablenfehler", token){
-    override val nachricht: String
-      get() = "Die Variable '${token.wert}' kann nicht erneut zugewiesen werden, da sie unveränderlich ist."
+  class Variablenfehler(token: Token, deklaration: AST.Nomen): GermanScriptFehler("VariablenFehler", token) {
+    override val nachricht = "Die Variable '${token.wert}' ist schon in ${deklaration.bezeichner.anfang} deklariert und kann nicht erneut deklariert werden."
   }
 
   class ReservierterTypName(token: Token): GermanScriptFehler("Reservierter Typname", token) {
@@ -157,9 +151,9 @@ sealed class GermanScriptFehler(private val fehlerName: String, val token: Token
   }
 
   sealed class TypFehler(token: Token): GermanScriptFehler("Typfehler", token) {
-    class FalscherTyp(token: Token, private val erwarteterTyp: Typ): TypFehler(token) {
+    class FalscherTyp(token: Token, private val erwarteterTyp: String): TypFehler(token) {
       override val nachricht: String
-        get() = "Falscher Typ. Erwartet wird der Typ '${erwarteterTyp.name}'."
+        get() = "Falscher Typ. Erwartet wird der Typ '$erwarteterTyp'."
     }
 
     class ObjektErwartet(token: Token): TypFehler(token) {

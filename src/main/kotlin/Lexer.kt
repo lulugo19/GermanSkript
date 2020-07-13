@@ -115,12 +115,31 @@ sealed class TokenTyp(val anzeigeName: String) {
             object MEIN: POSSESSIV_PRONOMEN("Ich")
             object DEIN: POSSESSIV_PRONOMEN("Du")
         }
-        object JEDE: VORNOMEN("'jeder' oder 'jede' oder 'jedes'")
     }
 
     sealed class REFLEXIV_PRONOMEN(pronomen: String): TokenTyp("Reflexivpronomen ('$pronomen')") {
         object MICH: REFLEXIV_PRONOMEN("Ich")
         object DICH: REFLEXIV_PRONOMEN("Du")
+    }
+
+    data class NEU(val genus: Genus): TokenTyp("'neuer', 'neue' oder 'neues'") {
+        companion object {
+            fun holeForm(genus: Genus) = when (genus) {
+                Genus.MASKULINUM -> "neuer"
+                Genus.FEMININUM -> "neue"
+                Genus.NEUTRUM -> "neues"
+            }
+        }
+    }
+
+    data class JEDE(val genus: Genus): TokenTyp("'jeder' oder 'jede' oder 'jedes'") {
+        companion object {
+            fun holeForm(genus: Genus) = when(genus) {
+                Genus.MASKULINUM -> "jeder"
+                Genus.FEMININUM -> "jede"
+                Genus.NEUTRUM -> "jedes"
+            }
+        }
     }
 
     //Symbole
@@ -264,9 +283,14 @@ private val WORT_MAPPING = mapOf<String, TokenTyp>(
     "dich" to TokenTyp.REFLEXIV_PRONOMEN.DICH,
     "dir" to TokenTyp.REFLEXIV_PRONOMEN.DICH,
 
-    "jede" to TokenTyp.VORNOMEN.JEDE,
-    "jeden" to TokenTyp.VORNOMEN.JEDE,
-    "jedes" to TokenTyp.VORNOMEN.JEDE
+    "jeden" to TokenTyp.JEDE(Genus.MASKULINUM),
+    "jede" to TokenTyp.JEDE(Genus.FEMININUM),
+    "jedes" to TokenTyp.JEDE(Genus.NEUTRUM),
+
+    // neu
+    "neuer" to TokenTyp.NEU(Genus.MASKULINUM),
+    "neue" to TokenTyp.NEU(Genus.FEMININUM),
+    "neues" to TokenTyp.NEU(Genus.NEUTRUM)
 )
 
 class Lexer(datei: String): PipelineKomponente(datei) {

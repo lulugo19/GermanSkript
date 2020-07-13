@@ -12,18 +12,18 @@ class TypPrüfer(dateiPfad: String): ProgrammDurchlaufer<Typ>(dateiPfad) {
 
   fun prüfe() {
     typisierer.typisiere()
-    durchlaufeSätze(ast.sätze)
+    durchlaufeSätze(ast.sätze, true)
     definierer.funktionsDefinitionen.forEach(::prüfeFunktion)
     definierer.klassenDefinitionen.forEach { klasse ->
       zuÜberprüfendeKlasse = klasse
-      durchlaufeSätze(klasse.konstruktor.sätze)
+      durchlaufeSätze(klasse.konstruktor.sätze, true)
       klasse.methoden.values.forEach {methode -> prüfeFunktion(methode.funktion)}
     }
   }
 
   private fun ausdruckMussTypSein(ausdruck: AST.Ausdruck, erwarteterTyp: Typ): Typ {
     if (evaluiereAusdruck(ausdruck) != erwarteterTyp) {
-      throw GermanScriptFehler.TypFehler.FalscherTyp(holeErstesTokenVonAusdruck(ausdruck), erwarteterTyp)
+      throw GermanScriptFehler.TypFehler.FalscherTyp(holeErstesTokenVonAusdruck(ausdruck), erwarteterTyp.name)
     }
     return erwarteterTyp
   }
@@ -39,19 +39,22 @@ class TypPrüfer(dateiPfad: String): ProgrammDurchlaufer<Typ>(dateiPfad) {
     }
     umgebung = funktionsUmgebung
     zuÜberprüfendeFunktion = funktion
-    durchlaufeSätze(funktion.sätze)
+    durchlaufeSätze(funktion.sätze, true)
   }
 
   override fun durchlaufeVariablenDeklaration(deklaration: AST.Satz.VariablenDeklaration) {
-    if (deklaration.name.vornomen!!.typ is TokenTyp.VORNOMEN.ARTIKEL.BESTIMMT) {
+    if (deklaration.name.unveränderlich || deklaration.neu != null) {
       val wert = evaluiereAusdruck(deklaration.ausdruck)
-      umgebung.schreibeVariable(deklaration.name, wert, false)
+      umgebung.schreibeVariable(deklaration.name, wert, !deklaration.name.unveränderlich)
     } else {
       // hier müssen wir überprüfen ob der Typ der Variable, die überschrieben werden sollen gleich
       // dem neuen Wert ist
       val vorherigerTyp = umgebung.leseVariable(deklaration.name.nominativ!!)
       val wert = if (vorherigerTyp != null) {
-        ausdruckMussTypSein(deklaration.ausdruck, vorherigerTyp)
+        if (vorherigerTyp.name.unveränderlich) {
+          throw GermanScriptFehler.Variablenfehler(deklaration.name.bezeichner.toUntyped(), vorherigerTyp.name)
+        }
+        ausdruckMussTypSein(deklaration.ausdruck, vorherigerTyp.wert)
       } else {
         evaluiereAusdruck(deklaration.ausdruck)
       }
@@ -157,12 +160,12 @@ class TypPrüfer(dateiPfad: String): ProgrammDurchlaufer<Typ>(dateiPfad) {
 
   private fun prüfeBedingung(bedingung: AST.Satz.BedingungsTerm) {
     ausdruckMussTypSein(bedingung.bedingung, Typ.Boolean)
-    durchlaufeSätze(bedingung.sätze)
+    durchlaufeSätze(bedingung.sätze, true)
   }
 
   override fun durchlaufeBedingungsSatz(bedingungsSatz: AST.Satz.Bedingung) {
     bedingungsSatz.bedingungen.forEach(::prüfeBedingung)
-    bedingungsSatz.sonst?.also {durchlaufeSätze(it)}
+    bedingungsSatz.sonst?.also {durchlaufeSätze(it, true)}
   }
 
   override fun durchlaufeSolangeSchleife(schleife: AST.Satz.SolangeSchleife) {
@@ -171,13 +174,17 @@ class TypPrüfer(dateiPfad: String): ProgrammDurchlaufer<Typ>(dateiPfad) {
 
   override fun durchlaufeFürJedeSchleife(schleife: AST.Satz.FürJedeSchleife) {
     val elementTyp = if (schleife.liste != null) {
-      (evaluiereListe(schleife.liste) as Typ.Liste).elementTyp
+      val liste = evaluiereAusdruck(schleife.liste)
+      if (liste !is Typ.Liste) {
+        throw GermanScriptFehler.TypFehler.FalscherTyp(holeErstesTokenVonAusdruck(schleife.liste), "Liste")
+      }
+      liste.elementTyp
     } else {
-      evaluiereListenSingular(schleife.singular!!)
+      evaluiereListenSingular(schleife.singular)
     }
     umgebung.pushBereich()
     umgebung.schreibeVariable(schleife.binder, elementTyp, false)
-    durchlaufeSätze(schleife.sätze)
+    durchlaufeSätze(schleife.sätze, true)
     umgebung.popBereich()
   }
 

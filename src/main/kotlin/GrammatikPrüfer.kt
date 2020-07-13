@@ -180,6 +180,13 @@ class GrammatikPrüfer(dateiPfad: String): PipelineKomponente(dateiPfad) {
     if (!variablenDeklaration.zuweisungsOperator.typ.numerus.contains(nomen.numerus!!)) {
       throw GermanScriptFehler.GrammatikFehler.FalscheZuweisung(variablenDeklaration.zuweisungsOperator.toUntyped(), nomen.numerus!!)
     }
+    if (variablenDeklaration.neu != null) {
+      if (nomen.genus!! != variablenDeklaration.neu.typ.genus) {
+        throw GermanScriptFehler.GrammatikFehler.FormFehler.FalschesVornomen(
+            variablenDeklaration.neu.toUntyped(), Kasus.NOMINATIV, nomen, TokenTyp.JEDE.holeForm(nomen.genus!!)
+        )
+      }
+    }
     // logger.addLine("geprüft: $variablenDeklaration")
     prüfeKontextbasiertenAusdruck(variablenDeklaration.ausdruck, nomen, EnumSet.of(Kasus.NOMINATIV))
   }
@@ -195,14 +202,20 @@ class GrammatikPrüfer(dateiPfad: String): PipelineKomponente(dateiPfad) {
   }
 
   private fun prüfeFürJedeSchleife(fürJedeSchleife: AST.Satz.FürJedeSchleife) {
-    prüfeNomen(fürJedeSchleife.binder, EnumSet.of(Kasus.AKKUSATIV))
+    prüfeNomen(fürJedeSchleife.singular, EnumSet.of(Kasus.AKKUSATIV))
+    prüfeNumerus(fürJedeSchleife.singular, Numerus.SINGULAR)
+    if (fürJedeSchleife.jede.typ.genus != fürJedeSchleife.singular.genus!!) {
+      throw GermanScriptFehler.GrammatikFehler.FormFehler.FalschesVornomen(
+          fürJedeSchleife.jede.toUntyped(), Kasus.NOMINATIV, fürJedeSchleife.singular,
+          TokenTyp.JEDE.holeForm(fürJedeSchleife.singular.genus!!)
+      )
+    }
+
+    prüfeNomen(fürJedeSchleife.binder, EnumSet.of(Kasus.NOMINATIV))
     prüfeNumerus(fürJedeSchleife.binder, Numerus.SINGULAR)
+
     if (fürJedeSchleife.liste != null) {
-      prüfeNomen(fürJedeSchleife.liste.pluralTyp, EnumSet.of(Kasus.DATIV))
-      prüfeNumerus(fürJedeSchleife.liste.pluralTyp, Numerus.PLURAL)
-    } else if (fürJedeSchleife.singular != null)  {
-      prüfeNomen(fürJedeSchleife.singular, EnumSet.of(Kasus.AKKUSATIV))
-      prüfeNumerus(fürJedeSchleife.singular, Numerus.SINGULAR)
+      prüfeKontextbasiertenAusdruck(fürJedeSchleife.liste, fürJedeSchleife.singular, EnumSet.of(Kasus.DATIV))
     }
   }
 
@@ -294,13 +307,6 @@ private val VORNOMEN_TABELLE = mapOf<TokenTyp.VORNOMEN, Array<Array<String>>>(
         arrayOf("eines", "einer", "eines", "einiger"),
         arrayOf("einem", "einer", "einem", "einigen"),
         arrayOf("einen", "eine", "ein", "einige")
-    ),
-
-    TokenTyp.VORNOMEN.JEDE to arrayOf(
-        arrayOf("jeder", "jede", "jedes", "alle"),
-        arrayOf("jedes", "jeder", "jedes", "aller"),
-        arrayOf("jedem", "jeder", "jedem", "allen"),
-        arrayOf("jeden", "jede", "jedes", "alle")
     ),
 
     TokenTyp.VORNOMEN.POSSESSIV_PRONOMEN.MEIN to arrayOf(
