@@ -183,7 +183,7 @@ class GrammatikPrüfer(dateiPfad: String): PipelineKomponente(dateiPfad) {
     if (variablenDeklaration.neu != null) {
       if (nomen.genus!! != variablenDeklaration.neu.typ.genus) {
         throw GermanScriptFehler.GrammatikFehler.FormFehler.FalschesVornomen(
-            variablenDeklaration.neu.toUntyped(), Kasus.NOMINATIV, nomen, TokenTyp.JEDE.holeForm(nomen.genus!!)
+            variablenDeklaration.neu.toUntyped(), Kasus.NOMINATIV, nomen, TokenTyp.NEU.holeForm(nomen.genus!!)
         )
       }
     }
