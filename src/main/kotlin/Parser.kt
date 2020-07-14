@@ -326,7 +326,7 @@ private sealed class SubParser<T: AST>() {
       val nextToken = peek()
       return when (nextToken.typ) {
         is TokenTyp.INTERN -> subParse(Satz.Intern)
-        is TokenTyp.VORNOMEN.ARTIKEL.BESTIMMT, is TokenTyp.VORNOMEN.ARTIKEL.UNBESTIMMT -> subParse(Satz.VariablenDeklaration)
+        is TokenTyp.VORNOMEN -> subParse(Satz.VariablenDeklaration)
         is TokenTyp.WENN -> subParse(Satz.Bedingung)
         is TokenTyp.SOLANGE -> subParse(Satz.SolangeSchleife)
         is TokenTyp.FORTFAHREN, is TokenTyp.ABBRECHEN -> subParse(Satz.SchleifenKontrolle)
@@ -533,7 +533,12 @@ private sealed class SubParser<T: AST>() {
         get() = ASTKnotenID.VARIABLEN_DEKLARATION
 
       override fun parseImpl(): AST.Satz.VariablenDeklaration {
-        val artikel = expect<TokenTyp.VORNOMEN.ARTIKEL>("Artikel")
+        val artikel = expect<TokenTyp.VORNOMEN>("Artikel")
+        // man kann nur eigene Eigenschaften neu zuweisen
+        if (artikel.typ == TokenTyp.VORNOMEN.POSSESSIV_PRONOMEN.DEIN) {
+          throw GermanScriptFehler.SyntaxFehler.ParseFehler(artikel.toUntyped(), null, "Neuzuweisungen mit 'dein' funktionieren nicht.\n" +
+              "Man kann die Eigenschaften eines anderen Objekts nur lesen.")
+        }
         val neu = if (artikel.typ == TokenTyp.VORNOMEN.ARTIKEL.UNBESTIMMT) {
           parseOptional<TokenTyp.NEU>()
         } else {

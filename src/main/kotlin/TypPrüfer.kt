@@ -43,22 +43,32 @@ class TypPrüfer(dateiPfad: String): ProgrammDurchlaufer<Typ>(dateiPfad) {
   }
 
   override fun durchlaufeVariablenDeklaration(deklaration: AST.Satz.VariablenDeklaration) {
-    if (deklaration.name.unveränderlich || deklaration.neu != null) {
-      val wert = evaluiereAusdruck(deklaration.ausdruck)
-      umgebung.schreibeVariable(deklaration.name, wert, !deklaration.name.unveränderlich)
-    } else {
-      // hier müssen wir überprüfen ob der Typ der Variable, die überschrieben werden sollen gleich
-      // dem neuen Wert ist
-      val vorherigerTyp = umgebung.leseVariable(deklaration.name.nominativ)
-      val wert = if (vorherigerTyp != null) {
-        if (vorherigerTyp.name.unveränderlich) {
-          throw GermanScriptFehler.Variablenfehler(deklaration.name.bezeichner.toUntyped(), vorherigerTyp.name)
-        }
-        ausdruckMussTypSein(deklaration.ausdruck, vorherigerTyp.wert)
-      } else {
-        evaluiereAusdruck(deklaration.ausdruck)
+    if (deklaration.istEigenschaftsNeuZuweisung) {
+      val klasse = zuÜberprüfendeKlasse!!
+      val eigenschaft = holeEigenschaftAusKlasse(deklaration.name, klasse)
+      if (eigenschaft.name.unveränderlich) {
+        throw GermanScriptFehler.EigenschaftsFehler.EigenschaftUnveränderlich(deklaration.name.bezeichner.toUntyped())
       }
-      umgebung.überschreibeVariable(deklaration.name, wert)
+      val eigenschaftTyp = eigenschaft.typKnoten.typ!!
+      ausdruckMussTypSein(deklaration.ausdruck, eigenschaftTyp)
+    } else {
+      if (deklaration.name.unveränderlich || deklaration.neu != null) {
+        val wert = evaluiereAusdruck(deklaration.ausdruck)
+        umgebung.schreibeVariable(deklaration.name, wert, !deklaration.name.unveränderlich)
+      } else {
+        // hier müssen wir überprüfen ob der Typ der Variable, die überschrieben werden sollen gleich
+        // dem neuen Wert ist
+        val vorherigerTyp = umgebung.leseVariable(deklaration.name.nominativ)
+        val wert = if (vorherigerTyp != null) {
+          if (vorherigerTyp.name.unveränderlich) {
+            throw GermanScriptFehler.Variablenfehler(deklaration.name.bezeichner.toUntyped(), vorherigerTyp.name)
+          }
+          ausdruckMussTypSein(deklaration.ausdruck, vorherigerTyp.wert)
+        } else {
+          evaluiereAusdruck(deklaration.ausdruck)
+        }
+        umgebung.überschreibeVariable(deklaration.name, wert)
+      }
     }
   }
 
@@ -139,17 +149,15 @@ class TypPrüfer(dateiPfad: String): ProgrammDurchlaufer<Typ>(dateiPfad) {
 
     val parameter = funktionsDefinition.parameter
     val argumente = funktionsAufruf.argumente
-    val anzahlArgumente = argumente.size - if (funktionsAufruf.aufrufTyp == FunktionsAufrufTyp.METHODEN_OBJEKT_AUFRUF) 1 else 0
+    val j = if (funktionsAufruf.aufrufTyp == FunktionsAufrufTyp.METHODEN_OBJEKT_AUFRUF) 1 else 0
+    val anzahlArgumente = argumente.size - j
     if (anzahlArgumente != parameter.size) {
       throw GermanScriptFehler.SyntaxFehler.AnzahlDerParameterFehler(funktionsDefinition.name.toUntyped())
     }
 
     // stimmen die Argument Typen mit den Parameter Typen überein?
-    for (i in argumente.indices) {
-      if (funktionsAufruf.aufrufTyp == FunktionsAufrufTyp.METHODEN_OBJEKT_AUFRUF && i == 0) {
-        continue
-      }
-      ausdruckMussTypSein(argumente[i].wert, parameter[i].typKnoten.typ!!)
+    for (i in parameter.indices) {
+      ausdruckMussTypSein(argumente[i+j].wert, parameter[i].typKnoten.typ!!)
     }
 
     return funktionsDefinition.rückgabeTyp?.typ
@@ -271,22 +279,22 @@ class TypPrüfer(dateiPfad: String): ProgrammDurchlaufer<Typ>(dateiPfad) {
     if (klasse !is Typ.Klasse) {
       throw GermanScriptFehler.TypFehler.ObjektErwartet(holeErstesTokenVonAusdruck(eigenschaftsZugriff.objekt))
     }
-    return  überprüfeEigenschaftInKlasse(eigenschaftsZugriff.eigenschaftsName, klasse.klassenDefinition)
+    return  holeEigenschaftAusKlasse(eigenschaftsZugriff.eigenschaftsName, klasse.klassenDefinition).typKnoten.typ!!
   }
 
   override fun evaluiereSelbstEigenschaftsZugriff(eigenschaftsZugriff: AST.Ausdruck.SelbstEigenschaftsZugriff): Typ {
-    return überprüfeEigenschaftInKlasse(eigenschaftsZugriff.eigenschaftsName, zuÜberprüfendeKlasse!!)
+    return holeEigenschaftAusKlasse(eigenschaftsZugriff.eigenschaftsName, zuÜberprüfendeKlasse!!).typKnoten.typ!!
   }
 
   override fun evaluiereMethodenBlockEigenschaftsZugriff(eigenschaftsZugriff: AST.Ausdruck.MethodenBlockEigenschaftsZugriff): Typ {
     val methodenBlockObjekt = umgebung.holeMethodenBlockObjekt() as Typ.Klasse
-    return überprüfeEigenschaftInKlasse(eigenschaftsZugriff.eigenschaftsName, methodenBlockObjekt.klassenDefinition)
+    return holeEigenschaftAusKlasse(eigenschaftsZugriff.eigenschaftsName, methodenBlockObjekt.klassenDefinition).typKnoten.typ!!
   }
 
-  private fun überprüfeEigenschaftInKlasse(eigenschaftsName: AST.Nomen, klasse: AST.Definition.Klasse): Typ {
+  private fun holeEigenschaftAusKlasse(eigenschaftsName: AST.Nomen, klasse: AST.Definition.Klasse): AST.Definition.TypUndName {
     for (eigenschaft in klasse.eigenschaften) {
       if (eigenschaftsName.nominativ == eigenschaft.name.nominativ) {
-        return eigenschaft.typKnoten.typ!!
+        return eigenschaft
       }
     }
     throw GermanScriptFehler.Undefiniert.Eigenschaft(eigenschaftsName.bezeichner.toUntyped(), klasse.name.nominativ)

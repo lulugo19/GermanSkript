@@ -179,11 +179,14 @@ sealed class GermanScriptFehler(private val fehlerName: String, val token: Token
       override val nachricht: String
         get() = "Unerwartetes Eigenschaft '${token.wert}'. Es wird keine Eigenschaft erwartet."
     }
+
+    class EigenschaftUnveränderlich(token: Token): EigenschaftsFehler(token) {
+      override val nachricht = "Die Eigenschaft '${token.wert}' ist unveränderlich und kann nicht erneut zugewiesen werden."
+    }
   }
 
   class KonvertierungsFehler(token: Token, private val von: Typ, private val zu: Typ): GermanScriptFehler("Konvertierungsfehler", token) {
-    override val nachricht: String
-      get() = "Die Konvertierung von $von zu $zu ist nicht möglich."
+    override val nachricht get() = "Die Konvertierung von $von zu $zu ist nicht möglich."
   }
 
   class LaufzeitFehler(token: Token, val aufrufStapelString: String, val fehlerMeldung: String): GermanScriptFehler("Laufzeitfehler", token) {

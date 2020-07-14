@@ -141,6 +141,32 @@ Verb teste die TestZahl:
 teste die Zahl 7
 teste die Zahl 18
 
+// veränderliche Eigenschaften eines Objekts können jetzt innerhalb des Objekt neu zugewiesen werden
+schreibe den Bereich "veränderliche Eigenschaften eines Objekts"
+Deklination Maskulinum Singular(Zähler, Zählers, Zähler, Zähler) Plural(Zähler, Zähler, Zähler, Zähler)
+Nomen Zähler mit einer Zahl, dem Boolean:
+    schreibe die Zeile "Zähler: " + meine Zahl als Zeichenfolge
+    // wirft einen Fehler da diese Eigenschaft unveränderlich ist
+    // mein Boolean ist wahr
+.
+Verb für Zähler erhöhe mich um die Zahl:
+    meine Zahl ist meine Zahl + die Zahl
+    schreibe die Zeile "Zähler: " + meine Zahl als Zeichenfolge
+.
+Verb für Zähler setze mich zurück:
+    meine Zahl ist 0
+    schreibe die Zeile "Zähler auf 0 zurückgesetzt!"
+.
+
+der Zähler ist ein Zähler mit der Zahl 0, dem Boolean falsch
+erhöhe den Zähler um die Zahl 5
+erhöhe den Zähler um die Zahl 3
+Zähler:
+    setze mich zurück
+    erhöhe mich um die Zahl 2
+    erhöhe mich um die Zahl 100
+!
+
 // in Vergleich kann 'ist' kommen
 schreibe den Bereich "Fibonacci"
 Verb(Zahl) fibonacci von der Zahl:

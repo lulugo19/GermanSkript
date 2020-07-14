@@ -144,7 +144,7 @@ sealed class AST {
       override val token = klassenName.bezeichner.toUntyped()
 
       override val vollerName: String get() {
-        val artikel = when (klassenName.genus!!) {
+        val artikel = when (klassenName.genus) {
           Genus.MASKULINUM -> "den"
           Genus.FEMININUM -> "die"
           Genus.NEUTRUM -> "das"
@@ -242,6 +242,8 @@ sealed class AST {
         val ausdruck: Ausdruck
     ): Satz() {
       override val children = sequenceOf(ausdruck)
+
+      val istEigenschaftsNeuZuweisung = name.vornomen!!.typ == TokenTyp.VORNOMEN.POSSESSIV_PRONOMEN.MEIN
     }
 
     data class BedingungsTerm(

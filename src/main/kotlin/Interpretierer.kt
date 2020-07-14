@@ -1,3 +1,4 @@
+import java.lang.Error
 import java.text.ParseException
 import java.util.*
 
@@ -18,11 +19,18 @@ class Interpretierer(dateiPfad: String): ProgrammDurchlaufer<Wert>(dateiPfad) {
     try {
       aufrufStapel.push(ast, Umgebung())
       durchlaufeSätze(ast.sätze, true)
-    } catch (stackOverflow: StackOverflowError) {
-      throw GermanScriptFehler.LaufzeitFehler(
-          aufrufStapel.top().aufruf.token,
-          aufrufStapel.toString(),
-          "Stack Overflow")
+    } catch (fehler: Throwable) {
+      when (fehler) {
+        is StackOverflowError -> throw GermanScriptFehler.LaufzeitFehler(
+            aufrufStapel.top().aufruf.token,
+            aufrufStapel.toString(),
+            "Stack Overflow")
+        else -> {
+          System.err.println(aufrufStapel.toString())
+          throw fehler
+        }
+      }
+
     }
   }
 
@@ -97,13 +105,19 @@ class Interpretierer(dateiPfad: String): ProgrammDurchlaufer<Wert>(dateiPfad) {
   }
 
   override fun durchlaufeVariablenDeklaration(deklaration: AST.Satz.VariablenDeklaration) {
-    val wert = evaluiereAusdruck(deklaration.ausdruck)
-    // Da der Typprüfer schon überprüft ob Variablen überschrieben werden können
-    // werden hier die Variablen immer überschrieben
-    if (deklaration.name.unveränderlich || deklaration.neu != null) {
-      umgebung.schreibeVariable(deklaration.name, wert, !deklaration.name.unveränderlich)
+    if (deklaration.istEigenschaftsNeuZuweisung) {
+      // weise Eigenschaft neu zu
+      aufrufStapel.top().objekt!!.eigenschaften[deklaration.name.ganzesWort(Kasus.NOMINATIV, deklaration.name.numerus!!)] =
+          evaluiereAusdruck(deklaration.ausdruck)
     } else {
-      umgebung.überschreibeVariable(deklaration.name, wert)
+      val wert = evaluiereAusdruck(deklaration.ausdruck)
+      // Da der Typprüfer schon überprüft ob Variablen überschrieben werden können
+      // werden hier die Variablen immer überschrieben
+      if (deklaration.name.unveränderlich || deklaration.neu != null) {
+        umgebung.schreibeVariable(deklaration.name, wert, !deklaration.name.unveränderlich)
+      } else {
+        umgebung.überschreibeVariable(deklaration.name, wert)
+      }
     }
   }
 
@@ -112,9 +126,10 @@ class Interpretierer(dateiPfad: String): ProgrammDurchlaufer<Wert>(dateiPfad) {
     val neueUmgebung = Umgebung<Wert>()
     neueUmgebung.pushBereich()
     val parameter = funktionsAufruf.funktionsDefinition!!.parameter
+    val j = if (funktionsAufruf.aufrufTyp == FunktionsAufrufTyp.METHODEN_OBJEKT_AUFRUF) 1 else 0
     val argumente = funktionsAufruf.argumente
     for (i in parameter.indices) {
-      neueUmgebung.schreibeVariable(parameter[i].name, evaluiereAusdruck(argumente[i].wert), false)
+      neueUmgebung.schreibeVariable(parameter[i].name, evaluiereAusdruck(argumente[i+j].wert), false)
     }
     val funktionsDefinition = funktionsAufruf.funktionsDefinition!!
     aufrufStapel.push(funktionsAufruf, neueUmgebung)
@@ -375,12 +390,11 @@ class Interpretierer(dateiPfad: String): ProgrammDurchlaufer<Wert>(dateiPfad) {
 }
 
 fun main() {
-  val interpreter = Interpretierer("./iterationen/iter_2/code.gms")
+  val interpreter = Interpretierer("./iterationen/iter_0/code.gms")
   try {
     interpreter.interpretiere()
   } catch (fehler: GermanScriptFehler) {
     // Anstatt zu werfen gebe Fehler später einfach aus
-    //System.err.println(fehler.message!!)
-    throw fehler
+    System.err.println(fehler.message!!)
   }
 }
