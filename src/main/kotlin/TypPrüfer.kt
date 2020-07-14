@@ -49,7 +49,7 @@ class TypPrüfer(dateiPfad: String): ProgrammDurchlaufer<Typ>(dateiPfad) {
     } else {
       // hier müssen wir überprüfen ob der Typ der Variable, die überschrieben werden sollen gleich
       // dem neuen Wert ist
-      val vorherigerTyp = umgebung.leseVariable(deklaration.name.nominativ!!)
+      val vorherigerTyp = umgebung.leseVariable(deklaration.name.nominativ)
       val wert = if (vorherigerTyp != null) {
         if (vorherigerTyp.name.unveränderlich) {
           throw GermanScriptFehler.Variablenfehler(deklaration.name.bezeichner.toUntyped(), vorherigerTyp.name)
@@ -79,7 +79,7 @@ class TypPrüfer(dateiPfad: String): ProgrammDurchlaufer<Typ>(dateiPfad) {
       else if (funktionsAufruf.reflexivPronomen != null && funktionsAufruf.reflexivPronomen.typ == TokenTyp.REFLEXIV_PRONOMEN.DICH) {
         throw GermanScriptFehler.Undefiniert.Methode(funktionsAufruf.verb.toUntyped(),
             funktionsAufruf,
-            methodenBlockObjekt.klassenDefinition.name.nominativ!!)
+            methodenBlockObjekt.klassenDefinition.name.nominativ)
       }
     }
 
@@ -91,7 +91,7 @@ class TypPrüfer(dateiPfad: String): ProgrammDurchlaufer<Typ>(dateiPfad) {
           funktionsAufruf.funktionsDefinition = klasse.methoden.getValue(funktionsAufruf.vollerName!!).funktion
           funktionsAufruf.aufrufTyp = FunktionsAufrufTyp.METHODEN_SELBST_AUFRUF
         } else if (funktionsAufruf.reflexivPronomen != null && funktionsAufruf.reflexivPronomen.typ == TokenTyp.REFLEXIV_PRONOMEN.MICH) {
-          throw  GermanScriptFehler.Undefiniert.Methode(funktionsAufruf.verb.toUntyped(), funktionsAufruf, klasse.name.nominativ!!)
+          throw  GermanScriptFehler.Undefiniert.Methode(funktionsAufruf.verb.toUntyped(), funktionsAufruf, klasse.name.nominativ)
         }
       }
     }
@@ -128,6 +128,9 @@ class TypPrüfer(dateiPfad: String): ProgrammDurchlaufer<Typ>(dateiPfad) {
       }
     }
 
+    if (funktionsAufruf.funktionsDefinition == null) {
+      throw GermanScriptFehler.Undefiniert.Funktion(funktionsAufruf.verb.toUntyped(), funktionsAufruf)
+    }
     val funktionsDefinition = funktionsAufruf.funktionsDefinition!!
 
     if (istAusdruck && funktionsDefinition.rückgabeTyp == null) {
@@ -225,8 +228,9 @@ class TypPrüfer(dateiPfad: String): ProgrammDurchlaufer<Typ>(dateiPfad) {
   }
 
   private fun evaluiereListenSingular(singular: AST.Nomen): Typ {
-    val liste = evaluiereVariable(singular.nominativPlural!!)?:
-    throw GermanScriptFehler.Undefiniert.Variable(singular.bezeichner.toUntyped(), singular.nominativPlural!!)
+    val plural = singular.ganzesWort(Kasus.NOMINATIV, Numerus.PLURAL)
+    val liste = evaluiereVariable(plural)?:
+    throw GermanScriptFehler.Undefiniert.Variable(singular.bezeichner.toUntyped(), plural)
 
     return (liste as Typ.Liste).elementTyp
   }
@@ -243,12 +247,12 @@ class TypPrüfer(dateiPfad: String): ProgrammDurchlaufer<Typ>(dateiPfad) {
     for (i in definition.eigenschaften.indices) {
       val eigenschaft = definition.eigenschaften[i]
       if (i >= instanziierung.eigenschaftsZuweisungen.size) {
-        throw GermanScriptFehler.EigenschaftsFehler.EigenschaftsVergessen(instanziierung.klasse.name.bezeichner.toUntyped(), eigenschaft.name.nominativ!!)
+        throw GermanScriptFehler.EigenschaftsFehler.EigenschaftsVergessen(instanziierung.klasse.name.bezeichner.toUntyped(), eigenschaft.name.nominativ)
       }
       val zuweisung = instanziierung.eigenschaftsZuweisungen[i]
 
       if (eigenschaft.name.nominativ != zuweisung.name.nominativ) {
-        GermanScriptFehler.EigenschaftsFehler.UnerwarteterEigenschaftsName(zuweisung.name.bezeichner.toUntyped(), eigenschaft.name.nominativ!!)
+        GermanScriptFehler.EigenschaftsFehler.UnerwarteterEigenschaftsName(zuweisung.name.bezeichner.toUntyped(), eigenschaft.name.nominativ)
       }
 
       // die Typen müssen übereinstimmen
@@ -281,11 +285,11 @@ class TypPrüfer(dateiPfad: String): ProgrammDurchlaufer<Typ>(dateiPfad) {
 
   private fun überprüfeEigenschaftInKlasse(eigenschaftsName: AST.Nomen, klasse: AST.Definition.Klasse): Typ {
     for (eigenschaft in klasse.eigenschaften) {
-      if (eigenschaftsName.nominativ!! == eigenschaft.name.nominativ!!) {
+      if (eigenschaftsName.nominativ == eigenschaft.name.nominativ) {
         return eigenschaft.typKnoten.typ!!
       }
     }
-    throw GermanScriptFehler.Undefiniert.Eigenschaft(eigenschaftsName.bezeichner.toUntyped(), klasse.name.nominativ!!)
+    throw GermanScriptFehler.Undefiniert.Eigenschaft(eigenschaftsName.bezeichner.toUntyped(), klasse.name.nominativ)
   }
 
   override fun evaluiereBinärenAusdruck(ausdruck: AST.Ausdruck.BinärerAusdruck): Typ {

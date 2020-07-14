@@ -51,16 +51,32 @@ sealed class AST {
       val vornomen: TypedToken<TokenTyp.VORNOMEN>?,
       val bezeichner: TypedToken<TokenTyp.BEZEICHNER_GROSS>
   ) {
-    var nominativ: String? = null
-    var nominativSingular: String? = null
-    var nominativPlural: String? = null
+    var deklination: Deklination? = null
     var vornomenString: String? = null
-    var genus: Genus? = null
     var numerus: Numerus? = null
     var fälle: EnumSet<Kasus> = EnumSet.noneOf(Kasus::class.java)
 
-    val geprüft get() = nominativ != null
     val unveränderlich = vornomen?.typ == TokenTyp.VORNOMEN.ARTIKEL.BESTIMMT
+    val istSymbol get() = bezeichner.typ.istSymbol
+    val geprüft get() = deklination != null
+    val genus get() = if (istSymbol) Genus.NEUTRUM else deklination!!.genus
+
+    val hauptWort: String get() = bezeichner.typ.hauptWort!!
+    val nominativ: String get() = ganzesWort(Kasus.NOMINATIV, numerus!!)
+
+    fun hauptWort(kasus: Kasus, numerus: Numerus): String {
+      if (istSymbol) {
+        return bezeichner.typ.symbol
+      }
+      return deklination!!.getForm(kasus, numerus)
+    }
+
+    fun ganzesWort(kasus: Kasus, numerus: Numerus): String {
+      if (istSymbol) {
+        return bezeichner.typ.symbol
+      }
+      return bezeichner.typ.ersetzeHauptWort(deklination!!.getForm(kasus, numerus))
+    }
   }
 
 
@@ -133,7 +149,7 @@ sealed class AST {
           Genus.FEMININUM -> "die"
           Genus.NEUTRUM -> "das"
         }
-        return "erstelle $artikel ${klassenName.nominativSingular}"
+        return "erstelle $artikel ${klassenName.ganzesWort(Kasus.NOMINATIV, Numerus.SINGULAR)}"
       }
     }
   }

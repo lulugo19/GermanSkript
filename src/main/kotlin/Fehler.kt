@@ -8,9 +8,9 @@ sealed class GermanScriptFehler(private val fehlerName: String, val token: Token
     }
 
   sealed class SyntaxFehler(token: Token): GermanScriptFehler("Syntaxfehler", token) {
-    class LexerFehler(token: Token): SyntaxFehler(token) {
+    class LexerFehler(token: Token, val details: String? = null): SyntaxFehler(token) {
       override val nachricht: String
-        get() = "Ungültige Zeichenfolge '${token.wert}'"
+        get() = "Ungültige Zeichenfolge '${token.wert}'. ${details?: ""}"
     }
 
     class ParseFehler(token: Token, private val erwartet: String? = null, private val details: String? = null): SyntaxFehler(token) {
@@ -65,7 +65,7 @@ sealed class GermanScriptFehler(private val fehlerName: String, val token: Token
   sealed class GrammatikFehler(token: Token): GermanScriptFehler("Grammatikfehler",token) {
 
     sealed class FormFehler(token: Token, protected val kasus: Kasus, protected val nomen: AST.Nomen): GrammatikFehler(token) {
-      val form get() = "(${kasus.anzeigeName}, ${nomen.genus!!.anzeigeName}, ${nomen.numerus!!.anzeigeName})"
+      val form get() = "(${kasus.anzeigeName}, ${nomen.genus.anzeigeName}, ${nomen.numerus!!.anzeigeName})"
 
       class FalschesVornomen(token: Token, kasus: Kasus, nomen: AST.Nomen, private val richtigesVornomen: String) : FormFehler(token, kasus, nomen) {
         override val nachricht: String

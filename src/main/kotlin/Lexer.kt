@@ -159,7 +159,18 @@ sealed class TokenTyp(val anzeigeName: String) {
 
     // Identifier
     data class BEZEICHNER_KLEIN(val name: String): TokenTyp("bezeichner")
-    data class BEZEICHNER_GROSS(val name: String): TokenTyp("Bezeichner")
+    data class BEZEICHNER_GROSS(val teilWörter: Array<String>, val symbol: String): TokenTyp("Bezeichner") {
+        val istSymbol get() = teilWörter.isEmpty()
+        val hauptWort: String? get() = if (teilWörter.isNotEmpty()) teilWörter[teilWörter.size-1] else null
+
+        fun ersetzeHauptWort(wort: String): String {
+            return if (istSymbol) {
+                return symbol
+            } else {
+                teilWörter.dropLast(1).joinToString() + wort + symbol
+            }
+        }
+    }
 
     // Literale
     data class BOOLEAN(val boolean: Wert.Boolean): TokenTyp("'richtig' oder 'falsch'")
@@ -369,7 +380,7 @@ class Lexer(datei: String): PipelineKomponente(datei) {
                     SYMBOL_MAPPING.containsKey(zeichen) -> symbol().also { kannWortLesen = true }
                     zeichen.isDigit() -> zahl().also { kannWortLesen = false }
                     zeichen == '"' -> zeichenfolge().also { kannWortLesen = false }
-                    kannWortLesen -> wort().also { kannWortLesen = false }
+                    kannWortLesen && zeichen.isLetter() -> wort().also { kannWortLesen = false }
                     else -> throw GermanScriptFehler.SyntaxFehler.LexerFehler(
                         Token(
                             TokenTyp.FEHLER,
@@ -377,7 +388,8 @@ class Lexer(datei: String): PipelineKomponente(datei) {
                             currentFile,
                             currentTokenPos,
                             nextTokenPos
-                        )
+                        ),
+                        null
                     )
                 })
             }
@@ -412,7 +424,7 @@ class Lexer(datei: String): PipelineKomponente(datei) {
         val endPos = currentTokenPos
         if (tokenTyp is TokenTyp.UNDEFINIERT) {
             val fehlerToken = Token(TokenTyp.FEHLER, symbolString, currentFile, startPos, endPos)
-            throw GermanScriptFehler.SyntaxFehler.LexerFehler(fehlerToken)
+            throw GermanScriptFehler.SyntaxFehler.LexerFehler(fehlerToken, null)
         }
         yield(Token(tokenTyp, symbolString, currentFile, startPos, endPos))
     }
@@ -439,7 +451,7 @@ class Lexer(datei: String): PipelineKomponente(datei) {
             yield(Token(TokenTyp.ZAHL(Wert.Zahl(zahlenString)), zahlenString, currentFile, startPos, endPos))
         } catch (error: Exception) {
             val fehlerToken = Token(TokenTyp.FEHLER, zahlenString, currentFile, startPos, endPos)
-            throw GermanScriptFehler.SyntaxFehler.LexerFehler(fehlerToken)
+            throw GermanScriptFehler.SyntaxFehler.LexerFehler(fehlerToken, null)
         }
     }
 
@@ -451,16 +463,13 @@ class Lexer(datei: String): PipelineKomponente(datei) {
             zeichenfolge += next()
         }
         if (peek() != '"') {
-            throw GermanScriptFehler.SyntaxFehler.LexerFehler(eofToken)
+            throw GermanScriptFehler.SyntaxFehler.LexerFehler(eofToken, null)
         }
         next()
         val endPos = currentTokenPos
         val token = Token(TokenTyp.ZEICHENFOLGE(Wert.Zeichenfolge(zeichenfolge)), '"' + zeichenfolge + '"', currentFile, startPos, endPos)
         yield(token)
     }
-
-    private val NOMEN_PATTERN = """[A-ZÖÄÜ][\wöäüß]*""".toRegex()
-    private val VERB_PATTERN = """[a-zöäü][\wöäüß]*""".toRegex()
 
     private fun wort(): Sequence<Token> = sequence {
         val firstWordStartPos = currentTokenPos
@@ -474,12 +483,7 @@ class Lexer(datei: String): PipelineKomponente(datei) {
                         spaceBetweenWords += next()
                     }
                     val nächstesZeichen = peek()
-                    val nächstesIstWort = !(SYMBOL_MAPPING.containsKey(nächstesZeichen) ||
-                        nächstesZeichen == '&' ||
-                        nächstesZeichen == '|' ||
-                        nächstesZeichen == '"' ||
-                        nächstesZeichen?.isDigit() == true)
-                    if (nächstesIstWort) {
+                    if (nächstesZeichen?.isLetter() == true) {
                         val nextWordStartPos = currentTokenPos
                         val nächstesWort = teilWort()
                         val nextWordEndPos = currentTokenPos
@@ -494,11 +498,8 @@ class Lexer(datei: String): PipelineKomponente(datei) {
                             yield(Token(WORT_MAPPING.getValue(erstesWort), erstesWort, currentFile, firstWordStartPos, firstWordEndPos))
                             val tokenTyp = (WORT_MAPPING.getOrElse(nächstesWort, {
                                 when {
-                                    NOMEN_PATTERN.matches(nächstesWort) -> TokenTyp.BEZEICHNER_GROSS(nächstesWort)
-                                    VERB_PATTERN.matches(nächstesWort) -> TokenTyp.BEZEICHNER_KLEIN(nächstesWort)
-                                    else -> throw GermanScriptFehler.SyntaxFehler.LexerFehler(
-                                        Token(TokenTyp.FEHLER, nächstesWort, currentFile, nextWordStartPos, nextWordEndPos)
-                                    )
+                                    nächstesWort.all { zeichen -> zeichen.isLowerCase() } -> TokenTyp.BEZEICHNER_KLEIN(nächstesWort)
+                                    else -> großerBezeichner(nächstesWort, nextWordStartPos, nextWordEndPos)
                                 }
                             }))
                             yield(Token(tokenTyp, nächstesWort, currentFile, nextWordStartPos, nextWordEndPos))
@@ -510,20 +511,43 @@ class Lexer(datei: String): PipelineKomponente(datei) {
                 }
                 else -> yield(Token(WORT_MAPPING.getValue(erstesWort), erstesWort, currentFile, firstWordStartPos, firstWordEndPos))
             }
-            NOMEN_PATTERN.matches(erstesWort) -> yield(Token(TokenTyp.BEZEICHNER_GROSS(erstesWort), erstesWort, currentFile, firstWordStartPos, firstWordEndPos))
-            VERB_PATTERN.matches(erstesWort) -> yield(Token(TokenTyp.BEZEICHNER_KLEIN(erstesWort), erstesWort, currentFile, firstWordStartPos, firstWordEndPos))
-            else -> throw GermanScriptFehler.SyntaxFehler.LexerFehler(Token(TokenTyp.FEHLER, erstesWort, currentFile, firstWordStartPos, firstWordEndPos))
+            erstesWort.all { zeichen -> zeichen.isLowerCase() } -> yield(Token(TokenTyp.BEZEICHNER_KLEIN(erstesWort),
+                erstesWort, currentFile, firstWordStartPos, firstWordEndPos))
+
+            else -> yield(
+                Token(großerBezeichner(erstesWort, firstWordStartPos, firstWordEndPos),
+                    erstesWort, currentFile, firstWordStartPos, firstWordEndPos))
         }
+    }
+
+    private fun großerBezeichner(zeichenfolge: String, tokenStart: Token.Position, tokenEnd: Token.Position): TokenTyp.BEZEICHNER_GROSS {
+        val teilWörter = mutableListOf<String>()
+        var i = 0
+        var teilWort = zeichenfolge[i++].toString()
+        var symbol = ""
+        while (i < zeichenfolge.length) {
+            while (i < zeichenfolge.length && zeichenfolge[i].isLowerCase()) {
+                teilWort += zeichenfolge[i++]
+            }
+            when {
+              teilWort.length == 1 -> symbol += teilWort
+              symbol.isEmpty() -> teilWörter.add(teilWort)
+              else -> {
+                  val token = Token(TokenTyp.FEHLER, zeichenfolge, currentFile, tokenStart, tokenEnd)
+                  throw GermanScriptFehler.SyntaxFehler.LexerFehler(token, "Ein großer Bezeichner in GermanScript darf einzelne Großbuchstaben" +
+                      " (Symbole) nur am Ende haben.")
+              }
+            }
+            if (i < zeichenfolge.length) {
+                teilWort = zeichenfolge[i++].toString()
+            }
+        }
+        return TokenTyp.BEZEICHNER_GROSS(teilWörter.toTypedArray(), symbol)
     }
 
     private fun teilWort(): String {
         var wort = next()!!.toString()
-        while (peek() != null) {
-            val nächstesZeiches = peek()!!
-            if (nächstesZeiches == ' ' ||
-                (nächstesZeiches != '!' && nächstesZeiches != '?' && SYMBOL_MAPPING.containsKey(nächstesZeiches))) {
-                break
-            }
+        while (peek()?.isLetter() == true) {
             wort += next()!!
         }
         return wort

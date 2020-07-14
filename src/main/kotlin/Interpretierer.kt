@@ -74,7 +74,7 @@ class Interpretierer(dateiPfad: String): ProgrammDurchlaufer<Wert>(dateiPfad) {
       val aufruf = element.aufruf
       var zeichenfolge = "${aufruf.vollerName} in ${aufruf.token}"
       if (element.objekt != null) {
-        val klassenName = element.objekt.klassenDefinition.name.nominativ!!
+        val klassenName = element.objekt.klassenDefinition.name.hauptWort
         zeichenfolge = "für $klassenName: $zeichenfolge"
       }
 
@@ -111,8 +111,10 @@ class Interpretierer(dateiPfad: String): ProgrammDurchlaufer<Wert>(dateiPfad) {
     rückgabeWert = null
     val neueUmgebung = Umgebung<Wert>()
     neueUmgebung.pushBereich()
-    for (argument in funktionsAufruf.argumente) {
-      neueUmgebung.schreibeVariable(argument.name, evaluiereAusdruck(argument.wert), false)
+    val parameter = funktionsAufruf.funktionsDefinition!!.parameter
+    val argumente = funktionsAufruf.argumente
+    for (i in parameter.indices) {
+      neueUmgebung.schreibeVariable(parameter[i].name, evaluiereAusdruck(argumente[i].wert), false)
     }
     val funktionsDefinition = funktionsAufruf.funktionsDefinition!!
     aufrufStapel.push(funktionsAufruf, neueUmgebung)
@@ -146,7 +148,7 @@ class Interpretierer(dateiPfad: String): ProgrammDurchlaufer<Wert>(dateiPfad) {
     val liste = if (schleife.liste != null)  {
       evaluiereAusdruck(schleife.liste) as Wert.Liste
     } else {
-      evaluiereVariable(schleife.singular.nominativPlural!!)!! as Wert.Liste
+      evaluiereVariable(schleife.singular.ganzesWort(Kasus.NOMINATIV, Numerus.PLURAL))!! as Wert.Liste
     }
     umgebung.pushBereich()
     for (element in liste.elemente) {
@@ -197,7 +199,7 @@ class Interpretierer(dateiPfad: String): ProgrammDurchlaufer<Wert>(dateiPfad) {
   override fun evaluiereObjektInstanziierung(instanziierung: AST.Ausdruck.ObjektInstanziierung): Wert {
     val eigenschaften = hashMapOf<String, Wert>()
     for (zuweisung in instanziierung.eigenschaftsZuweisungen) {
-      eigenschaften[zuweisung.name.nominativ!!] = evaluiereAusdruck(zuweisung.wert)
+      eigenschaften[zuweisung.name.nominativ] = evaluiereAusdruck(zuweisung.wert)
     }
     val klassenDefinition = (instanziierung.klasse.typ!! as Typ.Klasse).klassenDefinition
     val objekt = Wert.Objekt(klassenDefinition, eigenschaften)
@@ -210,17 +212,17 @@ class Interpretierer(dateiPfad: String): ProgrammDurchlaufer<Wert>(dateiPfad) {
 
   override fun evaluiereEigenschaftsZugriff(eigenschaftsZugriff: AST.Ausdruck.EigenschaftsZugriff): Wert {
     val objekt = evaluiereAusdruck(eigenschaftsZugriff.objekt) as Wert.Objekt
-    return objekt.eigenschaften.getValue(eigenschaftsZugriff.eigenschaftsName.nominativ!!)
+    return objekt.eigenschaften.getValue(eigenschaftsZugriff.eigenschaftsName.nominativ)
   }
 
   override fun evaluiereSelbstEigenschaftsZugriff(eigenschaftsZugriff: AST.Ausdruck.SelbstEigenschaftsZugriff): Wert {
     val objekt = aufrufStapel.top().objekt!!
-    return objekt.eigenschaften.getValue(eigenschaftsZugriff.eigenschaftsName.nominativ!!)
+    return objekt.eigenschaften.getValue(eigenschaftsZugriff.eigenschaftsName.nominativ)
   }
 
   override fun evaluiereMethodenBlockEigenschaftsZugriff(eigenschaftsZugriff: AST.Ausdruck.MethodenBlockEigenschaftsZugriff): Wert {
     val objekt = umgebung.holeMethodenBlockObjekt()!! as Wert.Objekt
-    return objekt.eigenschaften.getValue(eigenschaftsZugriff.eigenschaftsName.nominativ!!)
+    return objekt.eigenschaften.getValue(eigenschaftsZugriff.eigenschaftsName.nominativ)
   }
 
   override  fun evaluiereBinärenAusdruck(ausdruck: AST.Ausdruck.BinärerAusdruck): Wert {
@@ -296,7 +298,7 @@ class Interpretierer(dateiPfad: String): ProgrammDurchlaufer<Wert>(dateiPfad) {
   }
 
   override fun evaluiereListenElement(listenElement: AST.Ausdruck.ListenElement): Wert {
-    val liste = evaluiereVariable(listenElement.singular.nominativPlural!!) as Wert.Liste
+    val liste = evaluiereVariable(listenElement.singular.ganzesWort(Kasus.NOMINATIV, Numerus.PLURAL)) as Wert.Liste
     val index = (evaluiereAusdruck(listenElement.index) as Wert.Zahl).toInt()
     if (index >= liste.elemente.size) {
       throw GermanScriptFehler.LaufzeitFehler(holeErstesTokenVonAusdruck(listenElement.index),

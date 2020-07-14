@@ -71,7 +71,8 @@ sealed class Typ(val name: String) {
       get() = mutableSetOf()
   }
 
-  data class Klasse(val klassenDefinition: AST.Definition.Klasse): Typ(klassenDefinition.name.nominativ!!) {
+  data class Klasse(val klassenDefinition: AST.Definition.Klasse):
+      Typ(klassenDefinition.name.hauptWort(Kasus.NOMINATIV, Numerus.SINGULAR)) {
     override val definierteOperatoren: Map<Operator, Typ>
       get() = mapOf()
 
@@ -97,7 +98,7 @@ class Typisierer(dateiPfad: String): PipelineKomponente(dateiPfad) {
   }
 
   fun bestimmeTypen(nomen: AST.Nomen): Typ {
-    val singularTyp = bestimmeTypen(nomen.nominativSingular!!)?: throw GermanScriptFehler.Undefiniert.Typ(nomen.bezeichner.toUntyped())
+    val singularTyp = bestimmeTypen(nomen.hauptWort(Kasus.NOMINATIV, Numerus.SINGULAR))?: throw GermanScriptFehler.Undefiniert.Typ(nomen.bezeichner.toUntyped())
     return if (nomen.numerus == Numerus.SINGULAR) {
       singularTyp
     } else {

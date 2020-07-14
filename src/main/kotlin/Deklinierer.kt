@@ -51,7 +51,7 @@ data class Deklination(
 
 typealias DudenAnfrage = Pair<TypedToken<TokenTyp.BEZEICHNER_GROSS>, Deferred<Deklination>>
 
-class Deklanierer(dateiPfad: String): PipelineKomponente(dateiPfad) {
+class Deklinierer(dateiPfad: String): PipelineKomponente(dateiPfad) {
   val ast = Parser(dateiPfad).parse()
   val wörterbuch = Wörterbuch()
 
@@ -110,7 +110,7 @@ class Deklanierer(dateiPfad: String): PipelineKomponente(dateiPfad) {
   
   fun holeDeklination(nomen: AST.Nomen): Deklination {
     try {
-      return wörterbuch.holeDeklination(nomen.bezeichner.wert)
+      return wörterbuch.holeDeklination(nomen.bezeichner.typ.hauptWort!!)
     } catch (error: Wörterbuch.WortNichtGefunden) {
       throw GermanScriptFehler.UnbekanntesWort(nomen.bezeichner.toUntyped())
     }
@@ -240,7 +240,7 @@ fun wörterBuchTest() {
 fun main() {
   // wörterBuchTest()
 
-  val deklanierer = Deklanierer("./iterationen/iter_2/code.gms")
+  val deklanierer = Deklinierer("./iterationen/iter_2/code.gms")
   deklanierer.deklaniere()
   deklanierer.druckeWörterbuch()
 }

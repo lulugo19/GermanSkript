@@ -107,7 +107,8 @@ für jede Zahl X:
 .
 schreibe die Zeile "Die Summe ist: " + die Summe als Zeichenfolge
 
-// Variablendeklrationen
+// Variablendeklarationen
+schreibe den Bereich "Variablendeklarationen"
 Deklination Femininum Singular(Variable, Variable, Variable, Variable) Plural(Variablen, Variablen, Variablen, Variablen)
 eine Variable ist "Erste Variable"
 wenn wahr:
@@ -118,6 +119,35 @@ wenn wahr:
     schreibe die Zeile Variable // Dritte Variable
 .
 schreibe die Zeile Variable // Zweite Variable
+
+// zusammengesetze Wörter und Symbole
+schreibe den Bereich "zusammen gesetzte Wörter und Symbole"
+die ErstePrimZahl ist 2
+schreibe die ErstePrimZahl
+die ZeileX ist "X"
+schreibe die ZeileX
+die ZeileXXX ist "XXX"
+schreibe die ZeileXXX
+die SuperlangeZeile = "Die suuuuuppppeeeerrrrlaaanggggeeeeeeeeeeeeeee Zeile!"
+schreibe die SuperlangeZeile
+
+Verb teste die TestZahl:
+    ein GERADE ist "gerade"
+    wenn die TestZahl modulo 2 gleich 1:
+        ein GERADE ist "ungerade"
+    .
+    schreibe die Zeile "die Zahl " + die TestZahl als Zeichenfolge + " ist " + das GERADE + "!"
+.
+teste die Zahl 7
+teste die Zahl 18
+
+// in Vergleich kann 'ist' kommen
+schreibe den Bereich "Fibonacci"
+Verb(Zahl) fibonacci von der Zahl:
+    wenn die Zahl kleiner gleich 1: gebe die Zahl zurück.
+    sonst: gebe ((fibonacci von der Zahl - 1) + (fibonacci von der Zahl - 2)) zurück.
+.
+schreibe die Zeile "Fibonacci(9) = " + (fibonacci von der Zahl 9) als Zeichenfolge
 
 /*
 // Stack Overflow Handling

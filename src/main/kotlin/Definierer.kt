@@ -66,7 +66,7 @@ class Definierer(dateiPfad: String): PipelineKomponente(dateiPfad) {
   private fun definiereMethode(methodenDefinition: AST.Definition.FunktionOderMethode.Methode) {
     val vollerName = holeVollenNameVonFunktionsDefinition(methodenDefinition.funktion, methodenDefinition.reflexivPronomen)
     val klasse = try {
-      holeKlassenDefinition(methodenDefinition.klasse.name.nominativ!!)
+      holeKlassenDefinition(methodenDefinition.klasse.name.hauptWort(Kasus.NOMINATIV, Numerus.SINGULAR))
     } catch (error: Exception ) {
       throw GermanScriptFehler.Undefiniert.Typ(methodenDefinition.klasse.name.bezeichner.toUntyped())
     }
@@ -75,7 +75,7 @@ class Definierer(dateiPfad: String): PipelineKomponente(dateiPfad) {
       throw GermanScriptFehler.DoppelteDefinition.Methode(
               methodenDefinition.funktion.name.toUntyped(),
               klasse.methoden.getValue(vollerName),
-              klasse.name.nominativ!!
+              klasse.name.hauptWort(Kasus.NOMINATIV, Numerus.SINGULAR)
       )
     }
     methodenDefinition.funktion.vollerName = vollerName
@@ -88,7 +88,7 @@ class Definierer(dateiPfad: String): PipelineKomponente(dateiPfad) {
     var vollerName = funktionsDefinition.name.wert
     if (funktionsDefinition.objekt != null) {
       val objekt = funktionsDefinition.objekt
-      vollerName += " " + objekt.name.vornomenString!! + " " + objekt.name.bezeichner.wert
+      vollerName += " " + objekt.name.vornomenString!! + " " + objekt.name.hauptWort
     }
     else if (reflexivPronomen != null) {
       vollerName += " ${reflexivPronomen.wert}"
@@ -97,7 +97,7 @@ class Definierer(dateiPfad: String): PipelineKomponente(dateiPfad) {
       vollerName += " " + präposition.präposition.präposition.wert
       for (parameterIndex in präposition.parameter.indices) {
         val parameter = präposition.parameter[parameterIndex]
-        vollerName += " " + parameter.name.vornomenString!! + " " + parameter.name.bezeichner.wert
+        vollerName += " " + parameter.name.vornomenString!! + " " + parameter.name.hauptWort
         if (parameterIndex != präposition.parameter.size-1) {
           vollerName += ","
         }
@@ -122,7 +122,7 @@ class Definierer(dateiPfad: String): PipelineKomponente(dateiPfad) {
         }
         vollerName += " $reflexivPronomen"
       } else {
-        vollerName += " " + objekt.name.vornomenString!! + " " + objekt.name.bezeichner.wert
+        vollerName += " " + objekt.name.vornomenString!! + " " + objekt.name.hauptWort
       }
     } else if (funktionsAufruf.reflexivPronomen != null) {
       val reflexivPronomen = funktionsAufruf.reflexivPronomen
@@ -141,7 +141,7 @@ class Definierer(dateiPfad: String): PipelineKomponente(dateiPfad) {
       vollerName += " " + präposition.präposition.präposition.wert
       for (argumentIndex in präposition.argumente.indices) {
         val argument = präposition.argumente[argumentIndex]
-        vollerName += " " + argument.name.vornomenString!! + " " + argument.name.bezeichner.wert
+        vollerName += " " + argument.name.vornomenString!! + " " + argument.name.hauptWort
         if (argumentIndex != präposition.argumente.size-1) {
           vollerName += ","
         }
@@ -154,14 +154,14 @@ class Definierer(dateiPfad: String): PipelineKomponente(dateiPfad) {
   }
 
   private fun definiereKlasse(klasse: AST.Definition.Klasse) {
-    val klassenName = klasse.name.nominativ!!
+    val klassenName = klasse.name.hauptWort(Kasus.NOMINATIV, Numerus.SINGULAR)
     val reservierteNamen = arrayOf("Zahl", "Boolean", "Zeichenfolge")
     if (reservierteNamen.contains(klassenName)) {
       throw GermanScriptFehler.ReservierterTypName(klasse.name.bezeichner.toUntyped())
     }
-    if (klassenDefinitionsMapping.containsKey(klasse.name.nominativ!!)) {
+    if (klassenDefinitionsMapping.containsKey(klassenName)) {
       throw GermanScriptFehler.DoppelteDefinition.Klasse(klasse.name.bezeichner.toUntyped(),
-          klassenDefinitionsMapping.getValue(klasse.name.nominativ!!))
+          klassenDefinitionsMapping.getValue(klassenName))
     }
     klassenDefinitionsMapping[klassenName] = klasse
   }
