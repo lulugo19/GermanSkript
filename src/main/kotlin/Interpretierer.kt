@@ -395,6 +395,7 @@ fun main() {
     interpreter.interpretiere()
   } catch (fehler: GermanScriptFehler) {
     // Anstatt zu werfen gebe Fehler später einfach aus
-    System.err.println(fehler.message!!)
+    // System.err.println(fehler.message!!)
+    throw fehler
   }
 }

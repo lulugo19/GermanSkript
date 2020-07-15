@@ -50,7 +50,11 @@ enum class Kasus(val anzeigeName: String) {
 // Numerus (Anzahl)
 enum class Numerus(val anzeigeName: String, val zuweisung: String) {
     SINGULAR("Singular", "ist"),
-    PLURAL("Plural", "sind"),
+    PLURAL("Plural", "sind");
+
+    companion object  {
+        val BEIDE: EnumSet<Numerus> get() = EnumSet.of(SINGULAR, PLURAL)
+    }
 }
 
 data class Token(val typ: TokenTyp, val wert: String, val dateiPfad: String, val anfang: Position, val ende: Position) {

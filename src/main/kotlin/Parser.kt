@@ -624,7 +624,6 @@ private sealed class SubParser<T: AST>() {
         }
         return AST.Satz.Bedingung(bedingungen, null)
       }
-
     }
 
     object SolangeSchleife: SubParser<AST.Satz.SolangeSchleife>() {
@@ -748,10 +747,10 @@ private sealed class SubParser<T: AST>() {
           next()
           parseFälle()
         } else {
-          singular
+          arrayOf(singular[0], singular[0], singular[0], singular[0])
         }
 
-        return AST.Definition.DeklinationsDefinition.Definition(Deklination(genus, singular + plural))
+        return AST.Definition.DeklinationsDefinition.Definition(Deklination(genus, singular, plural))
       }
 
       private fun parseDuden(): AST.Definition.DeklinationsDefinition.Duden {
@@ -763,7 +762,11 @@ private sealed class SubParser<T: AST>() {
       }
     }
 
-    class Funktion(override val id: ASTKnotenID, private val rückgabeTyp: TypedToken<TokenTyp.BEZEICHNER_GROSS>?, private val hatReflexivPronomen: Boolean): Definition<AST.Definition.FunktionOderMethode.Funktion>() {
+    class Funktion(
+        override val id: ASTKnotenID,
+        private val rückgabeTyp: TypedToken<TokenTyp.BEZEICHNER_GROSS>?,
+        private val hatReflexivPronomen: Boolean
+    ): Definition<AST.Definition.FunktionOderMethode.Funktion>() {
 
       override fun parseImpl(): AST.Definition.FunktionOderMethode.Funktion {
         val name = expect<TokenTyp.BEZEICHNER_KLEIN>("bezeichner")
@@ -780,13 +783,6 @@ private sealed class SubParser<T: AST>() {
         return AST.Definition.FunktionOderMethode.Funktion(
             rückgabeTyp?.let { AST.TypKnoten(AST.Nomen(null, it)) },
             name, objekt, präpositionsParameter, suffix, sätze)
-      }
-
-      fun parseRückgabeTyp(): TypedToken<TokenTyp.BEZEICHNER_GROSS> {
-        expect<TokenTyp.OFFENE_KLAMMER>("'('")
-        val typ = expect<TokenTyp.BEZEICHNER_GROSS>("Bezeichner")
-        expect<TokenTyp.GESCHLOSSENE_KLAMMER>("')")
-        return typ
       }
 
       fun parsePräpositionsParameter(): List<AST.Definition.PräpositionsParameter> {

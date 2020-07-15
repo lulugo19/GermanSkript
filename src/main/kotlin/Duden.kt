@@ -2,7 +2,6 @@ import java.io.InputStreamReader
 import java.net.HttpURLConnection
 import java.net.URL
 import java.util.*
-import kotlin.Error
 import kotlinx.coroutines.*
 import util.SimpleLogger
 import java.lang.Exception
@@ -61,7 +60,7 @@ object Duden {
               "die" -> Genus.FEMININUM
               else -> Genus.NEUTRUM
             }
-            Deklination(genus, arrayOf(values[2], values[4], values[6], values[8], values[3], values[5], values[7], values[9]))
+            Deklination(genus, arrayOf(values[2], values[4], values[6], values[8]), arrayOf(values[3], values[5], values[7], values[9]))
           } else {
             match = regexShortForm.find(htmlDocument)
             if (match != null) {
@@ -71,10 +70,10 @@ object Duden {
                 "die" -> Genus.FEMININUM
                 else -> Genus.NEUTRUM
               }
-              val form = values[2]
-              val genitiv = values[3]
+              val singular = values[2]
+              val genitivSingular = values[3]
               val plural = values[5]
-              Deklination(genus, arrayOf(form, genitiv, form, form, plural, plural, plural, plural))
+              Deklination(genus, arrayOf(singular, genitivSingular, singular, singular), arrayOf(plural, plural, plural, plural))
             } else {
               throw DudenFehler.ParseFehler()
             }

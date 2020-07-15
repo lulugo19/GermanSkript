@@ -1,33 +1,53 @@
 import kotlinx.coroutines.*
 import java.io.File
-import java.util.LinkedList
 import java.lang.Integer.min
+import java.util.*
+import kotlin.math.sin
 
 data class Deklination(
     val genus: Genus,
-    private val fälle: Array<String>
+    private val singular: Array<String>,
+    val plural: Array<String>
 ) {
-  val nominativSingular: String get() = fälle[0]
+  val nominativSingular: String get() = singular[0]
 
   fun getForm(kasus: Kasus, numerus: Numerus): String {
-    val index = kasus.ordinal + if (numerus == Numerus.SINGULAR) 0 else 4
-    return fälle[index]
+    val index = kasus.ordinal
+    return if (numerus == Numerus.SINGULAR) {
+      singular[index]
+    } else {
+      plural[index]
+    }
   }
 
-  fun getNumerus(wort: String): Numerus {
-    val index = fälle.indexOf(wort)
-    if (index == -1) {
+  fun getNumerus(wort: String): EnumSet<Numerus> {
+    val numerus = EnumSet.noneOf(Numerus::class.java)
+    if (singular.contains(wort)) {
+      numerus.add(Numerus.SINGULAR)
+    }
+    if (plural.contains(wort)) {
+      numerus.add(Numerus.PLURAL)
+    }
+
+    if (numerus.isEmpty()) {
       throw Wörterbuch.WortNichtGefunden(wort)
     }
-    return if (index < 4) Numerus.SINGULAR else Numerus.PLURAL
+
+    return numerus
   }
 
-  val fallSequenz get() = fälle.asSequence()
+  val fallSequenz get() = singular.asSequence() + plural.asSequence()
 
   override fun toString(): String {
-    return "Deklination ${genus.anzeigeName} " +
-        "Singular(${fälle[0]}, ${fälle[1]}, ${fälle[2]}, ${fälle[3]}) " +
-        "Plural(${fälle[4]}, ${fälle[5]}, ${fälle[6]}, ${fälle[7]})"
+    val anfang = "Deklination ${genus.anzeigeName}"
+    val allesGleichBeiSingular = singular.all { it == singular[0] }
+    val sing = if (allesGleichBeiSingular) "Singular($singular[0])" else "Singular(${singular.joinToString(", ")})"
+    val allesGleichBeiPlural = plural.all { it == plural[0] }
+    val plur = when {
+      allesGleichBeiPlural -> if (plural[0] == sing) "" else "Plural(${plural[0]})"
+      else -> "Plural(${plural.joinToString(", ")})"
+    }
+    return "$anfang $sing $plur"
   }
 
   override fun equals(other: Any?): Boolean {
@@ -37,14 +57,14 @@ data class Deklination(
     other as Deklination
 
     if (genus != other.genus) return false
-    if (!fälle.contentEquals(other.fälle)) return false
+    if (!singular.contentEquals(other.singular)) return false
 
     return true
   }
 
   override fun hashCode(): Int {
     var result = genus.hashCode()
-    result = 31 * result + fälle.contentHashCode()
+    result = 31 * result + singular.contentHashCode()
     return result
   }
 }
@@ -222,11 +242,11 @@ fun wörterBuchTest() {
   println( "Bäume" < "Baumhaus")
   println(wörterbuch.wortVergleichBerücksichtigeUmlaute("Bäume", "Baumhaus"))
 
-  wörterbuch.fügeDeklinationHinzu(Deklination(Genus.MASKULINUM, arrayOf("Keks", " Keks", "Keks", "Keks", "Kekse", "Kekse", "Keksen", "Kekse")))
-  wörterbuch.fügeDeklinationHinzu(Deklination(Genus.MASKULINUM, arrayOf("Dose", "Dose", "Dose", "Dose", "Dosen", "Dosen", "Dosen", "Dosen")))
-  wörterbuch.fügeDeklinationHinzu(Deklination(Genus.MASKULINUM, arrayOf("Baum", "Baums", "Baum", "Baum", "Bäume", "Bäume", "Bäumen", "Bäumen")))
-  wörterbuch.fügeDeklinationHinzu(Deklination(Genus.MASKULINUM, arrayOf("Uhr", "Uhr", "Uhr", "Uhr", "Uhren", "Uhren", "Uhren", "Uhren")))
-  wörterbuch.fügeDeklinationHinzu(Deklination(Genus.MASKULINUM, arrayOf("Baumhaus", "Baumhauses", "Baumhaus", "Baumhaus", "Baumhäuser", "Baumhäuser", "Baumhäusern", "Baumhäuser")))
+  wörterbuch.fügeDeklinationHinzu(Deklination(Genus.MASKULINUM, arrayOf("Keks", " Keks", "Keks", "Keks"), arrayOf("Kekse", "Kekse", "Keksen", "Kekse")))
+  wörterbuch.fügeDeklinationHinzu(Deklination(Genus.MASKULINUM, arrayOf("Dose", "Dose", "Dose", "Dose"), arrayOf( "Dosen", "Dosen", "Dosen", "Dosen")))
+  wörterbuch.fügeDeklinationHinzu(Deklination(Genus.MASKULINUM, arrayOf("Baum", "Baums", "Baum", "Baum"), arrayOf("Bäume", "Bäume", "Bäumen", "Bäumen")))
+  wörterbuch.fügeDeklinationHinzu(Deklination(Genus.MASKULINUM, arrayOf("Uhr", "Uhr", "Uhr", "Uhr"),arrayOf("Uhren", "Uhren", "Uhren", "Uhren" )))
+  wörterbuch.fügeDeklinationHinzu(Deklination(Genus.MASKULINUM, arrayOf("Baumhaus", "Baumhauses", "Baumhaus", "Baumhaus"), arrayOf("Baumhäuser", "Baumhäuser", "Baumhäusern", "Baumhäuser")))
 
   wörterbuch.print()
 
