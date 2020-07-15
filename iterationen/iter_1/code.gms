@@ -1,5 +1,5 @@
-Deklination Maskulinum Singular(Bereich, Bereichs, Bereich, Bereich) Plural(Bereiche, Bereiche, Bereiche, Bereiche)
-Deklination Maskulinum Singular(Name, Namens, Namen, Namen) Plural(Namen, Namen, Namen, Namen)
+Deklination Maskulinum Singular(Bereich, Bereichs, Bereich, Bereich) Plural(Bereiche)
+Deklination Maskulinum Singular(Name, Namens, Namen, Namen) Plural(Namen)
 
 Verb schreibe die Zeichenfolge Bereich:
     schreibe die Zeile ""

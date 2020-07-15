@@ -27,23 +27,22 @@ Verb(Zahl) fakultät von der Zahl:
 schreibe die Zeichenfolge "Die Fakulät von der Zahl 6 ist: "
 schreibe die Zahl (fakultät von der Zahl 6)
 
-Deklination Femininum Singular(Person, Person, Person, Person) Plural(Personen, Personen, Personen, Personen)
-Deklination Maskulinum Singular(Name, Namens, Namen, Namen) Plural(Namen, Namen, Namen, Namen)
-Deklination Maskulinum Singular(Nachname, Nachnamens, Nachnamen, Nachnamen) Plural(Nachnamen, Nachnamen, Nachnamen, Nachnamen)
+Deklination Femininum Singular(Person) Plural(Personen)
+Deklination Maskulinum Singular(Name, Namens, Namen, Namen) Plural(Namen)
 Deklination Neutrum Singular(Alter, Alters, Alter, Alter) Plural(Alter, Alter, Alter, Alter)
-Deklination Femininum Singular(Begrüßung, Begrüßung, Begrüßung, Begrüßung) Plural(Begrüßungen, Begrüßungen, Begrüßungen, Begrüßungen)
-Deklination Maskulinum Singular(Abschied, Abschiedes, Abschied, Abschied) Plural(Abschiede, Abschiede, Abschieden, Abschiede)
+Deklination Femininum Singular(Begrüßung) Plural(Begrüßungen)
+Deklination Maskulinum Singular(Abschied, Abschiedes, Abschied, Abschied) Plural(Abschiede)
 
 // Klassendefinition
 schreibe den Bereich "Klassendefinition und Objektinstanziierung"
 Nomen Person mit
     der Zeichenfolge Name,
-    der Zeichenfolge Nachname,
+    der Zeichenfolge NachName,
     der Zahl Alter:
 
-    schreibe die Zeile "die Person " + "'" + meinen Namen + " " + meinen Nachnamen + "' wurde erstellt!"
+    schreibe die Zeile "die Person " + "'" + meinen Namen + " " + meinen NachNamen + "' wurde erstellt!"
 .
-die Person ist eine Person mit dem Namen "Lukas", dem Nachnamen "Gobelet", dem Alter 22
+die Person ist eine Person mit dem Namen "Lukas", dem NachNamen "Gobelet", dem Alter 22
 
 // Funktion mit einem Objekt aufrufen
 schreibe den Bereich "Funktion mit einem Objekt als Argument aufrufen"
@@ -73,7 +72,7 @@ Verb für Person begrüße mich mit der Zeichenfolge Begrüßung, der Zeichenfol
     schreibe die Zeile "Methodenaufruf: " + die Begrüßung + " " + meinen Namen + ". " + den Abschied + "."
 .
 
-Deklination Femininum Singular(Wiederholung, Wiederholung, Wiederholung, Wiederholung) Plural(Wiederholungen, Wiederholungen, Wiederholungen, Wiederholungen)
+Deklination Femininum Singular(Wiederholung) Plural(Wiederholungen)
 Verb für Person begrüße mich mit der Zeichenfolge Begrüßung, der Zeichenfolge Abschied, der Zahl Wiederholung:
     wenn die Wiederholung größer 0:
         begrüße mich mit der Begrüßung, dem Abschied
@@ -98,7 +97,7 @@ Person:
 !
 
 // Symbole
-Deklination Femininum Singular(Summe, Summe, Summe, Summe) Plural(Summen, Summen, Summen, Summen)
+Deklination Femininum Singular(Summe) Plural(Summen)
 schreibe den Bereich "Symbol-Test"
 die Zahlen sind einige Zahlen[1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
 eine Summe ist 0
@@ -109,7 +108,7 @@ schreibe die Zeile "Die Summe ist: " + die Summe als Zeichenfolge
 
 // Variablendeklarationen
 schreibe den Bereich "Variablendeklarationen"
-Deklination Femininum Singular(Variable, Variable, Variable, Variable) Plural(Variablen, Variablen, Variablen, Variablen)
+Deklination Femininum Singular(Variable) Plural(Variablen)
 eine Variable ist "Erste Variable"
 wenn wahr:
     schreibe die Zeile Variable // Erste Variable
@@ -143,7 +142,7 @@ teste die Zahl 18
 
 // veränderliche Eigenschaften eines Objekts können jetzt innerhalb des Objekt neu zugewiesen werden
 schreibe den Bereich "veränderliche Eigenschaften eines Objekts"
-Deklination Maskulinum Singular(Zähler, Zählers, Zähler, Zähler) Plural(Zähler, Zähler, Zähler, Zähler)
+Deklination Maskulinum Singular(Zähler, Zählers, Zähler, Zähler) Plural(Zähler)
 Nomen Zähler mit einer Zahl, dem Boolean:
     schreibe die Zeile "Zähler: " + meine Zahl als Zeichenfolge
     // wirft einen Fehler da diese Eigenschaft unveränderlich ist

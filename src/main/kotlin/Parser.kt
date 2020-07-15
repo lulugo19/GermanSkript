@@ -719,30 +719,39 @@ private sealed class SubParser<T: AST>() {
         }
       }
 
+      private fun parseFälle(): Array<String> {
+        expect<TokenTyp.OFFENE_KLAMMER>("'('")
+        val genitiv: String; val dativ: String; val akkusativ: String
+        val nominativ = parseWort().wert
+        if (peekType() is TokenTyp.GESCHLOSSENE_KLAMMER) {
+          genitiv = nominativ
+          dativ = nominativ
+          akkusativ = nominativ
+        } else {
+          expect<TokenTyp.KOMMA>("','")
+          genitiv = parseWort().wert
+          expect<TokenTyp.KOMMA>("','")
+          dativ = parseWort().wert
+          expect<TokenTyp.KOMMA>("','")
+          akkusativ = parseWort().wert
+        }
+
+        expect<TokenTyp.GESCHLOSSENE_KLAMMER>("')'")
+        return arrayOf(nominativ, genitiv, dativ, akkusativ)
+      }
+
       private fun parseDeklination(): AST.Definition.DeklinationsDefinition.Definition {
         val genus = expect<TokenTyp.GENUS>("Genus").typ.genus
         expect<TokenTyp.SINGULAR>("'Singular'")
-        expect<TokenTyp.OFFENE_KLAMMER>("'('")
-        val nominativS = parseWort().wert
-        expect<TokenTyp.KOMMA>("','")
-        val genitivS = parseWort().wert
-        expect<TokenTyp.KOMMA>("','")
-        val dativS = parseWort().wert
-        expect<TokenTyp.KOMMA>("','")
-        val akkusativS = parseWort().wert
-        expect<TokenTyp.GESCHLOSSENE_KLAMMER>("')'")
-        expect<TokenTyp.PLURAL>("'Plural'")
-        expect<TokenTyp.OFFENE_KLAMMER>("'('")
-        val nominativP = parseWort().wert
-        expect<TokenTyp.KOMMA>("','")
-        val genitivP = parseWort().wert
-        expect<TokenTyp.KOMMA>("','")
-        val dativP = parseWort().wert
-        expect<TokenTyp.KOMMA>("','")
-        val akkusativP = parseWort().wert
-        expect<TokenTyp.GESCHLOSSENE_KLAMMER>("')'")
-        return AST.Definition.DeklinationsDefinition.Definition(Deklination(genus,
-                arrayOf(nominativS, genitivS, dativS, akkusativS, nominativP, genitivP, dativP, akkusativP)))
+        val singular = parseFälle()
+        val plural = if (peekType() is TokenTyp.PLURAL) {
+          next()
+          parseFälle()
+        } else {
+          singular
+        }
+
+        return AST.Definition.DeklinationsDefinition.Definition(Deklination(genus, singular + plural))
       }
 
       private fun parseDuden(): AST.Definition.DeklinationsDefinition.Duden {
