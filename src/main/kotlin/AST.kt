@@ -200,7 +200,7 @@ sealed class AST {
     }
 
     data class Klasse(
-        val name: Nomen,
+        val typ: TypKnoten,
         val elternKlasse: TypKnoten?,
         val eigenschaften: List<TypUndName>,
         val konstruktorSätze: List<Satz>
@@ -384,5 +384,8 @@ sealed class AST {
     data class SelbstEigenschaftsZugriff(
         val eigenschaftsName: Nomen
     ): Ausdruck()
+
+    data class SelbstReferenz(val ich: TypedToken<TokenTyp.REFERENZ.ICH>): Ausdruck()
+    data class MethodenBlockReferenz(val du: TypedToken<TokenTyp.REFERENZ.DU>): Ausdruck()
   }
 }

@@ -42,7 +42,7 @@ class TypPrüfer(dateiPfad: String): ProgrammDurchlaufer<Typ>(dateiPfad) {
 
   private fun prüfeKlasse(klasse: AST.Definition.Klasse) {
     zuÜberprüfendeKlasse = klasse
-    durchlaufeAufruf(klasse.name.bezeichner.toUntyped(), klasse.konstruktorSätze, Umgebung(), null)
+    durchlaufeAufruf(klasse.typ.name.bezeichner.toUntyped(), klasse.konstruktorSätze, Umgebung(), null)
     klasse.methoden.values.forEach {methode -> prüfeFunktion(methode.funktion)}
     klasse.konvertierungen.values.forEach {konvertierung ->
       durchlaufeAufruf(konvertierung.klasse.bezeichner.toUntyped(), konvertierung.sätze, Umgebung(), konvertierung.typ.typ!!)
@@ -106,7 +106,7 @@ class TypPrüfer(dateiPfad: String): ProgrammDurchlaufer<Typ>(dateiPfad) {
       else if (funktionsAufruf.reflexivPronomen != null && funktionsAufruf.reflexivPronomen.typ == TokenTyp.REFLEXIV_PRONOMEN.DICH) {
         throw GermanScriptFehler.Undefiniert.Methode(funktionsAufruf.verb.toUntyped(),
             funktionsAufruf,
-            methodenBlockObjekt.klassenDefinition.name.nominativ)
+            methodenBlockObjekt.klassenDefinition.typ.name.nominativ)
       }
     }
 
@@ -118,7 +118,7 @@ class TypPrüfer(dateiPfad: String): ProgrammDurchlaufer<Typ>(dateiPfad) {
           funktionsAufruf.funktionsDefinition = klasse.methoden.getValue(funktionsAufruf.vollerName!!).funktion
           funktionsAufruf.aufrufTyp = FunktionsAufrufTyp.METHODEN_SELBST_AUFRUF
         } else if (funktionsAufruf.reflexivPronomen != null && funktionsAufruf.reflexivPronomen.typ == TokenTyp.REFLEXIV_PRONOMEN.MICH) {
-          throw  GermanScriptFehler.Undefiniert.Methode(funktionsAufruf.verb.toUntyped(), funktionsAufruf, klasse.name.nominativ)
+          throw  GermanScriptFehler.Undefiniert.Methode(funktionsAufruf.verb.toUntyped(), funktionsAufruf, klasse.typ.name.nominativ)
         }
       }
     }
@@ -317,7 +317,7 @@ class TypPrüfer(dateiPfad: String): ProgrammDurchlaufer<Typ>(dateiPfad) {
         return eigenschaft
       }
     }
-    throw GermanScriptFehler.Undefiniert.Eigenschaft(eigenschaftsName.bezeichner.toUntyped(), klasse.name.nominativ)
+    throw GermanScriptFehler.Undefiniert.Eigenschaft(eigenschaftsName.bezeichner.toUntyped(), klasse.typ.name.nominativ)
   }
 
   override fun evaluiereBinärenAusdruck(ausdruck: AST.Ausdruck.BinärerAusdruck): Typ {
@@ -345,6 +345,8 @@ class TypPrüfer(dateiPfad: String): ProgrammDurchlaufer<Typ>(dateiPfad) {
     }
     return konvertierungsTyp
   }
+
+  override fun evaluiereSelbstReferenz() = zuÜberprüfendeKlasse!!.typ.typ!!
 }
 
 fun main() {

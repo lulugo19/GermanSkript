@@ -122,8 +122,13 @@ sealed class TokenTyp(val anzeigeName: String) {
     }
 
     sealed class REFLEXIV_PRONOMEN(pronomen: String): TokenTyp("Reflexivpronomen ('$pronomen')") {
-        object MICH: REFLEXIV_PRONOMEN("Ich")
-        object DICH: REFLEXIV_PRONOMEN("Du")
+        object MICH: REFLEXIV_PRONOMEN("'Ich'")
+        object DICH: REFLEXIV_PRONOMEN("'Du'")
+    }
+
+    sealed class REFERENZ(anzeigeName: String): TokenTyp(anzeigeName) {
+        object ICH: REFERENZ("Ich")
+        object DU: REFERENZ("Du")
     }
 
     data class NEU(val genus: Genus): TokenTyp("'neuer', 'neue' oder 'neues'") {
@@ -261,6 +266,10 @@ private val WORT_MAPPING = mapOf<String, TokenTyp>(
     "durch" to TokenTyp.OPERATOR(Operator.GETEILT),
     "hoch" to TokenTyp.OPERATOR(Operator.HOCH),
     "modulo" to TokenTyp.OPERATOR(Operator.MODULO),
+
+    // Spezielle Referenzen
+    "Ich" to TokenTyp.REFERENZ.ICH,
+    "Du" to TokenTyp.REFERENZ.DU,
 
     // Vornomen
     // Artikel

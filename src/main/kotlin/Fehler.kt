@@ -111,7 +111,7 @@ sealed class GermanScriptFehler(private val fehlerName: String, val token: Token
 
     class Klasse(token: Token, private val definition: AST.Definition.Klasse): DoppelteDefinition(token) {
       override val nachricht: String
-        get() = "Die Klasse '${token.wert}' ist schon in ${definition.name.bezeichner.position} definiert."
+        get() = "Die Klasse '${token.wert}' ist schon in ${definition.typ.name.bezeichner.position} definiert."
     }
 
     class Konvertierung(token: Token, private val konvertierung: AST.Definition.Konvertierung): DoppelteDefinition(token) {

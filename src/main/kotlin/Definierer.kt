@@ -170,13 +170,13 @@ class Definierer(dateiPfad: String): PipelineKomponente(dateiPfad) {
   }
 
   private fun definiereKlasse(klasse: AST.Definition.Klasse) {
-    val klassenName = klasse.name.hauptWort(Kasus.NOMINATIV, Numerus.SINGULAR)
+    val klassenName = klasse.typ.name.hauptWort(Kasus.NOMINATIV, Numerus.SINGULAR)
     val reservierteNamen = arrayOf("Zahl", "Boolean", "Zeichenfolge")
     if (reservierteNamen.contains(klassenName)) {
-      throw GermanScriptFehler.ReservierterTypName(klasse.name.bezeichner.toUntyped())
+      throw GermanScriptFehler.ReservierterTypName(klasse.typ.name.bezeichner.toUntyped())
     }
     if (klassenDefinitionsMapping.containsKey(klassenName)) {
-      throw GermanScriptFehler.DoppelteDefinition.Klasse(klasse.name.bezeichner.toUntyped(),
+      throw GermanScriptFehler.DoppelteDefinition.Klasse(klasse.typ.name.bezeichner.toUntyped(),
           klassenDefinitionsMapping.getValue(klassenName))
     }
     klassenDefinitionsMapping[klassenName] = klasse

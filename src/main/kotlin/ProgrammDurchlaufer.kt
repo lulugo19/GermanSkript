@@ -46,6 +46,8 @@ abstract  class ProgrammDurchlaufer<T>(dateiPfad: String): PipelineKomponente(da
       is AST.Ausdruck.EigenschaftsZugriff -> ausdruck.eigenschaftsName.bezeichner.toUntyped()
       is AST.Ausdruck.SelbstEigenschaftsZugriff -> ausdruck.eigenschaftsName.bezeichner.toUntyped()
       is AST.Ausdruck.MethodenBlockEigenschaftsZugriff -> ausdruck.eigenschaftsName.bezeichner.toUntyped()
+      is AST.Ausdruck.SelbstReferenz -> ausdruck.ich.toUntyped()
+      is AST.Ausdruck.MethodenBlockReferenz -> ausdruck.du.toUntyped()
     }
   }
 
@@ -86,6 +88,8 @@ abstract  class ProgrammDurchlaufer<T>(dateiPfad: String): PipelineKomponente(da
       is AST.Ausdruck.EigenschaftsZugriff -> evaluiereEigenschaftsZugriff(ausdruck)
       is AST.Ausdruck.SelbstEigenschaftsZugriff -> evaluiereSelbstEigenschaftsZugriff(ausdruck)
       is AST.Ausdruck.MethodenBlockEigenschaftsZugriff -> evaluiereMethodenBlockEigenschaftsZugriff(ausdruck)
+      is AST.Ausdruck.SelbstReferenz -> evaluiereSelbstReferenz()
+      is AST.Ausdruck.MethodenBlockReferenz -> evaluiereMethodenBlockReferenz()
     }
   }
 
@@ -95,6 +99,10 @@ abstract  class ProgrammDurchlaufer<T>(dateiPfad: String): PipelineKomponente(da
 
   fun evaluiereVariable(variable: String): T? {
     return umgebung.leseVariable(variable)?.wert
+  }
+
+  private fun evaluiereMethodenBlockReferenz(): T {
+    return umgebung.holeMethodenBlockObjekt()!!
   }
 
   protected abstract fun evaluiereZeichenfolge(ausdruck: AST.Ausdruck.Zeichenfolge): T
@@ -109,4 +117,5 @@ abstract  class ProgrammDurchlaufer<T>(dateiPfad: String): PipelineKomponente(da
   protected abstract fun evaluiereEigenschaftsZugriff(eigenschaftsZugriff: AST.Ausdruck.EigenschaftsZugriff): T
   protected abstract fun evaluiereSelbstEigenschaftsZugriff(eigenschaftsZugriff: AST.Ausdruck.SelbstEigenschaftsZugriff): T
   protected abstract fun evaluiereMethodenBlockEigenschaftsZugriff(eigenschaftsZugriff: AST.Ausdruck.MethodenBlockEigenschaftsZugriff): T
+  protected abstract fun evaluiereSelbstReferenz(): T
 }

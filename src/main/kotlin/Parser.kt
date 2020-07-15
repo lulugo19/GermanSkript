@@ -394,6 +394,20 @@ private sealed class SubParser<T: AST>() {
         is TokenTyp.BOOLEAN -> AST.Ausdruck.Boolean(next().toTyped())
         is TokenTyp.BEZEICHNER_KLEIN -> AST.Ausdruck.FunktionsAufruf(subParse(FunktionsAufruf))
         is TokenTyp.VORNOMEN -> parseNomenAusdruck(parseNomenMitVornomen<TokenTyp.VORNOMEN>("Vornomen", true), true)
+        is TokenTyp.REFERENZ.ICH -> {
+          if (!hierarchyContainsNode(ASTKnotenID.METHODEN_DEFINITION)) {
+            throw GermanScriptFehler.SyntaxFehler.ParseFehler(next(), null,
+                "Die Selbstreferenz 'Ich' darf nur in einem Konstruktor, Methoden- oder Kovertierungsdefinition vorkommen.")
+          }
+          AST.Ausdruck.SelbstReferenz(next().toTyped())
+        }
+        is TokenTyp.REFERENZ.DU -> {
+          if (!hierarchyContainsNode(ASTKnotenID.METHODEN_BLOCK)) {
+            throw GermanScriptFehler.SyntaxFehler.ParseFehler(next(), null,
+              "Die Methodenblockreferenz 'Du' darf nur in einem Methodenblock vorkommen.")
+          }
+          AST.Ausdruck.MethodenBlockReferenz(next().toTyped())
+        }
         is TokenTyp.OFFENE_KLAMMER -> {
           next()
           parseImpl().also { expect<TokenTyp.GESCHLOSSENE_KLAMMER>("')'") }
@@ -812,7 +826,7 @@ private sealed class SubParser<T: AST>() {
 
       override fun parseImpl(): AST.Definition.Klasse {
         expect<TokenTyp.NOMEN>("'Nomen'")
-        val name = parseNomenOhneVornomen(false)
+        val name = AST.TypKnoten(parseNomenOhneVornomen(false))
 
         val elternKlasse = when (peekType()) {
           is TokenTyp.ALS -> next().let { AST.TypKnoten(parseNomenOhneVornomen(false)) }

@@ -252,8 +252,7 @@ class GrammatikPrüfer(dateiPfad: String): PipelineKomponente(dateiPfad) {
   }
 
   private fun prüfeKlassenDefinition(klasse: AST.Definition.Klasse) {
-    prüfeNomen(klasse.name, EnumSet.of(Kasus.NOMINATIV), EnumSet.of(Numerus.SINGULAR))
-    prüfeNumerus(klasse.name, Numerus.SINGULAR)
+    prüfeNomen(klasse.typ.name, EnumSet.of(Kasus.NOMINATIV), EnumSet.of(Numerus.SINGULAR))
 
     for (eigenschaft in klasse.eigenschaften) {
       prüfeNomen(eigenschaft.typKnoten.name, EnumSet.of(Kasus.DATIV), Numerus.BEIDE)

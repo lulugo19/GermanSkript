@@ -82,7 +82,7 @@ class Interpretierer(dateiPfad: String): ProgrammDurchlaufer<Wert>(dateiPfad) {
       val aufruf = element.aufruf
       var zeichenfolge = "${aufruf.vollerName} in ${aufruf.token}"
       if (element.objekt != null) {
-        val klassenName = element.objekt.klassenDefinition.name.hauptWort
+        val klassenName = element.objekt.klassenDefinition.typ.name.hauptWort
         zeichenfolge = "für $klassenName: $zeichenfolge"
       }
 
@@ -238,6 +238,8 @@ class Interpretierer(dateiPfad: String): ProgrammDurchlaufer<Wert>(dateiPfad) {
     val objekt = umgebung.holeMethodenBlockObjekt()!! as Wert.Objekt
     return objekt.eigenschaften.getValue(eigenschaftsZugriff.eigenschaftsName.nominativ)
   }
+
+  override fun evaluiereSelbstReferenz(): Wert = aufrufStapel.top().objekt!!
 
   override  fun evaluiereBinärenAusdruck(ausdruck: AST.Ausdruck.BinärerAusdruck): Wert {
     val links = evaluiereAusdruck(ausdruck.links)

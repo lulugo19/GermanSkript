@@ -1,4 +1,4 @@
-Deklination Maskulinum Singular(Bereich, Bereichs, Bereich, Bereich) Plural(Bereiche, Bereiche, Bereiche, Bereiche)
+Deklination Maskulinum Singular(Bereich, Bereichs, Bereich, Bereich) Plural(Bereiche)
 
 Verb schreibe die Zeichenfolge Bereich:
     schreibe die Zeile ""
@@ -180,6 +180,16 @@ als Zeichenfolge für Person:
     gebe meinen Namen + " " + meinen NachNamen + " (" + mein Alter als Zeichenfolge + " Jahre alt)" zurück
 .
 schreibe die Zeile Person als Zeichenfolge
+
+// SelbstReferenz und Methodenblock Referenz
+schreibe den Bereich "Selbstreferenz und Methodenblockreferenz"
+Verb für Person drucke mich:
+    schreibe die Zeile Ich als Zeichenfolge
+.
+drucke die Person
+Person:
+    drucke die Person Du
+!
 
 /*
 // Stack Overflow Handling

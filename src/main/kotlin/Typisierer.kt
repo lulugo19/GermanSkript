@@ -58,7 +58,7 @@ sealed class Typ(val name: String) {
   }
 
   data class Klasse(val klassenDefinition: AST.Definition.Klasse):
-      Typ(klassenDefinition.name.hauptWort(Kasus.NOMINATIV, Numerus.SINGULAR)) {
+      Typ(klassenDefinition.typ.name.hauptWort(Kasus.NOMINATIV, Numerus.SINGULAR)) {
     override val definierteOperatoren: Map<Operator, Typ> = mapOf()
 
       override fun kannNachTypKonvertiertWerden(typ: Typ): kotlin.Boolean {
@@ -106,6 +106,7 @@ class Typisierer(dateiPfad: String): PipelineKomponente(dateiPfad) {
   }
 
   private fun typisiereKlasse(klasse: AST.Definition.Klasse) {
+    typisiereTypKnoten(klasse.typ)
     for (eigenschaft in klasse.eigenschaften) {
       typisiereTypKnoten(eigenschaft.typKnoten)
     }
