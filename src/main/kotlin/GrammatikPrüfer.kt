@@ -14,6 +14,7 @@ class GrammatikPrüfer(dateiPfad: String): PipelineKomponente(dateiPfad) {
       when (knoten) {
         is AST.Definition.FunktionOderMethode.Funktion -> prüfeFunktionsDefinition(knoten)
         is AST.Definition.FunktionOderMethode.Methode -> prüfeMethodenDefinition(knoten)
+        is AST.Definition.Konvertierung -> prüfeKonvertierungsDefinition(knoten)
         is AST.Definition.Klasse -> prüfeKlassenDefinition(knoten)
         is AST.Satz.VariablenDeklaration -> prüfeVariablendeklaration(knoten)
         is AST.Satz.BedingungsTerm -> prüfeKontextbasiertenAusdruck(knoten.bedingung, null, EnumSet.of(Kasus.NOMINATIV))
@@ -260,6 +261,11 @@ class GrammatikPrüfer(dateiPfad: String): PipelineKomponente(dateiPfad) {
     }
   }
 
+  private fun prüfeKonvertierungsDefinition(konvertierung: AST.Definition.Konvertierung) {
+    prüfeNomen(konvertierung.typ.name, EnumSet.of(Kasus.NOMINATIV), EnumSet.of(Numerus.SINGULAR))
+    prüfeNomen(konvertierung.klasse, EnumSet.of(Kasus.NOMINATIV), EnumSet.of(Numerus.SINGULAR))
+  }
+
 
   private fun prüfeArgument(argument: AST.Argument, fälle: EnumSet<Kasus>) {
     prüfeNomen(argument.name, fälle, Numerus.BEIDE)
@@ -272,7 +278,7 @@ class GrammatikPrüfer(dateiPfad: String): PipelineKomponente(dateiPfad) {
     }
   }
 
-  private fun prüfeFunktionsAufruf(funktionsAufruf: AST.Aufruf.Funktion) {
+  private fun prüfeFunktionsAufruf(funktionsAufruf: AST.Funktion) {
     if (funktionsAufruf.objekt != null) {
       prüfeArgument(funktionsAufruf.objekt, EnumSet.of(Kasus.AKKUSATIV, Kasus.DATIV))
     }

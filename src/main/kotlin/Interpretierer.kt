@@ -1,4 +1,3 @@
-import java.lang.Error
 import java.text.ParseException
 import java.util.*
 
@@ -6,7 +5,7 @@ class Interpretierer(dateiPfad: String): ProgrammDurchlaufer<Wert>(dateiPfad) {
   val typPrüfer = TypPrüfer(dateiPfad)
 
   override val definierer = typPrüfer.definierer
-  val ast: AST.Aufruf.Programm = typPrüfer.ast
+  val ast: AST.Programm = typPrüfer.ast
 
   private var rückgabeWert: Wert? = null
   private val flags = EnumSet.noneOf(Flag::class.java)
@@ -39,7 +38,7 @@ class Interpretierer(dateiPfad: String): ProgrammDurchlaufer<Wert>(dateiPfad) {
     SCHLEIFE_FORTFAHREN,
   }
 
-  private class AufrufStapelElement(val aufruf: AST.Aufruf, val objekt: Wert.Objekt?, val umgebung: Umgebung<Wert>)
+  private class AufrufStapelElement(val aufruf: AST.IAufruf, val objekt: Wert.Objekt?, val umgebung: Umgebung<Wert>)
   companion object {
     private const val CALL_STACK_OUTPUT_LIMIT = 50
   }
@@ -48,16 +47,17 @@ class Interpretierer(dateiPfad: String): ProgrammDurchlaufer<Wert>(dateiPfad) {
     private val stapel = Stack<AufrufStapelElement>()
 
     fun top(): AufrufStapelElement = stapel.peek()
-    fun push(funktionsAufruf: AST.Aufruf, neueUmgebung: Umgebung<Wert>, konstruktorObjekt: Wert.Objekt? = null) {
+    fun push(funktionsAufruf: AST.IAufruf, neueUmgebung: Umgebung<Wert>, objekt: Wert.Objekt? = null) {
       val objekt = when (funktionsAufruf) {
-        is AST.Aufruf.Programm -> null
-        is AST.Aufruf.Funktion -> when (funktionsAufruf.aufrufTyp) {
+        is AST.Programm -> null
+        is AST.Funktion -> when (funktionsAufruf.aufrufTyp) {
           FunktionsAufrufTyp.FUNKTIONS_AUFRUF -> null
           FunktionsAufrufTyp.METHODEN_SELBST_AUFRUF -> top().objekt
           FunktionsAufrufTyp.METHODEN_BLOCK_AUFRUF -> top().umgebung.holeMethodenBlockObjekt()
           FunktionsAufrufTyp.METHODEN_OBJEKT_AUFRUF -> evaluiereAusdruck(funktionsAufruf.objekt!!.wert)
         }
-        is AST.Aufruf.Konstruktor -> konstruktorObjekt
+        is AST.Ausdruck.ObjektInstanziierung, is AST.Ausdruck.Konvertierung -> objekt
+        else -> throw Exception("Unbehandelter Funktionsaufruftyp")
       } as Wert.Objekt?
       stapel.push(AufrufStapelElement(funktionsAufruf, objekt, neueUmgebung))
     }
@@ -121,7 +121,7 @@ class Interpretierer(dateiPfad: String): ProgrammDurchlaufer<Wert>(dateiPfad) {
     }
   }
 
-  override fun durchlaufeFunktionsAufruf(funktionsAufruf: AST.Aufruf.Funktion, istAusdruck: Boolean): Wert? {
+  override fun durchlaufeFunktionsAufruf(funktionsAufruf: AST.Funktion, istAusdruck: Boolean): Wert? {
     rückgabeWert = null
     val neueUmgebung = Umgebung<Wert>()
     neueUmgebung.pushBereich()
@@ -218,9 +218,8 @@ class Interpretierer(dateiPfad: String): ProgrammDurchlaufer<Wert>(dateiPfad) {
     }
     val klassenDefinition = (instanziierung.klasse.typ!! as Typ.Klasse).klassenDefinition
     val objekt = Wert.Objekt(klassenDefinition, eigenschaften)
-    val konstruktor = klassenDefinition.konstruktor
-    aufrufStapel.push(klassenDefinition.konstruktor, Umgebung(), objekt)
-    durchlaufeSätze(konstruktor.sätze, true)
+    aufrufStapel.push(instanziierung, Umgebung(), objekt)
+    durchlaufeSätze(klassenDefinition.konstruktorSätze, true)
     aufrufStapel.pop()
     return objekt
   }
@@ -347,6 +346,13 @@ class Interpretierer(dateiPfad: String): ProgrammDurchlaufer<Wert>(dateiPfad) {
 
   override fun evaluiereKonvertierung(konvertierung: AST.Ausdruck.Konvertierung): Wert {
     val wert = evaluiereAusdruck(konvertierung.ausdruck)
+    if (wert is Wert.Objekt && wert.klassenDefinition.konvertierungen.containsKey(konvertierung.typ.name.nominativ)) {
+      val konvertierungsDefinition = wert.klassenDefinition.konvertierungen.getValue(konvertierung.typ.name.nominativ)
+      aufrufStapel.push(konvertierung, Umgebung(), wert)
+      durchlaufeSätze(konvertierungsDefinition.sätze, true)
+      aufrufStapel.pop()
+      return rückgabeWert!!
+    }
     return when (konvertierung.typ.typ!!) {
       is Typ.Zahl -> konvertiereZuZahl(konvertierung, wert)
       is Typ.Boolean -> konvertiereZuBoolean(konvertierung, wert)
@@ -357,6 +363,7 @@ class Interpretierer(dateiPfad: String): ProgrammDurchlaufer<Wert>(dateiPfad) {
 
   private fun konvertiereZuZahl(konvertierung: AST.Ausdruck.Konvertierung, wert: Wert): Wert.Zahl {
     return when (wert) {
+      is Wert.Zahl -> wert
       is Wert.Zeichenfolge -> {
         try {
           Wert.Zahl(wert.zeichenfolge)
@@ -373,14 +380,17 @@ class Interpretierer(dateiPfad: String): ProgrammDurchlaufer<Wert>(dateiPfad) {
 
   private fun konvertiereZuZeichenfolge(konvertierung: AST.Ausdruck.Konvertierung, wert: Wert): Wert.Zeichenfolge {
     return when (wert) {
+      is Wert.Zeichenfolge -> wert
       is Wert.Zahl -> Wert.Zeichenfolge(wert.toString())
       is Wert.Boolean -> Wert.Zeichenfolge(if(wert.boolean) "wahr" else "falsch")
+      is Wert.Objekt -> Wert.Zeichenfolge(wert.toString())
       else -> throw Exception("Typ-Prüfer sollte dies schon überprüfen!")
     }
   }
 
   private fun konvertiereZuBoolean(konvertierung: AST.Ausdruck.Konvertierung, wert: Wert): Wert.Boolean {
     return when (wert) {
+      is Wert.Boolean -> wert
       is Wert.Zeichenfolge -> Wert.Boolean(wert.zeichenfolge.isNotEmpty())
       is Wert.Zahl -> Wert.Boolean(!wert.isZero())
       else -> throw Exception("Typ-Prüfer sollte dies schon überprüfen!")

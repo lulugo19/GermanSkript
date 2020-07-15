@@ -29,11 +29,6 @@ sealed class GermanScriptFehler(private val fehlerName: String, val token: Token
 
     class UngültigerBereich(token: Token, override val nachricht: String): SyntaxFehler(token)
 
-    class RückgabeTypFehler(token: Token): SyntaxFehler(token){
-      override val nachricht: String
-        get() = "Die Funktion kann nichts zurückgeben, da in der Definition kein Rückgabetyp angegeben ist."
-    }
-
     class FunktionAlsAusdruckFehler(token: Token): SyntaxFehler(token){
       override val nachricht: String
         get() = "Die Funktion '${token.wert}' kann nicht als Ausdruck verwendet werden, da sie keinen Rückgabetyp besitzt."
@@ -42,6 +37,18 @@ sealed class GermanScriptFehler(private val fehlerName: String, val token: Token
     class AnzahlDerParameterFehler(token: Token): SyntaxFehler(token){
       override val nachricht: String
         get() = "Die Anzahl der Parameter und Argumente der Funktion '${token.wert}' stimmen nicht überein."
+    }
+  }
+
+  sealed class RückgabeFehler(token: Token): GermanScriptFehler("Rückgabefehler", token) {
+    class UngültigeRückgabe(token: Token): RückgabeFehler(token) {
+      override val nachricht: String
+        get() = "Ungültige Rückgabe. Der Aufruf gibt nichts zurück und eine Rückgabe ist hier nicht erlaubt."
+    }
+
+    class RückgabeVergessen(token: Token, private val rückgabeTyp: Typ): RückgabeFehler(token) {
+      override val nachricht: String
+        get() = "Es wird ein Rückgabe vom Typ '${rückgabeTyp.name}' erwartet."
     }
   }
 
@@ -97,14 +104,20 @@ sealed class GermanScriptFehler(private val fehlerName: String, val token: Token
         get() = "Die Funktion '${definition.vollerName}' ist schon in ${definition.name.position} definiert."
     }
 
-    class Methode(token: Token, private val definition: AST.Definition.FunktionOderMethode.Methode, private val klassenName: String): DoppelteDefinition(token) {
+    class Methode(token: Token, private val definition: AST.Definition.FunktionOderMethode.Methode): DoppelteDefinition(token) {
       override val nachricht: String
-        get() = "Die Methode '${definition.funktion.vollerName}' für die Klasse '$klassenName' ist schon in ${definition.funktion.name.position} definiert."
+        get() = "Die Methode '${definition.funktion.vollerName}' für die Klasse '${definition.klasse.name.nominativ}' ist schon in ${definition.funktion.name.position} definiert."
     }
 
     class Klasse(token: Token, private val definition: AST.Definition.Klasse): DoppelteDefinition(token) {
       override val nachricht: String
         get() = "Die Klasse '${token.wert}' ist schon in ${definition.name.bezeichner.position} definiert."
+    }
+
+    class Konvertierung(token: Token, private val konvertierung: AST.Definition.Konvertierung): DoppelteDefinition(token) {
+      override val nachricht: String
+        get() = "Die Konvertierung von '${konvertierung.klasse.nominativ}' zu '${konvertierung.typ.name.nominativ}'\n" +
+            "ist schon in ${konvertierung.klasse.bezeichner.position} definiert."
     }
   }
 
@@ -119,12 +132,12 @@ sealed class GermanScriptFehler(private val fehlerName: String, val token: Token
 
 
   sealed class Undefiniert(token: Token): GermanScriptFehler("Undefiniert Fehler", token) {
-    class Funktion(token: Token, private val funktionsAufruf: AST.Aufruf.Funktion): Undefiniert(token) {
+    class Funktion(token: Token, private val funktionsAufruf: AST.Funktion): Undefiniert(token) {
       override val nachricht: String
         get() = "Die Funktion '${funktionsAufruf.vollerName!!}' ist nicht definiert."
     }
 
-    class Methode(token: Token, private val methodenAufruf: AST.Aufruf.Funktion, private val klassenName: String): Undefiniert(token) {
+    class Methode(token: Token, private val methodenAufruf: AST.Funktion, private val klassenName: String): Undefiniert(token) {
       override val nachricht: String
         get() = "Die Methode 'für $klassenName: ${methodenAufruf.vollerName!!}' ist nicht definiert."
     }
@@ -151,9 +164,9 @@ sealed class GermanScriptFehler(private val fehlerName: String, val token: Token
   }
 
   sealed class TypFehler(token: Token): GermanScriptFehler("Typfehler", token) {
-    class FalscherTyp(token: Token, private val erwarteterTyp: String): TypFehler(token) {
+    class FalscherTyp(token: Token, private val falscherTyp: Typ, private val erwarteterTyp: String): TypFehler(token) {
       override val nachricht: String
-        get() = "Falscher Typ. Erwartet wird der Typ '$erwarteterTyp'."
+        get() = "Falscher Typ '${falscherTyp.name}'. Erwartet wird der Typ '$erwarteterTyp'."
     }
 
     class ObjektErwartet(token: Token): TypFehler(token) {

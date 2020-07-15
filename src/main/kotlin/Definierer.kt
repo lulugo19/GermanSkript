@@ -16,13 +16,16 @@ class Definierer(dateiPfad: String): PipelineKomponente(dateiPfad) {
       return@visit false
     }
     ast.definitionen.visit { knoten ->
-      if(knoten is AST.Definition.FunktionOderMethode.Methode) definiereMethode(knoten)
+      when (knoten) {
+        is AST.Definition.FunktionOderMethode.Methode -> definiereMethode(knoten)
+        is AST.Definition.Konvertierung -> definiereKonvertierung(knoten)
+      }
 
       return@visit false
     }
   }
 
-  fun holeFunktionsDefinition(funktionsAufruf: AST.Aufruf.Funktion): AST.Definition.FunktionOderMethode.Funktion{
+  fun holeFunktionsDefinition(funktionsAufruf: AST.Funktion): AST.Definition.FunktionOderMethode.Funktion{
     if (funktionsAufruf.vollerName == null) {
       funktionsAufruf.vollerName = holeVollenNamenVonFunktionsAufruf(funktionsAufruf, false)
     }
@@ -31,8 +34,15 @@ class Definierer(dateiPfad: String): PipelineKomponente(dateiPfad) {
     }
   }
 
-  fun holeKlassenDefinition(vollerName: String): AST.Definition.Klasse {
-    return klassenDefinitionsMapping.getValue(vollerName)
+  fun holeKlassenDefinition(nomen: AST.Nomen): AST.Definition.Klasse {
+    val teilWörter = nomen.bezeichner.typ.teilWörter
+    for (i in teilWörter.indices) {
+      val klassenName = teilWörter.drop(teilWörter.size - 1 - i).joinToString("")
+      if (klassenDefinitionsMapping.containsKey(klassenName)) {
+        return klassenDefinitionsMapping.getValue(klassenName)
+      }
+    }
+    throw GermanScriptFehler.Undefiniert.Typ(nomen.bezeichner.toUntyped())
   }
 
   val funktionsDefinitionen get(): Sequence<AST.Definition.FunktionOderMethode.Funktion> = funktionsDefinitionsMapping.values.asSequence()
@@ -65,21 +75,27 @@ class Definierer(dateiPfad: String): PipelineKomponente(dateiPfad) {
 
   private fun definiereMethode(methodenDefinition: AST.Definition.FunktionOderMethode.Methode) {
     val vollerName = holeVollenNameVonFunktionsDefinition(methodenDefinition.funktion, methodenDefinition.reflexivPronomen)
-    val klasse = try {
-      holeKlassenDefinition(methodenDefinition.klasse.name.hauptWort(Kasus.NOMINATIV, Numerus.SINGULAR))
-    } catch (error: Exception ) {
-      throw GermanScriptFehler.Undefiniert.Typ(methodenDefinition.klasse.name.bezeichner.toUntyped())
-    }
-
+    val klasse = holeKlassenDefinition(methodenDefinition.klasse.name)
     if (klasse.methoden.containsKey(vollerName)) {
       throw GermanScriptFehler.DoppelteDefinition.Methode(
-              methodenDefinition.funktion.name.toUntyped(),
-              klasse.methoden.getValue(vollerName),
-              klasse.name.hauptWort(Kasus.NOMINATIV, Numerus.SINGULAR)
+          methodenDefinition.funktion.name.toUntyped(),
+          klasse.methoden.getValue(vollerName)
       )
     }
     methodenDefinition.funktion.vollerName = vollerName
     klasse.methoden[vollerName] = methodenDefinition
+  }
+
+  private fun definiereKonvertierung(konvertierung: AST.Definition.Konvertierung) {
+    val klasse = holeKlassenDefinition(konvertierung.klasse)
+    val typName = konvertierung.typ.name.nominativ
+    if (klasse.konvertierungen.containsKey(typName)) {
+      throw GermanScriptFehler.DoppelteDefinition.Konvertierung(
+          konvertierung.klasse.bezeichner.toUntyped(),
+          klasse.konvertierungen.getValue(typName)
+      )
+    }
+    klasse.konvertierungen[typName] = konvertierung
   }
 
   private fun holeVollenNameVonFunktionsDefinition(
@@ -109,7 +125,7 @@ class Definierer(dateiPfad: String): PipelineKomponente(dateiPfad) {
     return vollerName
   }
 
-  fun holeVollenNamenVonFunktionsAufruf(funktionsAufruf: AST.Aufruf.Funktion, ersetzeObjektMitReflexivPronomen: Boolean): String {
+  fun holeVollenNamenVonFunktionsAufruf(funktionsAufruf: AST.Funktion, ersetzeObjektMitReflexivPronomen: Boolean): String {
     // erkläre die Zeichenfolge mit der Zahl über die Zeile der Mond nach die Welt
     var vollerName = funktionsAufruf.verb.wert
     if (funktionsAufruf.objekt != null) {

@@ -174,6 +174,13 @@ Verb(Zahl) fibonacci von der Zahl:
 .
 schreibe die Zeile "Fibonacci(9) = " + (fibonacci von der Zahl 9) als Zeichenfolge
 
+// eigene Konvertierung
+schreibe den Bereich "Konvertierungsdefinition für Person"
+als Zeichenfolge für Person:
+    gebe meinen Namen + " " + meinen NachNamen + " (" + mein Alter als Zeichenfolge + " Jahre alt)" zurück
+.
+schreibe die Zeile Person als Zeichenfolge
+
 /*
 // Stack Overflow Handling
 schreibe den Bereich "Stack Overflow"

@@ -5,25 +5,25 @@ class TypPrüfer(dateiPfad: String): ProgrammDurchlaufer<Typ>(dateiPfad) {
   override val definierer = typisierer.definierer
   override var umgebung = Umgebung<Typ>()
   val logger = SimpleLogger()
-  val ast: AST.Aufruf.Programm get() = typisierer.ast
+  val ast: AST.Programm get() = typisierer.ast
 
   private var zuÜberprüfendeKlasse: AST.Definition.Klasse? = null
   private var zuÜberprüfendeFunktion: AST.Definition.FunktionOderMethode.Funktion? = null
+  private var rückgabeTyp: Typ? = null
+  private var rückgabeErreicht = false
 
   fun prüfe() {
     typisierer.typisiere()
     durchlaufeSätze(ast.sätze, true)
     definierer.funktionsDefinitionen.forEach(::prüfeFunktion)
-    definierer.klassenDefinitionen.forEach { klasse ->
-      zuÜberprüfendeKlasse = klasse
-      durchlaufeSätze(klasse.konstruktor.sätze, true)
-      klasse.methoden.values.forEach {methode -> prüfeFunktion(methode.funktion)}
-    }
+    definierer.klassenDefinitionen.forEach(::prüfeKlasse)
   }
 
+
   private fun ausdruckMussTypSein(ausdruck: AST.Ausdruck, erwarteterTyp: Typ): Typ {
-    if (evaluiereAusdruck(ausdruck) != erwarteterTyp) {
-      throw GermanScriptFehler.TypFehler.FalscherTyp(holeErstesTokenVonAusdruck(ausdruck), erwarteterTyp.name)
+    val ausdruckTyp = evaluiereAusdruck(ausdruck)
+    if (ausdruckTyp != erwarteterTyp) {
+      throw GermanScriptFehler.TypFehler.FalscherTyp(holeErstesTokenVonAusdruck(ausdruck), ausdruckTyp, erwarteterTyp.name)
     }
     return erwarteterTyp
   }
@@ -37,9 +37,26 @@ class TypPrüfer(dateiPfad: String): ProgrammDurchlaufer<Typ>(dateiPfad) {
     for (parameter in funktion.parameter) {
       funktionsUmgebung.schreibeVariable(parameter.name, parameter.typKnoten.typ!!, false)
     }
-    umgebung = funktionsUmgebung
-    zuÜberprüfendeFunktion = funktion
-    durchlaufeSätze(funktion.sätze, true)
+    durchlaufeAufruf(funktion.name.toUntyped(), funktion.sätze, funktionsUmgebung, funktion.rückgabeTyp?.typ)
+  }
+
+  private fun prüfeKlasse(klasse: AST.Definition.Klasse) {
+    zuÜberprüfendeKlasse = klasse
+    durchlaufeAufruf(klasse.name.bezeichner.toUntyped(), klasse.konstruktorSätze, Umgebung(), null)
+    klasse.methoden.values.forEach {methode -> prüfeFunktion(methode.funktion)}
+    klasse.konvertierungen.values.forEach {konvertierung ->
+      durchlaufeAufruf(konvertierung.klasse.bezeichner.toUntyped(), konvertierung.sätze, Umgebung(), konvertierung.typ.typ!!)
+    }
+  }
+
+  private fun durchlaufeAufruf(token: Token, sätze: List<AST.Satz>, umgebung: Umgebung<Typ>, rückgabeTyp: Typ?) {
+    this.rückgabeTyp = rückgabeTyp
+    this.umgebung = umgebung
+    rückgabeErreicht = false
+    durchlaufeSätze(sätze, true)
+    if (rückgabeTyp != null && !rückgabeErreicht) {
+      throw GermanScriptFehler.RückgabeFehler.RückgabeVergessen(token, rückgabeTyp)
+    }
   }
 
   override fun durchlaufeVariablenDeklaration(deklaration: AST.Satz.VariablenDeklaration) {
@@ -72,7 +89,7 @@ class TypPrüfer(dateiPfad: String): ProgrammDurchlaufer<Typ>(dateiPfad) {
     }
   }
 
-  override fun durchlaufeFunktionsAufruf(funktionsAufruf: AST.Aufruf.Funktion, istAusdruck: Boolean): Typ? {
+  override fun durchlaufeFunktionsAufruf(funktionsAufruf: AST.Funktion, istAusdruck: Boolean): Typ? {
     if (funktionsAufruf.vollerName == null) {
       funktionsAufruf.vollerName = definierer.holeVollenNamenVonFunktionsAufruf(funktionsAufruf, false)
     }
@@ -164,9 +181,11 @@ class TypPrüfer(dateiPfad: String): ProgrammDurchlaufer<Typ>(dateiPfad) {
   }
 
   override fun durchlaufeZurückgabe(zurückgabe: AST.Satz.Zurückgabe) {
-    val rückgabeTyp = zuÜberprüfendeFunktion?.rückgabeTyp
-        ?: throw GermanScriptFehler.SyntaxFehler.RückgabeTypFehler(holeErstesTokenVonAusdruck(zurückgabe.ausdruck))
-    ausdruckMussTypSein(zurückgabe.ausdruck, rückgabeTyp.typ!!)
+    if (rückgabeTyp == null) {
+      throw GermanScriptFehler.RückgabeFehler.UngültigeRückgabe(holeErstesTokenVonAusdruck(zurückgabe.ausdruck))
+    }
+    rückgabeErreicht = true
+    ausdruckMussTypSein(zurückgabe.ausdruck, rückgabeTyp!!)
   }
 
   private fun prüfeBedingung(bedingung: AST.Satz.BedingungsTerm) {
@@ -187,7 +206,7 @@ class TypPrüfer(dateiPfad: String): ProgrammDurchlaufer<Typ>(dateiPfad) {
     val elementTyp = if (schleife.liste != null) {
       val liste = evaluiereAusdruck(schleife.liste)
       if (liste !is Typ.Liste) {
-        throw GermanScriptFehler.TypFehler.FalscherTyp(holeErstesTokenVonAusdruck(schleife.liste), "Liste")
+        throw GermanScriptFehler.TypFehler.FalscherTyp(holeErstesTokenVonAusdruck(schleife.liste), liste, "Liste")
       }
       liste.elementTyp
     } else {
@@ -200,8 +219,9 @@ class TypPrüfer(dateiPfad: String): ProgrammDurchlaufer<Typ>(dateiPfad) {
   }
 
   override fun durchlaufeIntern() {
-    // Hier muss nichts gemacht werden
+    // Hier muss nicht viel gemacht werden
     // die internen Sachen sind schon von kotlin Typ-gecheckt :)
+    rückgabeErreicht = true
   }
 
   override fun bevorDurchlaufeMethodenBlock(methodenBlock: AST.Satz.MethodenBlock, blockObjekt: Typ?) {
@@ -319,11 +339,10 @@ class TypPrüfer(dateiPfad: String): ProgrammDurchlaufer<Typ>(dateiPfad) {
     val ausdruck = evaluiereAusdruck(konvertierung.ausdruck)
     typisierer.typisiereTypKnoten(konvertierung.typ)
     val konvertierungsTyp = konvertierung.typ.typ!!
-    if (!ausdruck.definierteKonvertierungen.contains(konvertierungsTyp)){
+    if (!ausdruck.kannNachTypKonvertiertWerden(konvertierungsTyp)){
       throw GermanScriptFehler.KonvertierungsFehler(konvertierung.typ.name.bezeichner.toUntyped(),
           ausdruck, konvertierungsTyp)
     }
-
     return konvertierungsTyp
   }
 }

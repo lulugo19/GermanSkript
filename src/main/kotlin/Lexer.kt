@@ -165,6 +165,7 @@ sealed class TokenTyp(val anzeigeName: String) {
     data class BEZEICHNER_KLEIN(val name: String): TokenTyp("bezeichner")
     data class BEZEICHNER_GROSS(val teilWörter: Array<String>, val symbol: String): TokenTyp("Bezeichner") {
         val istSymbol get() = teilWörter.isEmpty()
+        val hatSymbol get() = symbol.isNotEmpty()
         val hauptWort: String? get() = if (teilWörter.isNotEmpty()) teilWörter[teilWörter.size-1] else null
 
         fun ersetzeHauptWort(wort: String): String {

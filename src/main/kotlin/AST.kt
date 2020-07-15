@@ -85,72 +85,56 @@ sealed class AST {
       var typ: Typ? = null
   )
 
-  sealed class Aufruf(): AST() {
-    abstract val token: Token
-    abstract val vollerName: String?
+  interface IAufruf {
+    val token: Token
+    val vollerName: String?
+  }
 
-    // Wurzelknoten
-    data class Programm(val programmStart: Token?, val definitionen: List<Definition>, val sätze: List<Satz>): Aufruf() {
-      override val vollerName = "starte das Programm"
-      override val token get() = programmStart!!
+  // Wurzelknoten
+  data class Programm(val programmStart: Token?, val definitionen: List<Definition>, val sätze: List<Satz>): AST(), IAufruf {
+    override val vollerName = "starte das Programm"
+    override val token get() = programmStart!!
 
-      override val children = sequence {
-        yieldAll(definitionen)
-        yieldAll(sätze)
+    override val children = sequence {
+      yieldAll(definitionen)
+      yieldAll(sätze)
+    }
+
+    init {
+      // go through the whole AST and set the parents
+      setParentForChildren()
+    }
+  }
+
+  data class Funktion(
+      val verb: TypedToken<TokenTyp.BEZEICHNER_KLEIN>,
+      val objekt: Argument?,
+      val reflexivPronomen: TypedToken<TokenTyp.REFLEXIV_PRONOMEN>?,
+      val präpositionsArgumente: List<PräpositionsArgumente>,
+      val suffix: TypedToken<TokenTyp.BEZEICHNER_KLEIN>?,
+      override var vollerName: String? = null
+  ) : AST(), IAufruf {
+    override val token = verb.toUntyped()
+
+    private val _argumente: MutableList<Argument> = mutableListOf()
+    val argumente: List<Argument> = _argumente
+    var funktionsDefinition: Definition.FunktionOderMethode.Funktion? = null
+    var aufrufTyp: FunktionsAufrufTyp = FunktionsAufrufTyp.FUNKTIONS_AUFRUF
+
+    init {
+      if (objekt != null) {
+        _argumente.add(objekt)
       }
-
-      init {
-        // go through the whole AST and set the parents
-        setParentForChildren()
+      for (präposition in präpositionsArgumente) {
+        _argumente.addAll(präposition.argumente)
       }
     }
 
-    data class Funktion(
-        val verb: TypedToken<TokenTyp.BEZEICHNER_KLEIN>,
-        val objekt: Argument?,
-        val reflexivPronomen: TypedToken<TokenTyp.REFLEXIV_PRONOMEN>?,
-        val präpositionsArgumente: List<PräpositionsArgumente>,
-        val suffix: TypedToken<TokenTyp.BEZEICHNER_KLEIN>?,
-        override var vollerName: String? = null
-    ) : Aufruf() {
-      override val token = verb.toUntyped()
-
-      private val _argumente: MutableList<Argument> = mutableListOf()
-      val argumente: List<Argument> = _argumente
-      var funktionsDefinition: Definition.FunktionOderMethode.Funktion? = null
-      var aufrufTyp: FunktionsAufrufTyp = FunktionsAufrufTyp.FUNKTIONS_AUFRUF
-
-      init {
-        if (objekt != null) {
-          _argumente.add(objekt)
-        }
-        for (präposition in präpositionsArgumente) {
-          _argumente.addAll(präposition.argumente)
-        }
+    override val children = sequence {
+      if (objekt != null) {
+        yield(objekt!!)
       }
-
-      override val children = sequence {
-        if (objekt != null) {
-          yield(objekt!!)
-        }
-        yieldAll(präpositionsArgumente)
-      }
-    }
-
-    data class Konstruktor(val klassenName: Nomen, val sätze: List<Satz>) : Aufruf() {
-
-      override val children = sequence { yieldAll(sätze) }
-
-      override val token = klassenName.bezeichner.toUntyped()
-
-      override val vollerName: String get() {
-        val artikel = when (klassenName.genus) {
-          Genus.MASKULINUM -> "den"
-          Genus.FEMININUM -> "die"
-          Genus.NEUTRUM -> "das"
-        }
-        return "erstelle $artikel ${klassenName.ganzesWort(Kasus.NOMINATIV, Numerus.SINGULAR)}"
-      }
+      yieldAll(präpositionsArgumente)
     }
   }
 
@@ -219,10 +203,19 @@ sealed class AST {
         val name: Nomen,
         val elternKlasse: TypKnoten?,
         val eigenschaften: List<TypUndName>,
-        val konstruktor: Aufruf.Konstruktor
-    ): AST.Definition() {
+        val konstruktorSätze: List<Satz>
+    ): Definition() {
       val methoden: HashMap<String, FunktionOderMethode.Methode> = HashMap()
-      override val children = sequenceOf(konstruktor)
+      val konvertierungen: HashMap<String, Konvertierung> = HashMap()
+      override val children = sequence {yieldAll(konstruktorSätze)}
+    }
+
+    data class Konvertierung(
+        val typ: TypKnoten,
+        val klasse: Nomen,
+        val sätze: List<Satz>
+    ): Definition() {
+      override val children: Sequence<AST> = sequence { yieldAll(sätze) }
     }
   }
 
@@ -291,7 +284,7 @@ sealed class AST {
         }
     }
 
-    data class FunktionsAufruf(val aufruf: Aufruf.Funktion): Satz() {
+    data class FunktionsAufruf(val aufruf: Funktion): Satz() {
       override val children = sequenceOf(aufruf)
     }
 
@@ -335,7 +328,7 @@ sealed class AST {
       override val children = sequenceOf(index)
     }
 
-    data class FunktionsAufruf(val aufruf: Aufruf.Funktion): Ausdruck() {
+    data class FunktionsAufruf(val aufruf: Funktion): Ausdruck() {
       override val children = sequenceOf(aufruf)
     }
 
@@ -354,13 +347,27 @@ sealed class AST {
     data class Konvertierung(
         val ausdruck: Ausdruck,
         val typ: TypKnoten
-    ):Ausdruck()
+    ):Ausdruck(), IAufruf {
+      override val token = typ.name.bezeichner.toUntyped()
+      override val vollerName = "als ${typ.name}"
+    }
 
     data class ObjektInstanziierung(
         val klasse: TypKnoten,
         val eigenschaftsZuweisungen: List<Argument>
-    ): Ausdruck() {
+    ): Ausdruck(), IAufruf {
       override val children = sequence { yieldAll(eigenschaftsZuweisungen) }
+
+      override val token: Token = klasse.name.bezeichner.toUntyped()
+
+      override val vollerName: String get() {
+        val artikel = when (klasse.name.genus) {
+          Genus.MASKULINUM -> "den"
+          Genus.FEMININUM -> "die"
+          Genus.NEUTRUM -> "das"
+        }
+        return "erstelle $artikel ${klasse.name.ganzesWort(Kasus.NOMINATIV, Numerus.SINGULAR)}"
+      }
     }
 
     data class EigenschaftsZugriff(
