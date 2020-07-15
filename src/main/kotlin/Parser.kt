@@ -330,7 +330,7 @@ private sealed class SubParser<T: AST>() {
         is TokenTyp.FORTFAHREN, is TokenTyp.ABBRECHEN -> subParse(Satz.SchleifenKontrolle)
         is TokenTyp.BEZEICHNER_KLEIN ->
           when (nextToken.wert) {
-            "gebe" -> subParse(Satz.Zurückgabe)
+            "gebe", "zurück" -> subParse(Satz.Zurückgabe)
             "für" -> subParse(Satz.FürJedeSchleife)
             else -> subParse(Satz.FunktionsAufruf)
           }
@@ -590,7 +590,7 @@ private sealed class SubParser<T: AST>() {
       }
     }
 
-    object Zurückgabe: Satz<AST.Satz.Zurückgabe>() {
+    object Zurückgabe : Satz<AST.Satz.Zurückgabe>() {
       override val id: ASTKnotenID
         get() = ASTKnotenID.ZURÜCKGABE
 
@@ -601,10 +601,14 @@ private sealed class SubParser<T: AST>() {
       }
 
       override fun parseImpl(): AST.Satz.Zurückgabe {
-        parseKleinesSchlüsselwort("gebe")
-        val ausdruck = subParse(Ausdruck(mitVornomen = true, optionalesIstNachVergleich = false))
-        parseKleinesSchlüsselwort("zurück")
-        return AST.Satz.Zurückgabe(ausdruck)
+        val schlüsselWort = next().toTyped<TokenTyp.BEZEICHNER_KLEIN>()
+        return if (schlüsselWort.wert == "zurück") {
+          AST.Satz.Zurückgabe(schlüsselWort, null)
+        } else {
+          val ausdruck = subParse(Ausdruck(mitVornomen = true, optionalesIstNachVergleich = false))
+          parseKleinesSchlüsselwort("zurück")
+          AST.Satz.Zurückgabe(schlüsselWort, ausdruck)
+        }
       }
     }
 

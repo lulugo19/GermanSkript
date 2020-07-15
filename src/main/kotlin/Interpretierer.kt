@@ -36,6 +36,7 @@ class Interpretierer(dateiPfad: String): ProgrammDurchlaufer<Wert>(dateiPfad) {
   private enum class Flag {
     SCHLEIFE_ABBRECHEN,
     SCHLEIFE_FORTFAHREN,
+    ZURÜCK,
   }
 
   private class AufrufStapelElement(val aufruf: AST.IAufruf, val objekt: Wert.Objekt?, val umgebung: Umgebung<Wert>)
@@ -80,7 +81,7 @@ class Interpretierer(dateiPfad: String): ProgrammDurchlaufer<Wert>(dateiPfad) {
 
     private fun aufrufStapelElementToString(element: AufrufStapelElement): String {
       val aufruf = element.aufruf
-      var zeichenfolge = "${aufruf.vollerName} in ${aufruf.token}"
+      var zeichenfolge = "${aufruf.vollerName} in ${aufruf.token.position}"
       if (element.objekt != null) {
         val klassenName = element.objekt.klassenDefinition.typ.name.hauptWort
         zeichenfolge = "für $klassenName: $zeichenfolge"
@@ -91,7 +92,7 @@ class Interpretierer(dateiPfad: String): ProgrammDurchlaufer<Wert>(dateiPfad) {
   }
 
   override fun sollSätzeAbbrechen(): Boolean {
-    return flags.contains(Flag.SCHLEIFE_FORTFAHREN) || flags.contains(Flag.SCHLEIFE_ABBRECHEN)
+    return flags.contains(Flag.SCHLEIFE_FORTFAHREN) || flags.contains(Flag.SCHLEIFE_ABBRECHEN) || flags.contains(Flag.ZURÜCK)
   }
 
   // region Sätze
@@ -121,6 +122,14 @@ class Interpretierer(dateiPfad: String): ProgrammDurchlaufer<Wert>(dateiPfad) {
     }
   }
 
+  private fun durchlaufeAufruf(aufruf: AST.IAufruf, sätze: List<AST.Satz>, umgebung: Umgebung<Wert>, neuerBereich: Boolean, objekt: Wert.Objekt?): Wert? {
+    flags.remove(Flag.ZURÜCK)
+    aufrufStapel.push(aufruf, umgebung, objekt)
+    durchlaufeSätze(sätze, neuerBereich)
+    aufrufStapel.pop()
+    return rückgabeWert
+  }
+
   override fun durchlaufeFunktionsAufruf(funktionsAufruf: AST.Funktion, istAusdruck: Boolean): Wert? {
     rückgabeWert = null
     val neueUmgebung = Umgebung<Wert>()
@@ -132,15 +141,14 @@ class Interpretierer(dateiPfad: String): ProgrammDurchlaufer<Wert>(dateiPfad) {
       neueUmgebung.schreibeVariable(parameter[i].name, evaluiereAusdruck(argumente[i+j].wert), false)
     }
     val funktionsDefinition = funktionsAufruf.funktionsDefinition!!
-    aufrufStapel.push(funktionsAufruf, neueUmgebung)
-    durchlaufeSätze(funktionsDefinition.sätze, false)
-    aufrufStapel.pop()
-    return funktionsDefinition.rückgabeTyp?.let { rückgabeWert }
+    return durchlaufeAufruf(funktionsAufruf, funktionsDefinition.sätze, neueUmgebung, false, null)
   }
 
   override fun durchlaufeZurückgabe(zurückgabe: AST.Satz.Zurückgabe) {
-    val wert = evaluiereAusdruck(zurückgabe.ausdruck)
-    rückgabeWert = wert
+    if (zurückgabe.ausdruck != null) {
+      rückgabeWert = evaluiereAusdruck(zurückgabe.ausdruck)
+    }
+    flags.add(Flag.ZURÜCK)
   }
 
   override fun durchlaufeBedingungsSatz(bedingungsSatz: AST.Satz.Bedingung) {
@@ -218,9 +226,7 @@ class Interpretierer(dateiPfad: String): ProgrammDurchlaufer<Wert>(dateiPfad) {
     }
     val klassenDefinition = (instanziierung.klasse.typ!! as Typ.Klasse).klassenDefinition
     val objekt = Wert.Objekt(klassenDefinition, eigenschaften)
-    aufrufStapel.push(instanziierung, Umgebung(), objekt)
-    durchlaufeSätze(klassenDefinition.konstruktorSätze, true)
-    aufrufStapel.pop()
+    durchlaufeAufruf(instanziierung, klassenDefinition.konstruktorSätze, Umgebung(), true, objekt)
     return objekt
   }
 
@@ -350,10 +356,7 @@ class Interpretierer(dateiPfad: String): ProgrammDurchlaufer<Wert>(dateiPfad) {
     val wert = evaluiereAusdruck(konvertierung.ausdruck)
     if (wert is Wert.Objekt && wert.klassenDefinition.konvertierungen.containsKey(konvertierung.typ.name.nominativ)) {
       val konvertierungsDefinition = wert.klassenDefinition.konvertierungen.getValue(konvertierung.typ.name.nominativ)
-      aufrufStapel.push(konvertierung, Umgebung(), wert)
-      durchlaufeSätze(konvertierungsDefinition.sätze, true)
-      aufrufStapel.pop()
-      return rückgabeWert!!
+      return durchlaufeAufruf(konvertierung, konvertierungsDefinition.sätze, Umgebung(), true, wert)!!
     }
     return when (konvertierung.typ.typ!!) {
       is Typ.Zahl -> konvertiereZuZahl(konvertierung, wert)

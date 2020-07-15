@@ -155,9 +155,7 @@ sealed class AST {
     data class TypUndName(
         val typKnoten: TypKnoten,
         val name: Nomen
-    ) {
-      val istUnveränderlich get() = name.vornomen!!.typ == TokenTyp.VORNOMEN.ARTIKEL.BESTIMMT
-    }
+    )
 
     data class PräpositionsParameter(
         val präposition: Präposition,
@@ -292,8 +290,12 @@ sealed class AST {
       override val children = sequence { yieldAll(sätze) }
     }
 
-    data class Zurückgabe(val ausdruck: Ausdruck): Satz() {
-      override val children = sequenceOf(ausdruck)
+    data class Zurückgabe(val erstesToken: TypedToken<TokenTyp.BEZEICHNER_KLEIN>, val ausdruck: Ausdruck?): Satz() {
+      override val children = sequence {
+        if (ausdruck != null) {
+          yield(ausdruck!!)
+        }
+      }
     }
   }
 

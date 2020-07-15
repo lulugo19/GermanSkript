@@ -181,11 +181,16 @@ class TypPrüfer(dateiPfad: String): ProgrammDurchlaufer<Typ>(dateiPfad) {
   }
 
   override fun durchlaufeZurückgabe(zurückgabe: AST.Satz.Zurückgabe) {
-    if (rückgabeTyp == null) {
-      throw GermanScriptFehler.RückgabeFehler.UngültigeRückgabe(holeErstesTokenVonAusdruck(zurückgabe.ausdruck))
+    if (rückgabeTyp == null && zurückgabe.ausdruck != null) {
+      throw GermanScriptFehler.RückgabeFehler.UngültigeRückgabe(zurückgabe.erstesToken.toUntyped())
+    }
+    if (rückgabeTyp != null) {
+      if (zurückgabe.ausdruck == null) {
+        throw GermanScriptFehler.RückgabeFehler.RückgabeVergessen(zurückgabe.erstesToken.toUntyped(), rückgabeTyp!!)
+      }
+      ausdruckMussTypSein(zurückgabe.ausdruck, rückgabeTyp!!)
     }
     rückgabeErreicht = true
-    ausdruckMussTypSein(zurückgabe.ausdruck, rückgabeTyp!!)
   }
 
   private fun prüfeBedingung(bedingung: AST.Satz.BedingungsTerm) {

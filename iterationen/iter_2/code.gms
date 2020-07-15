@@ -191,6 +191,15 @@ Person:
     drucke die Person Du
 !
 
+// zurück um eine Funktion zu beenden
+schreibe den Bereich "zurück um eine Funktion zu beenden"
+Verb teste:
+    schreibe die Zeile "vor zurück"
+    zurück
+    schreibe die Zeile "nach zurück"
+.
+teste
+
 /*
 // Stack Overflow Handling
 schreibe den Bereich "Stack Overflow"
