@@ -16,10 +16,10 @@ enum class OperatorKlasse(val kasus: Kasus) {
 enum class Operator(val bindungsKraft: Int, val assoziativität: Assoziativität, val klasse: OperatorKlasse) {
     ODER(1, Assoziativität.LINKS, OperatorKlasse.LOGISCH),
     UND(2, Assoziativität.LINKS, OperatorKlasse.LOGISCH),
-    GLEICH(3, Assoziativität.LINKS, OperatorKlasse.ARITHMETISCH),
+    GLEICH(3, Assoziativität.LINKS, OperatorKlasse.VERGLEICH),
     UNGLEICH(3, Assoziativität.LINKS, OperatorKlasse.VERGLEICH),
     GRÖßER(3, Assoziativität.LINKS, OperatorKlasse.VERGLEICH),
-    KLEINER(3, Assoziativität.LINKS, OperatorKlasse.LOGISCH),
+    KLEINER(3, Assoziativität.LINKS, OperatorKlasse.VERGLEICH),
     GRÖSSER_GLEICH(3, Assoziativität.LINKS, OperatorKlasse.VERGLEICH),
     KLEINER_GLEICH(3, Assoziativität.LINKS, OperatorKlasse.VERGLEICH),
     PLUS(4, Assoziativität.LINKS, OperatorKlasse.ARITHMETISCH),
@@ -104,7 +104,7 @@ sealed class TokenTyp(val anzeigeName: String) {
     object INTERN: TokenTyp("'intern'")
 
     // Artikel und Präpositionen
-    data class ZUWEISUNG(val numerus: EnumSet<Numerus>): TokenTyp("'ist' oder 'sind' oder '='")
+    data class ZUWEISUNG(val numerus: Numerus): TokenTyp("'ist' oder 'sind'")
 
     sealed class VORNOMEN(anzeigeName: String): TokenTyp(anzeigeName) {
         sealed class ARTIKEL(anzeigeName: String): VORNOMEN(anzeigeName) {
@@ -198,7 +198,7 @@ private val SYMBOL_MAPPING = mapOf<Char, TokenTyp>(
     '/' to TokenTyp.OPERATOR(Operator.GETEILT),
     '^' to TokenTyp.OPERATOR(Operator.HOCH),
     '%' to TokenTyp.OPERATOR(Operator.MODULO),
-    '=' to TokenTyp.ZUWEISUNG(EnumSet.of(Numerus.SINGULAR, Numerus.PLURAL)),
+    '=' to TokenTyp.OPERATOR(Operator.GLEICH),
     '>' to TokenTyp.OPERATOR(Operator.GRÖßER),
     '<' to TokenTyp.OPERATOR(Operator.KLEINER),
     '&' to TokenTyp.UNDEFINIERT,
@@ -206,7 +206,6 @@ private val SYMBOL_MAPPING = mapOf<Char, TokenTyp>(
 )
 
 private val DOPPEL_SYMBOL_MAPPING = mapOf<String, TokenTyp>(
-    "==" to TokenTyp.OPERATOR(Operator.GLEICH),
     "!=" to TokenTyp.OPERATOR(Operator.UNGLEICH),
     ">=" to TokenTyp.OPERATOR(Operator.GRÖSSER_GLEICH),
     "<=" to TokenTyp.OPERATOR(Operator.KLEINER_GLEICH),
@@ -243,8 +242,8 @@ private val WORT_MAPPING = mapOf<String, TokenTyp>(
     "falsch" to TokenTyp.BOOLEAN(Wert.Boolean(false)),
 
     // Operatoren
-    "ist" to TokenTyp.ZUWEISUNG(EnumSet.of(Numerus.SINGULAR)),
-    "sind" to TokenTyp.ZUWEISUNG(EnumSet.of(Numerus.PLURAL)),
+    "ist" to TokenTyp.ZUWEISUNG(Numerus.SINGULAR),
+    "sind" to TokenTyp.ZUWEISUNG(Numerus.PLURAL),
     "gleich" to TokenTyp.OPERATOR(Operator.GLEICH),
     "ungleich" to TokenTyp.OPERATOR(Operator.UNGLEICH),
     "und" to TokenTyp.OPERATOR(Operator.UND),

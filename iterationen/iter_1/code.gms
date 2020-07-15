@@ -10,9 +10,9 @@ Verb schreibe die Zeichenfolge Bereich:
 schreibe den Bereich "Bedingung mit Zahlen"
 
 Verb teste die Zahl:
-    wenn die Zahl gleich 3:
+    wenn die Zahl gleich 3 ist:
       schreibe die Zeile "Alle guten Dinge sind drei!".
-    sonst wenn die Zahl gleich 42:
+    sonst wenn die Zahl gleich 42 ist:
       schreibe die Zeile "Die Antwort auf alles.".
     sonst: schreibe die Zahl.
 .
@@ -26,7 +26,7 @@ teste die Zahl 12
 // Fakultät
 schreibe den Bereich "Fakultät"
 Verb(Zahl) fakultät von der Zahl:
-    wenn die Zahl gleich 0: gebe 1 zurück.
+    wenn die Zahl gleich 0 ist: gebe 1 zurück.
     sonst: gebe die Zahl * (fakultät von der Zahl (die Zahl -1)) zurück.
 .
 

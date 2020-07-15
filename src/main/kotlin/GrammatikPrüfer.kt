@@ -171,7 +171,7 @@ class GrammatikPrüfer(dateiPfad: String): PipelineKomponente(dateiPfad) {
     val nomen = variablenDeklaration.name
     prüfeNomen(nomen, EnumSet.of(Kasus.NOMINATIV))
     // prüfe ob Numerus mit 'ist' oder 'sind' übereinstimmt
-    if (!variablenDeklaration.zuweisungsOperator.typ.numerus.contains(nomen.numerus!!)) {
+    if (nomen.numerus != variablenDeklaration.zuweisungsOperator.typ.numerus) {
       throw GermanScriptFehler.GrammatikFehler.FalscheZuweisung(variablenDeklaration.zuweisungsOperator.toUntyped(), nomen.numerus!!)
     }
     if (variablenDeklaration.neu != null) {

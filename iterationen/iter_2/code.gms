@@ -128,7 +128,7 @@ die ZeileX ist "X"
 schreibe die ZeileX
 die ZeileXXX ist "XXX"
 schreibe die ZeileXXX
-die SuperlangeZeile = "Die suuuuuppppeeeerrrrlaaanggggeeeeeeeeeeeeeee Zeile!"
+die SuperlangeZeile ist "Die suuuuuppppeeeerrrrlaaanggggeeeeeeeeeeeeeee Zeile!"
 schreibe die SuperlangeZeile
 
 Verb teste die TestZahl:
@@ -170,7 +170,7 @@ Zähler:
 // in Vergleich kann 'ist' kommen
 schreibe den Bereich "Fibonacci"
 Verb(Zahl) fibonacci von der Zahl:
-    wenn die Zahl kleiner gleich 1: gebe die Zahl zurück.
+    wenn die Zahl kleiner gleich 1 ist: gebe die Zahl zurück.
     sonst: gebe ((fibonacci von der Zahl - 1) + (fibonacci von der Zahl - 2)) zurück.
 .
 schreibe die Zeile "Fibonacci(9) = " + (fibonacci von der Zahl 9) als Zeichenfolge

@@ -390,7 +390,7 @@ class Interpretierer(dateiPfad: String): ProgrammDurchlaufer<Wert>(dateiPfad) {
 }
 
 fun main() {
-  val interpreter = Interpretierer("./iterationen/iter_0/code.gms")
+  val interpreter = Interpretierer("./iterationen/iter_2/code.gms")
   try {
     interpreter.interpretiere()
   } catch (fehler: GermanScriptFehler) {
