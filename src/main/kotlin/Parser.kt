@@ -1,4 +1,5 @@
 import util.Peekable
+import java.io.File
 import java.util.*
 
 enum class ASTKnotenID {
@@ -21,13 +22,15 @@ enum class ASTKnotenID {
   KLASSEN_DEFINITION,
   OBJEKT_INSTANZIIERUNG,
   EIGENSCHAFTS_ZUGRIFF,
-  KONVERTIERUNGS_DEFINITION
+  KONVERTIERUNGS_DEFINITION,
+  IMPORT
 }
 
-class Parser(dateiPfad: String): PipelineKomponente(dateiPfad) {
+class Parser(startDatei: File): PipelineKomponente(startDatei) {
   fun parse(): AST.Programm {
-    val tokens = Peekable(Lexer(dateiPfad).tokeniziere().iterator())
-    val ast = SubParser.Programm(true).parse(tokens, Stack())
+    val lexer = Lexer(startDatei)
+    val tokens = Peekable(lexer.tokeniziere().iterator())
+    val ast = SubParser.Programm(lexer).parse(tokens, Stack())
     if (tokens.peek(0)!!.typ !is TokenTyp.EOF) {
       throw GermanScriptFehler.SyntaxFehler.ParseFehler(tokens.next()!!, "EOF")
     }
@@ -304,12 +307,14 @@ private sealed class SubParser<T: AST>() {
     return result
   }
 
-  protected fun parseSätze(endToken: TokenTyp = TokenTyp.PUNKT): List<AST.Satz> =  parseBereich(endToken) { subParse(Programm(false)) }.sätze
+  protected fun parseSätze(endToken: TokenTyp = TokenTyp.PUNKT): List<AST.Satz> =  parseBereich(endToken) { subParse(Programm()) }.sätze
   // endregion
 
-  class Programm(private val istProgrammStart: Boolean): SubParser<AST.Programm>() {
+  class Programm(private val lexer: Lexer? = null): SubParser<AST.Programm>() {
     override val id: ASTKnotenID
       get() = ASTKnotenID.PROGRAMM
+
+    val istProgrammStart = lexer != null
 
     override fun parseImpl(): AST.Programm {
       val programmStart = if (istProgrammStart) next() else null
@@ -320,7 +325,13 @@ private sealed class SubParser<T: AST>() {
         überspringeLeereZeilen()
         when {
           parseSatz()?.also { sätze += it } != null -> Unit
-          parseDefinition()?.also { definitionen += it } != null -> Unit
+          parseDefinition()?.also { definition ->
+            if (definition is AST.Definition.Import) {
+              lexer!!.importiereDatei(definition)
+            } else {
+              definitionen += definition
+            }
+          } != null -> Unit
           else -> when (peekType()) {
             is TokenTyp.EOF, TokenTyp.PUNKT, TokenTyp.AUSRUFEZEICHEN -> break@loop
             else -> throw GermanScriptFehler.SyntaxFehler.ParseFehler(next())
@@ -350,11 +361,19 @@ private sealed class SubParser<T: AST>() {
     }
 
     fun parseDefinition(): AST.Definition? {
-      return when(peekType()) {
+      val nextToken = peek()
+      return when(nextToken.typ) {
         is TokenTyp.DEKLINATION -> subParse(Definition.DeklinationsDefinition)
         is TokenTyp.NOMEN -> subParse(Definition.Klasse)
         is TokenTyp.VERB -> parseFunktionOderMethode()
         is TokenTyp.ALS -> subParse(Definition.Konvertierung)
+        is TokenTyp.BEZEICHNER_KLEIN -> {
+          if (nextToken.wert == "importiere") {
+            subParse(Definition.Import)
+          } else {
+            null
+          }
+        }
         else -> null
       }
     }
@@ -871,7 +890,7 @@ private sealed class SubParser<T: AST>() {
     }
 
     object Konvertierung: Definition<AST.Definition.Konvertierung>() {
-      override val id: ASTKnotenID = ASTKnotenID.KONVERTIERUNGS_DEFINITION
+      override val id = ASTKnotenID.KONVERTIERUNGS_DEFINITION
 
       override fun parseImpl(): AST.Definition.Konvertierung {
         expect<TokenTyp.ALS>("'als'")
@@ -881,10 +900,20 @@ private sealed class SubParser<T: AST>() {
         return AST.Definition.Konvertierung(typ, klasse, parseSätze())
       }
     }
+
+    object Import: Definition<AST.Definition.Import>() {
+      override val id = ASTKnotenID.IMPORT
+
+      override fun parseImpl(): AST.Definition.Import {
+        parseKleinesSchlüsselwort("importiere")
+        val dateiPfad = expect<TokenTyp.ZEICHENFOLGE>("Dateipfad")
+        return AST.Definition.Import(dateiPfad)
+      }
+    }
   }
 }
 
 fun main() {
-  val ast = Parser("./iterationen/iter_2/code.gms").parse()
+  val ast = Parser(File("./iterationen/iter_2/code.gms")).parse()
   println(ast)
 }

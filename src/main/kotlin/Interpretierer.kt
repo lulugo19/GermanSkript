@@ -1,8 +1,9 @@
+import java.io.File
 import java.text.ParseException
 import java.util.*
 
-class Interpretierer(dateiPfad: String): ProgrammDurchlaufer<Wert>(dateiPfad) {
-  val typPrüfer = TypPrüfer(dateiPfad)
+class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
+  val typPrüfer = TypPrüfer(startDatei)
 
   override val definierer = typPrüfer.definierer
   val ast: AST.Programm = typPrüfer.ast
@@ -406,12 +407,6 @@ class Interpretierer(dateiPfad: String): ProgrammDurchlaufer<Wert>(dateiPfad) {
 }
 
 fun main() {
-  val interpreter = Interpretierer("./iterationen/iter_2/code.gms")
-  try {
-    interpreter.interpretiere()
-  } catch (fehler: GermanScriptFehler) {
-    // Anstatt zu werfen gebe Fehler später einfach aus
-    // System.err.println(fehler.message!!)
-    throw fehler
-  }
+  val interpreter = Interpretierer(File("./beispiele/AddiereZweiZahlen.gm"))
+  interpreter.interpretiere()
 }

@@ -1,8 +1,9 @@
 import util.SimpleLogger
+import java.io.File
 import java.util.*
 
-class GrammatikPrüfer(dateiPfad: String): PipelineKomponente(dateiPfad) {
-  val deklinierer = Deklinierer(dateiPfad)
+class GrammatikPrüfer(startDatei: File): PipelineKomponente(startDatei) {
+  val deklinierer = Deklinierer(startDatei)
   val ast = deklinierer.ast
 
   val logger = SimpleLogger()
@@ -343,7 +344,7 @@ private val VORNOMEN_TABELLE = mapOf<TokenTyp.VORNOMEN, Array<Array<String>>>(
 )
 
 fun main() {
-  val grammatikPrüfer = GrammatikPrüfer("./iterationen/iter_2/code.gms")
+  val grammatikPrüfer = GrammatikPrüfer(File("./iterationen/iter_2/code.gms"))
   grammatikPrüfer.prüfe()
   grammatikPrüfer.logger.print()
 }

@@ -225,7 +225,7 @@ Verb für Hüter verrate das Boolean ÄnderBares:
 
 Verb für Hüter ändere es:
     meine ÄnderungsAnZahl ist meine ÄnderungsAnZahl plus 1
-    mein ÄnderBares ist "Warte mal, ich habe meine Meinung #{meine ÄnderungsAnZahl}. geändert..."
+    mein ÄnderBares ist "Warte mal, ich habe meine Meinung #{meine ÄnderungsAnZahl}. geändert ..."
 .
 
 der Hüter ist ein Hüter mit dem Namen "Wilfried"

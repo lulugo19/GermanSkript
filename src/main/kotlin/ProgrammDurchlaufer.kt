@@ -1,4 +1,6 @@
-abstract  class ProgrammDurchlaufer<T>(dateiPfad: String): PipelineKomponente(dateiPfad ) {
+import java.io.File
+
+abstract  class ProgrammDurchlaufer<T>(startDatei: File): PipelineKomponente(startDatei ) {
   abstract val definierer: Definierer
 
   protected abstract val umgebung: Umgebung<T>

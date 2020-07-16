@@ -1,1 +1,3 @@
-open class PipelineKomponente(protected val dateiPfad: String)
+import java.io.File
+
+open class PipelineKomponente(protected val startDatei: File)

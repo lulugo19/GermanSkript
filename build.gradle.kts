@@ -1,5 +1,6 @@
 plugins {
     kotlin("jvm") version "1.3.71"
+    application
 }
 
 group = "germanscript"
@@ -8,6 +9,10 @@ version = "1.0-SNAPSHOT"
 repositories {
     mavenCentral()
     jcenter()
+}
+
+application {
+    mainClassName = "StartKt"
 }
 
 dependencies {

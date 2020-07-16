@@ -1,5 +1,7 @@
-class Definierer(dateiPfad: String): PipelineKomponente(dateiPfad) {
-  val grammatikPrüfer = GrammatikPrüfer(dateiPfad)
+import java.io.File
+
+class Definierer(startDatei: File): PipelineKomponente(startDatei) {
+  val grammatikPrüfer = GrammatikPrüfer(startDatei)
   val ast = grammatikPrüfer.ast
   private val funktionsDefinitionsMapping = hashMapOf<String, AST.Definition.FunktionOderMethode.Funktion>()
   private val klassenDefinitionsMapping = hashMapOf<String, AST.Definition.Klasse>()
@@ -187,7 +189,7 @@ class Definierer(dateiPfad: String): PipelineKomponente(dateiPfad) {
 }
 
 fun main() {
-  val definierer = Definierer("./iterationen/iter_2/code.gms")
+  val definierer = Definierer(File("./iterationen/iter_2/code.gms"))
   definierer.definiere()
   definierer.gebeFunktionsDefinitionenAus()
   definierer.gebeKlassenDefinitionenAus()

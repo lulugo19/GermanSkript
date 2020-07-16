@@ -1,7 +1,8 @@
+import java.io.File
 import util.SimpleLogger
 
-class TypPrüfer(dateiPfad: String): ProgrammDurchlaufer<Typ>(dateiPfad) {
-  val typisierer = Typisierer(dateiPfad)
+class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
+  val typisierer = Typisierer(startDatei)
   override val definierer = typisierer.definierer
   override var umgebung = Umgebung<Typ>()
   val logger = SimpleLogger()
@@ -372,7 +373,7 @@ class TypPrüfer(dateiPfad: String): ProgrammDurchlaufer<Typ>(dateiPfad) {
 }
 
 fun main() {
-  val typPrüfer = TypPrüfer("./iterationen/iter_2/code.gms")
+  val typPrüfer = TypPrüfer(File("./iterationen/iter_2/code.gms"))
   typPrüfer.prüfe()
   typPrüfer.logger.print()
 }

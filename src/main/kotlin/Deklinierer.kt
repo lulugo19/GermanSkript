@@ -2,7 +2,6 @@ import kotlinx.coroutines.*
 import java.io.File
 import java.lang.Integer.min
 import java.util.*
-import kotlin.math.sin
 
 data class Deklination(
     val genus: Genus,
@@ -41,7 +40,7 @@ data class Deklination(
   override fun toString(): String {
     val anfang = "Deklination ${genus.anzeigeName}"
     val allesGleichBeiSingular = singular.all { it == singular[0] }
-    val sing = if (allesGleichBeiSingular) "Singular($singular[0])" else "Singular(${singular.joinToString(", ")})"
+    val sing = if (allesGleichBeiSingular) "Singular(${singular[0]})" else "Singular(${singular.joinToString(", ")})"
     val allesGleichBeiPlural = plural.all { it == plural[0] }
     val plur = when {
       allesGleichBeiPlural -> if (plural[0] == sing) "" else "Plural(${plural[0]})"
@@ -71,12 +70,12 @@ data class Deklination(
 
 typealias DudenAnfrage = Pair<TypedToken<TokenTyp.BEZEICHNER_GROSS>, Deferred<Deklination>>
 
-class Deklinierer(dateiPfad: String): PipelineKomponente(dateiPfad) {
-  val ast = Parser(dateiPfad).parse()
+class Deklinierer(startDatei: File): PipelineKomponente(startDatei) {
+  val ast = Parser(startDatei).parse()
   val wörterbuch = Wörterbuch()
 
   fun deklaniere() = runBlocking {
-    val dudenAnfragen = mutableListOf<DudenAnfrage>()
+    val dudenAnfragen = mutableMapOf<String, MutableList<DudenAnfrage>>()
     ast.definitionen.visit { knoten ->
       if (knoten is AST.Definition.DeklinationsDefinition.Definition) {
         try {
@@ -88,7 +87,7 @@ class Deklinierer(dateiPfad: String): PipelineKomponente(dateiPfad) {
         }
       }
       else if (knoten is AST.Definition.DeklinationsDefinition.Duden) {
-        dudenAnfragen += (knoten.wort to async(Dispatchers.IO) {
+        dudenAnfragen.computeIfAbsent(knoten.wort.dateiPfad) { mutableListOf() } += (knoten.wort to async(Dispatchers.IO) {
             val wort = knoten.wort
             try {
               return@async Duden.dudenGrammatikAnfrage(wort.wert)
@@ -110,22 +109,24 @@ class Deklinierer(dateiPfad: String): PipelineKomponente(dateiPfad) {
     löseDudenAnfragenAuf(dudenAnfragen)
   }
 
-  suspend fun löseDudenAnfragenAuf(dudenAnfragen: List<DudenAnfrage>) {
+  private suspend fun löseDudenAnfragenAuf(anfragenNachDatei: Map<String, List<DudenAnfrage>>) {
     // löse Duden-Anfragen auf und überschreibe Duden-Deklination mit manueller Deklination im Source-Code
-    val quellCodeDatei = File(dateiPfad)
-    val quellCodeZeilen = quellCodeDatei.readLines().toMutableList()
-    for ((token, anfrage) in dudenAnfragen) {
-      try {
-        val deklination = anfrage.await()
-        wörterbuch.fügeDeklinationHinzu(deklination)
-        // minus 1, da die Zeilen bei 1 anfangen zu zählen
-        quellCodeZeilen[token.anfang.zeile-1] = deklination.toString()
+    for ((datei, dudenAnfragen) in anfragenNachDatei.entries) {
+      val quellCodeDatei = File(datei)
+      val quellCodeZeilen = quellCodeDatei.readLines().toMutableList()
+      for ((token, anfrage) in dudenAnfragen) {
+        try {
+          val deklination = anfrage.await()
+          wörterbuch.fügeDeklinationHinzu(deklination)
+          // minus 1, da die Zeilen bei 1 anfangen zu zählen
+          quellCodeZeilen[token.anfang.zeile-1] = deklination.toString()
+        }
+        catch (fehler: Wörterbuch.DoppelteDeklinationFehler) {
+          // TODO: Bei doppelten Deklinationen sollte später vielleicht eine Warnung ausgegeben werden
+        }
       }
-      catch (fehler: Wörterbuch.DoppelteDeklinationFehler) {
-
-      }
+      quellCodeDatei.writeText(quellCodeZeilen.joinToString("\n"))
     }
-    quellCodeDatei.writeText(quellCodeZeilen.joinToString("\n"))
   }
   
   fun holeDeklination(nomen: AST.Nomen): Deklination {
@@ -264,7 +265,7 @@ fun wörterBuchTest() {
 fun main() {
   // wörterBuchTest()
 
-  val deklanierer = Deklinierer("./iterationen/iter_2/code.gms")
+  val deklanierer = Deklinierer(File("./iterationen/iter_2/code.gms"))
   deklanierer.deklaniere()
   deklanierer.druckeWörterbuch()
 }

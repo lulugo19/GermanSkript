@@ -1,4 +1,5 @@
 import util.SimpleLogger
+import java.io.File
 
 sealed class Typ(val name: String) {
   override fun toString(): String = name
@@ -67,8 +68,8 @@ sealed class Typ(val name: String) {
   }
 }
 
-class Typisierer(dateiPfad: String): PipelineKomponente(dateiPfad) {
-  val definierer = Definierer(dateiPfad)
+class Typisierer(startDatei: File): PipelineKomponente(startDatei) {
+  val definierer = Definierer(startDatei)
   val ast = definierer.ast
 
   fun typisiere() {
@@ -121,6 +122,6 @@ class Typisierer(dateiPfad: String): PipelineKomponente(dateiPfad) {
 }
 
 fun main() {
-  val typisierer = Typisierer("./iterationen/iter_2/code.gms")
+  val typisierer = Typisierer(File("./iterationen/iter_2/code.gms"))
   typisierer.typisiere()
 }

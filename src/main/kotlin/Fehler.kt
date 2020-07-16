@@ -73,6 +73,20 @@ sealed class GermanScriptFehler(private val fehlerName: String, val token: Token
       get() = "Das Wort '$hauptWort' ist unbekannt. Füge eine Deklinationsanweisung für das Wort '$hauptWort' hinzu!"
   }
 
+  sealed class ImportFehler(token: Token, protected val dateiPfad: String): GermanScriptFehler("Importfehler", token) {
+    class DateiNichtGefunden(token: Token, dateiPfad: String): ImportFehler(token, dateiPfad) {
+      override val nachricht: String
+        get() = "Die Datei '$dateiPfad' konnte nicht gefunden werden."
+    }
+
+    class ZyklischeImports(token: Token, dateiPfad: String): ImportFehler(token, dateiPfad) {
+      override val nachricht: String
+        get() = "Zyklischer Import! Die Datei '$dateiPfad' wurde bereits vorher schon importiert."
+    }
+  }
+
+
+
   sealed class GrammatikFehler(token: Token): GermanScriptFehler("Grammatikfehler",token) {
 
     sealed class FormFehler(token: Token, protected val kasus: Kasus, protected val nomen: AST.Nomen): GrammatikFehler(token) {

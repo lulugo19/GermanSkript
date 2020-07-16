@@ -218,6 +218,12 @@ sealed class AST {
     ): Definition() {
       override val children: Sequence<AST> = sequence { yieldAll(sätze) }
     }
+
+    data class Import(
+        val dateiPfad: TypedToken<TokenTyp.ZEICHENFOLGE>
+    ): Definition() {
+      val pfad = dateiPfad.typ.zeichenfolge.zeichenfolge
+    }
   }
 
 

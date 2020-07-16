@@ -1,4 +1,6 @@
-die Zahl A ist lese als Zahl
-die Zahl B ist lese als Zahl
-die Summe ist A plus B
-drucke Summe
+Deklination Femininum Singular(Summe) Plural(Summen)
+
+die ZahlA ist lese als Zahl
+die ZahlB ist lese als Zahl
+die Summe ist die ZahlA plus die ZahlB
+schreibe die Zeile Summe als Zeichenfolge
