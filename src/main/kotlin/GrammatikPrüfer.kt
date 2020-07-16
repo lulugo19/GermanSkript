@@ -324,7 +324,22 @@ private val VORNOMEN_TABELLE = mapOf<TokenTyp.VORNOMEN, Array<Array<String>>>(
         arrayOf("deines", "deiner", "deines", "deiner"),
         arrayOf("deinem", "deiner", "deinem", "deinen"),
         arrayOf("deinen", "deine", "dein", "deine")
+    ),
+
+    TokenTyp.VORNOMEN.DEMONSTRATIV_PRONOMEN.DIESE to arrayOf(
+        arrayOf("dieser", "diese", "dieses", "diese"),
+        arrayOf("dieses", "dieser", "dieses", "dieser"),
+        arrayOf("diesem", "dieser", "diesem", "diesen"),
+        arrayOf("diesen", "diese", "dieses", "diese")
+    ),
+
+    TokenTyp.VORNOMEN.DEMONSTRATIV_PRONOMEN.JENE to arrayOf(
+        arrayOf("jener", "jene", "jenes", "jene"),
+        arrayOf("jenes", "jener", "jenes", "jener"),
+        arrayOf("jenem", "jener", "jenem", "jenen"),
+        arrayOf("jenen", "jene", "jenes", "jene")
     )
+
 )
 
 fun main() {

@@ -68,9 +68,9 @@ sealed class GermanScriptFehler(private val fehlerName: String, val token: Token
     }
   }
 
-  class UnbekanntesWort(token: Token): GermanScriptFehler("Unbekanntes Wort", token) {
+  class UnbekanntesWort(token: Token, private val hauptWort: String): GermanScriptFehler("Unbekanntes Wort", token) {
     override val nachricht: String
-      get() = "Das Wort '${token.wert}' ist unbekannt. Füge eine Deklinationsanweisung für das Wort '${token.wert}' hinzu!"
+      get() = "Das Wort '$hauptWort' ist unbekannt. Füge eine Deklinationsanweisung für das Wort '$hauptWort' hinzu!"
   }
 
   sealed class GrammatikFehler(token: Token): GermanScriptFehler("Grammatikfehler",token) {
@@ -199,6 +199,11 @@ sealed class GermanScriptFehler(private val fehlerName: String, val token: Token
 
     class EigenschaftUnveränderlich(token: Token): EigenschaftsFehler(token) {
       override val nachricht = "Die Eigenschaft '${token.wert}' ist unveränderlich und kann nicht erneut zugewiesen werden."
+    }
+
+    class EigenschaftPrivat(token: Token): EigenschaftsFehler(token) {
+      override val nachricht: String
+        get() = "Die Eigenschaft '${token.wert}' ist privat und es kann von außen nicht auf sie zugegriffen werden."
     }
   }
 

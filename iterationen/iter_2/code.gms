@@ -204,6 +204,45 @@ schreibe den Bereich "String Interpolation"
 schreibe die Zeile "Hallo ich bin #{der Name der Person} #{der NachName der Person}!\n" +
     "Und ich bin #{das Alter der Person} Jahre alt."
 
+schreibe den Bereich "private Eigenschaften"
+
+Deklination Maskulinum Singular(Hüter, Hüters, Hüter, Hüter) Plural(Hüter, Hüter, Hütern, Hüter)
+Deklination Neutrum Singular(Geheimnis, Geheimnisses, Geheimnis, Geheimnis) Plural(Geheimnisse, Geheimnisse, Geheimnissen, Geheimnisse)
+Deklination Neutrum Singular(Bares, Barens, Baren, Bare) Plural(Baren)
+
+Nomen Hüter mit der Zeichenfolge Name:
+    dieses Geheimnis ist "Die Antwort auf alles ist 42."
+    jenes ÄnderBares ist mein Geheimnis
+    jene ÄnderungsAnZahl ist 0
+.
+
+Verb für Hüter verrate das Boolean ÄnderBares:
+    wenn das ÄnderBares:
+        schreibe die Zeile "Das geänderte Geheimnis lautet: #{mein ÄnderBares}".
+    sonst:
+        schreibe die Zeile "Das Geheimnis lautet: #{mein Geheimnis}".
+.
+
+Verb für Hüter ändere es:
+    meine ÄnderungsAnZahl ist meine ÄnderungsAnZahl plus 1
+    mein ÄnderBares ist "Warte mal, ich habe meine Meinung #{meine ÄnderungsAnZahl}. geändert..."
+.
+
+der Hüter ist ein Hüter mit dem Namen "Wilfried"
+// schreibe die Zeile (das Geheimnis des Hüters) // gibt Fehler aus
+Hüter:
+    // schreibe die Zeile (dein Geheimnis)
+    verrate das ÄnderBare falsch
+    verrate das ÄnderBare wahr
+    ändere es
+    verrate das ÄnderBare wahr
+    ändere es
+    ändere es
+    verrate das ÄnderBare wahr
+    verrate das ÄnderBare falsch
+!
+
+
 /*
 // Stack Overflow Handling
 schreibe den Bereich "Stack Overflow"

@@ -56,7 +56,8 @@ sealed class AST {
     var numerus: Numerus? = null
     var fälle: EnumSet<Kasus> = EnumSet.noneOf(Kasus::class.java)
 
-    val unveränderlich = vornomen?.typ == TokenTyp.VORNOMEN.ARTIKEL.BESTIMMT
+    val unveränderlich = vornomen?.typ ==
+        TokenTyp.VORNOMEN.ARTIKEL.BESTIMMT || vornomen?.typ == TokenTyp.VORNOMEN.DEMONSTRATIV_PRONOMEN.DIESE
     val istSymbol get() = bezeichner.typ.istSymbol
     val geprüft get() = deklination != null
     val genus get() = if (istSymbol) Genus.NEUTRUM else deklination!!.genus
@@ -155,7 +156,9 @@ sealed class AST {
     data class TypUndName(
         val typKnoten: TypKnoten,
         val name: Nomen
-    )
+    ) {
+      val istPrivat get() = typKnoten.name.vornomen!!.typ is TokenTyp.VORNOMEN.DEMONSTRATIV_PRONOMEN
+    }
 
     data class PräpositionsParameter(
         val präposition: Präposition,
@@ -200,7 +203,7 @@ sealed class AST {
     data class Klasse(
         val typ: TypKnoten,
         val elternKlasse: TypKnoten?,
-        val eigenschaften: List<TypUndName>,
+        val eigenschaften: MutableList<TypUndName>,
         val konstruktorSätze: List<Satz>
     ): Definition() {
       val methoden: HashMap<String, FunktionOderMethode.Methode> = HashMap()
@@ -235,6 +238,7 @@ sealed class AST {
       override val children = sequenceOf(ausdruck)
 
       val istEigenschaftsNeuZuweisung = name.vornomen!!.typ == TokenTyp.VORNOMEN.POSSESSIV_PRONOMEN.MEIN
+      val istPrivateEigenschaft = name.vornomen!!.typ is TokenTyp.VORNOMEN.DEMONSTRATIV_PRONOMEN
     }
 
     data class BedingungsTerm(

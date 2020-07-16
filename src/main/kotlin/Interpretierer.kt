@@ -106,11 +106,12 @@ class Interpretierer(dateiPfad: String): ProgrammDurchlaufer<Wert>(dateiPfad) {
   }
 
   override fun durchlaufeVariablenDeklaration(deklaration: AST.Satz.VariablenDeklaration) {
-    if (deklaration.istEigenschaftsNeuZuweisung) {
+    if (deklaration.istEigenschaftsNeuZuweisung || deklaration.istPrivateEigenschaft) {
       // weise Eigenschaft neu zu
       aufrufStapel.top().objekt!!.eigenschaften[deklaration.name.ganzesWort(Kasus.NOMINATIV, deklaration.name.numerus!!)] =
           evaluiereAusdruck(deklaration.ausdruck)
-    } else {
+    }
+    else {
       val wert = evaluiereAusdruck(deklaration.ausdruck)
       // Da der Typprüfer schon überprüft ob Variablen überschrieben werden können
       // werden hier die Variablen immer überschrieben

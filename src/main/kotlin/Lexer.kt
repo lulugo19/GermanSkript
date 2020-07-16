@@ -121,6 +121,11 @@ sealed class TokenTyp(val anzeigeName: String) {
             object MEIN: POSSESSIV_PRONOMEN("Ich")
             object DEIN: POSSESSIV_PRONOMEN("Du")
         }
+
+        sealed class DEMONSTRATIV_PRONOMEN(pronomen: String): VORNOMEN("Demonstrativpronomen ('$pronomen')") {
+            object DIESE: DEMONSTRATIV_PRONOMEN("Diese")
+            object JENE: DEMONSTRATIV_PRONOMEN("Jene")
+        }
     }
 
     sealed class REFLEXIV_PRONOMEN(pronomen: String): TokenTyp("Reflexivpronomen ('$pronomen')") {
@@ -281,7 +286,9 @@ private val WORT_MAPPING = mapOf<String, TokenTyp>(
     "die" to TokenTyp.VORNOMEN.ARTIKEL.BESTIMMT,
     "das" to TokenTyp.VORNOMEN.ARTIKEL.BESTIMMT,
     "den" to TokenTyp.VORNOMEN.ARTIKEL.BESTIMMT,
+    "des" to TokenTyp.VORNOMEN.ARTIKEL.BESTIMMT,
     "dem" to TokenTyp.VORNOMEN.ARTIKEL.BESTIMMT,
+
     "ein" to TokenTyp.VORNOMEN.ARTIKEL.UNBESTIMMT,
     "eine" to TokenTyp.VORNOMEN.ARTIKEL.UNBESTIMMT,
     "eines" to TokenTyp.VORNOMEN.ARTIKEL.UNBESTIMMT,
@@ -304,6 +311,15 @@ private val WORT_MAPPING = mapOf<String, TokenTyp>(
     "deiner" to TokenTyp.VORNOMEN.POSSESSIV_PRONOMEN.DEIN,
     "deinem" to TokenTyp.VORNOMEN.POSSESSIV_PRONOMEN.DEIN,
     "deinen" to TokenTyp.VORNOMEN.POSSESSIV_PRONOMEN.DEIN,
+
+    // Demonstrativpronomen
+    "dieser" to TokenTyp.VORNOMEN.DEMONSTRATIV_PRONOMEN.DIESE,
+    "diese" to TokenTyp.VORNOMEN.DEMONSTRATIV_PRONOMEN.DIESE,
+    "dieses" to TokenTyp.VORNOMEN.DEMONSTRATIV_PRONOMEN.DIESE,
+
+    "jener" to TokenTyp.VORNOMEN.DEMONSTRATIV_PRONOMEN.JENE,
+    "jene" to TokenTyp.VORNOMEN.DEMONSTRATIV_PRONOMEN.JENE,
+    "jenes" to TokenTyp.VORNOMEN.DEMONSTRATIV_PRONOMEN.JENE,
 
     // Reflexivpronomen
     "mich" to TokenTyp.REFLEXIV_PRONOMEN.MICH,

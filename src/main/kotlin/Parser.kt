@@ -148,6 +148,14 @@ private sealed class SubParser<T: AST>() {
         }
       }
     }
+    if (vornomen is TokenTyp.VORNOMEN.DEMONSTRATIV_PRONOMEN) {
+      // Demonstrativpronomen dürfen nur in Konstruktoren und nur in Variablendeklarationen vorkommen
+      if (!hierarchyContainsNode(ASTKnotenID.VARIABLEN_DEKLARATION) && !hierarchyContainsNode(ASTKnotenID.KLASSEN_DEFINITION)) {
+        throw GermanScriptFehler.SyntaxFehler.ParseFehler(vornomen.toUntyped(), null,
+            "Die Demonstrativpronomen 'diese' und 'jene' dürfen nur in Konstruktoren (Klassendefinitionen) verwendet werden,\n" +
+                "um von außen unzugreifbare Eigenschaften zu erstellen.")
+      }
+    }
     val bezeichner = parseGroßenBezeichner(symbolErlaubt)
     return AST.Nomen(vornomen, bezeichner)
   }
@@ -251,6 +259,8 @@ private sealed class SubParser<T: AST>() {
       }
       TokenTyp.VORNOMEN.POSSESSIV_PRONOMEN.MEIN -> AST.Ausdruck.SelbstEigenschaftsZugriff(nomen)
       TokenTyp.VORNOMEN.POSSESSIV_PRONOMEN.DEIN -> AST.Ausdruck.MethodenBlockEigenschaftsZugriff(nomen)
+      is TokenTyp.VORNOMEN.DEMONSTRATIV_PRONOMEN -> throw GermanScriptFehler.SyntaxFehler.ParseFehler(nomen.vornomen.toUntyped(), null,
+        "Die Demonstrativpronomen 'diese' und 'jene' dürfen nicht in Ausdrücken verwendet werden.")
     }
 
     return when(peekType()){
@@ -856,7 +866,7 @@ private sealed class SubParser<T: AST>() {
         }
 
         val konstruktorSätze = parseSätze()
-        return AST.Definition.Klasse(name, elternKlasse, eingenschaften, konstruktorSätze)
+        return AST.Definition.Klasse(name, elternKlasse, eingenschaften.toMutableList(), konstruktorSätze)
       }
     }
 
