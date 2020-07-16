@@ -130,9 +130,9 @@ class Deklinierer(dateiPfad: String): PipelineKomponente(dateiPfad) {
   
   fun holeDeklination(nomen: AST.Nomen): Deklination {
     try {
-      return wörterbuch.holeDeklination(nomen.bezeichner.typ.hauptWort!!)
+      return wörterbuch.holeDeklination(nomen.hauptWort)
     } catch (error: Wörterbuch.WortNichtGefunden) {
-      throw GermanScriptFehler.UnbekanntesWort(nomen.bezeichner.toUntyped())
+      throw GermanScriptFehler.UnbekanntesWort(nomen.bezeichner.toUntyped(), nomen.hauptWort)
     }
   }
 
@@ -181,8 +181,12 @@ class Wörterbuch {
       val mid = ((lo.toDouble() + hi) / 2).toInt()
       val deklination = tabelle[mid]
       val nominativSingular = deklination.nominativSingular
-      val maxLength = min(wort.length, nominativSingular.length)
-      if (wortVergleichBerücksichtigeUmlaute(wort.substring(0, maxLength), deklination.nominativSingular) == 0) {
+      // die minus 1 ist da weil die anderen Formen eines Worts nicht umbedingt immer mit dem
+      // Nominativ anfangen müssen
+      // TODO: Ich weiß nicht ob diese Lösung stabil ist. Denk dir vielleicht etwas anderes aus.
+      val maxLength = min(wort.length, nominativSingular.length) - 1
+      if (wortVergleichBerücksichtigeUmlaute(wort.substring(0, maxLength),
+              deklination.nominativSingular.substring(0, maxLength)) == 0) {
         if (deklination.fallSequenz.contains(wort)) {
           return deklination
         } else {
