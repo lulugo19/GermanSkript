@@ -104,7 +104,8 @@ class Definierer(dateiPfad: String): PipelineKomponente(dateiPfad) {
     var vollerName = funktionsDefinition.name.wert
     if (funktionsDefinition.objekt != null) {
       val objekt = funktionsDefinition.objekt
-      vollerName += " " + objekt.name.vornomenString!! + " " + objekt.name.hauptWort
+      val typ = objekt.typKnoten.name
+      vollerName += " " + objekt.name.vornomenString!! + " " + objekt.name.hauptWort(typ.fälle.first(), typ.numerus!!)
     }
     else if (reflexivPronomen != null) {
       vollerName += " ${reflexivPronomen.wert}"
@@ -113,7 +114,8 @@ class Definierer(dateiPfad: String): PipelineKomponente(dateiPfad) {
       vollerName += " " + präposition.präposition.präposition.wert
       for (parameterIndex in präposition.parameter.indices) {
         val parameter = präposition.parameter[parameterIndex]
-        vollerName += " " + parameter.name.vornomenString!! + " " + parameter.name.hauptWort
+        val typ = parameter.typKnoten.name
+        vollerName += " " + parameter.name.vornomenString!! + " " + parameter.name.hauptWort(typ.fälle.first(), typ.numerus!!)
         if (parameterIndex != präposition.parameter.size-1) {
           vollerName += ","
         }
