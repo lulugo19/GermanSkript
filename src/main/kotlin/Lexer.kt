@@ -1,8 +1,6 @@
 import util.Peekable
 import java.io.File
 import java.util.*
-import kotlin.text.Regex.Companion.escape
-import kotlin.text.Regex.Companion.escapeReplacement
 
 enum class Assoziativität {
     LINKS,
@@ -337,7 +335,7 @@ private val WORT_MAPPING = mapOf<String, TokenTyp>(
     "neues" to TokenTyp.NEU(Genus.NEUTRUM)
 )
 
-class Lexer(datei: String): PipelineKomponente(datei) {
+class Lexer(startDatei: File): PipelineKomponente(startDatei) {
     private var iterator: Peekable<Char>? = null
     private var zeilenIndex = 0
     private var inStringInterpolation = false
@@ -350,16 +348,15 @@ class Lexer(datei: String): PipelineKomponente(datei) {
     
     private fun next() = iterator!!.next()
     private fun peek(ahead: Int = 0) = iterator!!.peek(ahead)
-    private val dateiPfadSchlange = LinkedList<String>()
+    private val dateiSchlange = LinkedList<File>()
     private val bearbeiteteDateien = mutableSetOf<String>()
 
     fun tokeniziere(): Sequence<Token> = sequence {
-        yield(Token(TokenTyp.PROGRAMM_START, "Programmstart", dateiPfad, Token.Position(0, 0), Token.Position(0, 0)))
-        dateiPfadSchlange.add(dateiPfad)
-        dateiPfadSchlange.add("./stdbib/stdbib.gms")
-        while (dateiPfadSchlange.isNotEmpty()) {
-            val nächsteDatei = dateiPfadSchlange.remove()
-            bearbeiteteDateien.add(nächsteDatei)
+        yield(Token(TokenTyp.PROGRAMM_START, "Programmstart", startDatei.path, Token.Position(0, 0), Token.Position(0, 0)))
+        dateiSchlange.add(startDatei)
+        dateiSchlange.add(File("./stdbib/stdbib.gms"))
+        while (dateiSchlange.isNotEmpty()) {
+            val nächsteDatei = dateiSchlange.remove()
             yieldAll(tokeniziereDatei(nächsteDatei))
         }
         while (true) {
@@ -367,17 +364,22 @@ class Lexer(datei: String): PipelineKomponente(datei) {
         }
     }
 
-    fun fügeDateiHinzu(dateiPfad: String) {
-        if (bearbeiteteDateien.contains(dateiPfad)) {
-            throw Exception("zyklische Imports!!!")
+    fun importiereDatei(import: AST.Definition.Import) {
+        val datei = File(import.pfad)
+        if (!datei.exists()) {
+            throw GermanScriptFehler.ImportFehler.DateiNichtGefunden(import.dateiPfad.toUntyped(), import.pfad)
         }
-        dateiPfadSchlange.add(dateiPfad)
+        // füge Datei nur zur Schlange hinzu, wenn sie noch nicht bearbeitet wurden ist
+        if (!bearbeiteteDateien.contains(datei.relativeTo(startDatei).path)) {
+            dateiSchlange.add(datei)
+        }
     }
 
-    private fun tokeniziereDatei(dateiPfad: String) : Sequence<Token> = sequence {
-        currentFile = dateiPfad
+    private fun tokeniziereDatei(datei: File) : Sequence<Token> = sequence {
+        currentFile = datei.relativeTo(startDatei).path.ifEmpty { datei.path }
+        bearbeiteteDateien.add(currentFile)
         var inMehrZeilenKommentar = false
-        for ((zeilenIndex, zeile) in File(currentFile).readLines().map(String::trim).withIndex()) {
+        for ((zeilenIndex, zeile) in datei.readLines().map(String::trim).withIndex()) {
             this@Lexer.zeilenIndex = zeilenIndex + 1
             kannWortLesen = true
             if (zeile == "") {
@@ -627,7 +629,7 @@ class Lexer(datei: String): PipelineKomponente(datei) {
                 teilWort += zeichenfolge[i++]
             }
             when {
-              teilWort.length == 1 -> symbol += teilWort
+              teilWort.length == 1  -> symbol += teilWort
               symbol.isEmpty() -> teilWörter.add(teilWort)
               else -> {
                   val token = Token(TokenTyp.FEHLER, zeichenfolge, currentFile, tokenStart, tokenEnd)
@@ -638,6 +640,9 @@ class Lexer(datei: String): PipelineKomponente(datei) {
             if (i < zeichenfolge.length) {
                 teilWort = zeichenfolge[i++].toString()
             }
+        }
+        if (teilWort.length == 1) {
+            symbol += teilWort
         }
         return TokenTyp.BEZEICHNER_GROSS(teilWörter.toTypedArray(), symbol)
     }
@@ -654,6 +659,6 @@ class Lexer(datei: String): PipelineKomponente(datei) {
 
 
 fun main() {
-    Lexer("./iterationen/iter_2/code.gms")
+    Lexer(File("./iterationen/iter_2/code.gms"))
         .tokeniziere().takeWhile { token -> token.typ != TokenTyp.EOF }.forEach { println(it) }
 }
