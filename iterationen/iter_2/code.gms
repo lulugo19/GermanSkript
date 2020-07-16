@@ -135,7 +135,7 @@ Verb teste die TestZahl:
     wenn die TestZahl modulo 2 gleich 1:
         ein GERADE ist "ungerade"
     .
-    schreibe die Zeile "die Zahl " + die TestZahl als Zeichenfolge + " ist " + das GERADE + "!"
+    schreibe die Zeile "die Zahl #{die TestZahl} ist #{das GERADE}"
 .
 teste die Zahl 7
 teste die Zahl 18
@@ -177,7 +177,7 @@ schreibe die Zeile "Fibonacci(9) = " + (fibonacci von der Zahl 9) als Zeichenfol
 // eigene Konvertierung
 schreibe den Bereich "Konvertierungsdefinition für Person"
 als Zeichenfolge für Person:
-    gebe meinen Namen + " " + meinen NachNamen + " (" + mein Alter als Zeichenfolge + " Jahre alt)" zurück
+    gebe "#{mein Name} #{mein NachName} (#{mein Alter} Jahre alt)" zurück
 .
 schreibe die Zeile Person als Zeichenfolge
 
@@ -199,6 +199,10 @@ Verb teste:
     schreibe die Zeile "nach zurück"
 .
 teste
+
+schreibe den Bereich "String Interpolation"
+schreibe die Zeile "Hallo ich bin #{der Name der Person} #{der NachName der Person}!\n" +
+    "Und ich bin #{das Alter der Person} Jahre alt."
 
 /*
 // Stack Overflow Handling

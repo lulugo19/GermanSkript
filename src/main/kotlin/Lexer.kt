@@ -1,6 +1,8 @@
 import util.Peekable
 import java.io.File
 import java.util.*
+import kotlin.text.Regex.Companion.escape
+import kotlin.text.Regex.Companion.escapeReplacement
 
 enum class Assoziativität {
     LINKS,
@@ -165,6 +167,8 @@ sealed class TokenTyp(val anzeigeName: String) {
     object NEUE_ZEILE: TokenTyp("neue Zeile")
     object EOF: TokenTyp("'EOF'")
     data class OPERATOR(val operator: Operator): TokenTyp("Operator")
+    // imaginäres Token
+    object STRING_INTERPOLATION: TokenTyp("String-Interpolation")
 
     // Identifier
     data class BEZEICHNER_KLEIN(val name: String): TokenTyp("bezeichner")
@@ -320,6 +324,8 @@ private val WORT_MAPPING = mapOf<String, TokenTyp>(
 class Lexer(datei: String): PipelineKomponente(datei) {
     private var iterator: Peekable<Char>? = null
     private var zeilenIndex = 0
+    private var inStringInterpolation = false
+    private var kannWortLesen = true
 
     private var currentFile: String = ""
     private val currentTokenPos: Token.Position get() = Token.Position(zeilenIndex, iterator!!.index)
@@ -357,7 +363,7 @@ class Lexer(datei: String): PipelineKomponente(datei) {
         var inMehrZeilenKommentar = false
         for ((zeilenIndex, zeile) in File(currentFile).readLines().map(String::trim).withIndex()) {
             this@Lexer.zeilenIndex = zeilenIndex + 1
-            var kannWortLesen = true
+            kannWortLesen = true
             if (zeile == "") {
                 continue
             }
@@ -392,8 +398,9 @@ class Lexer(datei: String): PipelineKomponente(datei) {
                 yieldAll(when {
                     SYMBOL_MAPPING.containsKey(zeichen) -> symbol().also { kannWortLesen = true }
                     zeichen.isDigit() -> zahl().also { kannWortLesen = false }
-                    zeichen == '"' -> zeichenfolge().also { kannWortLesen = false }
+                    zeichen == '"' -> zeichenfolge(false).also { kannWortLesen = false }
                     kannWortLesen && zeichen.isLetter() -> wort().also { kannWortLesen = false }
+                    zeichen == '}'&& inStringInterpolation -> beendeStringInterpolation()
                     else -> throw GermanScriptFehler.SyntaxFehler.LexerFehler(
                         Token(
                             TokenTyp.FEHLER,
@@ -468,20 +475,81 @@ class Lexer(datei: String): PipelineKomponente(datei) {
         }
     }
 
-    private fun zeichenfolge(): Sequence<Token> = sequence {
+    private fun zeichenfolge(überspringeAnführungszeichen: Boolean): Sequence<Token> = sequence {
         val startPos = currentTokenPos
-        next() // consume first '"'
+        if (!überspringeAnführungszeichen) {
+            next() // consume first '"'
+        }
         var zeichenfolge = ""
         while (peek() != null && peek() != '"') {
-            zeichenfolge += next()
+            zeichenfolge += when (peek()) {
+                '\\' -> {
+                    escapeZeichen()
+                }
+                '#' -> {
+                    if (peek(1) == '{') {
+                        yieldAll(starteStringInterpolation(zeichenfolge, startPos))
+                        return@sequence
+                    } else {
+                        next()
+                    }
+                }
+                else -> next()
+            }
         }
         if (peek() != '"') {
             throw GermanScriptFehler.SyntaxFehler.LexerFehler(eofToken, null)
         }
         next()
         val endPos = currentTokenPos
-        val token = Token(TokenTyp.ZEICHENFOLGE(Wert.Zeichenfolge(zeichenfolge)), '"' + zeichenfolge + '"', currentFile, startPos, endPos)
+        val token = Token(TokenTyp.ZEICHENFOLGE(Wert.Zeichenfolge(zeichenfolge)),
+            '"' + zeichenfolge + '"', currentFile, startPos, endPos)
         yield(token)
+    }
+
+    private fun escapeZeichen(): Char {
+        val escapeSequenzPos = currentTokenPos
+        next()
+        return when (val escapeChar = next()) {
+            'n' -> '\n'
+            'b' -> '\b'
+            't' -> '\t'
+            'r' -> '\r'
+            '"' -> '"'
+            '\\' -> '\\'
+            else -> {
+                val fehlerToken = Token(TokenTyp.FEHLER, "\\$escapeChar", currentFile, escapeSequenzPos, currentTokenPos)
+                throw GermanScriptFehler.SyntaxFehler.UngültigeEscapeSequenz(fehlerToken)
+            }
+        }
+    }
+
+    private fun starteStringInterpolation(zeichenfolge: String, startPosition: Token.Position) = sequence<Token> {
+        // String Interpolation
+        yield(Token(
+            TokenTyp.ZEICHENFOLGE(Wert.Zeichenfolge(zeichenfolge)),
+            '"' + zeichenfolge + '"' ,currentFile,  startPosition, currentTokenPos))
+        next() // #
+        next() // {
+        yield(Token(TokenTyp.OPERATOR(Operator.PLUS), "+", currentFile, currentTokenPos, currentTokenPos))
+        yield(Token(TokenTyp.STRING_INTERPOLATION, "String-Interpolation", currentFile, currentTokenPos, currentTokenPos))
+        yield(Token(TokenTyp.OFFENE_KLAMMER, "(", currentFile, currentTokenPos, currentTokenPos))
+        inStringInterpolation = true
+        kannWortLesen = true
+    }
+
+    private fun beendeStringInterpolation() = sequence<Token> {
+        next() // }
+        yield(Token(TokenTyp.GESCHLOSSENE_KLAMMER, ")", currentFile, currentTokenPos, currentTokenPos))
+        yield(Token(TokenTyp.ALS, "als", currentFile, currentTokenPos, currentTokenPos))
+        yield(Token(
+            TokenTyp.BEZEICHNER_GROSS(arrayOf("Zeichenfolge"), ""),
+            "Zeichenfolge", currentFile, currentTokenPos, currentTokenPos)
+        )
+        yield(Token(TokenTyp.OPERATOR(Operator.PLUS), "+", currentFile, currentTokenPos, currentTokenPos))
+        inStringInterpolation = false
+        kannWortLesen = false
+        yieldAll(zeichenfolge(true))
     }
 
     private fun wort(): Sequence<Token> = sequence {

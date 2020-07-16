@@ -123,9 +123,9 @@ class Interpretierer(dateiPfad: String): ProgrammDurchlaufer<Wert>(dateiPfad) {
   }
 
   private fun durchlaufeAufruf(aufruf: AST.IAufruf, sätze: List<AST.Satz>, umgebung: Umgebung<Wert>, neuerBereich: Boolean, objekt: Wert.Objekt?): Wert? {
-    flags.remove(Flag.ZURÜCK)
     aufrufStapel.push(aufruf, umgebung, objekt)
     durchlaufeSätze(sätze, neuerBereich)
+    flags.remove(Flag.ZURÜCK)
     aufrufStapel.pop()
     return rückgabeWert
   }

@@ -374,6 +374,11 @@ private sealed class SubParser<T: AST>() {
           break
         }
         val operatorToken = expect<TokenTyp.OPERATOR>("Operator")
+
+        // Das String-Interpolations Token ist nur dafür da, dass innerhalb einer String Interpolation wieder der Nominativ verwendet wird
+        val inStringInterpolation = parseOptional<TokenTyp.STRING_INTERPOLATION>() != null
+        überspringeLeereZeilen()
+
         val rechts = parseBinärenAusdruck(rechteBindungsKraft, mitArtikel)
         if (optionalesIstNachVergleich && operator.klasse == OperatorKlasse.VERGLEICH) {
           val ist = parseOptional<TokenTyp.ZUWEISUNG>()
@@ -381,7 +386,10 @@ private sealed class SubParser<T: AST>() {
             throw GermanScriptFehler.SyntaxFehler.ParseFehler(ist.toUntyped())
           }
         }
-        links = AST.Ausdruck.BinärerAusdruck(operatorToken, links, rechts, minBindungskraft == 0.0)
+
+        links = AST.Ausdruck.BinärerAusdruck(operatorToken, links, rechts,
+            minBindungskraft == 0.0, inStringInterpolation
+        )
       }
 
       return links

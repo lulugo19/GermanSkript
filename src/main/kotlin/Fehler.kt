@@ -13,6 +13,10 @@ sealed class GermanScriptFehler(private val fehlerName: String, val token: Token
         get() = "Ungültige Zeichenfolge '${token.wert}'. ${details?: ""}"
     }
 
+    class UngültigeEscapeSequenz(token: Token): SyntaxFehler(token) {
+      override val nachricht: String = "Ungültige Escape Sequenz '${token.wert}' in Zeichenfolge."
+    }
+
     class ParseFehler(token: Token, private val erwartet: String? = null, private val details: String? = null): SyntaxFehler(token) {
       override val nachricht: String
         get() {

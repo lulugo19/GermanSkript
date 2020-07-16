@@ -338,7 +338,8 @@ sealed class AST {
         val operator: TypedToken<TokenTyp.OPERATOR>,
         val links: Ausdruck,
         val rechts: Ausdruck,
-        val istAnfang: kotlin.Boolean) : Ausdruck() {
+        val istAnfang: kotlin.Boolean,
+        val inStringInterpolation: kotlin.Boolean) : Ausdruck() {
       override val children = sequenceOf(links, rechts)
     }
 

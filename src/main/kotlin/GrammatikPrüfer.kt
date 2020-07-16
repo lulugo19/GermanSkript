@@ -191,7 +191,11 @@ class GrammatikPrüfer(dateiPfad: String): PipelineKomponente(dateiPfad) {
   }
 
   private fun prüfeBinärenAusdruck(binärerAusdruck: AST.Ausdruck.BinärerAusdruck, kontextNomen: AST.Nomen?, fälle: EnumSet<Kasus>) {
-    val rechterKasus = EnumSet.of(binärerAusdruck.operator.typ.operator.klasse.kasus)
+    val rechterKasus = if (binärerAusdruck.inStringInterpolation) {
+      EnumSet.of(Kasus.NOMINATIV) // in einer String Interpolation wird wieder der Nominativ verwendet
+    } else {
+      EnumSet.of(binärerAusdruck.operator.typ.operator.klasse.kasus)
+    }
     val linkerKasus = if (binärerAusdruck.istAnfang) fälle else rechterKasus
 
     // kontextNomen gilt nur für den linken Ausdruck (für den aller ersten Audruck in dem binären Ausdruck)
