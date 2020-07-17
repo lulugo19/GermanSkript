@@ -353,6 +353,7 @@ private sealed class SubParser<T: AST>() {
           when (nextToken.wert) {
             "gebe", "zurück" -> subParse(Satz.Zurückgabe)
             "für" -> subParse(Satz.FürJedeSchleife)
+            "importiere" -> null
             else -> subParse(Satz.FunktionsAufruf)
           }
         is TokenTyp.BEZEICHNER_GROSS -> subParse(Satz.MethodenBlock)

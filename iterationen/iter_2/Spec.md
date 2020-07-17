@@ -13,6 +13,7 @@
     - Definition
     - Methodenblock
 - Zugriff auf Eigenschaften
+- Standardfunktionen
 
 ## Symbole
 Symbole sind Nomen mit nur einem Buchstaben also `X`, `Y`, `A`, `Z`, ...
@@ -169,6 +170,24 @@ Client: verbinde dich
         sende die Nachricht "Hallo Welt" mit dem Flag "X"!
 ```
 
+### Standardfunktionen
+- mathematische Funktionen (sin, cos, abs, min, max)
+    - sinus von der Zahl
+    - betrag von der Zahl
+    - maximum von der ZahlX, derZahlY
+- Random
+    - randomisiere // gibt Zahl von 0 bis 1 zurück
+    - randomisiere zwischen der ZahlMin, der ZahlMax
+- UpperCase / LowerCase
+    - buchstabiere die Zeichenfolge groß
+    - buchstabiere die Zeichenfolge klein
+- Liste
+    - Liste sollten Objekte sein
+    - beinhaltet das Element
+    - füge das Element hinzu
+    - lösche das Element am Index
+    - ein Feld Anzahl
+
 ## TODO
 -[x] Wörterbuch-Bug beheben (Lukas)
 -[x] Typ-Konvertierungs-Bug bei Funktionsaufruf
@@ -178,6 +197,7 @@ Client: verbinde dich
 -[ ] Fehlermeldungen
 -[x] Klassendefinition
 -[x] Klassen
+-[ ] Standardfunktionen
 - Methoden
     - [x] Methodendefinition
     - [x] Methodenblock

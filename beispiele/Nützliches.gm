@@ -1,0 +1,6 @@
+Deklination Maskulinum Singular(Bereich, Bereichs, Bereich, Bereich) Plural(Bereiche)
+
+Verb schreibe die Zeichenfolge Bereich:
+    schreibe die Zeile ""
+    schreibe die Zeile "----------------- " + den Bereich + " -----------------"
+.

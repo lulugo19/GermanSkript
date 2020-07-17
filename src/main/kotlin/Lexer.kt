@@ -363,7 +363,7 @@ class Lexer(startDatei: File): PipelineKomponente(startDatei) {
     }
 
     fun importiereDatei(import: AST.Definition.Import) {
-        val datei = File(import.pfad)
+        val datei = File(import.pfad).relativeTo(startDatei)
         if (!datei.exists()) {
             throw GermanScriptFehler.ImportFehler.DateiNichtGefunden(import.dateiPfad.toUntyped(), import.pfad)
         }

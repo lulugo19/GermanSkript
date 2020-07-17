@@ -407,6 +407,6 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
 }
 
 fun main() {
-  val interpreter = Interpretierer(File("./beispiele/AddiereZweiZahlen.gm"))
+  val interpreter = Interpretierer(File("./beispiele/HalloWelt.gm"))
   interpreter.interpretiere()
 }
