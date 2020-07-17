@@ -9,7 +9,7 @@ enum class Assoziativität {
 
 enum class OperatorKlasse(val kasus: Kasus) {
     ARITHMETISCH(Kasus.AKKUSATIV),
-    VERGLEICH(Kasus.DATIV),
+    VERGLEICH(Kasus.AKKUSATIV),
     LOGISCH(Kasus.AKKUSATIV),
 }
 

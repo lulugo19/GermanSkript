@@ -1,0 +1,36 @@
+// teste mathematische Funktionen
+schreibe die Zeile "Teste mathematische Funktionen"
+das PI ist 3,14159265359
+schreibe die Zahl (runde die Zahl 4,48) // 4
+schreibe die Zahl (runde die Zahl 4,76) // 5
+schreibe die Zahl (runde die Zahl 4,5)  // 5
+schreibe die Zahl (runde die Zahl 2,7 ab) // 2
+schreibe die Zahl (runde die Zahl 2,3 auf) // 3
+schreibe die Zahl (sinus von der Zahl PI) // 0
+schreibe die Zahl (cosinus von der Zahl PI) // -1
+schreibe die Zahl (tangens von der Zahl PI) // 0
+schreibe die Zahl (maximum von der Zahl 100, der Zahl 12) // 100
+schreibe die Zahl (minimum von der Zahl 12, der Zahl 100) // 12
+schreibe die Zahl (betrag von der Zahl (minus das PI)) // 3,14159
+schreibe die Zahl (betrag von der Zahl 3) // 3
+
+schreibe die Zeile "\n10 zufällige Zahlen:"
+eine Zahl ist 0
+solange die Zahl kleiner 10 ist:
+    eine Zahl ist die Zahl + 1
+    schreibe die Zahl (randomisiere)
+.
+
+schreibe die Zeile "\n10 zufällige Zahlen zwischen 0 und 100"
+eine Zahl ist 0
+solange die Zahl kleiner 10 ist:
+    eine Zahl ist die Zahl + 1
+    schreibe die Zahl (randomisiere zwischen dem Minimum 0, dem Maximum 100)
+.
+
+schreibe die Zeile "\nTeste Zeichenfolgen Funktionen"
+schreibe die Zeile (buchstabiere die Zeichenfolge "Hallo Welt" groß)
+schreibe die Zeile (buchstabiere die Zeichenfolge "Hallo Welt" klein)
+eine Zeichenfolge ist "Gobelet,Lukas,22,Informatik"
+einige Zeichenfolgen sind (trenne die Zeichenfolge zwischen dem Separator ",")
+schreibe die Zeile (Zeichenfolgen als Zeichenfolge)

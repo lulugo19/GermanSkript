@@ -1,6 +1,7 @@
 import java.io.File
 import java.text.ParseException
 import java.util.*
+import kotlin.random.Random
 
 class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
   val typPrüfer = TypPrüfer(startDatei)
@@ -107,7 +108,7 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
   }
 
   override fun durchlaufeVariablenDeklaration(deklaration: AST.Satz.VariablenDeklaration) {
-    if (deklaration.istEigenschaftsNeuZuweisung || deklaration.istPrivateEigenschaft) {
+    if (deklaration.istEigenschaftsNeuZuweisung || deklaration.istEigenschaft) {
       // weise Eigenschaft neu zu
       aufrufStapel.top().objekt!!.eigenschaften[deklaration.name.ganzesWort(Kasus.NOMINATIV, deklaration.name.numerus!!)] =
           evaluiereAusdruck(deklaration.ausdruck)
@@ -351,6 +352,63 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
 
       "lese" to{
         rückgabeWert = Wert.Zeichenfolge(readLine()!!)
+      },
+
+      "runde die Zahl" to {
+        val zahl = umgebung.leseVariable("Zahl")!!.wert as Wert.Zahl
+        rückgabeWert = Wert.Zahl(kotlin.math.round(zahl.zahl))
+      },
+
+      "runde die Zahl ab" to {
+        val zahl = umgebung.leseVariable("Zahl")!!.wert as Wert.Zahl
+        rückgabeWert = Wert.Zahl(kotlin.math.floor(zahl.zahl))
+      },
+
+      "runde die Zahl auf" to {
+        val zahl = umgebung.leseVariable("Zahl")!!.wert as Wert.Zahl
+        rückgabeWert = Wert.Zahl(kotlin.math.ceil(zahl.zahl))
+      },
+
+      "sinus von der Zahl" to {
+        val zahl = umgebung.leseVariable("Zahl")!!.wert as Wert.Zahl
+        rückgabeWert = Wert.Zahl(kotlin.math.sin(zahl.zahl))
+      },
+
+      "cosinus von der Zahl" to {
+        val zahl = umgebung.leseVariable("Zahl")!!.wert as Wert.Zahl
+        rückgabeWert = Wert.Zahl(kotlin.math.cos(zahl.zahl))
+      },
+
+      "tangens von der Zahl" to {
+        val zahl = umgebung.leseVariable("Zahl")!!.wert as Wert.Zahl
+        rückgabeWert = Wert.Zahl(kotlin.math.tan(zahl.zahl))
+      },
+
+      "randomisiere" to {
+        rückgabeWert = Wert.Zahl(Random.nextDouble())
+      },
+
+      "randomisiere zwischen dem Minimum, dem Maximum" to {
+        val min = umgebung.leseVariable("Minimum")!!.wert as Wert.Zahl
+        val max = umgebung.leseVariable("Maximum")!!.wert as Wert.Zahl
+        rückgabeWert = Wert.Zahl(Random.nextDouble(min.zahl, max.zahl))
+      },
+
+      "buchstabiere die Zeichenfolge groß" to {
+        val wert = umgebung.leseVariable("Zeichenfolge")!!.wert as Wert.Zeichenfolge
+        rückgabeWert = Wert.Zeichenfolge(wert.zeichenfolge.toUpperCase())
+      },
+
+      "buchstabiere die Zeichenfolge klein" to {
+        val wert = umgebung.leseVariable("Zeichenfolge")!!.wert as Wert.Zeichenfolge
+        rückgabeWert = Wert.Zeichenfolge(wert.zeichenfolge.toLowerCase())
+      },
+
+      "trenne die Zeichenfolge zwischen dem Separator" to {
+        val zeichenfolge = umgebung.leseVariable("Zeichenfolge")!!.wert as Wert.Zeichenfolge
+        val separator = umgebung.leseVariable("Separator")!!.wert as Wert.Zeichenfolge
+        rückgabeWert = Wert.Liste(zeichenfolge.zeichenfolge.split(separator.zeichenfolge)
+            .map { Wert.Zeichenfolge(it) })
       }
   )
 
@@ -391,7 +449,7 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
       is Wert.Zahl -> Wert.Zeichenfolge(wert.toString())
       is Wert.Boolean -> Wert.Zeichenfolge(if(wert.boolean) "wahr" else "falsch")
       is Wert.Objekt -> Wert.Zeichenfolge(wert.toString())
-      else -> throw Exception("Typ-Prüfer sollte dies schon überprüfen!")
+      is Wert.Liste -> Wert.Zeichenfolge(wert.toString())
     }
   }
 
@@ -407,6 +465,6 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
 }
 
 fun main() {
-  val interpreter = Interpretierer(File("./beispiele/HalloWelt.gm"))
+  val interpreter = Interpretierer(File("./iterationen/iter_2/stdbib_test.gm"))
   interpreter.interpretiere()
 }

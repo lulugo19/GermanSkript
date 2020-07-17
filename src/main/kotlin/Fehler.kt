@@ -140,7 +140,7 @@ sealed class GermanScriptFehler(private val fehlerName: String, val token: Token
   }
 
   class Variablenfehler(token: Token, deklaration: AST.Nomen): GermanScriptFehler("VariablenFehler", token) {
-    override val nachricht = "Die Variable '${token.wert}' ist schon in ${deklaration.bezeichner.anfang} deklariert und kann nicht erneut deklariert werden."
+    override val nachricht = "Die Variable '${token.wert}' ist schon in ${deklaration.bezeichner.position} deklariert und kann nicht erneut deklariert werden."
   }
 
   class ReservierterTypName(token: Token): GermanScriptFehler("Reservierter Typname", token) {

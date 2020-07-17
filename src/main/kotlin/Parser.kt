@@ -755,7 +755,7 @@ private sealed class SubParser<T: AST>() {
     }
 
     protected inline fun<reified VornomenT: TokenTyp.VORNOMEN> parseTypUndName(erwartetesVornomen: String): AST.Definition.TypUndName {
-      val typ = parseNomenMitVornomen<VornomenT>(erwartetesVornomen, false)
+      val typ = parseNomenMitVornomen<VornomenT>(erwartetesVornomen, true)
       val bezeichner = parseOptional<TokenTyp.BEZEICHNER_GROSS>()
       val name = if (bezeichner != null) AST.Nomen(null, bezeichner) else typ
       return AST.Definition.TypUndName(AST.TypKnoten(typ), name)

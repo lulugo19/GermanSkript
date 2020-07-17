@@ -166,7 +166,7 @@
 		},
 		"vardecls": {
 		  "name": "meta.vardecl.germanscript",
-		  "match": "\\b(der|die|das|ein|eine|mein|meine|jener|jene|jenes|dieser|diese|dieses) *((neue|neuer|neues) *)?([A-ZÖÄÜ][a-zöäüß]*)+ *(ist|sind)",
+		  "match": "\\b(der|die|das|ein|eine|einige|mein|meine|jener|jene|jenes|dieser|diese|dieses) *((neue|neuer|neues) *)?([A-ZÖÄÜ][a-zöäüß]*)+ *(ist|sind)",
 		  "captures": {
 			"1": {
 			  "name": "storage.type.var.germanscript"

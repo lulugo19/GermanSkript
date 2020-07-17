@@ -55,12 +55,12 @@ sealed class Typ(val name: String) {
 
     // Das hier muss umbedingt ein Getter sein, sonst gibt es Probleme mit StackOverflow
     override val definierteOperatoren: Map<Operator, Typ> get() = mapOf(Operator.PLUS to Liste(elementTyp))
-    override fun kannNachTypKonvertiertWerden(typ: Typ) = typ == this
+    override fun kannNachTypKonvertiertWerden(typ: Typ) = typ == this || typ == Zeichenfolge
   }
 
   data class Klasse(val klassenDefinition: AST.Definition.Klasse):
       Typ(klassenDefinition.typ.name.hauptWort(Kasus.NOMINATIV, Numerus.SINGULAR)) {
-    override val definierteOperatoren: Map<Operator, Typ> = mapOf()
+      override val definierteOperatoren: Map<Operator, Typ> = mapOf()
 
       override fun kannNachTypKonvertiertWerden(typ: Typ): kotlin.Boolean {
         return typ.name == this.name || typ == Zeichenfolge || klassenDefinition.konvertierungen.containsKey(typ.name)

@@ -9,7 +9,6 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
   val ast: AST.Programm get() = typisierer.ast
 
   private var zuÜberprüfendeKlasse: AST.Definition.Klasse? = null
-  private var zuÜberprüfendeFunktion: AST.Definition.FunktionOderMethode.Funktion? = null
   private var rückgabeTyp: Typ? = null
   private var rückgabeErreicht = false
 
@@ -18,7 +17,9 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
     // zuerst die Klassendefinitionen, damit noch private Eigenschaften definiert werden können
     definierer.klassenDefinitionen.forEach(::prüfeKlasse)
     definierer.funktionsDefinitionen.forEach(::prüfeFunktion)
-    durchlaufeSätze(ast.sätze, true)
+
+    // neue Umgebung
+    durchlaufeAufruf(ast.programmStart!!, ast.sätze, Umgebung(), true,null)
   }
 
 
@@ -39,23 +40,23 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
     for (parameter in funktion.parameter) {
       funktionsUmgebung.schreibeVariable(parameter.name, parameter.typKnoten.typ!!, false)
     }
-    durchlaufeAufruf(funktion.name.toUntyped(), funktion.sätze, funktionsUmgebung, funktion.rückgabeTyp?.typ)
+    durchlaufeAufruf(funktion.name.toUntyped(), funktion.sätze, funktionsUmgebung, false, funktion.rückgabeTyp?.typ)
   }
 
   private fun prüfeKlasse(klasse: AST.Definition.Klasse) {
     zuÜberprüfendeKlasse = klasse
-    durchlaufeAufruf(klasse.typ.name.bezeichner.toUntyped(), klasse.konstruktorSätze, Umgebung(), null)
+    durchlaufeAufruf(klasse.typ.name.bezeichner.toUntyped(), klasse.konstruktorSätze, Umgebung(), true,null)
     klasse.methoden.values.forEach {methode -> prüfeFunktion(methode.funktion)}
     klasse.konvertierungen.values.forEach {konvertierung ->
-      durchlaufeAufruf(konvertierung.klasse.bezeichner.toUntyped(), konvertierung.sätze, Umgebung(), konvertierung.typ.typ!!)
+      durchlaufeAufruf(konvertierung.klasse.bezeichner.toUntyped(), konvertierung.sätze, Umgebung(), true, konvertierung.typ.typ!!)
     }
   }
 
-  private fun durchlaufeAufruf(token: Token, sätze: List<AST.Satz>, umgebung: Umgebung<Typ>, rückgabeTyp: Typ?) {
+  private fun durchlaufeAufruf(token: Token, sätze: List<AST.Satz>, umgebung: Umgebung<Typ>, neuerBereich: Boolean, rückgabeTyp: Typ?) {
     this.rückgabeTyp = rückgabeTyp
     this.umgebung = umgebung
     rückgabeErreicht = false
-    durchlaufeSätze(sätze, true)
+    durchlaufeSätze(sätze, neuerBereich)
     if (rückgabeTyp != null && !rückgabeErreicht) {
       throw GermanScriptFehler.RückgabeFehler.RückgabeVergessen(token, rückgabeTyp)
     }
@@ -64,14 +65,14 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
   override fun durchlaufeVariablenDeklaration(deklaration: AST.Satz.VariablenDeklaration) {
     if (deklaration.istEigenschaftsNeuZuweisung) {
       val klasse = zuÜberprüfendeKlasse!!
-      val eigenschaft = holeEigenschaftAusKlasse(deklaration.name, klasse, true)
+      val eigenschaft = holeEigenschaftAusKlasse(deklaration.name, klasse)
       if (eigenschaft.name.unveränderlich) {
         throw GermanScriptFehler.EigenschaftsFehler.EigenschaftUnveränderlich(deklaration.name.bezeichner.toUntyped())
       }
       val eigenschaftTyp = eigenschaft.typKnoten.typ!!
       ausdruckMussTypSein(deklaration.ausdruck, eigenschaftTyp)
     }
-    else if (deklaration.istPrivateEigenschaft) {
+    else if (deklaration.istEigenschaft) {
       val klasse = zuÜberprüfendeKlasse!!
       val wert = evaluiereAusdruck(deklaration.ausdruck)
       val typ = AST.TypKnoten(deklaration.name, wert)
@@ -319,24 +320,21 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
     if (klasse !is Typ.Klasse) {
       throw GermanScriptFehler.TypFehler.ObjektErwartet(holeErstesTokenVonAusdruck(eigenschaftsZugriff.objekt))
     }
-    return holeEigenschaftAusKlasse(eigenschaftsZugriff.eigenschaftsName, klasse.klassenDefinition, false).typKnoten.typ!!
+    return holeEigenschaftAusKlasse(eigenschaftsZugriff.eigenschaftsName, klasse.klassenDefinition).typKnoten.typ!!
   }
 
   override fun evaluiereSelbstEigenschaftsZugriff(eigenschaftsZugriff: AST.Ausdruck.SelbstEigenschaftsZugriff): Typ {
-    return holeEigenschaftAusKlasse(eigenschaftsZugriff.eigenschaftsName, zuÜberprüfendeKlasse!!, true).typKnoten.typ!!
+    return holeEigenschaftAusKlasse(eigenschaftsZugriff.eigenschaftsName, zuÜberprüfendeKlasse!!).typKnoten.typ!!
   }
 
   override fun evaluiereMethodenBlockEigenschaftsZugriff(eigenschaftsZugriff: AST.Ausdruck.MethodenBlockEigenschaftsZugriff): Typ {
     val methodenBlockObjekt = umgebung.holeMethodenBlockObjekt() as Typ.Klasse
-    return holeEigenschaftAusKlasse(eigenschaftsZugriff.eigenschaftsName, methodenBlockObjekt.klassenDefinition, false).typKnoten.typ!!
+    return holeEigenschaftAusKlasse(eigenschaftsZugriff.eigenschaftsName, methodenBlockObjekt.klassenDefinition).typKnoten.typ!!
   }
 
-  private fun holeEigenschaftAusKlasse(eigenschaftsName: AST.Nomen, klasse: AST.Definition.Klasse, zugriffAufPrivateEigenschaften: Boolean): AST.Definition.TypUndName {
+  private fun holeEigenschaftAusKlasse(eigenschaftsName: AST.Nomen, klasse: AST.Definition.Klasse): AST.Definition.TypUndName {
     for (eigenschaft in klasse.eigenschaften) {
       if (eigenschaftsName.nominativ == eigenschaft.name.nominativ) {
-        if (!zugriffAufPrivateEigenschaften && eigenschaft.istPrivat) {
-          throw GermanScriptFehler.EigenschaftsFehler.EigenschaftPrivat(eigenschaftsName.bezeichner.toUntyped())
-        }
         return eigenschaft
       }
     }
