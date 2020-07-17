@@ -9,10 +9,13 @@ solange die Zahl <= 100 ist:
     wenn die Zahl % 3 gleich 0 ist:
         eine Ausgabe ist die Ausgabe + "Fizz"
         ein Boolean ist wahr.
-    sonst wenn die Zahl % 5 gleich 0:
+    wenn die Zahl % 5 gleich 0:
         eine Ausgabe ist die Ausgabe + "Buzz"
         ein Boolean ist wahr.
 
-    wenn das Boolean: schreibe die Ausgabe.
+    wenn das Boolean: schreibe die Zeile die Ausgabe.
     sonst: schreibe die Zeile (die Zahl als Zeichenfolge).
+
+    // Zähler hochzählen
+    eine Zahl ist die Zahl + 1
 .
