@@ -1,0 +1,25 @@
+{
+    "name": "germanscript-syntax-highlighting",
+    "displayName": "GermanScript Syntax Highlighting",
+    "description": "Enables Syntax-Highlighting for Germanscript (.gm) files.",
+    "version": "0.0.1",
+    "engines": {
+        "vscode": "^1.47.0"
+    },
+    "categories": [
+        "Programming Languages"
+    ],
+    "contributes": {
+        "languages": [{
+            "id": "germanscript",
+            "aliases": ["GermanScript", "germanscript"],
+            "extensions": [".gm",".gms"],
+            "configuration": "./language-configuration.json"
+        }],
+        "grammars": [{
+            "language": "germanscript",
+            "scopeName": "source.germanscript",
+            "path": "./syntaxes/germanscript.tmLanguage.json"
+        }]
+    }
+}

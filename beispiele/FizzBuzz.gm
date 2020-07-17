@@ -1,24 +1,18 @@
+Deklination Femininum Singular(Ausgabe) Plural(Ausgaben)
+
 // Fizzbuzz in GermanScript
-für jede Zahl von 1 bis 100:
+eine Zahl ist 0
+solange die Zahl <= 100 ist:
     eine Ausgabe ist ""
+    ein Boolean ist falsch
     
-    wenn Zahl rest 3 gleich 0:
-        Ausgabe ist Ausgabe + "Fizz"
-    sonst wenn Zahl rest 5 gleich 0:
-        Ausgabe ist Ausgabe + "Buzz".
+    wenn die Zahl % 3 gleich 0 ist:
+        eine Ausgabe ist die Ausgabe + "Fizz"
+        ein Boolean ist wahr.
+    sonst wenn die Zahl % 5 gleich 0:
+        eine Ausgabe ist die Ausgabe + "Buzz"
+        ein Boolean ist wahr.
 
-    drucke wenn (Ausgabe leer?) dann Zahl sonst Ausgabe.
-    
-
-/*
-Fizzbuzz in Javascript
-for (let i = 1; i <= 100; i++) {
-    let output = ""
-    if (i % 3 === 0)
-        output += "Fizz"
-    if (i % 5 === 0)
-        output += "Buzz"
-    console.log(output || i)
-}
-*/
-
+    wenn das Boolean: schreibe die Ausgabe.
+    sonst: schreibe die Zeile (die Zahl als Zeichenfolge).
+.

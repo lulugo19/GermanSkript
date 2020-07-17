@@ -218,16 +218,14 @@ private val SYMBOL_MAPPING = mapOf<Char, TokenTyp>(
     '=' to TokenTyp.OPERATOR(Operator.GLEICH),
     '>' to TokenTyp.OPERATOR(Operator.GRÖßER),
     '<' to TokenTyp.OPERATOR(Operator.KLEINER),
-    '&' to TokenTyp.UNDEFINIERT,
-    '|' to TokenTyp.UNDEFINIERT
+    '&' to TokenTyp.OPERATOR(Operator.UND),
+    '|' to TokenTyp.OPERATOR(Operator.ODER)
 )
 
 private val DOPPEL_SYMBOL_MAPPING = mapOf<String, TokenTyp>(
     "!=" to TokenTyp.OPERATOR(Operator.UNGLEICH),
     ">=" to TokenTyp.OPERATOR(Operator.GRÖSSER_GLEICH),
     "<=" to TokenTyp.OPERATOR(Operator.KLEINER_GLEICH),
-    "&&" to TokenTyp.OPERATOR(Operator.UND),
-    "||" to TokenTyp.OPERATOR(Operator.ODER),
     "::" to TokenTyp.DOPPEL_DOPPELPUNKT
 )
 

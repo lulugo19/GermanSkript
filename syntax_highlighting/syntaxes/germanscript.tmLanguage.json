@@ -1,0 +1,266 @@
+{
+	"$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+	"name": "GermanScript",
+	"scopeName": "source.germanscript",
+	"patterns": [
+		{
+			"name": "comment.line.double-dash.germanscript",
+			"begin": "\\/\\/",
+			"end": "$"
+		},
+		{
+			"name": "comment.block.germanscript",
+			"begin": "\\/\\*",
+			"end": "\\*\\/"
+		},
+		{
+		  "include": "#classdefs"
+		},
+		{
+		  "include": "#fundefs"
+		},
+		{
+		  "include": "#vardecls"
+		},
+		{
+		  "include": "#keywords"
+		},
+		{
+		  "include": "#declinations"
+		},
+		{
+		  "include": "#expressions"
+		}, 
+		{
+			"include": "#args"
+		}
+	  ],
+	  "repository": {
+		"keywords": {
+		  "patterns": [
+			{
+			  "name": "keyword.control.germanscript",
+			  "match": "\\b(wenn|dann|sonst|solange|für|jeden|jede|jedes|fortfahren|abbrechen|gebe|zurück|intern)\\b"
+			},
+			{
+			  "name": "keyword.other.germanscript",
+			  "match": "\\b(Maskulinum|Femininum|Neutrum)\\b"
+			}
+		  ]
+		},
+		"expressions": {
+		  "patterns": [
+				{
+					"include": "#strings"
+				},
+				{
+					"include": "#numbers"
+				},
+				{
+					"include": "#booleans"
+				},
+				{
+					"include": "#operators"
+				},
+				{
+					"include": "#objects"
+				},
+				{
+					"include": "#vars"
+				},
+				{
+					"include": "#functions"
+				}
+		  ]
+		},
+		"strings": {
+		  "name": "string.quoted.double.germanscript",
+		  "begin": "\"",
+		  "end": "\"",
+		  "patterns": [
+			{
+			  "name": "constant.character.escape.germanscript",
+			  "match": "\\\\."
+			},
+			{
+			  "name": "keyword.operator.interpolation.germanscript",
+			  "begin": "#\\{",
+			  "end": "\\}",
+			  "patterns": [
+				{
+				  "include": "#expressions"
+				}
+			  ]
+			}
+		  ]
+		},
+		"numbers": {
+		  "name": "constant.numeric.germanscript",
+		  "match": "-?([1-9]\\d{1,2}|\\d)(?:\\.\\d{3})*(?:,\\d+)?"
+		},
+		"booleans": {
+		  "name": "constant.language.germanscript",
+		  "match": "\\b(wahr|falsch)\\b"
+		},
+		"objects": {
+			"match": "\\b(ein|eine) *(([A-ZÖÄÜ][a-zöäüß]*)+) *(mit)?",
+			"captures": {
+				"1": {
+					"name": "entity.name.type.class"
+				},
+				"2": {
+					"name": "entity.name.type.class"
+				},
+				"4": {
+					"name": "keyword.operator"
+				}
+			}
+		},
+		"classdefs": {
+		  "name": "meta.class.germanscript",
+		  "begin": "\\b(Nomen) *(([A-ZÖÄÜ][a-zöäüß]*)+) *(mit)?",
+		  "end": ":",
+		  "beginCaptures": {
+			"1": {
+				"name": "storage.type.class.germanscript"
+			},
+			"2": {
+			  "name": "entity.name.type.class.germanscript"
+			},
+			"3": {
+			  "name": "keyword.other.germanscript"
+			}
+		  },
+		  "patterns": [
+			{
+			  "include": "#params"
+			}
+		  ]
+		},
+		"fundefs": {
+		  "name": "meta.function.germanscript",
+		  "begin": "\\b(Verb)( *\\( *(([A-ZÖÄÜ][a-zöäüß]*)+) *\\))?( *(für) *(([A-ZÖÄÜ][a-zöäüß]*)+))?",
+		  "end": ":",
+		  "beginCaptures": {
+				"1": {
+					"name": "storage.type.function.germanscript"
+				},
+				"2": {
+					"name": "entity.name.type.germanscript"
+				},
+				"6": {
+					"name": "keyword.other.germanscript"
+				},
+				"7": {
+					"name": "entity.name.type.class.germanscript"
+				}
+		  },
+		  "patterns": [
+			{
+			  "include": "#params"
+			}, 
+			{
+			  "include": "#functions"
+			}
+		  ]
+		},
+		"vardecls": {
+		  "name": "meta.vardecl.germanscript",
+		  "match": "\\b(der|die|das|ein|eine|mein|meine|jener|jene|jenes|dieser|diese|dieses) *((neue|neuer|neues) *)?([A-ZÖÄÜ][a-zöäüß]*)+ *(ist|sind)",
+		  "captures": {
+			"1": {
+			  "name": "storage.type.var.germanscript"
+			},
+			"3": {
+			  "name": "storage.type.modifier.neu.germanscript"
+			},
+			"4": {
+			  "name": "variable.other.germanscript"
+			},
+			"5": {
+			  "name": "keyword.operator.germanscript"
+			}
+		  }
+		},
+		"declinations": {
+			"name": "meta.declination",
+			"begin": "\\b(Deklination) *(Maskulinum|Neutrum|Femininum)?",
+			"end": "$",
+			"beginCaptures": {
+				"1": {
+					"name": "storage.type.declination"
+				},
+				"2": {
+					"name": "keyword.other.genus"
+				}
+			},
+			"patterns": [
+				{
+					"name": "meta.declination.sub",
+					"begin": "\\b(Singular|Plural|Duden) *\\(",
+					"end": "\\)",
+					"beginCaptures": {
+						"1": {
+							"name": "keyword.other.germanscript"
+						}
+					},
+					"patterns": [
+						{
+							"name": "constant.other.word.germanscript",
+							"match": "\\b([A-ZÖÄÜ][a-zöäüß]*)"
+						}
+					]
+			}
+		]
+		},
+		"vars": {
+		  "patterns": [
+			{
+			  "name": "variable.other.germanscript",
+			  "match": "(\\b(der|die|das|den|des|dem|ein|eine|eines|einer|einige|einigen|einiger|mein|meine|meines|meiner|meinem|meinen|dein|deine|deines|deiner|deinem|deinen))? *(([A-ZÖÄÜ][a-zöäüß]*)+)"
+			},
+			{
+			  "name": "variable.language.germanscript",
+			  "match": "(Ich|Du)"
+			}
+		  ]
+		},
+		"params": {
+		  "match": "\\b(der|die|das|den|des|dem|ein|eine|eines|einer|einige|einigen|einiger) *(([A-ZÖÄÜ][a-zöäüß]*)+) *(([A-ZÖÄÜ][a-zöäüß]*)+)?",
+		  "captures": {
+			"1": {
+			  "name": "entity.name.type.germanscript"
+			},
+			"2": {
+			  "name": "entity.name.type.germanscript"
+			},
+			"4": {
+			  "name": "variable.parameter.germanscript"
+			}
+		  }
+		},
+		"args": {
+			"name": "meta.argument",
+		  "match": "\\b(der|die|das|den|des|dem|ein|eine|eines|einer|einige|einigen|einiger|mein|meine|meines|meiner|meinem|meinen|dein|deine|deines|deiner|deinem|deinen) *(([A-ZÖÄÜ][a-zöäüß]*)+) *(([A-ZÖÄÜ][a-zöäüß]*)+)?",
+		  "captures": {
+			"1": {
+			  "name": "variable.parameter.germanscript"
+			},
+			"2": {
+			  "name": "variable.parameter.germanscript"
+			},
+			"4": {
+			  "name": "variable.other.germanscript"
+			}
+		  }
+		},
+		"operators": {
+		  "name": "keyword.operator.germanscript",
+		  "match": "(\\||&|=|!=|>|<|>=|<=|\\+|-|\\*|\\/|%|\\^)|(\\b(ist|sind|oder|und|gleich|ungleich|größer|kleiner|(größer *gleich)|(kleiner *gleich)|mal|durch|modulo|hoch|als)\\b)"
+		},
+		"functions": {
+		  "name": "entity.name.function",
+		  "match": "\\b[a-zöäüß]+"
+		}
+	  }
+}

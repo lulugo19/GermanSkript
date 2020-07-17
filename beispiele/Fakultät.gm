@@ -1,2 +1,4 @@
-definiere fakultät mit Rückgabe Zahl, Zahl:
-    zurück wenn Zahl gleich 0 dann 1 sonst Zahl mal fakultät Zahl minus 1.
+Verb fakultät(Zahl) von der Zahl:
+    wenn die Zahl gleich 0 ist: gebe 1 zurück.
+    sonst: gebe die Zahl * (fakultät von der Zahl -1) zurück.
+.

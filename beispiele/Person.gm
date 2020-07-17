@@ -1,24 +1,11 @@
-definiere die Person mit Plural Personen:
-    Nachname, Vorname als Zeichenfolge
-    Alter als Zahl.
+Nomen Person mit
+    der Zeichenfolge NachName,
+    der Zeichenfolge VorName,
+    dem Alter Zahl:.
 
-definiere Person StellDichVor! mit Rückgabe Zeichenfolge:
-    zurück "Mein Name ist " + mein Vorname + " " + mein Nachname + " und ich bin " + mein Alter " + Jahre alt."
+Verb für Person stelle dich vor:
+    schreibe die Zeile "mein Name ist #{mein Name} und ich bin #{mein Alter} Jahre alt.".
 
-definiere Student/Studentin/Studi als Person mit Plural Studenten:
-    Studiengang als Zeichenfolge,
-    Semester als Zahl.
+die Person ist eine Person mit dem NachNamen "Mustermann", dem VorNamen="Max", dem Alter 24
 
-definiere Student stellDichVor! mit Rückgabe Zeichenfolge:
-    zurück meine Basis! + " Ich studiere " + mein Studiengang " + im " + mein Semester als Zeichenfolge " Fachsemester."!
-
-der Student Max mit
-    Nachname "Mustermann",
-    Vorname "Max",
-    Alter 22,
-    Studiengang "Informatik",
-    Semester 8.
-
-die Person ist Max
-
-Person stellDichVor! // Mein Name ist Max Mustermann und ich bin 22 Jahre alt. Ich studiere Informatik im 8. Fachsemester.
+Person: stell dich vor!
