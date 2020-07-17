@@ -1,4 +1,3 @@
 importiere "./Nützliches.gm"
 
-//schreibe den Bereich "Hallo Welt!"
-schreibe die Zeile "Hallo Welt"
+schreibe den Bereich "Hallo Welt!"

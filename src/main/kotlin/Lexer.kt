@@ -363,18 +363,18 @@ class Lexer(startDatei: File): PipelineKomponente(startDatei) {
     }
 
     fun importiereDatei(import: AST.Definition.Import) {
-        val datei = File(import.pfad).relativeTo(startDatei)
+        val datei = startDatei.parentFile!!.resolve(File(import.pfad))
         if (!datei.exists()) {
             throw GermanScriptFehler.ImportFehler.DateiNichtGefunden(import.dateiPfad.toUntyped(), import.pfad)
         }
         // füge Datei nur zur Schlange hinzu, wenn sie noch nicht bearbeitet wurden ist
-        if (!bearbeiteteDateien.contains(datei.relativeTo(startDatei).path)) {
+        if (!bearbeiteteDateien.contains(datei.path)) {
             dateiSchlange.add(datei)
         }
     }
 
     private fun tokeniziereDatei(datei: File) : Sequence<Token> = sequence {
-        currentFile = datei.relativeTo(startDatei).path.ifEmpty { datei.path }
+        currentFile = datei.absolutePath
         bearbeiteteDateien.add(currentFile)
         var inMehrZeilenKommentar = false
         for ((zeilenIndex, zeile) in datei.readLines().map(String::trim).withIndex()) {
