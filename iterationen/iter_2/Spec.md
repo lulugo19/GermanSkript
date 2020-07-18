@@ -192,14 +192,14 @@ Client: verbinde dich
 -[x] Wörterbuch-Bug beheben (Lukas)
 -[x] Typ-Konvertierungs-Bug bei Funktionsaufruf
 -[x] mehrere Dateien und Standardbibliothek
--[ ] Implementierung von Symbolen (große Bezeichner mit nur einem Buchstaben)
+-[x] Implementierung von Symbolen (große Bezeichner mit nur einem Buchstaben)
 -[x] erstes Element vom binären Ausdruck als NomenAusdruck
--[ ] Fehlermeldungen
+-[x] Fehlermeldungen
 -[x] Klassendefinition
 -[x] Klassen
--[ ] Standardfunktionen
+-[x] Standardfunktionen
 - Methoden
     - [x] Methodendefinition
     - [x] Methodenblock
-    - [ ] Eigenschaftszugriff mit `mein`
-    - [ ] Eigenschaftszugriff mit `dein`
+    - [x] Eigenschaftszugriff mit `mein`
+    - [x] Eigenschaftszugriff mit `dein`
