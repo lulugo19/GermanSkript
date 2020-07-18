@@ -3,11 +3,12 @@ Deklination Femininum Singular(Zeichenfolge) Plural(Zeichenfolgen)
 Deklination Neutrum Singular(Boolean) Plural(Booleans)
 Deklination Femininum Singular(Zeile) Plural(Zeilen)
 Deklination Femininum Singular(Liste) Plural(Listen)
-Deklination Neutrum Singular(Element, Elements, Element, Element) Plural(Elemente, Elemente, Elementen, Elemente)
+Deklination Maskulinum Singular(Typ, Typs, Typ, Typ) Plural(Typen)
 Deklination Maskulinum Singular(Index) Plural(Indizes)
 Deklination Neutrum Singular(Minimum, Minimums, Minimum, Minimum) Plural(Minima)
 Deklination Neutrum Singular(Maximum, Maximums, Maximum, Maximum) Plural(Maxima)
 Deklination Maskulinum Singular(Separator, Separators, Separator, Separator) Plural(Separatoren)
+Deklination Femininum Singular(Anzahl) Plural(Anzahlen)
 
 // Standardausgabe
 Verb schreibe die Zeichenfolge: intern. // print
@@ -47,9 +48,12 @@ Verb(Zeichenfolge) buchstabiere die Zeichenfolge groß: intern.   // toUpperCase
 Verb(Zeichenfolge) buchstabiere die Zeichenfolge klein: intern.  // toLowerCase
 Verb(Zeichenfolgen) trenne die Zeichenfolge zwischen der Zeichenfolge Separator: intern.
 
-/*
-// Listen Methoden
-Verb(Boolean) für Liste beinhaltet das Element: intern.
-Verb für Liste füge das Element hinzu: intern.
-Verb für Liste lösche das Element an der Zahl Index: intern.
-*/
+
+// Listen Definition und Methoden
+Nomen Liste:
+    jene Anzahl ist 0
+.
+
+Verb(Boolean) für Liste beinhaltet den Typ: intern.
+Verb für Liste füge den Typ hinzu: intern.
+Verb für Liste entferne an der Zahl Index: intern.

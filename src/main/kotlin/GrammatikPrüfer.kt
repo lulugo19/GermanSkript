@@ -8,6 +8,14 @@ class GrammatikPrüfer(startDatei: File): PipelineKomponente(startDatei) {
 
   val logger = SimpleLogger()
 
+  companion object {
+    fun holeVornomen(vorNomen: TokenTyp.VORNOMEN, kasus: Kasus, genus: Genus, numerus: Numerus): String {
+      val kasusIndex = kasus.ordinal
+      val spaltenIndex = if (numerus == Numerus.SINGULAR) genus.ordinal else 3
+      return VORNOMEN_TABELLE.getValue(vorNomen)[kasusIndex][spaltenIndex]
+    }
+  }
+
   fun prüfe() {
     deklinierer.deklaniere()
 
@@ -88,12 +96,6 @@ class GrammatikPrüfer(startDatei: File): PipelineKomponente(startDatei) {
       val erwartetesVornomen = holeVornomen(vorNomen.typ, ersterFall, nomen.genus, nomen.numerus!!)
       throw GermanScriptFehler.GrammatikFehler.FormFehler.FalschesVornomen(vorNomen.toUntyped(), ersterFall, nomen, erwartetesVornomen)
     }
-  }
-
-  private fun holeVornomen(vorNomen: TokenTyp.VORNOMEN, kasus: Kasus, genus: Genus, numerus: Numerus): String {
-    val kasusIndex = kasus.ordinal
-    val spaltenIndex = if (numerus == Numerus.SINGULAR) genus.ordinal else 3
-    return VORNOMEN_TABELLE.getValue(vorNomen)[kasusIndex][spaltenIndex]
   }
 
   private fun prüfeNumerus(nomen: AST.Nomen, numerus: Numerus) {
@@ -297,6 +299,8 @@ class GrammatikPrüfer(startDatei: File): PipelineKomponente(startDatei) {
     prüfeKontextbasiertenAusdruck(knoten.ausdruck, null, EnumSet.of(Kasus.AKKUSATIV))
   }
 }
+
+
 
 private val VORNOMEN_TABELLE = mapOf<TokenTyp.VORNOMEN, Array<Array<String>>>(
     TokenTyp.VORNOMEN.ARTIKEL.BESTIMMT to arrayOf(

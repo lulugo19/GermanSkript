@@ -66,13 +66,37 @@ sealed class Wert {
     override fun toString(): String = boolean.toString()
   }
 
-  class Liste(val elemente: List<Wert>): Wert() {
-    operator fun plus(liste: Liste) = Liste(this.elemente + liste.elemente)
+  sealed class Objekt(val klassenDefinition: AST.Definition.Klasse): Wert() {
+    // TODO: String sollte eindeutigen Identifier zurückliefern
+    override fun toString() = klassenDefinition.typ.name.nominativ
+    abstract fun holeEigenschaft(eigenschaftsName: AST.Nomen): Wert
+    abstract fun setzeEigenschaft(eigenschaftsName: AST.Nomen, wert: Wert)
 
-    override fun toString(): String {
-      return "[${elemente.joinToString(", ")}]"
+    class SkriptObjekt(klassenDefinition: AST.Definition.Klasse, val eigenschaften: HashMap<String, Wert>)
+      : Objekt(klassenDefinition) {
+      override fun holeEigenschaft(eigenschaftsName: AST.Nomen) = eigenschaften.getValue(eigenschaftsName.nominativ)
+      override fun setzeEigenschaft(eigenschaftsName: AST.Nomen, wert: Wert) {
+        eigenschaften[eigenschaftsName.nominativ] = wert
+      }
+    }
+
+    class Liste(klassenDefinition: AST.Definition.Klasse ,val elemente: MutableList<Wert>): Objekt(klassenDefinition) {
+      operator fun plus(liste: Liste) = Liste(klassenDefinition, (this.elemente + liste.elemente).toMutableList())
+
+      override fun toString(): String {
+        return "[${elemente.joinToString(", ")}]"
+      }
+
+      override fun holeEigenschaft(eigenschaftsName: AST.Nomen): Wert {
+        if (eigenschaftsName.nominativ == "Anzahl") {
+          return Zahl(elemente.size.toDouble())
+        }
+        throw Exception("Die Eigenschaft ${eigenschaftsName.nominativ} ist für den Typen Liste nicht definiert.")
+      }
+
+      override fun setzeEigenschaft(eigenschaftsName: AST.Nomen, wert: Wert) {
+        // vielleicht kommt hier später mal was, sieht aber nicht danach aus
+      }
     }
   }
-
-  class Objekt(val klassenDefinition: AST.Definition.Klasse, val eigenschaften: HashMap<String, Wert>): Wert()
 }

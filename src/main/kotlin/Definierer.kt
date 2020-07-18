@@ -29,7 +29,7 @@ class Definierer(startDatei: File): PipelineKomponente(startDatei) {
 
   fun holeFunktionsDefinition(funktionsAufruf: AST.Funktion): AST.Definition.FunktionOderMethode.Funktion{
     if (funktionsAufruf.vollerName == null) {
-      funktionsAufruf.vollerName = holeVollenNamenVonFunktionsAufruf(funktionsAufruf, false)
+      funktionsAufruf.vollerName = holeVollenNamenVonFunktionsAufruf(funktionsAufruf, null)
     }
     return funktionsDefinitionsMapping.getOrElse(funktionsAufruf.vollerName!!) {
       throw GermanScriptFehler.Undefiniert.Funktion(funktionsAufruf.verb.toUntyped(), funktionsAufruf)
@@ -45,6 +45,10 @@ class Definierer(startDatei: File): PipelineKomponente(startDatei) {
       }
     }
     throw GermanScriptFehler.Undefiniert.Typ(nomen.bezeichner.toUntyped())
+  }
+
+  fun holeKlassenDefinition(klassenName: String): AST.Definition.Klasse {
+    return klassenDefinitionsMapping.getValue(klassenName)
   }
 
   val funktionsDefinitionen get(): Sequence<AST.Definition.FunktionOderMethode.Funktion> = funktionsDefinitionsMapping.values.asSequence()
@@ -129,18 +133,13 @@ class Definierer(startDatei: File): PipelineKomponente(startDatei) {
     return vollerName
   }
 
-  fun holeVollenNamenVonFunktionsAufruf(funktionsAufruf: AST.Funktion, ersetzeObjektMitReflexivPronomen: Boolean): String {
+  fun holeVollenNamenVonFunktionsAufruf(funktionsAufruf: AST.Funktion, ersetzeObjekt: String?): String {
     // erkläre die Zeichenfolge mit der Zahl über die Zeile der Mond nach die Welt
     var vollerName = funktionsAufruf.verb.wert
     if (funktionsAufruf.objekt != null) {
       val objekt = funktionsAufruf.objekt
-      if (ersetzeObjektMitReflexivPronomen) {
-        val reflexivPronomen = when (objekt.name.fälle.first()) {
-          Kasus.AKKUSATIV -> "mich"
-          Kasus.DATIV -> "mir"
-          else -> throw Exception("Dieser Fall sollte nie eintreten, da der Grammatikprüfer dies überprüfen sollte. ${objekt.name.bezeichner}")
-        }
-        vollerName += " $reflexivPronomen"
+      if (ersetzeObjekt != null) {
+        vollerName += " $ersetzeObjekt"
       } else {
         vollerName += " " + objekt.name.vornomenString!! + " " + objekt.name.hauptWort
       }

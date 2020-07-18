@@ -1,6 +1,7 @@
 import util.SimpleLogger
 import java.io.File
 
+
 sealed class Typ(val name: String) {
   override fun toString(): String = name
   val logger = SimpleLogger()
@@ -51,29 +52,42 @@ sealed class Typ(val name: String) {
     override fun kannNachTypKonvertiertWerden(typ: Typ) = typ == Boolean || typ == Zeichenfolge || typ == Zahl
   }
 
-  data class Liste(val elementTyp: Typ) : Typ("Liste($elementTyp)") {
+  object Generic : Typ("Generic") {
+    override val definierteOperatoren: Map<Operator, Typ>
+      get() = mapOf()
 
-    // Das hier muss umbedingt ein Getter sein, sonst gibt es Probleme mit StackOverflow
-    override val definierteOperatoren: Map<Operator, Typ> get() = mapOf(Operator.PLUS to Liste(elementTyp))
-    override fun kannNachTypKonvertiertWerden(typ: Typ) = typ == this || typ == Zeichenfolge
+    override fun kannNachTypKonvertiertWerden(typ: Typ): kotlin.Boolean = false
   }
 
-  data class Klasse(val klassenDefinition: AST.Definition.Klasse):
-      Typ(klassenDefinition.typ.name.hauptWort(Kasus.NOMINATIV, Numerus.SINGULAR)) {
-      override val definierteOperatoren: Map<Operator, Typ> = mapOf()
+  sealed class KlassenTyp(name: String): Typ(name) {
+    abstract val klassenDefinition: AST.Definition.Klasse
 
-      override fun kannNachTypKonvertiertWerden(typ: Typ): kotlin.Boolean {
-        return typ.name == this.name || typ == Zeichenfolge || klassenDefinition.konvertierungen.containsKey(typ.name)
-      }
+    data class Klasse(override val klassenDefinition: AST.Definition.Klasse):
+        KlassenTyp(klassenDefinition.typ.name.hauptWort(Kasus.NOMINATIV, Numerus.SINGULAR)) {
+        override val definierteOperatoren: Map<Operator, Typ> = mapOf()
+
+        override fun kannNachTypKonvertiertWerden(typ: Typ): kotlin.Boolean {
+          return typ.name == this.name || typ == Zeichenfolge || klassenDefinition.konvertierungen.containsKey(typ.name)
+        }
+    }
+
+    data class Liste(override val klassenDefinition: AST.Definition.Klasse, val elementTyp: Typ) : KlassenTyp("Liste($elementTyp)") {
+      // Das hier muss umbedingt ein Getter sein, sonst gibt es Probleme mit StackOverflow
+      override val definierteOperatoren: Map<Operator, Typ> get() = mapOf(Operator.PLUS to Liste(klassenDefinition, elementTyp))
+      override fun kannNachTypKonvertiertWerden(typ: Typ) = typ.name == this.name || typ == Zeichenfolge
+    }
   }
 }
 
 class Typisierer(startDatei: File): PipelineKomponente(startDatei) {
   val definierer = Definierer(startDatei)
   val ast = definierer.ast
+  private var _listenKlassenDefinition: AST.Definition.Klasse? = null
+  val listenKlassenDefinition get() = _listenKlassenDefinition!!
 
   fun typisiere() {
     definierer.definiere()
+    _listenKlassenDefinition = definierer.holeKlassenDefinition("Liste")
     definierer.funktionsDefinitionen.forEach(::typisiereFunktion)
     definierer.klassenDefinitionen.forEach(::typisiereKlasse)
   }
@@ -83,12 +97,14 @@ class Typisierer(startDatei: File): PipelineKomponente(startDatei) {
       "Zahl" -> Typ.Zahl
       "Zeichenfolge" -> Typ.Zeichenfolge
       "Boolean" -> Typ.Boolean
-      else -> Typ.Klasse(definierer.holeKlassenDefinition(nomen))
+      "Typ" -> Typ.Generic
+      "Liste" -> Typ.KlassenTyp.Liste(listenKlassenDefinition, Typ.Generic)
+      else -> Typ.KlassenTyp.Klasse(definierer.holeKlassenDefinition(nomen))
     }
     return if (nomen.numerus == Numerus.SINGULAR) {
       singularTyp
     } else {
-      Typ.Liste(singularTyp)
+      Typ.KlassenTyp.Liste(listenKlassenDefinition, singularTyp)
     }
    }
 
@@ -112,7 +128,7 @@ class Typisierer(startDatei: File): PipelineKomponente(startDatei) {
       typisiereTypKnoten(eigenschaft.typKnoten)
     }
     klasse.methoden.values.forEach{ methode ->
-      methode.klasse.typ = Typ.Klasse(klasse)
+      methode.klasse.typ = Typ.KlassenTyp.Klasse(klasse)
       typisiereFunktion(methode.funktion)
     }
     klasse.konvertierungen.values.forEach { konvertierung ->

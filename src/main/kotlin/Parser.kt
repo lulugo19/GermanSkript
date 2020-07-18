@@ -572,7 +572,7 @@ private sealed class SubParser<T: AST>() {
         get() = ASTKnotenID.INTERN
 
       override fun bewacheKnoten() {
-        if (!hierarchyContainsNode(ASTKnotenID.FUNKTIONS_DEFINITION)) {
+        if (!hierarchyContainsAnyNode(ASTKnotenID.FUNKTIONS_DEFINITION, ASTKnotenID.METHODEN_DEFINITION)) {
           throw GermanScriptFehler.SyntaxFehler.ParseFehler(next(), null, "Das Schlüsselwort 'intern' darf nur in einer Funktionsdefinition stehen.")
         }
       }

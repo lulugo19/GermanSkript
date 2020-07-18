@@ -12,6 +12,7 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
   private var rückgabeWert: Wert? = null
   private val flags = EnumSet.noneOf(Flag::class.java)
   private val aufrufStapel = AufrufStapel()
+  private val listenKlassenDefinition get() = typPrüfer.typisierer.listenKlassenDefinition
 
   override val umgebung: Umgebung<Wert> get() = aufrufStapel.top().umgebung
 
@@ -31,7 +32,6 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
           throw fehler
         }
       }
-
     }
   }
 
@@ -83,10 +83,10 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
 
     private fun aufrufStapelElementToString(element: AufrufStapelElement): String {
       val aufruf = element.aufruf
-      var zeichenfolge = "${aufruf.vollerName} in ${aufruf.token.position}"
+      var zeichenfolge = "'${aufruf.vollerName}' in ${aufruf.token.position}"
       if (element.objekt != null) {
         val klassenName = element.objekt.klassenDefinition.typ.name.hauptWort
-        zeichenfolge = "für $klassenName: $zeichenfolge"
+        zeichenfolge = "'für $klassenName: ${aufruf.vollerName}' in ${aufruf.token.position}"
       }
 
       return zeichenfolge
@@ -110,8 +110,7 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
   override fun durchlaufeVariablenDeklaration(deklaration: AST.Satz.VariablenDeklaration) {
     if (deklaration.istEigenschaftsNeuZuweisung || deklaration.istEigenschaft) {
       // weise Eigenschaft neu zu
-      aufrufStapel.top().objekt!!.eigenschaften[deklaration.name.ganzesWort(Kasus.NOMINATIV, deklaration.name.numerus!!)] =
-          evaluiereAusdruck(deklaration.ausdruck)
+      aufrufStapel.top().objekt!!.setzeEigenschaft(deklaration.name, evaluiereAusdruck(deklaration.ausdruck))
     }
     else {
       val wert = evaluiereAusdruck(deklaration.ausdruck)
@@ -172,9 +171,9 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
 
   override fun durchlaufeFürJedeSchleife(schleife: AST.Satz.FürJedeSchleife) {
     val liste = if (schleife.liste != null)  {
-      evaluiereAusdruck(schleife.liste) as Wert.Liste
+      evaluiereAusdruck(schleife.liste) as Wert.Objekt.Liste
     } else {
-      evaluiereVariable(schleife.singular.ganzesWort(Kasus.NOMINATIV, Numerus.PLURAL))!! as Wert.Liste
+      evaluiereVariable(schleife.singular.ganzesWort(Kasus.NOMINATIV, Numerus.PLURAL))!! as Wert.Objekt.Liste
     }
     umgebung.pushBereich()
     for (element in liste.elemente) {
@@ -219,7 +218,7 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
   }
 
   override fun evaluiereListe(ausdruck: AST.Ausdruck.Liste): Wert {
-    return Wert.Liste(ausdruck.elemente.map(::evaluiereAusdruck))
+    return Wert.Objekt.Liste(listenKlassenDefinition , ausdruck.elemente.map(::evaluiereAusdruck).toMutableList())
   }
 
   override fun evaluiereObjektInstanziierung(instanziierung: AST.Ausdruck.ObjektInstanziierung): Wert {
@@ -227,25 +226,25 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
     for (zuweisung in instanziierung.eigenschaftsZuweisungen) {
       eigenschaften[zuweisung.name.nominativ] = evaluiereAusdruck(zuweisung.wert)
     }
-    val klassenDefinition = (instanziierung.klasse.typ!! as Typ.Klasse).klassenDefinition
-    val objekt = Wert.Objekt(klassenDefinition, eigenschaften)
+    val klassenDefinition = (instanziierung.klasse.typ!! as Typ.KlassenTyp.Klasse).klassenDefinition
+    val objekt = Wert.Objekt.SkriptObjekt(klassenDefinition, eigenschaften)
     durchlaufeAufruf(instanziierung, klassenDefinition.konstruktorSätze, Umgebung(), true, objekt)
     return objekt
   }
 
   override fun evaluiereEigenschaftsZugriff(eigenschaftsZugriff: AST.Ausdruck.EigenschaftsZugriff): Wert {
     val objekt = evaluiereAusdruck(eigenschaftsZugriff.objekt) as Wert.Objekt
-    return objekt.eigenschaften.getValue(eigenschaftsZugriff.eigenschaftsName.nominativ)
+    return objekt.holeEigenschaft(eigenschaftsZugriff.eigenschaftsName)
   }
 
   override fun evaluiereSelbstEigenschaftsZugriff(eigenschaftsZugriff: AST.Ausdruck.SelbstEigenschaftsZugriff): Wert {
     val objekt = aufrufStapel.top().objekt!!
-    return objekt.eigenschaften.getValue(eigenschaftsZugriff.eigenschaftsName.nominativ)
+    return objekt.holeEigenschaft(eigenschaftsZugriff.eigenschaftsName)
   }
 
   override fun evaluiereMethodenBlockEigenschaftsZugriff(eigenschaftsZugriff: AST.Ausdruck.MethodenBlockEigenschaftsZugriff): Wert {
     val objekt = umgebung.holeMethodenBlockObjekt()!! as Wert.Objekt
-    return objekt.eigenschaften.getValue(eigenschaftsZugriff.eigenschaftsName.nominativ)
+    return objekt.holeEigenschaft(eigenschaftsZugriff.eigenschaftsName)
   }
 
   override fun evaluiereSelbstReferenz(): Wert = aufrufStapel.top().objekt!!
@@ -264,7 +263,7 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
         zahlOperation(operator, links, rechts)
       }
       is Wert.Boolean -> booleanOperation(operator, links, rechts as Wert.Boolean)
-      is Wert.Liste -> listenOperation(operator, links, rechts as Wert.Liste)
+      is Wert.Objekt.Liste -> listenOperation(operator, links, rechts as Wert.Objekt.Liste)
       else -> throw Exception("Typprüfer sollte disen Fehler verhindern.")
     }
   }
@@ -310,7 +309,7 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
     }
   }
 
-  private fun listenOperation(operator: Operator, links: Wert.Liste, rechts: Wert.Liste): Wert {
+  private fun listenOperation(operator: Operator, links: Wert.Objekt.Liste, rechts: Wert.Objekt.Liste): Wert {
     return when (operator) {
       Operator.PLUS ->links + rechts
       else -> throw Exception("Operator $operator ist für den Typen Liste nicht definiert.")
@@ -323,7 +322,7 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
   }
 
   override fun evaluiereListenElement(listenElement: AST.Ausdruck.ListenElement): Wert {
-    val liste = evaluiereVariable(listenElement.singular.ganzesWort(Kasus.NOMINATIV, Numerus.PLURAL)) as Wert.Liste
+    val liste = evaluiereVariable(listenElement.singular.ganzesWort(Kasus.NOMINATIV, Numerus.PLURAL)) as Wert.Objekt.Liste
     val index = (evaluiereAusdruck(listenElement.index) as Wert.Zahl).toInt()
     if (index >= liste.elemente.size) {
       throw GermanScriptFehler.LaufzeitFehler(holeErstesTokenVonAusdruck(listenElement.index),
@@ -407,8 +406,30 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
       "trenne die Zeichenfolge zwischen dem Separator" to {
         val zeichenfolge = umgebung.leseVariable("Zeichenfolge")!!.wert as Wert.Zeichenfolge
         val separator = umgebung.leseVariable("Separator")!!.wert as Wert.Zeichenfolge
-        rückgabeWert = Wert.Liste(zeichenfolge.zeichenfolge.split(separator.zeichenfolge)
-            .map { Wert.Zeichenfolge(it) })
+        rückgabeWert = Wert.Objekt.Liste(listenKlassenDefinition, zeichenfolge.zeichenfolge.split(separator.zeichenfolge)
+            .map { Wert.Zeichenfolge(it) }.toMutableList())
+      },
+
+      "beinhaltet den Typ" to {
+        val objekt = aufrufStapel.top().objekt!! as Wert.Objekt.Liste
+        val element = umgebung.leseVariable("Typ")!!.wert
+        rückgabeWert = Wert.Boolean(objekt.elemente.contains(element))
+      },
+
+      "füge den Typ hinzu" to {
+        val objekt = aufrufStapel.top().objekt!! as Wert.Objekt.Liste
+        val element = umgebung.leseVariable("Typ")!!.wert
+        objekt.elemente.add(element)
+        // Unit weil sonst gemeckert wird, dass keine Unit zurückgegeben wird
+        Unit
+      },
+
+      "entferne an dem Index" to {
+        val objekt = aufrufStapel.top().objekt!! as Wert.Objekt.Liste
+        val index = umgebung.leseVariable("Index")!!.wert as Wert.Zahl
+        objekt.elemente.removeAt(index.toInt())
+        // Unit weil sonst gemeckert wird, dass keine Unit zurückgegeben wird
+        Unit
       }
   )
 
@@ -446,10 +467,8 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
   private fun konvertiereZuZeichenfolge(konvertierung: AST.Ausdruck.Konvertierung, wert: Wert): Wert.Zeichenfolge {
     return when (wert) {
       is Wert.Zeichenfolge -> wert
-      is Wert.Zahl -> Wert.Zeichenfolge(wert.toString())
       is Wert.Boolean -> Wert.Zeichenfolge(if(wert.boolean) "wahr" else "falsch")
-      is Wert.Objekt -> Wert.Zeichenfolge(wert.toString())
-      is Wert.Liste -> Wert.Zeichenfolge(wert.toString())
+      else -> Wert.Zeichenfolge(wert.toString())
     }
   }
 
