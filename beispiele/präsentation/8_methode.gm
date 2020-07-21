@@ -1,0 +1,18 @@
+importiere "./7_klasse.gm"
+
+Deklination Femininum Singular(Begrüßung) Plural(Begrüßungen)
+Deklination Maskulinum Singular(Abschied, Abschiedes, Abschied, Abschied) Plural(Abschiede, Abschiede, Abschieden, Abschiede)
+
+Verb für Person begrüße mich mit der Zeichenfolge Begrüßung, der Zeichenfolge Abschied:
+    schreibe die Zeile "#{die Begrüßung} #{mein Name}. #{der Abschied}."
+.
+
+die PersonFINN ist eine Person mit 
+    dem VorNamen "Finn", 
+    dem NachNamen "Wehn", 
+    dem Alter 20
+
+PersonFINN: 
+    begrüße dich mit der Begrüßung "Hey", dem Abschied "Bye"
+    schreibe die Zeile dein Name
+!

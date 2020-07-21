@@ -352,7 +352,7 @@ class Lexer(startDatei: File): PipelineKomponente(startDatei) {
     fun tokeniziere(): Sequence<Token> = sequence {
         yield(Token(TokenTyp.PROGRAMM_START, "Programmstart", startDatei.path, Token.Position(0, 0), Token.Position(0, 0)))
         dateiSchlange.add(startDatei)
-        dateiSchlange.add(File("./stdbib/stdbib.gms"))
+        dateiSchlange.add(File("./stdbib/stdbib.gm"))
         while (dateiSchlange.isNotEmpty()) {
             val nächsteDatei = dateiSchlange.remove()
             yieldAll(tokeniziereDatei(nächsteDatei))

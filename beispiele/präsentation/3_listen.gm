@@ -1,0 +1,12 @@
+die Zahlen sind einige Zahlen[]
+schreibe der Zeile "Füge Zahlen einer Liste hinzu. Bei -1 wird abgebrochen.\n"
+
+solange wahr:
+    schreibe die Zeichenfolge "Gebe eine Zahl ein: "
+    die Zahl ist lese als Zahl
+    wenn die Zahl gleich -1 ist: abbrechen.
+
+    Zahlen: füge die Zahl hinzu!
+.
+
+schreibe die Zeile "Die eigegebenen Zahlen: #{die Zahlen}"

@@ -1,0 +1,5 @@
+die Zeichenfolgen sind einige Zeichenfolgen["Hallo", "Welt", "Banane", "Apfel", "Keks"]
+
+für jede Zeichenfolge:
+    schreibe die Zeile (buchstabiere die Zeichenfolge groß)
+.

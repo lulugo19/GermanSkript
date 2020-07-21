@@ -3,6 +3,7 @@
 ## hinzugefügte Features
 - Vererbung
 - Module
+- überarbeitetes Importieren
 - Schnittstellen (Adjektive)
 - Adjektive als Teil von Bezeichnern
 - Aufzählungen
@@ -116,6 +117,11 @@ verwende Zoo::Tiere::Amphibien
 das Pferd ist ein Pferd
 das Krokodil ist ein Krokodil
 ```
+
+## überarbeitetes Importieren
+Momentan ist es so, dass `importieren` denn Compiler dazu veranlässt, die Datei nachdem die momentane Datei gelesen wurde ist zu parsen.
+Außerdem werden nicht nur Definitionen sondern Sätze importiert.
+Es soll so überarbeitet werden, dass nur noch Module importiert werden können.
 
 ## Schnittstellen (Adjektive)
 

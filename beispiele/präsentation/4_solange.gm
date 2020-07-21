@@ -1,0 +1,15 @@
+Deklination Maskulinum Singular(Zähler, Zählers, Zähler, Zähler) Plural(Zähler, Zähler, Zählern, Zähler)
+
+Verb zähle ab der Zahl runter:
+    schreibe die Zeichenfolge "Countdown: "
+    ein Zähler ist die Zahl
+    solange der Zähler größer gleich 0:
+        schreibe die Zahl (der Zähler)
+        ein Zähler ist der Zähler - 1
+    .
+    schreibe die Zeile "Los!"
+.
+
+schreibe die Zeichenfolge "Ab welcher Zahl soll der Countdown starten: "
+die Zahl ist lese als Zahl
+zähle ab der Zahl runter
