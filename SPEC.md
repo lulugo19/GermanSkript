@@ -235,7 +235,7 @@ wenn Bedingung:
 [sonst: Sätze] .
 ```
 
-Bei Bedingungen ist das Besondere, dass bei den Vergleichsoperatoren `gleich`, `ungleich`, `kleiner`, `größer`, `kleiner gleich` danach immer ein `ist` kommen muss.
+Bei Bedingungen ist das Besondere, dass bei den Vergleichsoperatoren `gleich`, `ungleich`, `kleiner`, `größer`, `kleiner gleich` danach immer ein `ist` kommen kann.
 
 Beispiel:
 ```
@@ -337,8 +337,6 @@ Objektinstanziierung: siehe [Objektinstanziierung](#instanziieren-eines-objekts-
 
 Präposition: `PräpGDA Kommaliste(ArtikelGDAb BezeichnerA1 [BezeicherA2 | Zahl |])`
 
-1. `BezeichnerA1` muss ungleich `BezeichnerA2` sein
-2. `BezeichnerA1` muss mit dem `BezeichnerA`
 
 Beispiele:
 ```
@@ -353,7 +351,7 @@ begrüße den Kumpel mit der Begrüßung
 begrüße eine Person mit dem Namen "Josuah" mit der Begrüßung "Hey, Josuah!"
 
 
-der Tisch ist Gegenstand mit Name="Tisch".
+der Tisch ist ein Gegenstand mit dem Namen "Tisch".
 stelle den Gegenstand Tisch her
 ```
 
@@ -485,12 +483,12 @@ Verb zeichne das Zeichenbare:
 
 // Methoden: implementiere zeichne von Zeichenbar
 Verb für Dreieck zeichne mich:
-     "zeichne Dreieck"
+     // zeichen das Dreieck
 .
 
 // Methoden: implementiere skaliere von Zeichenbar
 Verb für Dreieck skaliere mich:
-     "skaliere Dreieck"
+     // skaliere das Dreieck
 .
 
 das Dreieck ist ein Dreieck
@@ -508,24 +506,21 @@ Beispiel: `Konstante PI ist 3.14159265359`
 
 ### Alias
 
-`alias BezeichnerP ist Typ`
+`Alias BezeichnerP ist Typ`
 
-oder über den Duden:
-
-`alias Duden(Nomen) ist Typ`
 
 Beispiel:
 
-`alias Alter ist Zahl`
+`Alias Alter ist Zahl`
 
 ### Definieren einer Aufzählung
 
 Beispiel:
 
 ```
-alias Duden(Name) ist Zeichenfolge
+Alias Name ist Zeichenfolge
 
-Aufzählung Duden(Ereignis) mit dem Namen:
+Aufzählung Ereignis mit dem Namen:
     Weihnachten mit dem Namen="Weihnachten",
     Ostern mit dem Namen="Ostern",
     Haloween mit dem Namen="Haloween",
@@ -543,8 +538,8 @@ schreibe die Zeichenfolge der Name des Ereignisses // "Weihnachten"
 #### Destrukturierung von Objekten
 Beispiel:
 ```
-die Person ist Person mit dem Nachname="Peterson", dem Vorname="Hans", der Alter=42, der Adresse (Adresse mit Straße="Bla", Ort="Blub")
-(der Nachname, ein Alter Geburtstagsalter, (der Straße) der Adresse) der Person
+die Person ist eine Person mit dem NachNamen="Peterson", dem VorNamen="Hans", dem Alter=42, der Adresse (eine Adresse mit der Straße "Bla", dem Ort "Blub")
+(der Nachname, ein Alter Geburtstagsalter, (die Straße) der Adresse) der Person
 // der Nachname ist der Nachname der Person
 // ein Alter Geburtstagalter ist das Alter der Person
 // die Straße ist die Straße der Adresse der Person
@@ -571,7 +566,7 @@ Module können ineinander verschachtelt werden, aber ein Modul kann nur in dem g
 Beispiel:
 ```
 Modul Zoo:
-    Nomen Duden(Gehege):.
+    Nomen Gehege:.
 
     Modul Tiere:
 

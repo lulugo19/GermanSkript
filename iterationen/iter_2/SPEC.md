@@ -1,6 +1,6 @@
 # Iteration 2
 
-# hinzugefügte Features
+## hinzugefügte Features
 - mehrere Dateien, Standardbibliothek wird automatisch geladen
 - Symbole
 - Typ-Umwandlung
