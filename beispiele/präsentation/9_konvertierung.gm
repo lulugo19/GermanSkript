@@ -4,9 +4,9 @@ als Zahl für Person:
     gebe mein Alter zurück
 .
 
-die PersonMAX ist eine Person mit
+die Person ist eine Person mit
     dem VorNamen "Max",
     dem NachNamen "Mustermann",
     dem Alter 42
-    
+
 schreibe die Zahl (PersonMAX als Zahl)

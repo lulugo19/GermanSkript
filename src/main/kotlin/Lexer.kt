@@ -85,7 +85,8 @@ sealed class TokenTyp(val anzeigeName: String) {
     override fun toString(): String = javaClass.simpleName
 
     object FEHLER: TokenTyp("'Fehler'")
-    object PROGRAMM_START: TokenTyp("'Programmstart'")
+    object HAUPT_PROGRAMM_START: TokenTyp("Programmstart")
+    object HAUPT_PROGRAMM_ENDE: TokenTyp("Programmende")
 
     // Schlüsselwörter
     object DEKLINATION: TokenTyp("'Deklination'")
@@ -350,9 +351,20 @@ class Lexer(startDatei: File): PipelineKomponente(startDatei) {
     private val bearbeiteteDateien = mutableSetOf<String>()
 
     fun tokeniziere(): Sequence<Token> = sequence {
-        yield(Token(TokenTyp.PROGRAMM_START, "Programmstart", startDatei.path, Token.Position(0, 0), Token.Position(0, 0)))
-        dateiSchlange.add(startDatei)
         dateiSchlange.add(File("./stdbib/stdbib.gm"))
+        yield(Token(
+            TokenTyp.HAUPT_PROGRAMM_START,
+            "Programmstart", startDatei.absolutePath,
+            Token.Position(0, 0),
+            Token.Position(0, 0)
+        ))
+        yieldAll(tokeniziereDatei(startDatei))
+        yield(Token(
+            TokenTyp.HAUPT_PROGRAMM_ENDE,
+            "Programmende", startDatei.absolutePath,
+            Token.Position.Ende,
+            Token.Position.Ende
+        ))
         while (dateiSchlange.isNotEmpty()) {
             val nächsteDatei = dateiSchlange.remove()
             yieldAll(tokeniziereDatei(nächsteDatei))

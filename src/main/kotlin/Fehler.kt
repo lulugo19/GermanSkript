@@ -52,7 +52,7 @@ sealed class GermanScriptFehler(private val fehlerName: String, val token: Token
 
     class RückgabeVergessen(token: Token, private val rückgabeTyp: Typ): RückgabeFehler(token) {
       override val nachricht: String
-        get() = "Es wird ein Rückgabe vom Typ '${rückgabeTyp.name}' erwartet."
+        get() = "Es wird eine Rückgabe vom Typ '${rückgabeTyp.name}' erwartet."
     }
   }
 

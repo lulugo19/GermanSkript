@@ -314,17 +314,23 @@ private sealed class SubParser<T: AST>() {
     override val id: ASTKnotenID
       get() = ASTKnotenID.PROGRAMM
 
-    val istProgrammStart = lexer != null
+    val istInGlobalenBereich = lexer != null
 
     override fun parseImpl(): AST.Programm {
-      val programmStart = if (istProgrammStart) next() else null
+      val programmStart = if (istInGlobalenBereich) next() else null
       val definitionen = mutableListOf<AST.Definition>()
       val sätze = mutableListOf<AST.Satz>()
+      var hauptProgrammEnde = false
 
       loop@ while (true) {
         überspringeLeereZeilen()
         when {
-          parseSatz()?.also { sätze += it } != null -> Unit
+          parseSatz()?.also { satz ->
+            // Sätze werden nur von der Hauptdatei eingelesen
+            if (!hauptProgrammEnde) {
+              sätze += satz
+            }
+          } != null -> Unit
           parseDefinition()?.also { definition ->
             if (definition is AST.Definition.Import) {
               lexer!!.importiereDatei(definition)
@@ -333,6 +339,10 @@ private sealed class SubParser<T: AST>() {
             }
           } != null -> Unit
           else -> when (peekType()) {
+            is TokenTyp.HAUPT_PROGRAMM_ENDE -> {
+              next()
+              hauptProgrammEnde = true
+            }
             is TokenTyp.EOF, TokenTyp.PUNKT, TokenTyp.AUSRUFEZEICHEN -> break@loop
             else -> throw GermanScriptFehler.SyntaxFehler.ParseFehler(next())
           }
