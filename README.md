@@ -41,6 +41,9 @@ Iterationen:
 - [Iteration 2](iterationen/iter_2/SPEC.md)
 - [Iteration 3](./iterationen/iter_3/SPEC.md)
 
+Wenn du Interesse daran hast, wie die Architektur des GermanScript-Compilers aussieht, kannst
+du [hier](./CompilerPipeline.md) mehr Informationen zur Compiler-Pipeline fiden.
+
 ### Typen
 
 Folgende Typen sind in GermanScript enthalten:

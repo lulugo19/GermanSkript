@@ -1,18 +1,20 @@
 # Die Compiler Pipeline
 
 Die Pipeline definiert welche Schritte das Programm vom Programm-Code bis zum interpretierten Programm
-durchläuft. Bei GermanScript besteht die Pipeline aus 7 Komponenten:
+durchläuft. Bei GermanScript besteht die Pipeline aus 9 Komponenten:
 1. [Lexer](#lexer)
 2. [Parser](#parser)
 3. [Deklanierer](#deklanierer)
-4. [Grammatik-Checker](#grammatik-prüfer)
+4. [Grammatik Prüfer](#grammatik-prüfer)
 5. [Definierer](#definierer)
-6. [Type-Checker](#typ-prüfer)
-7. [Interpreter](#interpreter)
+6. [Typisierer](#typisierer)
+7. [Typ Prüfer](#typ-prüfer)
+8. [Zurückgabe Prüfer](#zurückgabe-prüfer)
+9. [Interpreter](#interpreter)
 
 Der GermanScript-Code wird dann in dieser Reihenfolge durch die Pipeline geschickt.
 
-`Code -> Lexer -> Parser -> Deklanierer -> Grammatik-Checker -> Definierer -> Type-Checker -> Interpreter`
+![Flussdiagramm: Compiler Pipeline](./CompilerPipeline.svg)
 
 Für jede dieser Komponenten wird anschließend beschrieben, welches Endergebnis erwartet wird, welche Anforderungen es gibt,
 welche Fehler geworfen werden können und Hinweise für die Implementierung.
@@ -142,6 +144,12 @@ Beispiele:
 | `Verb(Verbindung) für Sockel verbinde mich mit der Zeichenfolge IP über die Zahl Port` | `für Sockel: verbinde mich mit der IP über den Port` | Zeichenfolge, Zahl |
 | `Verb für Liste füge das Element hinzu` | `für Liste: füge das Element hinzu` | Element |
 
+## Typisierer
+### Endergebnis:
+Die Typen aller Funktions- und Methodenparameter, sowie die Typen aller Klasseneigenschaften wurden bestimmt.
+### Fehler:
+#### Typ ist nicht definiert
+
 ## Typ Prüfer
 ### Endergebnis:
 Die Typen aller Variablen sind bekannt (inferiert), alle Typen sind überprüft und stimmen überein.
@@ -157,6 +165,13 @@ Prüfe:
     
 Deklarierte Variablen werden in einer Hashmap gespeichert. Bereiche müssen beachtet werden.
 
+## Zurückgabe Prüfer
+### Endergebnis:
+Es wurde geprüft ob eine Funktion oder Methode, die einen Rückgabewert hat oder eine Konvertierungsdefinition, auch wirklich etwas zurückgibt.
+### Fehler:
+#### Unerreichbare Zurückgabe
+
+
 ## Interpreter
 ### Endergebnis:
 Das Programm ist ausgeführt wurden.
@@ -170,11 +185,13 @@ Alle Sätze müssen ausgeführt werden...
 
 Bewertung: 0 bis 5 Plusse `+`
 
-0. Sprachspezifikation(++) -> Lukas
-1. Lexer () -> Lukas
-2. Parser (+++) -> Lukas
-3. Deklanierer und Online-Duden (++++) -> Lukas
-4. Grammatik-Prüfer (++) -> Finn
-5. Definierer (++) -> Lukas
-6. Typ-Prüfer (+++) -> Finn
-7. Interpreter (+++) -> Lukas
+0. Sprachspezifikation (++)
+1. Lexer (+)
+2. Parser (++++)
+3. Deklanierer und Online-Duden (++++)
+4. Grammatik-Prüfer (+++)
+5. Definierer (++)
+6. Typisierer (+)
+7. Typ-Prüfer (+++)
+8. Zurückgabe-Prüfer (++)
+9. Interpreter (++++)
