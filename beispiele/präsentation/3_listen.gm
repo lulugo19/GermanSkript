@@ -1,5 +1,5 @@
 die Zahlen sind einige Zahlen[]
-schreibe der Zeile "Füge Zahlen einer Liste hinzu. Bei -1 wird abgebrochen.\n"
+schreibe die Zeile "Füge Zahlen einer Liste hinzu. Bei -1 wird abgebrochen.\n"
 
 solange wahr:
     schreibe die Zeichenfolge "Gebe eine Zahl ein: "
@@ -9,4 +9,4 @@ solange wahr:
     Zahlen: füge die Zahl hinzu!
 .
 
-schreibe die Zeile "Die eigegebenen Zahlen: #{die Zahlen}"
+schreibe die Zeile "Die eingegebenen Zahlen sind: #{die Zahlen}"

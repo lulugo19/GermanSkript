@@ -1,1 +1,1 @@
-java -jar GermanScript-1.0-SNAPSHOT.jar "%1"
+java -jar GermanScript-1.0-SNAPSHOT.jar %*

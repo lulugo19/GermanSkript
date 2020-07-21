@@ -15,13 +15,31 @@ schreibe die Zeile "Hallo Welt!"
 `schreibe die Zeile` ist eine Funktion, die mit dem Argument "Hallo Welt!" aufgerufen wird.
 
 ## Ein GermanScript Programm ausführen
-Um ein Germanscript-Programm auszuführen, gehe über die Kommandozeile in das Projektverzeichnis und führe folgenden Befehl aus:
+
+### GermanScript über Gradle ausführen
+Um GermanScript über Gradle auszuführen, muss in das Projekthaupt-Verzeichnis gegangen werden
+und folgender Befehl ausgeführt werden:
 ```
 .\gradlew run --args="<Dateipfad>"
 ```
-Alternativ kann auch folgendes verwendet werden:
+
+### GermanScript als JAR ausführen
+Im Repository ist eine meist aktuelle Version des GermanScript-Compilers als auführbare JAR-Datei
+vorhanden. Diese kann dann über `java` direkt ausgeführt werden:
+```
+java -jar GermanScript-1.0-SNAPSHOT.jar <Dateipfad>
+```
+
+Um es ein bisschen kürzer zu machen, wurde dieser Befehl in eine Batch Datei mit dem
+Namen `gms` geschrieben und man kann es folgendermaßen ausführen:
 ```
 .\gms <Dateipfad>
+```
+
+### Die JAR neu erstellen
+Um die JAR neu zu erstellen, muss folgende Gradle-Task ausgeführt werden:
+```
+.\gradlew clean jar
 ```
 
 ## Die Sprache GermanScript
@@ -42,7 +60,7 @@ Iterationen:
 - [Iteration 3](./iterationen/iter_3/SPEC.md)
 
 Wenn du Interesse daran hast, wie die Architektur des GermanScript-Compilers aussieht, kannst
-du [hier](./CompilerPipeline.md) mehr Informationen zur Compiler-Pipeline fiden.
+du [hier](./CompilerPipeline.md) mehr Informationen zur Compiler-Pipeline finden.
 
 ### Typen
 
