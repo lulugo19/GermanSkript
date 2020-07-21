@@ -214,7 +214,6 @@ private val SYMBOL_MAPPING = mapOf<Char, TokenTyp>(
     '*' to TokenTyp.OPERATOR(Operator.MAL),
     '/' to TokenTyp.OPERATOR(Operator.GETEILT),
     '^' to TokenTyp.OPERATOR(Operator.HOCH),
-    '%' to TokenTyp.OPERATOR(Operator.MODULO),
     '=' to TokenTyp.OPERATOR(Operator.GLEICH),
     '>' to TokenTyp.OPERATOR(Operator.GRÖßER),
     '<' to TokenTyp.OPERATOR(Operator.KLEINER),
@@ -270,6 +269,7 @@ private val WORT_MAPPING = mapOf<String, TokenTyp>(
     "mal" to TokenTyp.OPERATOR(Operator.MAL),
     "durch" to TokenTyp.OPERATOR(Operator.GETEILT),
     "hoch" to TokenTyp.OPERATOR(Operator.HOCH),
+    "mod" to TokenTyp.OPERATOR(Operator.MODULO),
     "modulo" to TokenTyp.OPERATOR(Operator.MODULO),
 
     // Spezielle Referenzen

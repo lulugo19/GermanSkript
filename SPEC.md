@@ -125,7 +125,7 @@ Die Operatoren bilden folgende Klassen:
 | ------ | ------------ | ------------ |
 | Arithemetisch | mathematische Operatoren | Akkusativ |
 | Logisch | um Booleans miteinander zu verketten | Akkusativ |
-| Vergleich | Werte vergleichen | Dativ |
+| Vergleich | Werte vergleichen | Akkusativ |
 
 Der Kasus (Fall) ist bei Operatoren auch wichtig. 
 Der erste Operand hat immer den Fall Nominativ und die Fälle der restliche Operanden 
@@ -135,10 +135,9 @@ sind je nach Klasse (siehe Tabelle).
 #### Binäre Operatoren
 | Funktion | Symbol | Text | Assoziativität | Bindungskraft | Klasse |
 | -------- | ------ | ---- | -------------- | ------------- | ------ |
-| Zuweisung | `=` | `ist` | rechts | 0 | Zuweisung | Nominativ |
-| Logisches Oder | <code>&#124;&#124;</code> | `oder `| links | 1 | Logisch |
-| Logisches Und | `&&` | `und` | links | 2 | Logisch |
-| Gleichheit | `==` | `gleich` | links | 3 | Vergleich |
+| Logisches Oder | <code>&#124;</code> | `oder `| links | 1 | Logisch |
+| Logisches Und | `&` | `und` | links | 2 | Logisch |
+| Gleichheit | `=` | `gleich` | links | 3 | Vergleich |
 | Ungleichheit | `!=` | `ungleich` | links | 3 | Vergleich |
 | Größer | `>` | `größer` | links | 3 | Vergleich |
 | Kleiner | `<` | `kleiner` | links | 3 | Vergleich |

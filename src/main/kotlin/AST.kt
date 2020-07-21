@@ -56,7 +56,7 @@ sealed class AST {
     var numerus: Numerus? = null
     var fälle: EnumSet<Kasus> = EnumSet.noneOf(Kasus::class.java)
 
-    val unveränderlich = vornomen?.typ ==
+    val unveränderlich = vornomen == null || vornomen?.typ ==
         TokenTyp.VORNOMEN.ARTIKEL.BESTIMMT || vornomen?.typ == TokenTyp.VORNOMEN.DEMONSTRATIV_PRONOMEN.DIESE
     val istSymbol get() = bezeichner.typ.istSymbol
     val geprüft get() = deklination != null
