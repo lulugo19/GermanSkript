@@ -8,7 +8,6 @@ version = "1.0-SNAPSHOT"
 
 repositories {
     mavenCentral()
-    jcenter()
 }
 
 application {
@@ -24,7 +23,17 @@ tasks {
     compileKotlin {
         kotlinOptions.jvmTarget = "1.8"
     }
+
     compileTestKotlin {
         kotlinOptions.jvmTarget = "1.8"
+    }
+
+    jar {
+        manifest {
+            attributes(
+                "Main-Class" to "StartKt"
+            )
+        }
+        from(configurations.runtimeClasspath.get().map { if (it.isDirectory) it else zipTree(it) })
     }
 }
