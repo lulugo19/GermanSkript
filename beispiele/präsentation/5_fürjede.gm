@@ -1,5 +1,26 @@
-die Zeichenfolgen sind einige Zeichenfolgen["Hallo", "Welt", "Banane", "Apfel", "Keks"]
+die Zahlen sind einige Zahlen[]
+schreibe die Zeile "Füge Zahlen einer Liste hinzu. Bei -1 wird abgebrochen.\n"
 
-für jede Zeichenfolge:
-    schreibe die Zeile (buchstabiere die Zeichenfolge groß)
+solange wahr:
+    schreibe die Zeichenfolge "Gebe eine Zahl ein: "
+    die Zahl ist lese als Zahl
+    wenn die Zahl gleich -1 ist: abbrechen.
+
+    Zahlen: füge die Zahl hinzu!
 .
+
+schreibe die Zeile "Die eingegebenen Zahlen sind: #{die Zahlen}"
+
+// berechen die Summe und den Durchschnitt der Zahlen
+Deklination Femininum Singular(Summe) Plural(Summen)
+Deklination Maskulinum Singular(Durchschnitt, Durchschnittes, Durchschnitt, Durchschnitt) Plural(Durchschnitte, Durchschnitte, Durchschnitten, Durchschnitte)
+
+eine Summe ist 0
+für jede Zahl:
+    eine Summe ist die Summe + die Zahl
+.
+
+der Durchschnitt ist die Summe durch die Anzahl der Zahlen
+
+schreibe die Zeile "Die Summe beträgt: #{die Summe}"
+schreibe die Zeile "Der Durchschnitt beträgt: #{der Durchschnitt}"

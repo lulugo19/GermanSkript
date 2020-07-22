@@ -1,5 +1,6 @@
 Deklination Neutrum Singular(Ergebnis, Ergebnisses, Ergebnis, Ergebnis) Plural(Ergebnisse, Ergebnisse, Ergebnissen, Ergebnisse)
 
+// vollständiger Name der Funktion: fakultät von der Zahl
 Verb(Zahl) fakultät von der Zahl:
     wenn die Zahl gleich 0 ist: gebe 1 zurück.
     sonst: gebe die Zahl * (fakultät von der Zahl - 1) zurück.
@@ -10,3 +11,17 @@ schreibe die Zeichenfolge "Gebe eine Zahl ein: "
 die Zahl ist lese als Zahl
 das Ergebnis ist fakultät von der Zahl
 schreibe die Zeile "Die Fakultät von der Zahl #{die Zahl} ist: #{das Ergebnis}"
+
+
+// vollständiger Name der Funktion: addiere die Zahl mit der Zahl
+Verb addiere die ZahlX mit der ZahlY:
+    das Ergebnis ist die ZahlX plus die ZahlY
+    schreibe die Zeile "#{die ZahlX} + #{die ZahlY} ist #{das Ergebnis}"
+.
+
+schreibe die Zeichenfolge "\nGebe den ersten Summanden ein: "
+das X ist lese als Zahl
+schreibe die Zeichenfolge "\nGebe den zweiten Summanden ein: "
+die ZahlY ist lese als Zahl
+// Funktionsaufruf
+addiere die Zahl X mit der ZahlY

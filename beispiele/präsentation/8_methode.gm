@@ -15,4 +15,10 @@ die Person ist eine Person mit
 Person:
     begrüße dich mit der Begrüßung "Hey", dem Abschied "Bye"
     schreibe die Zeile dein Name
+    das NächsteAlter ist dein Alter plus 1
+    schreibe die Zeile "Nächstes Alter: #{das NächsteAlter}"
 !
+
+// Funktionsaufrufweise einer Methode
+// funktioniert nur bei Methoden mit Reflexivpronomen: begrüße *mich* ...
+begrüße die Person mit der Begrüßung "Hi", dem Abschied "Voll gut, dass man es auch so machen kann"

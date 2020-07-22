@@ -7,6 +7,7 @@ Nomen Person mit
     der Zeichenfolge NachName,
     der Zahl Alter:
 
+    // weitere Eigenschaft
     dieser Name ist "#{mein VorName} #{mein NachName}"
     schreibe die Zeile "Die Person #{mein Name} (#{mein Alter} Jahre alt) wurde erstellt!"
 .

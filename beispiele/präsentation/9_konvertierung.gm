@@ -1,12 +1,14 @@
 importiere "./7_klasse.gm"
 
-als Zahl für Person:
-    gebe mein Alter zurück
-.
-
 die Person ist eine Person mit
     dem VorNamen "Max",
     dem NachNamen "Mustermann",
     dem Alter 42
 
-schreibe die Zahl (PersonMAX als Zahl)
+/*
+als Zeichenfolge für Person:
+    gebe "#{mein Name} (#{mein Alter} Jahre alt)" zurück
+.
+*/
+
+schreibe die Zeile Person als Zeichenfolge

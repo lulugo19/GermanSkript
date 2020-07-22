@@ -1,12 +1,9 @@
-Verb teste die Zahl:
-    wenn die Zahl gleich 3 ist:
-      schreibe die Zeile "Alle guten Dinge sind drei!".
-    sonst wenn die Zahl gleich 42 ist:
-      schreibe die Zeile "Die Antwort auf alles.".
-    sonst: schreibe die Zahl.
-.
+schreibe die Zeichenfolge "Gebe eine Zahl ein: "
+die Zahl ist lese als Zahl
 
-teste die Zahl 11
-teste die Zahl 3
-teste die Zahl 42
-teste die Zahl 12
+wenn die Zahl gleich 3 ist:
+  schreibe die Zeile "Alle guten Dinge sind drei!".
+sonst wenn die Zahl gleich 42 ist:
+  schreibe die Zeile "Die Antwort auf alles.".
+sonst: schreibe die Zahl.
+

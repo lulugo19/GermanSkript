@@ -1,0 +1,12 @@
+Deklination Femininum Singular(Variable) Plural(Variablen)
+
+eine Variable ist "Erste Variable"
+// neuer Bereich
+:
+    schreibe die Zeile Variable
+    eine Variable ist "Erste veränderte Variable"
+    schreibe die Zeile Variable
+    eine neue Variable ist "Zweite Variable"
+    schreibe die Zeile Variable
+.
+schreibe die Zeile Variable // Erste veränderte Variable
