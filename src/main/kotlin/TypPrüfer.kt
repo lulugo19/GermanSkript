@@ -336,10 +336,14 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
 
   override fun evaluiereEigenschaftsZugriff(eigenschaftsZugriff: AST.Ausdruck.EigenschaftsZugriff): Typ {
     val klasse = evaluiereAusdruck(eigenschaftsZugriff.objekt)
-    if (klasse !is Typ.KlassenTyp) {
+    return if (klasse is Typ.KlassenTyp) {
+      holeEigenschaftAusKlasse(eigenschaftsZugriff.eigenschaftsName, klasse.klassenDefinition).typKnoten.typ!!
+    } else if (klasse is Typ.Zeichenfolge && eigenschaftsZugriff.eigenschaftsName.nominativ == "Länge") {
+      Typ.Zahl
+    }
+    else {
       throw GermanScriptFehler.TypFehler.ObjektErwartet(holeErstesTokenVonAusdruck(eigenschaftsZugriff.objekt))
     }
-    return holeEigenschaftAusKlasse(eigenschaftsZugriff.eigenschaftsName, klasse.klassenDefinition).typKnoten.typ!!
   }
 
   override fun evaluiereSelbstEigenschaftsZugriff(eigenschaftsZugriff: AST.Ausdruck.SelbstEigenschaftsZugriff): Typ {

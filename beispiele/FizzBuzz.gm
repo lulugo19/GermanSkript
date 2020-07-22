@@ -4,17 +4,12 @@ Deklination Femininum Singular(Ausgabe) Plural(Ausgaben)
 eine Zahl ist 0
 solange die Zahl <= 100 ist:
     eine Ausgabe ist ""
-    ein Boolean ist falsch
     
-    wenn die Zahl % 3 gleich 0 ist:
-        eine Ausgabe ist die Ausgabe + "Fizz"
-        ein Boolean ist wahr.
-    wenn die Zahl % 5 gleich 0:
-        eine Ausgabe ist die Ausgabe + "Buzz"
-        ein Boolean ist wahr.
+    wenn die Zahl mod 3 gleich 0 ist: eine Ausgabe ist die Ausgabe + "Fizz".
+    wenn die Zahl mod 5 gleich 0:eine Ausgabe ist die Ausgabe + "Buzz".
 
-    wenn das Boolean: schreibe die Zeile die Ausgabe.
-    sonst: schreibe die Zeile (die Zahl als Zeichenfolge).
+    wenn die Länge der Ausgabe größer 0 ist: schreibe die Zeile Ausgabe.
+    sonst: schreibe die Zeile Zahl als Zeichenfolge.
 
     // Zähler hochzählen
     eine Zahl ist die Zahl + 1

@@ -233,8 +233,11 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
   }
 
   override fun evaluiereEigenschaftsZugriff(eigenschaftsZugriff: AST.Ausdruck.EigenschaftsZugriff): Wert {
-    val objekt = evaluiereAusdruck(eigenschaftsZugriff.objekt) as Wert.Objekt
-    return objekt.holeEigenschaft(eigenschaftsZugriff.eigenschaftsName)
+    return when (val objekt = evaluiereAusdruck(eigenschaftsZugriff.objekt)) {
+      is Wert.Objekt -> objekt.holeEigenschaft(eigenschaftsZugriff.eigenschaftsName)
+      is Wert.Zeichenfolge -> Wert.Zahl(objekt.zeichenfolge.length.toDouble())
+      else -> throw Exception("Dies sollte nie passieren, weil der Typprüfer diesen Fall schon überprüft")
+    }
   }
 
   override fun evaluiereSelbstEigenschaftsZugriff(eigenschaftsZugriff: AST.Ausdruck.SelbstEigenschaftsZugriff): Wert {

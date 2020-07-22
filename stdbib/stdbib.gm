@@ -1,14 +1,16 @@
 Deklination Femininum Singular(Zahl) Plural(Zahlen)
 Deklination Femininum Singular(Zeichenfolge) Plural(Zeichenfolgen)
 Deklination Neutrum Singular(Boolean) Plural(Booleans)
-Deklination Femininum Singular(Zeile) Plural(Zeilen)
 Deklination Femininum Singular(Liste) Plural(Listen)
+Deklination Femininum Singular(Anzahl) Plural(Anzahlen)
+Deklination Femininum Singular(Zeile) Plural(Zeilen)
+Deklination Femininum Singular(Länge) Plural(Längen)
 Deklination Maskulinum Singular(Typ, Typs, Typ, Typ) Plural(Typen)
 Deklination Maskulinum Singular(Index) Plural(Indizes)
 Deklination Neutrum Singular(Minimum, Minimums, Minimum, Minimum) Plural(Minima)
 Deklination Neutrum Singular(Maximum, Maximums, Maximum, Maximum) Plural(Maxima)
 Deklination Maskulinum Singular(Separator, Separators, Separator, Separator) Plural(Separatoren)
-Deklination Femininum Singular(Anzahl) Plural(Anzahlen)
+
 
 // Standardausgabe
 Verb schreibe die Zeichenfolge: intern. // print
