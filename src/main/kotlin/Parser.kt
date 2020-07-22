@@ -356,6 +356,7 @@ private sealed class SubParser<T: AST>() {
       return when (nextToken.typ) {
         is TokenTyp.INTERN -> subParse(Satz.Intern)
         is TokenTyp.VORNOMEN -> subParse(Satz.VariablenDeklaration)
+        is TokenTyp.DOPPELPUNKT -> AST.Satz.Bereich(parseSätze(TokenTyp.PUNKT))
         is TokenTyp.WENN -> subParse(Satz.Bedingung)
         is TokenTyp.SOLANGE -> subParse(Satz.SolangeSchleife)
         is TokenTyp.FORTFAHREN, is TokenTyp.ABBRECHEN -> subParse(Satz.SchleifenKontrolle)

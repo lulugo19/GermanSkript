@@ -17,6 +17,7 @@ abstract  class ProgrammDurchlaufer<T>(startDatei: File): PipelineKomponente(sta
       when (satz) {
         is AST.Satz.VariablenDeklaration -> durchlaufeVariablenDeklaration(satz)
         is AST.Satz.FunktionsAufruf -> durchlaufeFunktionsAufruf(satz.aufruf, false)
+        is AST.Satz.Bereich -> durchlaufeSätze(satz.sätze, true)
         is AST.Satz.MethodenBlock -> durchlaufeMethodenBlock(satz)
         is AST.Satz.Zurückgabe -> durchlaufeZurückgabe(satz)
         is AST.Satz.Bedingung -> durchlaufeBedingungsSatz(satz)

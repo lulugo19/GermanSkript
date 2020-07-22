@@ -17,7 +17,7 @@ schreibe die Zeile "Hallo Welt!"
 ## Ein GermanScript Programm ausführen
 
 ### GermanScript über Gradle ausführen
-Um GermanScript über Gradle auszuführen, muss in das Projekthaupt-Verzeichnis gegangen werden
+Um GermanScript über Gradle auszuführen, muss in das Projekthauptverzeichnis gegangen werden
 und folgender Befehl ausgeführt werden:
 ```
 .\gradlew run --args="<Dateipfad>"
@@ -192,4 +192,18 @@ solange Bedingung:
 ### Objektinitialisierung
 
 ### Methoden
+
+## Roadmap
+- weitere Sprachfeatures wie Module, Interfaces, Vererbung, ... (siehe [Iteration 3](./iterationen/iter_3/SPEC.md))
+- Standardbibliothek erweitern
+- Entwicklung eines Language Servers nach dem [Language Server Protocol](https://microsoft.github.io/language-server-protocol/)
+, um Funktionalitäten wie Auto-Complete, Code-Navigation und Fehlermeldungen im Editor zu ermöglichen.
+- Grafik-Bibliothek für GermanScript erstellen
+- Einsatzgebiete von GermanScript erkunden: Kann es verwendet werden, um Kindern/Jugendlichen programmieren beizubringen?
+- Andere Kompliertargets evaluieren:
+    - Java
+    - Java Bytecode
+    - Javascript
+- Webseite für GermanScript
+
 
