@@ -64,7 +64,9 @@ sealed class Typ(val name: String) {
 
     data class Klasse(override val klassenDefinition: AST.Definition.Klasse):
         KlassenTyp(klassenDefinition.typ.name.hauptWort(Kasus.NOMINATIV, Numerus.SINGULAR)) {
-        override val definierteOperatoren: Map<Operator, Typ> = mapOf()
+        override val definierteOperatoren: Map<Operator, Typ> = mapOf(
+            Operator.GLEICH to Boolean
+        )
 
         override fun kannNachTypKonvertiertWerden(typ: Typ): kotlin.Boolean {
           return typ.name == this.name || typ == Zeichenfolge || klassenDefinition.konvertierungen.containsKey(typ.name)
@@ -73,7 +75,10 @@ sealed class Typ(val name: String) {
 
     data class Liste(override val klassenDefinition: AST.Definition.Klasse, val elementTyp: Typ) : KlassenTyp("Liste($elementTyp)") {
       // Das hier muss umbedingt ein Getter sein, sonst gibt es Probleme mit StackOverflow
-      override val definierteOperatoren: Map<Operator, Typ> get() = mapOf(Operator.PLUS to Liste(klassenDefinition, elementTyp))
+      override val definierteOperatoren: Map<Operator, Typ> get() = mapOf(
+          Operator.PLUS to Liste(klassenDefinition, elementTyp),
+          Operator.GLEICH to Boolean
+      )
       override fun kannNachTypKonvertiertWerden(typ: Typ) = typ.name == this.name || typ == Zeichenfolge
     }
   }

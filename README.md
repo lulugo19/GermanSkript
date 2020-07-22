@@ -200,7 +200,7 @@ solange Bedingung:
 , um Funktionalitäten wie Auto-Complete, Code-Navigation und Fehlermeldungen im Editor zu ermöglichen.
 - Grafik-Bibliothek für GermanScript erstellen
 - Einsatzgebiete von GermanScript erkunden: Kann es verwendet werden, um Kindern/Jugendlichen programmieren beizubringen?
-- Andere Kompliertargets evaluieren:
+- Andere Compiler-Targets evaluieren:
     - Java
     - Java Bytecode
     - Javascript

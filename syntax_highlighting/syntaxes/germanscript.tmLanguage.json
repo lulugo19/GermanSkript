@@ -256,7 +256,7 @@
 		},
 		"operators": {
 		  "name": "keyword.operator.germanscript",
-		  "match": "(\\||&|=|!=|>|<|>=|<=|\\+|-|\\*|\\/|%|\\^)|(\\b(ist|sind|oder|und|gleich|ungleich|größer|kleiner|(größer *gleich)|(kleiner *gleich)|mal|durch|modulo|hoch|als)\\b)"
+		  "match": "(\\||&|=|!=|>|<|>=|<=|\\+|-|\\*|\\/|mod|\\^)|(\\b(ist|sind|oder|und|gleich|ungleich|größer|kleiner|(größer *gleich)|(kleiner *gleich)|mal|durch|modulo|hoch|als)\\b)"
 		},
 		"functions": {
 		  "name": "entity.name.function",

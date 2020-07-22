@@ -12,7 +12,18 @@ Nomen Person mit
     schreibe die Zeile "Die Person #{mein Name} (#{mein Alter} Jahre alt) wurde erstellt!"
 .
 
-die Person ist eine Person mit 
+die PersonLUKAS ist eine Person mit
     dem VorNamen "Lukas", 
     dem NachNamen "Gobelet", 
     dem Alter 22
+
+die PersonFINN ist eine Person mit
+    dem VorNamen "Finn",
+    dem NachNamen "Wehn",
+    dem Alter 20
+
+// teste hier den Vergleich von Referenzen
+schreibe die Zeile "Lukas gleich Finn: #{die PersonLUKAS = die PersonFINN}"
+schreibe die Zeile "Finn gleich Lukas: #{die PersonFINN = die PersonLUKAS}"
+schreibe die Zeile "Lukas gleich Lukas: #{die PersonLUKAS = die PersonLUKAS}"
+schreibe die Zeile "Finn gleich Finn: #{die PersonFINN = die PersonFINN}"

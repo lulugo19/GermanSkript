@@ -256,6 +256,11 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
     val links = evaluiereAusdruck(ausdruck.links)
     val rechts = evaluiereAusdruck(ausdruck.rechts)
     val operator = ausdruck.operator.typ.operator
+
+    // Referenzvergleich von Klassen
+    if (operator == Operator.GLEICH && links is Wert.Objekt && rechts is Wert.Objekt) {
+      return Wert.Boolean(links == rechts)
+    }
     return when (links) {
       is Wert.Zeichenfolge -> zeichenFolgenOperation(operator, links, rechts as Wert.Zeichenfolge)
       is Wert.Zahl -> {
