@@ -4,7 +4,9 @@ sealed class GermanScriptFehler(private val fehlerName: String, val token: Token
   override val message: String?
     get() {
       val vorspann = "$fehlerName in ${token.position}: "
-      return vorspann + "\n" + nachricht.lines().joinToString("\n", "\t")
+      return vorspann + "\n" + nachricht.lines().joinToString("\n") {
+        line -> "\t" + line
+      }
     }
 
   sealed class SyntaxFehler(token: Token): GermanScriptFehler("Syntaxfehler", token) {
@@ -95,7 +97,7 @@ sealed class GermanScriptFehler(private val fehlerName: String, val token: Token
       class FalschesVornomen(token: Token, kasus: Kasus, nomen: AST.Nomen, private val richtigesVornomen: String) : FormFehler(token, kasus, nomen) {
         override val nachricht: String
           get() = "Falsches Vornomen (${token.typ.anzeigeName}) '${token.wert} ${nomen.bezeichner.wert}'.\n" +
-              "Das richtige Vornomen (${token.typ.anzeigeName}) für '${nomen.bezeichner.wert}' $form ist '$richtigesVornomen ${nomen.bezeichner.wert}'."
+              "Das richtige Vornomen $form ist '$richtigesVornomen ${nomen.bezeichner.wert}'."
       }
 
       class FalschesNomen(token: Token, kasus: Kasus, nomen: AST.Nomen, private val richtigeForm: String) : FormFehler(token, kasus, nomen) {

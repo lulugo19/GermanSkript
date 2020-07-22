@@ -41,6 +41,7 @@ Um die JAR neu zu erstellen, muss folgende Gradle-Task ausgeführt werden:
 ```
 .\gradlew clean jar
 ```
+Die JAR wird dann in dem Ordner `./build/libs` erstellt.
 
 ## Die Sprache GermanScript
 **GermanScript** befindet sich momentan noch in der Entwicklung. Man kann sie schon

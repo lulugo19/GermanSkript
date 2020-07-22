@@ -44,3 +44,9 @@ tasks {
         from(configurations.runtimeClasspath.get().map { if (it.isDirectory) it else zipTree(it) })
     }
 }
+
+/*
+tasks.withType(JavaCompile::class.java) {
+    options.encoding = "UTF-8"
+}
+*/
