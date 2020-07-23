@@ -1,4 +1,4 @@
-sealed class GermanScriptFehler(private val fehlerName: String, val token: Token): Exception() {
+sealed class GermanSkriptFehler(private val fehlerName: String, val token: Token): Exception() {
   abstract val nachricht: String
 
   override val message: String?
@@ -9,7 +9,7 @@ sealed class GermanScriptFehler(private val fehlerName: String, val token: Token
       }
     }
 
-  sealed class SyntaxFehler(token: Token): GermanScriptFehler("Syntaxfehler", token) {
+  sealed class SyntaxFehler(token: Token): GermanSkriptFehler("Syntaxfehler", token) {
     class LexerFehler(token: Token, val details: String? = null): SyntaxFehler(token) {
       override val nachricht: String
         get() = "Ungültige Zeichenfolge '${token.wert}'. ${details?: ""}"
@@ -46,7 +46,7 @@ sealed class GermanScriptFehler(private val fehlerName: String, val token: Token
     }
   }
 
-  sealed class RückgabeFehler(token: Token): GermanScriptFehler("Rückgabefehler", token) {
+  sealed class RückgabeFehler(token: Token): GermanSkriptFehler("Rückgabefehler", token) {
     class UngültigeRückgabe(token: Token): RückgabeFehler(token) {
       override val nachricht: String
         get() = "Ungültige Rückgabe. Der Aufruf gibt nichts zurück und eine Rückgabe ist hier nicht erlaubt."
@@ -58,7 +58,7 @@ sealed class GermanScriptFehler(private val fehlerName: String, val token: Token
     }
   }
 
-  sealed class DudenFehler(token: Token, protected val wort: String): GermanScriptFehler("Dudenfehler", token) {
+  sealed class DudenFehler(token: Token, protected val wort: String): GermanSkriptFehler("Dudenfehler", token) {
     class WortNichtGefundenFehler(token: Token, wort: String) : DudenFehler(token, wort) {
       override val nachricht: String
         get() = "Das Wort '$wort' konnte im Duden nicht gefunden werden."
@@ -70,12 +70,12 @@ sealed class GermanScriptFehler(private val fehlerName: String, val token: Token
     }
   }
 
-  class UnbekanntesWort(token: Token, private val hauptWort: String): GermanScriptFehler("Unbekanntes Wort", token) {
+  class UnbekanntesWort(token: Token, private val hauptWort: String): GermanSkriptFehler("Unbekanntes Wort", token) {
     override val nachricht: String
       get() = "Das Wort '$hauptWort' ist unbekannt. Füge eine Deklinationsanweisung für das Wort '$hauptWort' hinzu!"
   }
 
-  sealed class ImportFehler(token: Token, protected val dateiPfad: String): GermanScriptFehler("Importfehler", token) {
+  sealed class ImportFehler(token: Token, protected val dateiPfad: String): GermanSkriptFehler("Importfehler", token) {
     class DateiNichtGefunden(token: Token, dateiPfad: String): ImportFehler(token, dateiPfad) {
       override val nachricht: String
         get() = "Die Datei '$dateiPfad' konnte nicht gefunden werden."
@@ -89,7 +89,7 @@ sealed class GermanScriptFehler(private val fehlerName: String, val token: Token
 
 
 
-  sealed class GrammatikFehler(token: Token): GermanScriptFehler("Grammatikfehler",token) {
+  sealed class GrammatikFehler(token: Token): GermanSkriptFehler("Grammatikfehler",token) {
 
     sealed class FormFehler(token: Token, protected val kasus: Kasus, protected val nomen: AST.Nomen): GrammatikFehler(token) {
       val form get() = "(${kasus.anzeigeName}, ${nomen.genus.anzeigeName}, ${nomen.numerus!!.anzeigeName})"
@@ -118,7 +118,7 @@ sealed class GermanScriptFehler(private val fehlerName: String, val token: Token
     }
   }
 
-  sealed class DoppelteDefinition(token: Token): GermanScriptFehler("Definitionsfehler", token) {
+  sealed class DoppelteDefinition(token: Token): GermanSkriptFehler("Definitionsfehler", token) {
     class Funktion(token: Token, private val definition: AST.Definition.FunktionOderMethode.Funktion): DoppelteDefinition(token) {
       override val nachricht: String
         get() = "Die Funktion '${definition.vollerName}' ist schon in ${definition.name.position} definiert."
@@ -141,17 +141,17 @@ sealed class GermanScriptFehler(private val fehlerName: String, val token: Token
     }
   }
 
-  class Variablenfehler(token: Token, deklaration: AST.Nomen): GermanScriptFehler("VariablenFehler", token) {
+  class Variablenfehler(token: Token, deklaration: AST.Nomen): GermanSkriptFehler("VariablenFehler", token) {
     override val nachricht = "Die Variable '${token.wert}' ist schon in ${deklaration.bezeichner.position} deklariert und kann nicht erneut deklariert werden."
   }
 
-  class ReservierterTypName(token: Token): GermanScriptFehler("Reservierter Typname", token) {
+  class ReservierterTypName(token: Token): GermanSkriptFehler("Reservierter Typname", token) {
     override val nachricht: String
       get() = "Der Name '${token.wert}' kann nicht als Klassenname verwendet werden, da dieser ein reservierter Typname ist."
   }
 
 
-  sealed class Undefiniert(token: Token): GermanScriptFehler("Undefiniert Fehler", token) {
+  sealed class Undefiniert(token: Token): GermanSkriptFehler("Undefiniert Fehler", token) {
     class Funktion(token: Token, private val funktionsAufruf: AST.Funktion): Undefiniert(token) {
       override val nachricht: String
         get() = "Die Funktion '${funktionsAufruf.vollerName!!}' ist nicht definiert."
@@ -183,7 +183,7 @@ sealed class GermanScriptFehler(private val fehlerName: String, val token: Token
     }
   }
 
-  sealed class TypFehler(token: Token): GermanScriptFehler("Typfehler", token) {
+  sealed class TypFehler(token: Token): GermanSkriptFehler("Typfehler", token) {
     class FalscherTyp(token: Token, private val falscherTyp: Typ, private val erwarteterTyp: String): TypFehler(token) {
       override val nachricht: String
         get() = "Falscher Typ '${falscherTyp.name}'. Erwartet wird der Typ '$erwarteterTyp'."
@@ -195,7 +195,7 @@ sealed class GermanScriptFehler(private val fehlerName: String, val token: Token
     }
   }
 
-  sealed class EigenschaftsFehler(token: Token): GermanScriptFehler("Eigenschaftsfehler", token) {
+  sealed class EigenschaftsFehler(token: Token): GermanSkriptFehler("Eigenschaftsfehler", token) {
     class UnerwarteterEigenschaftsName(token: Token, private val erwarteteEigenschaft: String): EigenschaftsFehler(token) {
       override val nachricht: String
         get() = "Unerwartete Eigenschaft '${token.wert}'. Es wird die Eigenschaft '$erwarteteEigenschaft' erwartet."
@@ -223,11 +223,11 @@ sealed class GermanScriptFehler(private val fehlerName: String, val token: Token
     }
   }
 
-  class KonvertierungsFehler(token: Token, private val von: Typ, private val zu: Typ): GermanScriptFehler("Konvertierungsfehler", token) {
+  class KonvertierungsFehler(token: Token, private val von: Typ, private val zu: Typ): GermanSkriptFehler("Konvertierungsfehler", token) {
     override val nachricht get() = "Die Konvertierung von $von zu $zu ist nicht möglich."
   }
 
-  class LaufzeitFehler(token: Token, val aufrufStapelString: String, val fehlerMeldung: String): GermanScriptFehler("Laufzeitfehler", token) {
+  class LaufzeitFehler(token: Token, val aufrufStapelString: String, val fehlerMeldung: String): GermanSkriptFehler("Laufzeitfehler", token) {
     override val nachricht: String
       get() = "$fehlerMeldung\n$aufrufStapelString"
   }

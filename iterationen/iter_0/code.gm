@@ -18,7 +18,7 @@ Verb begrüße die Zeichenfolge Welt:
     schreibe die Zeile "Hallo " + die Welt
 .
 
-begrüße die Welt "GermanScript" // Hallo GermanScript
+begrüße die Welt "GermanSkript" // Hallo GermanSkript
 
 die Welt ist "Welt"
 begrüße die Welt // Hallo Welt

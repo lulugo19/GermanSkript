@@ -23,7 +23,7 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
       durchlaufeSätze(ast.sätze, true)
     } catch (fehler: Throwable) {
       when (fehler) {
-        is StackOverflowError -> throw GermanScriptFehler.LaufzeitFehler(
+        is StackOverflowError -> throw GermanSkriptFehler.LaufzeitFehler(
             aufrufStapel.top().aufruf.token,
             aufrufStapel.toString(),
             "Stack Overflow")
@@ -265,7 +265,7 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
       is Wert.Zeichenfolge -> zeichenFolgenOperation(operator, links, rechts as Wert.Zeichenfolge)
       is Wert.Zahl -> {
         if ((rechts as Wert.Zahl).isZero() && operator == Operator.GETEILT) {
-          throw GermanScriptFehler.LaufzeitFehler(holeErstesTokenVonAusdruck(ausdruck.rechts), aufrufStapel.toString(),
+          throw GermanSkriptFehler.LaufzeitFehler(holeErstesTokenVonAusdruck(ausdruck.rechts), aufrufStapel.toString(),
             "Division durch 0. Es kann nicht durch 0 dividiert werden.")
         }
         zahlOperation(operator, links, rechts)
@@ -333,7 +333,7 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
     val liste = evaluiereVariable(listenElement.singular.ganzesWort(Kasus.NOMINATIV, Numerus.PLURAL)) as Wert.Objekt.Liste
     val index = (evaluiereAusdruck(listenElement.index) as Wert.Zahl).toInt()
     if (index >= liste.elemente.size) {
-      throw GermanScriptFehler.LaufzeitFehler(holeErstesTokenVonAusdruck(listenElement.index),
+      throw GermanSkriptFehler.LaufzeitFehler(holeErstesTokenVonAusdruck(listenElement.index),
         aufrufStapel.toString(),"Index außerhalb des Bereichs. Der Index ist $index, doch die Länge der Liste ist ${liste.elemente.size}.\n")
     }
     return liste.elemente[index]
@@ -463,7 +463,7 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
           Wert.Zahl(wert.zeichenfolge)
         }
         catch (parseFehler: ParseException) {
-          throw GermanScriptFehler.LaufzeitFehler(konvertierung.typ.name.bezeichner.toUntyped(), aufrufStapel.toString(),
+          throw GermanSkriptFehler.LaufzeitFehler(konvertierung.typ.name.bezeichner.toUntyped(), aufrufStapel.toString(),
               "Die Zeichenfolge '${wert.zeichenfolge}' kann nicht in eine Zahl konvertiert werden.")
         }
       }

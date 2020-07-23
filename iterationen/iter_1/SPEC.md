@@ -42,7 +42,7 @@ Personen: füge Person mit dem Namen="Test", dem Alter=23 hinzu
 ```
 
 
-Listen fangen in GermanScript mit dem Index 0 an.
+Listen fangen in GermanSkript mit dem Index 0 an.
 
 Zugriff auf Element per Liste:
 

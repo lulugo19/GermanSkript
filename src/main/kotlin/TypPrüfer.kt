@@ -30,7 +30,7 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
       erwarteterTyp = (umgebung.holeMethodenBlockObjekt() as Typ.KlassenTyp.Liste).elementTyp
     }
     else if (ausdruckTyp != erwarteterTyp) {
-      throw GermanScriptFehler.TypFehler.FalscherTyp(holeErstesTokenVonAusdruck(ausdruck), ausdruckTyp, erwarteterTyp.name)
+      throw GermanSkriptFehler.TypFehler.FalscherTyp(holeErstesTokenVonAusdruck(ausdruck), ausdruckTyp, erwarteterTyp.name)
     }
     return erwarteterTyp
   }
@@ -62,7 +62,7 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
     rückgabeErreicht = false
     durchlaufeSätze(sätze, neuerBereich)
     if (rückgabeTyp != null && !rückgabeErreicht) {
-      throw GermanScriptFehler.RückgabeFehler.RückgabeVergessen(token, rückgabeTyp)
+      throw GermanSkriptFehler.RückgabeFehler.RückgabeVergessen(token, rückgabeTyp)
     }
   }
 
@@ -71,7 +71,7 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
       val klasse = zuÜberprüfendeKlasse!!
       val eigenschaft = holeEigenschaftAusKlasse(deklaration.name, klasse)
       if (eigenschaft.name.unveränderlich) {
-        throw GermanScriptFehler.EigenschaftsFehler.EigenschaftUnveränderlich(deklaration.name.bezeichner.toUntyped())
+        throw GermanSkriptFehler.EigenschaftsFehler.EigenschaftUnveränderlich(deklaration.name.bezeichner.toUntyped())
       }
       val eigenschaftTyp = eigenschaft.typKnoten.typ!!
       ausdruckMussTypSein(deklaration.ausdruck, eigenschaftTyp)
@@ -93,7 +93,7 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
         val vorherigerTyp = umgebung.leseVariable(deklaration.name.nominativ)
         val wert = if (vorherigerTyp != null) {
           if (vorherigerTyp.name.unveränderlich) {
-            throw GermanScriptFehler.Variablenfehler(deklaration.name.bezeichner.toUntyped(), vorherigerTyp.name)
+            throw GermanSkriptFehler.Variablenfehler(deklaration.name.bezeichner.toUntyped(), vorherigerTyp.name)
           }
           ausdruckMussTypSein(deklaration.ausdruck, vorherigerTyp.wert)
         } else {
@@ -132,7 +132,7 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
         }
       }
       else if (funktionsAufruf.reflexivPronomen != null && funktionsAufruf.reflexivPronomen.typ == TokenTyp.REFLEXIV_PRONOMEN.DICH) {
-        throw GermanScriptFehler.Undefiniert.Methode(funktionsAufruf.verb.toUntyped(),
+        throw GermanSkriptFehler.Undefiniert.Methode(funktionsAufruf.verb.toUntyped(),
             funktionsAufruf,
             methodenBlockObjekt.klassenDefinition.typ.name.nominativ)
       }
@@ -146,7 +146,7 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
           funktionsAufruf.funktionsDefinition = klasse.methoden.getValue(funktionsAufruf.vollerName!!).funktion
           funktionsAufruf.aufrufTyp = FunktionsAufrufTyp.METHODEN_SELBST_AUFRUF
         } else if (funktionsAufruf.reflexivPronomen != null && funktionsAufruf.reflexivPronomen.typ == TokenTyp.REFLEXIV_PRONOMEN.MICH) {
-          throw  GermanScriptFehler.Undefiniert.Methode(funktionsAufruf.verb.toUntyped(), funktionsAufruf, klasse.typ.name.nominativ)
+          throw  GermanSkriptFehler.Undefiniert.Methode(funktionsAufruf.verb.toUntyped(), funktionsAufruf, klasse.typ.name.nominativ)
         }
       }
     }
@@ -159,7 +159,7 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
       } else {
         null
       }
-    } catch (fehler: GermanScriptFehler.Undefiniert.Funktion) {
+    } catch (fehler: GermanSkriptFehler.Undefiniert.Funktion) {
       fehler
     }
 
@@ -186,12 +186,12 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
     }
 
     if (funktionsAufruf.funktionsDefinition == null) {
-      throw GermanScriptFehler.Undefiniert.Funktion(funktionsAufruf.verb.toUntyped(), funktionsAufruf)
+      throw GermanSkriptFehler.Undefiniert.Funktion(funktionsAufruf.verb.toUntyped(), funktionsAufruf)
     }
     val funktionsDefinition = funktionsAufruf.funktionsDefinition!!
 
     if (istAusdruck && funktionsDefinition.rückgabeTyp == null) {
-      throw GermanScriptFehler.SyntaxFehler.FunktionAlsAusdruckFehler(funktionsDefinition.name.toUntyped())
+      throw GermanSkriptFehler.SyntaxFehler.FunktionAlsAusdruckFehler(funktionsDefinition.name.toUntyped())
     }
 
     val parameter = funktionsDefinition.parameter
@@ -199,7 +199,7 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
     val j = if (funktionsAufruf.aufrufTyp == FunktionsAufrufTyp.METHODEN_OBJEKT_AUFRUF) 1 else 0
     val anzahlArgumente = argumente.size - j
     if (anzahlArgumente != parameter.size) {
-      throw GermanScriptFehler.SyntaxFehler.AnzahlDerParameterFehler(funktionsDefinition.name.toUntyped())
+      throw GermanSkriptFehler.SyntaxFehler.AnzahlDerParameterFehler(funktionsDefinition.name.toUntyped())
     }
 
     // stimmen die Argument Typen mit den Parameter Typen überein?
@@ -212,11 +212,11 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
 
   override fun durchlaufeZurückgabe(zurückgabe: AST.Satz.Zurückgabe) {
     if (rückgabeTyp == null && zurückgabe.ausdruck != null) {
-      throw GermanScriptFehler.RückgabeFehler.UngültigeRückgabe(zurückgabe.erstesToken.toUntyped())
+      throw GermanSkriptFehler.RückgabeFehler.UngültigeRückgabe(zurückgabe.erstesToken.toUntyped())
     }
     if (rückgabeTyp != null) {
       if (zurückgabe.ausdruck == null) {
-        throw GermanScriptFehler.RückgabeFehler.RückgabeVergessen(zurückgabe.erstesToken.toUntyped(), rückgabeTyp!!)
+        throw GermanSkriptFehler.RückgabeFehler.RückgabeVergessen(zurückgabe.erstesToken.toUntyped(), rückgabeTyp!!)
       }
       ausdruckMussTypSein(zurückgabe.ausdruck, rückgabeTyp!!)
     }
@@ -241,7 +241,7 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
     val elementTyp = if (schleife.liste != null) {
       val liste = evaluiereAusdruck(schleife.liste)
       if (liste !is Typ.KlassenTyp.Liste) {
-        throw GermanScriptFehler.TypFehler.FalscherTyp(holeErstesTokenVonAusdruck(schleife.liste), liste, "Liste")
+        throw GermanSkriptFehler.TypFehler.FalscherTyp(holeErstesTokenVonAusdruck(schleife.liste), liste, "Liste")
       }
       liste.elementTyp
     } else {
@@ -261,7 +261,7 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
 
   override fun bevorDurchlaufeMethodenBlock(methodenBlock: AST.Satz.MethodenBlock, blockObjekt: Typ?) {
     if (blockObjekt !is Typ.KlassenTyp) {
-      throw GermanScriptFehler.TypFehler.ObjektErwartet(methodenBlock.name.bezeichner.toUntyped())
+      throw GermanSkriptFehler.TypFehler.ObjektErwartet(methodenBlock.name.bezeichner.toUntyped())
     }
   }
 
@@ -293,7 +293,7 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
   private fun evaluiereListenSingular(singular: AST.Nomen): Typ {
     val plural = singular.ganzesWort(Kasus.NOMINATIV, Numerus.PLURAL)
     val liste = evaluiereVariable(plural)?:
-    throw GermanScriptFehler.Undefiniert.Variable(singular.bezeichner.toUntyped(), plural)
+    throw GermanSkriptFehler.Undefiniert.Variable(singular.bezeichner.toUntyped(), plural)
 
     return (liste as Typ.KlassenTyp.Liste).elementTyp
   }
@@ -302,7 +302,7 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
     typisierer.typisiereTypKnoten(instanziierung.klasse)
     val klasse = instanziierung.klasse.typ!!
     if (klasse !is Typ.KlassenTyp) {
-      throw GermanScriptFehler.TypFehler.ObjektErwartet(instanziierung.klasse.name.bezeichner.toUntyped())
+      throw GermanSkriptFehler.TypFehler.ObjektErwartet(instanziierung.klasse.name.bezeichner.toUntyped())
     }
     val definition = klasse.klassenDefinition
 
@@ -315,12 +315,12 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
         continue
       }
       if (i >= instanziierung.eigenschaftsZuweisungen.size + j) {
-        throw GermanScriptFehler.EigenschaftsFehler.EigenschaftsVergessen(instanziierung.klasse.name.bezeichner.toUntyped(), eigenschaft.name.nominativ)
+        throw GermanSkriptFehler.EigenschaftsFehler.EigenschaftsVergessen(instanziierung.klasse.name.bezeichner.toUntyped(), eigenschaft.name.nominativ)
       }
       val zuweisung = instanziierung.eigenschaftsZuweisungen[i-j]
 
       if (eigenschaft.name.nominativ != zuweisung.name.nominativ) {
-        GermanScriptFehler.EigenschaftsFehler.UnerwarteterEigenschaftsName(zuweisung.name.bezeichner.toUntyped(), eigenschaft.name.nominativ)
+        GermanSkriptFehler.EigenschaftsFehler.UnerwarteterEigenschaftsName(zuweisung.name.bezeichner.toUntyped(), eigenschaft.name.nominativ)
       }
 
       // die Typen müssen übereinstimmen
@@ -328,7 +328,7 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
     }
 
     if (instanziierung.eigenschaftsZuweisungen.size > definition.eigenschaften.size) {
-      throw GermanScriptFehler.EigenschaftsFehler.UnerwarteteEigenschaft(
+      throw GermanSkriptFehler.EigenschaftsFehler.UnerwarteteEigenschaft(
           instanziierung.eigenschaftsZuweisungen[definition.eigenschaften.size].name.bezeichner.toUntyped())
     }
     return klasse
@@ -342,7 +342,7 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
       Typ.Zahl
     }
     else {
-      throw GermanScriptFehler.TypFehler.ObjektErwartet(holeErstesTokenVonAusdruck(eigenschaftsZugriff.objekt))
+      throw GermanSkriptFehler.TypFehler.ObjektErwartet(holeErstesTokenVonAusdruck(eigenschaftsZugriff.objekt))
     }
   }
 
@@ -361,14 +361,14 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
         return eigenschaft
       }
     }
-    throw GermanScriptFehler.Undefiniert.Eigenschaft(eigenschaftsName.bezeichner.toUntyped(), klasse.typ.name.nominativ)
+    throw GermanSkriptFehler.Undefiniert.Eigenschaft(eigenschaftsName.bezeichner.toUntyped(), klasse.typ.name.nominativ)
   }
 
   override fun evaluiereBinärenAusdruck(ausdruck: AST.Ausdruck.BinärerAusdruck): Typ {
     val linkerTyp = evaluiereAusdruck(ausdruck.links)
     val operator = ausdruck.operator.typ.operator
     if (!linkerTyp.definierteOperatoren.containsKey(operator)) {
-      throw GermanScriptFehler.Undefiniert.Operator(ausdruck.operator.toUntyped(), linkerTyp.name)
+      throw GermanSkriptFehler.Undefiniert.Operator(ausdruck.operator.toUntyped(), linkerTyp.name)
     }
     // es wird erwartete, dass bei einem binären Ausdruck beide Operanden vom selben Typen sind
     ausdruckMussTypSein(ausdruck.rechts, linkerTyp)
@@ -384,7 +384,7 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
     typisierer.typisiereTypKnoten(konvertierung.typ)
     val konvertierungsTyp = konvertierung.typ.typ!!
     if (!ausdruck.kannNachTypKonvertiertWerden(konvertierungsTyp)){
-      throw GermanScriptFehler.KonvertierungsFehler(konvertierung.typ.name.bezeichner.toUntyped(),
+      throw GermanSkriptFehler.KonvertierungsFehler(konvertierung.typ.name.bezeichner.toUntyped(),
           ausdruck, konvertierungsTyp)
     }
     return konvertierungsTyp

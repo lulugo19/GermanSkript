@@ -1,6 +1,6 @@
 Deklination Femininum Singular(Ausgabe) Plural(Ausgaben)
 
-// Fizzbuzz in GermanScript
+// Fizzbuzz in GermanSkript
 eine Zahl ist 0
 solange die Zahl <= 100 ist:
     eine Ausgabe ist ""

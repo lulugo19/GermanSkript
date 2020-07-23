@@ -1,2 +1,2 @@
 #!/bin/bash
-java -jar GermanScript-1.0-SNAPSHOT.jar "$@"
+java -jar GermanSkript-1.0-SNAPSHOT.jar "$@"

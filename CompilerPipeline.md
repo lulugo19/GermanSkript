@@ -1,7 +1,7 @@
 # Die Compiler Pipeline
 
 Die Pipeline definiert welche Schritte das Programm vom Programm-Code bis zum interpretierten Programm
-durchläuft. Bei GermanScript besteht die Pipeline aus 9 Komponenten:
+durchläuft. Bei GermanSkript besteht die Pipeline aus 9 Komponenten:
 1. [Lexer](#lexer)
 2. [Parser](#parser)
 3. [Deklanierer](#deklanierer)
@@ -12,7 +12,7 @@ durchläuft. Bei GermanScript besteht die Pipeline aus 9 Komponenten:
 8. [Zurückgabe Prüfer](#zurückgabe-prüfer)
 9. [Interpreter](#interpreter)
 
-Der GermanScript-Code wird dann in dieser Reihenfolge durch die Pipeline geschickt.
+Der GermanSkript-Code wird dann in dieser Reihenfolge durch die Pipeline geschickt.
 
 ![Flussdiagramm: Compiler Pipeline](./CompilerPipeline.svg)
 

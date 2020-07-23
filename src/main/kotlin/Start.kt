@@ -14,7 +14,7 @@ fun main(args: Array<String>) {
   try {
     val interpreter = Interpretierer(datei)
     interpreter.interpretiere()
-  } catch (fehler: GermanScriptFehler) {
+  } catch (fehler: GermanSkriptFehler) {
     System.err.println(fehler.message!!)
   }
 }

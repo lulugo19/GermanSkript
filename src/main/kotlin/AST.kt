@@ -142,7 +142,7 @@ sealed class AST {
   data class Präposition(val präposition: TypedToken<TokenTyp.BEZEICHNER_KLEIN>) : AST() {
     val fälle = präpositionsFälle
         .getOrElse(präposition.wert) {
-          throw GermanScriptFehler.SyntaxFehler.ParseFehler(präposition.toUntyped(), "Präposition")
+          throw GermanSkriptFehler.SyntaxFehler.ParseFehler(präposition.toUntyped(), "Präposition")
         }
   }
 

@@ -3,7 +3,7 @@ plugins {
     application
 }
 
-group = "germanscript"
+group = "germanskript"
 version = "1.0-SNAPSHOT"
 
 repositories {

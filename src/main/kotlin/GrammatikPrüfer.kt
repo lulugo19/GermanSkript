@@ -53,7 +53,7 @@ class GrammatikPrüfer(startDatei: File): PipelineKomponente(startDatei) {
       val deklinationsNumerus = deklination.getNumerus(bezeichner.hauptWort!!)
       deklinationsNumerus.retainAll(numerus)
       if (deklinationsNumerus.isEmpty()) {
-        throw GermanScriptFehler.GrammatikFehler.FalscherNumerus(
+        throw GermanSkriptFehler.GrammatikFehler.FalscherNumerus(
             nomen.bezeichner.toUntyped(), numerus.first(),
             deklination.getForm(fälle.first(), numerus.first())
         )
@@ -70,7 +70,7 @@ class GrammatikPrüfer(startDatei: File): PipelineKomponente(startDatei) {
         // TODO: berücksichtige auch die möglichen anderen Fälle in der Fehlermeldung
         val kasus = fälle.first()
         val erwarteteForm = bezeichner.ersetzeHauptWort(deklination.getForm(kasus, nomen.numerus!!))
-        throw GermanScriptFehler.GrammatikFehler.FormFehler.FalschesNomen(nomen.bezeichner.toUntyped(), kasus, nomen, erwarteteForm)
+        throw GermanSkriptFehler.GrammatikFehler.FormFehler.FalschesNomen(nomen.bezeichner.toUntyped(), kasus, nomen, erwarteteForm)
       }
     }
     prüfeVornomen(nomen)
@@ -94,14 +94,14 @@ class GrammatikPrüfer(startDatei: File): PipelineKomponente(startDatei) {
 
     if (nomen.vornomenString == null) {
       val erwartetesVornomen = holeVornomen(vorNomen.typ, ersterFall, nomen.genus, nomen.numerus!!)
-      throw GermanScriptFehler.GrammatikFehler.FormFehler.FalschesVornomen(vorNomen.toUntyped(), ersterFall, nomen, erwartetesVornomen)
+      throw GermanSkriptFehler.GrammatikFehler.FormFehler.FalschesVornomen(vorNomen.toUntyped(), ersterFall, nomen, erwartetesVornomen)
     }
   }
 
   private fun prüfeNumerus(nomen: AST.Nomen, numerus: Numerus) {
     if (nomen.numerus!! != numerus) {
       val numerusForm = deklinierer.holeDeklination(nomen).getForm(nomen.fälle.first(), numerus)
-      throw GermanScriptFehler.GrammatikFehler.FalscherNumerus(nomen.bezeichner.toUntyped(), numerus, numerusForm)
+      throw GermanSkriptFehler.GrammatikFehler.FalscherNumerus(nomen.bezeichner.toUntyped(), numerus, numerusForm)
     }
   }
 
@@ -180,11 +180,11 @@ class GrammatikPrüfer(startDatei: File): PipelineKomponente(startDatei) {
     prüfeNomen(nomen, EnumSet.of(Kasus.NOMINATIV), Numerus.BEIDE)
     // prüfe ob Numerus mit 'ist' oder 'sind' übereinstimmt
     if (nomen.numerus != variablenDeklaration.zuweisungsOperator.typ.numerus) {
-      throw GermanScriptFehler.GrammatikFehler.FalscheZuweisung(variablenDeklaration.zuweisungsOperator.toUntyped(), nomen.numerus!!)
+      throw GermanSkriptFehler.GrammatikFehler.FalscheZuweisung(variablenDeklaration.zuweisungsOperator.toUntyped(), nomen.numerus!!)
     }
     if (variablenDeklaration.neu != null) {
       if (nomen.genus != variablenDeklaration.neu.typ.genus) {
-        throw GermanScriptFehler.GrammatikFehler.FormFehler.FalschesVornomen(
+        throw GermanSkriptFehler.GrammatikFehler.FormFehler.FalschesVornomen(
             variablenDeklaration.neu.toUntyped(), Kasus.NOMINATIV, nomen, TokenTyp.NEU.holeForm(nomen.genus)
         )
       }
@@ -210,7 +210,7 @@ class GrammatikPrüfer(startDatei: File): PipelineKomponente(startDatei) {
   private fun prüfeFürJedeSchleife(fürJedeSchleife: AST.Satz.FürJedeSchleife) {
     prüfeNomen(fürJedeSchleife.singular, EnumSet.of(Kasus.AKKUSATIV), EnumSet.of(Numerus.SINGULAR))
     if (fürJedeSchleife.jede.typ.genus != fürJedeSchleife.singular.genus) {
-      throw GermanScriptFehler.GrammatikFehler.FormFehler.FalschesVornomen(
+      throw GermanSkriptFehler.GrammatikFehler.FormFehler.FalschesVornomen(
           fürJedeSchleife.jede.toUntyped(), Kasus.NOMINATIV, fürJedeSchleife.singular,
           TokenTyp.JEDE.holeForm(fürJedeSchleife.singular.genus)
       )

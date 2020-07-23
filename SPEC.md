@@ -1,4 +1,4 @@
-# GermanScript
+# GermanSkript
 Eine objektorientierte, streng typisierte Programmiersprache, die sich wie die deutsche Sprache schreibt.
 
 ## Syntax und Semantik
@@ -10,14 +10,14 @@ Außerdem ist die Komma-seperierte Kommaliste eine häufige Syntax in unserer Sp
 Das Pattern Dafür ist `Ding {, Ding}`. Hierfür verwenden wir die Abkürzung `Kommaliste(Ding)`.
 
 ### Groß- und Kleinschreibung
-Groß- und Kleinschreibung ist wichtig bei GermanScript. Namen die festgelegt werden können, sogenannte Bezeichner können groß oder klein geschrieben werden.
+Groß- und Kleinschreibung ist wichtig bei GermanSkript. Namen die festgelegt werden können, sogenannte Bezeichner können groß oder klein geschrieben werden.
 Für große Bezeichner verwenden wir die Syntax `Bezeichner` und für kleine Bezeichner die Syntax `bezeichner`.
 Nomen werden bei der [Variablendeklarationen](#deklaration-von-variablen) und der [Klassendefinition](#definieren-einer-klasse)
 Verben bei der Definition von [Funktionen](#definieren-einer-funktion) und [Methoden](#definieren-einer-methode) verwendet 
 und Adjektive bei der Definition von [Schnittstellen](#definieren-einer-schnittstelle) verwendet.
 
 #### Bezeichner
-Bezeichner, also großgeschriebene Wörter werden in GermanScript für Klassen- und Variablenbezeichner verwendet.
+Bezeichner, also großgeschriebene Wörter werden in GermanSkript für Klassen- und Variablenbezeichner verwendet.
 Die Bezeichner müssen aber vorher mit den 4 Fällen in Singular und Plural bekannt sein, damit diese verwendet werden können.
 
 Die Form der Bezeichner is je nach Fall entscheidend. Im Folgendem wird folgende Syntax-Abkürzungen verwendet 
@@ -53,7 +53,7 @@ und [Konstanten](#definieren-einer-Konstante) und [Einheiten](#einheiten) verwen
 
 
 ### Artikel
-Da GermanScript ein Teil der deutschen Grammatik beinhaltet, spielt der Genus (das Geschlecht) eines Typs eine wichtige Rolle.
+Da GermanSkript ein Teil der deutschen Grammatik beinhaltet, spielt der Genus (das Geschlecht) eines Typs eine wichtige Rolle.
 Außerdem ist auch noch die Form des Artikels wichtig, jenachdem in welchem Fall das Nomen verwendet wird.
 
 | Kasus (Fall) | bestimmt / unbestimmt | Syntax-Abkürzung | Verwendung bei | Maskulinum | Femininum | Neutrum | Plural |
@@ -69,13 +69,13 @@ Außerdem ist auch noch die Form des Artikels wichtig, jenachdem in welchem Fall
 
 
 ### Bereiche
-Ein GermanScript-Programm besteht aus mehreren Bereichen. Innere Bereiche können auf den Inhalt von äußeren Bereichen zugreifen, aber
+Ein GermanSkript-Programm besteht aus mehreren Bereichen. Innere Bereiche können auf den Inhalt von äußeren Bereichen zugreifen, aber
 äußere Bereiche können nicht auf den Inhalt von inneren Bereichen zugreifen.
 Ein Bereich startet mit `:` und endet mit `.`.
 
 ### Sätze
-Ein GermanScript-Programm besteht aus mehreren Sätzen (im Programmierspachen-Jargon auch Statements genannt).
-Sätze werden in GermanScript mit einer neuen Zeile oder mit `;` getrennt.
+Ein GermanSkript-Programm besteht aus mehreren Sätzen (im Programmierspachen-Jargon auch Statements genannt).
+Sätze werden in GermanSkript mit einer neuen Zeile oder mit `;` getrennt.
 Folgendes sind Sätze:
 - Variablendeklaration
 - Funktionsaufrufe
@@ -606,7 +606,7 @@ das Krokodil ist Krokodil
 ```
 
 ## Typen
-GermanScript verfügt vorab über folgende Typen:
+GermanSkript verfügt vorab über folgende Typen:
 
 ### Zahlen
 

@@ -377,7 +377,7 @@ class Lexer(startDatei: File): PipelineKomponente(startDatei) {
     fun importiereDatei(import: AST.Definition.Import) {
         val datei = startDatei.parentFile!!.resolve(File(import.pfad))
         if (!datei.exists()) {
-            throw GermanScriptFehler.ImportFehler.DateiNichtGefunden(import.dateiPfad.toUntyped(), import.pfad)
+            throw GermanSkriptFehler.ImportFehler.DateiNichtGefunden(import.dateiPfad.toUntyped(), import.pfad)
         }
         // füge Datei nur zur Schlange hinzu, wenn sie noch nicht bearbeitet wurden ist
         if (!bearbeiteteDateien.contains(datei.path)) {
@@ -429,7 +429,7 @@ class Lexer(startDatei: File): PipelineKomponente(startDatei) {
                     zeichen == '"' -> zeichenfolge(false).also { kannWortLesen = false }
                     kannWortLesen && zeichen.isLetter() -> wort().also { kannWortLesen = false }
                     zeichen == '}'&& inStringInterpolation -> beendeStringInterpolation()
-                    else -> throw GermanScriptFehler.SyntaxFehler.LexerFehler(
+                    else -> throw GermanSkriptFehler.SyntaxFehler.LexerFehler(
                         Token(
                             TokenTyp.FEHLER,
                             zeichen.toString(),
@@ -472,7 +472,7 @@ class Lexer(startDatei: File): PipelineKomponente(startDatei) {
         val endPos = currentTokenPos
         if (tokenTyp is TokenTyp.UNDEFINIERT) {
             val fehlerToken = Token(TokenTyp.FEHLER, symbolString, currentFile, startPos, endPos)
-            throw GermanScriptFehler.SyntaxFehler.LexerFehler(fehlerToken, null)
+            throw GermanSkriptFehler.SyntaxFehler.LexerFehler(fehlerToken, null)
         }
         yield(Token(tokenTyp, symbolString, currentFile, startPos, endPos))
     }
@@ -499,7 +499,7 @@ class Lexer(startDatei: File): PipelineKomponente(startDatei) {
             yield(Token(TokenTyp.ZAHL(Wert.Zahl(zahlenString)), zahlenString, currentFile, startPos, endPos))
         } catch (error: Exception) {
             val fehlerToken = Token(TokenTyp.FEHLER, zahlenString, currentFile, startPos, endPos)
-            throw GermanScriptFehler.SyntaxFehler.LexerFehler(fehlerToken, null)
+            throw GermanSkriptFehler.SyntaxFehler.LexerFehler(fehlerToken, null)
         }
     }
 
@@ -526,7 +526,7 @@ class Lexer(startDatei: File): PipelineKomponente(startDatei) {
             }
         }
         if (peek() != '"') {
-            throw GermanScriptFehler.SyntaxFehler.LexerFehler(eofToken, null)
+            throw GermanSkriptFehler.SyntaxFehler.LexerFehler(eofToken, null)
         }
         next()
         val endPos = currentTokenPos
@@ -547,7 +547,7 @@ class Lexer(startDatei: File): PipelineKomponente(startDatei) {
             '\\' -> '\\'
             else -> {
                 val fehlerToken = Token(TokenTyp.FEHLER, "\\$escapeChar", currentFile, escapeSequenzPos, currentTokenPos)
-                throw GermanScriptFehler.SyntaxFehler.UngültigeEscapeSequenz(fehlerToken)
+                throw GermanSkriptFehler.SyntaxFehler.UngültigeEscapeSequenz(fehlerToken)
             }
         }
     }
@@ -643,7 +643,7 @@ class Lexer(startDatei: File): PipelineKomponente(startDatei) {
               symbol.isEmpty() -> teilWörter.add(teilWort)
               else -> {
                   val token = Token(TokenTyp.FEHLER, zeichenfolge, currentFile, tokenStart, tokenEnd)
-                  throw GermanScriptFehler.SyntaxFehler.LexerFehler(token, "Ein großer Bezeichner in GermanScript darf einzelne Großbuchstaben" +
+                  throw GermanSkriptFehler.SyntaxFehler.LexerFehler(token, "Ein großer Bezeichner in GermanSkript darf einzelne Großbuchstaben" +
                       " (Symbole) nur am Ende haben.")
               }
             }

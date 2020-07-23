@@ -32,7 +32,7 @@ class Parser(startDatei: File): PipelineKomponente(startDatei) {
     val tokens = Peekable(lexer.tokeniziere().iterator())
     val ast = SubParser.Programm(lexer).parse(tokens, Stack())
     if (tokens.peek(0)!!.typ !is TokenTyp.EOF) {
-      throw GermanScriptFehler.SyntaxFehler.ParseFehler(tokens.next()!!, "EOF")
+      throw GermanSkriptFehler.SyntaxFehler.ParseFehler(tokens.next()!!, "EOF")
     }
     return ast
   }
@@ -76,7 +76,7 @@ private sealed class SubParser<T: AST>() {
     if (nextToken.typ is T) {
       return nextToken.toTyped()
     } else {
-      throw GermanScriptFehler.SyntaxFehler.ParseFehler(nextToken, erwartet)
+      throw GermanSkriptFehler.SyntaxFehler.ParseFehler(nextToken, erwartet)
     }
   }
 
@@ -116,7 +116,7 @@ private sealed class SubParser<T: AST>() {
   protected fun parseKleinesSchlüsselwort(schlüsselwort: String): TypedToken<TokenTyp.BEZEICHNER_KLEIN> {
     val token = expect<TokenTyp.BEZEICHNER_KLEIN>("'$schlüsselwort'")
     if (token.wert != schlüsselwort) {
-      throw GermanScriptFehler.SyntaxFehler.ParseFehler(token.toUntyped(), "'$schlüsselwort'")
+      throw GermanSkriptFehler.SyntaxFehler.ParseFehler(token.toUntyped(), "'$schlüsselwort'")
     }
     return token
   }
@@ -124,7 +124,7 @@ private sealed class SubParser<T: AST>() {
   protected fun parseGroßenBezeichner(symbolErlaubt: Boolean): TypedToken<TokenTyp.BEZEICHNER_GROSS> {
     val bezeichner = expect<TokenTyp.BEZEICHNER_GROSS>("Bezeichner")
     if (!symbolErlaubt && bezeichner.typ.hatSymbol) {
-      throw GermanScriptFehler.SyntaxFehler.ParseFehler(bezeichner.toUntyped(), "Bezeichner",
+      throw GermanSkriptFehler.SyntaxFehler.ParseFehler(bezeichner.toUntyped(), "Bezeichner",
           "Symbole sind in diesem Bezeichner nicht erlaubt.")
     }
     return bezeichner
@@ -139,13 +139,13 @@ private sealed class SubParser<T: AST>() {
       when (vornomen.typ) {
         is TokenTyp.VORNOMEN.POSSESSIV_PRONOMEN.MEIN -> {
           if (!hierarchyContainsAnyNode(ASTKnotenID.METHODEN_DEFINITION, ASTKnotenID.KLASSEN_DEFINITION)) {
-            throw GermanScriptFehler.SyntaxFehler.ParseFehler(vornomen.toUntyped(), null,
+            throw GermanSkriptFehler.SyntaxFehler.ParseFehler(vornomen.toUntyped(), null,
               "Das Possessivpronomen '${vornomen.wert}' darf nur in Methodendefinitionen oder in Konstruktoren verwendet werden.")
           }
         }
         is TokenTyp.VORNOMEN.POSSESSIV_PRONOMEN.DEIN -> {
           if (!hierarchyContainsNode(ASTKnotenID.METHODEN_BLOCK)) {
-            throw GermanScriptFehler.SyntaxFehler.ParseFehler(vornomen.toUntyped(), null,
+            throw GermanSkriptFehler.SyntaxFehler.ParseFehler(vornomen.toUntyped(), null,
               "Das Possessivpronomen '${vornomen.wert}' darf nur in Methodenblöcken verwendet werden.")
           }
         }
@@ -154,7 +154,7 @@ private sealed class SubParser<T: AST>() {
     if (vornomen is TokenTyp.VORNOMEN.DEMONSTRATIV_PRONOMEN) {
       // Demonstrativpronomen dürfen nur in Konstruktoren und nur in Variablendeklarationen vorkommen
       if (!hierarchyContainsNode(ASTKnotenID.VARIABLEN_DEKLARATION) && !hierarchyContainsNode(ASTKnotenID.KLASSEN_DEFINITION)) {
-        throw GermanScriptFehler.SyntaxFehler.ParseFehler(vornomen.toUntyped(), null,
+        throw GermanSkriptFehler.SyntaxFehler.ParseFehler(vornomen.toUntyped(), null,
             "Die Demonstrativpronomen 'diese' und 'jene' dürfen nur in Konstruktoren (Klassendefinitionen) verwendet werden,\n" +
                 "um von außen unzugreifbare Eigenschaften zu erstellen.")
       }
@@ -251,7 +251,7 @@ private sealed class SubParser<T: AST>() {
           TokenTyp.VORNOMEN.ARTIKEL.BESTIMMT -> AST.Ausdruck.Variable(nomen)
           TokenTyp.VORNOMEN.POSSESSIV_PRONOMEN.MEIN -> AST.Ausdruck.SelbstEigenschaftsZugriff(nomen)
           TokenTyp.VORNOMEN.POSSESSIV_PRONOMEN.DEIN -> AST.Ausdruck.MethodenBlockEigenschaftsZugriff(nomen)
-          else -> throw GermanScriptFehler.SyntaxFehler.ParseFehler(nomen.vornomen.toUntyped(), "bestimmter Artikel oder Possessivpronomen")
+          else -> throw GermanSkriptFehler.SyntaxFehler.ParseFehler(nomen.vornomen.toUntyped(), "bestimmter Artikel oder Possessivpronomen")
         }
       }
       is TokenTyp.VORNOMEN.ARTIKEL.UNBESTIMMT ->  {
@@ -262,7 +262,7 @@ private sealed class SubParser<T: AST>() {
       }
       TokenTyp.VORNOMEN.POSSESSIV_PRONOMEN.MEIN -> AST.Ausdruck.SelbstEigenschaftsZugriff(nomen)
       TokenTyp.VORNOMEN.POSSESSIV_PRONOMEN.DEIN -> AST.Ausdruck.MethodenBlockEigenschaftsZugriff(nomen)
-      is TokenTyp.VORNOMEN.DEMONSTRATIV_PRONOMEN -> throw GermanScriptFehler.SyntaxFehler.ParseFehler(nomen.vornomen.toUntyped(), null,
+      is TokenTyp.VORNOMEN.DEMONSTRATIV_PRONOMEN -> throw GermanSkriptFehler.SyntaxFehler.ParseFehler(nomen.vornomen.toUntyped(), null,
         "Die Demonstrativpronomen 'diese' und 'jene' dürfen nicht in Ausdrücken verwendet werden.")
     }
 
@@ -302,7 +302,7 @@ private sealed class SubParser<T: AST>() {
     überspringeLeereZeilen()
     val endToken = next()
     if (endToken.typ != erwartetesEndToken){
-      throw GermanScriptFehler.SyntaxFehler.ParseFehler(endToken, erwartetesEndToken.anzeigeName)
+      throw GermanSkriptFehler.SyntaxFehler.ParseFehler(endToken, erwartetesEndToken.anzeigeName)
     }
     return result
   }
@@ -344,7 +344,7 @@ private sealed class SubParser<T: AST>() {
               hauptProgrammEnde = true
             }
             is TokenTyp.EOF, TokenTyp.PUNKT, TokenTyp.AUSRUFEZEICHEN -> break@loop
-            else -> throw GermanScriptFehler.SyntaxFehler.ParseFehler(next())
+            else -> throw GermanSkriptFehler.SyntaxFehler.ParseFehler(next())
           }
         }
       }
@@ -424,7 +424,7 @@ private sealed class SubParser<T: AST>() {
         if (optionalesIstNachVergleich && operator.klasse == OperatorKlasse.VERGLEICH) {
           val ist = parseOptional<TokenTyp.ZUWEISUNG>()
           if (ist != null && ist.typ.numerus != Numerus.SINGULAR) {
-            throw GermanScriptFehler.SyntaxFehler.ParseFehler(ist.toUntyped())
+            throw GermanSkriptFehler.SyntaxFehler.ParseFehler(ist.toUntyped())
           }
         }
 
@@ -445,14 +445,14 @@ private sealed class SubParser<T: AST>() {
         is TokenTyp.VORNOMEN -> parseNomenAusdruck(parseNomenMitVornomen<TokenTyp.VORNOMEN>("Vornomen", true), true)
         is TokenTyp.REFERENZ.ICH -> {
           if (!hierarchyContainsNode(ASTKnotenID.METHODEN_DEFINITION)) {
-            throw GermanScriptFehler.SyntaxFehler.ParseFehler(next(), null,
+            throw GermanSkriptFehler.SyntaxFehler.ParseFehler(next(), null,
                 "Die Selbstreferenz 'Ich' darf nur in einem Konstruktor, Methoden- oder Kovertierungsdefinition vorkommen.")
           }
           AST.Ausdruck.SelbstReferenz(next().toTyped())
         }
         is TokenTyp.REFERENZ.DU -> {
           if (!hierarchyContainsNode(ASTKnotenID.METHODEN_BLOCK)) {
-            throw GermanScriptFehler.SyntaxFehler.ParseFehler(next(), null,
+            throw GermanSkriptFehler.SyntaxFehler.ParseFehler(next(), null,
               "Die Methodenblockreferenz 'Du' darf nur in einem Methodenblock vorkommen.")
           }
           AST.Ausdruck.MethodenBlockReferenz(next().toTyped())
@@ -465,19 +465,19 @@ private sealed class SubParser<T: AST>() {
           if (currentToken != null &&
                   currentToken!!.typ is TokenTyp.OPERATOR &&
                   currentToken!!.toTyped<TokenTyp.OPERATOR>().typ.operator == Operator.MINUS) {
-            throw GermanScriptFehler.SyntaxFehler.ParseFehler(next(), null, "Es dürfen keine zwei '-' aufeinander folgen.")
+            throw GermanSkriptFehler.SyntaxFehler.ParseFehler(next(), null, "Es dürfen keine zwei '-' aufeinander folgen.")
           } else if (tokenTyp.operator != Operator.MINUS) {
-            throw GermanScriptFehler.SyntaxFehler.ParseFehler(next(), null)
+            throw GermanSkriptFehler.SyntaxFehler.ParseFehler(next(), null)
           } else {
             next()
             AST.Ausdruck.Minus(parseEinzelnerAusdruck(false))
           }
         }
         is TokenTyp.BEZEICHNER_GROSS -> if (mitArtikel)
-            throw GermanScriptFehler.SyntaxFehler.ParseFehler(next(), "Artikel", "Vor einem Nomen muss ein Artikel stehen.")
+            throw GermanSkriptFehler.SyntaxFehler.ParseFehler(next(), "Artikel", "Vor einem Nomen muss ein Artikel stehen.")
           else
             AST.Ausdruck.Variable(parseNomenOhneVornomen(true))
-        else -> throw GermanScriptFehler.SyntaxFehler.ParseFehler(next())
+        else -> throw GermanSkriptFehler.SyntaxFehler.ParseFehler(next())
       }
       return when (peekType()){
         is TokenTyp.ALS -> {
@@ -584,14 +584,14 @@ private sealed class SubParser<T: AST>() {
 
       override fun bewacheKnoten() {
         if (!hierarchyContainsAnyNode(ASTKnotenID.FUNKTIONS_DEFINITION, ASTKnotenID.METHODEN_DEFINITION)) {
-          throw GermanScriptFehler.SyntaxFehler.ParseFehler(next(), null, "Das Schlüsselwort 'intern' darf nur in einer Funktionsdefinition stehen.")
+          throw GermanSkriptFehler.SyntaxFehler.ParseFehler(next(), null, "Das Schlüsselwort 'intern' darf nur in einer Funktionsdefinition stehen.")
         }
       }
 
       override fun parseImpl(): AST.Satz.Intern {
         expect<TokenTyp.INTERN>("intern")
         if (peekType() !is TokenTyp.PUNKT) {
-          throw GermanScriptFehler.SyntaxFehler.ParseFehler(next(), ".")
+          throw GermanSkriptFehler.SyntaxFehler.ParseFehler(next(), ".")
         }
         return AST.Satz.Intern
       }
@@ -605,7 +605,7 @@ private sealed class SubParser<T: AST>() {
         val artikel = expect<TokenTyp.VORNOMEN>("Artikel")
         // man kann nur eigene Eigenschaften neu zuweisen
         if (artikel.typ == TokenTyp.VORNOMEN.POSSESSIV_PRONOMEN.DEIN) {
-          throw GermanScriptFehler.SyntaxFehler.ParseFehler(artikel.toUntyped(), null, "Neuzuweisungen mit 'dein' funktionieren nicht.\n" +
+          throw GermanSkriptFehler.SyntaxFehler.ParseFehler(artikel.toUntyped(), null, "Neuzuweisungen mit 'dein' funktionieren nicht.\n" +
               "Man kann die Eigenschaften eines anderen Objekts nur lesen.")
         }
         val neu = if (artikel.typ == TokenTyp.VORNOMEN.ARTIKEL.UNBESTIMMT) {
@@ -645,7 +645,7 @@ private sealed class SubParser<T: AST>() {
 
       override fun bewacheKnoten() {
         if (!hierarchyContainsAnyNode(ASTKnotenID.FUNKTIONS_DEFINITION, ASTKnotenID.METHODEN_DEFINITION, ASTKnotenID.KONVERTIERUNGS_DEFINITION)) {
-          throw GermanScriptFehler.SyntaxFehler.ParseFehler(next(), null, "'gebe ... zurück' darf hier nicht stehen.")
+          throw GermanSkriptFehler.SyntaxFehler.ParseFehler(next(), null, "'gebe ... zurück' darf hier nicht stehen.")
         }
       }
 
@@ -723,7 +723,7 @@ private sealed class SubParser<T: AST>() {
           }
           else -> {
             if (singular.istSymbol) {
-              throw GermanScriptFehler.SyntaxFehler.ParseFehler(singular.bezeichner.toUntyped(), "Bezeichner",
+              throw GermanSkriptFehler.SyntaxFehler.ParseFehler(singular.bezeichner.toUntyped(), "Bezeichner",
                   "In der Für-Jede-Schleife ohne 'in' ist ein Singular, dass nur aus einem Symbol besteht nicht erlaubt.")
             }
             null
@@ -741,7 +741,7 @@ private sealed class SubParser<T: AST>() {
       override fun bewacheKnoten() {
         if (!hierarchyContainsAnyNode(ASTKnotenID.SCHLEIFE, ASTKnotenID.FÜR_JEDE_SCHLEIFE)) {
           val schlüsselwort = next()
-          throw GermanScriptFehler.SyntaxFehler.ParseFehler(schlüsselwort, null, "Das Schlüsselwort '${schlüsselwort.wert}' darf nur in einer Schleife verwendet werden.")
+          throw GermanSkriptFehler.SyntaxFehler.ParseFehler(schlüsselwort, null, "Das Schlüsselwort '${schlüsselwort.wert}' darf nur in einer Schleife verwendet werden.")
         }
       }
 
@@ -761,7 +761,7 @@ private sealed class SubParser<T: AST>() {
     override fun bewacheKnoten() {
       // eine Definition kann nur im globalen Programm geschrieben werden
       if (depth != 1) {
-        throw GermanScriptFehler.SyntaxFehler.UngültigerBereich(next(), "Definitionen können nur im globalem Bereich geschrieben werden.")
+        throw GermanSkriptFehler.SyntaxFehler.UngültigerBereich(next(), "Definitionen können nur im globalem Bereich geschrieben werden.")
       }
     }
 
@@ -788,7 +788,7 @@ private sealed class SubParser<T: AST>() {
       private fun parseWort(): TypedToken<TokenTyp.BEZEICHNER_GROSS> {
         val bezeichner = expect<TokenTyp.BEZEICHNER_GROSS>("Wort")
         if (bezeichner.typ.istSymbol || bezeichner.typ.teilWörter.size > 1) {
-          throw GermanScriptFehler.SyntaxFehler.ParseFehler(bezeichner.toUntyped(), "Wort", "Ein Wort darf nicht aus " +
+          throw GermanSkriptFehler.SyntaxFehler.ParseFehler(bezeichner.toUntyped(), "Wort", "Ein Wort darf nicht aus " +
               "Teilwörtern und Symbolen bestehen.")
         }
         return bezeichner

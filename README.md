@@ -1,12 +1,12 @@
-# GermanScript
+# GermanSkript
 
 Eine interpretierte, objektorientierte, statisch typisierte Programmiersprache, die sich wie Deutsch schreibt.
 > "Es hat mich wirklich erstaunt, wie gut sich die deutsche Sprache als Programmiersprache eignet." 
 > 
 >*Lukas Gobelet*
 
-## Hallo Welt in GermanScript
-Das Hallo Welt in GermanScript ist ziemlich simpel. Das hier ist alles, was man braucht:
+## Hallo Welt in GermanSkript
+Das Hallo Welt in GermanSkript ist ziemlich simpel. Das hier ist alles, was man braucht:
 
 *Datei: HalloWelt.gm*
 ```
@@ -14,20 +14,20 @@ schreibe die Zeile "Hallo Welt!"
 ```
 `schreibe die Zeile` ist eine Funktion, die mit dem Argument "Hallo Welt!" aufgerufen wird.
 
-## Ein GermanScript Programm ausführen
+## Ein GermanSkript Programm ausführen
 
-### GermanScript über Gradle ausführen
-Um GermanScript über Gradle auszuführen, muss in das Projekthauptverzeichnis gegangen werden
+### GermanSkript über Gradle ausführen
+Um GermanSkript über Gradle auszuführen, muss in das Projekthauptverzeichnis gegangen werden
 und folgender Befehl ausgeführt werden:
 ```
 .\gradlew run --args="<Dateipfad>"
 ```
 
-### GermanScript als JAR ausführen
-Im Repository ist eine meist aktuelle Version des GermanScript-Compilers als auführbare JAR-Datei
+### GermanSkript als JAR ausführen
+Im Repository ist eine meist aktuelle Version des GermanSkript-Compilers als auführbare JAR-Datei
 vorhanden. Diese kann dann über `java` direkt ausgeführt werden:
 ```
-java -jar GermanScript-1.0-SNAPSHOT.jar <Dateipfad>
+java -jar GermanSkript-1.0-SNAPSHOT.jar <Dateipfad>
 ```
 
 Um es ein bisschen kürzer zu machen, wurde dieser Befehl in eine Batch Datei mit dem
@@ -43,14 +43,14 @@ Um die JAR neu zu erstellen, muss folgende Gradle-Task ausgeführt werden:
 ```
 Die JAR wird dann in dem Ordner `./build/libs` erstellt.
 
-## Die Sprache GermanScript
-**GermanScript** befindet sich momentan noch in der Entwicklung. Man kann sie schon
+## Die Sprache GermanSkript
+**GermanSkript** befindet sich momentan noch in der Entwicklung. Man kann sie schon
 verwenden, doch es wird sich wahrscheinlich noch einiges ändern.
 
 Die ganze Spezifikation kann man [hier](./SPEC.md) einsehen. Diese ist jedoch noch ziemlich
 in Bearbeitung und noch nicht vollständig.
 
-GermanScript wird iterativ entwickelt. Neue Sprachfeatures werden in Iterationen nach und nach hinzugefügt.
+GermanSkript wird iterativ entwickelt. Neue Sprachfeatures werden in Iterationen nach und nach hinzugefügt.
 Für jede Iteration gibt es eine eigene Spezifikation, die auf die Gesamtspezifikation aufbaut und noch
 einige Details hinzufügt.
 
@@ -60,12 +60,12 @@ Iterationen:
 - [Iteration 2](iterationen/iter_2/SPEC.md)
 - [Iteration 3](./iterationen/iter_3/SPEC.md)
 
-Wenn du Interesse daran hast, wie die Architektur des GermanScript-Compilers aussieht, kannst
+Wenn du Interesse daran hast, wie die Architektur des GermanSkript-Compilers aussieht, kannst
 du [hier](./CompilerPipeline.md) mehr Informationen zur Compiler-Pipeline finden.
 
 ### Typen
 
-Folgende Typen sind in GermanScript enthalten:
+Folgende Typen sind in GermanSkript enthalten:
 
 | Typ | Beschreibung | Beispielwerte |
 | --- | ------------ | --------- |
@@ -74,8 +74,8 @@ Folgende Typen sind in GermanScript enthalten:
 |`Boolean`| Wahrheitswert mit nur zwei möglichen Werten |`wahr`, `falsch`|
 |`Liste`| eine Liste von Werten |`einige Zahlen [1, 2, 3, 4, 5]`|
 
-### Bezeichner in GermanScript
-Es gibt verschiedene Arten von Bezeichnern in GermanScript.
+### Bezeichner in GermanSkript
+Es gibt verschiedene Arten von Bezeichnern in GermanSkript.
 Es gibt `Nomen`, `Symbole` und `Verben`. 
 
 #### Nomen
@@ -95,7 +95,7 @@ oder `Neutrum` (neutral). Anschließend kommen die 4. Fälle des Nomens im `Sing
 Nominativ, Gentiv, Dativ und Akkusativ.
 
 Da Nomen-Deklinationen selbst für deutsche Muttersprachler manchmal etwas schwierig sind
-und damit es bequemer ist, bietet GermanScript die Möglichkeit Nomen automatisch im [Online-Duden](https://www.duden.de/)
+und damit es bequemer ist, bietet GermanSkript die Möglichkeit Nomen automatisch im [Online-Duden](https://www.duden.de/)
 nachzuschauen. Die Deklination von oben kann man dann einfach so schreiben:
 ```
 Deklination Duden(Buch)
@@ -158,7 +158,7 @@ zu überprüfen. Alle anderen Operatoren können nur bei den Inbuild-Typen `Zahl
 | Hoch | `^` | `hoch` | rechts | 6 | Arithmetisch |
 
 ### Variablen-Deklarationen
-Variablen werden in GermanScript über die *bestimmten Artikel* `der, die, das`
+Variablen werden in GermanSkript über die *bestimmten Artikel* `der, die, das`
 oder die *unbestimmten Artikel* `ein, eine, einige` und den Zuweisungswörtern `ist` oder `sind` deklariert.
 
 Wenn man *die bestimmen Artikel* verwendet, werden unveränderliche Variablen deklariert,
@@ -198,12 +198,12 @@ solange Bedingung:
 - Standardbibliothek erweitern
 - Entwicklung eines Language Servers nach dem [Language Server Protocol](https://microsoft.github.io/language-server-protocol/)
 , um Funktionalitäten wie Auto-Complete, Code-Navigation und Fehlermeldungen im Editor zu ermöglichen.
-- Grafik-Bibliothek für GermanScript erstellen
-- Einsatzgebiete von GermanScript erkunden: Kann es verwendet werden, um Kindern/Jugendlichen programmieren beizubringen?
+- Grafik-Bibliothek für GermanSkript erstellen
+- Einsatzgebiete von GermanSkript erkunden: Kann es verwendet werden, um Kindern/Jugendlichen programmieren beizubringen?
 - Andere Compiler-Targets evaluieren:
     - Java
     - Java Bytecode
     - Javascript
-- Webseite für GermanScript
+- Webseite für GermanSkript
 
 

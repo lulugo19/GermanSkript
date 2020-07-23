@@ -1,6 +1,6 @@
-# germanscript-syntax-highlighting README
+# germanskript-syntax-highlighting README
 
-This is the README for your extension "germanscript-syntax-highlighting". After writing up a brief description, we recommend including the following sections.
+This is the README for your extension "germanskript-syntax-highlighting". After writing up a brief description, we recommend including the following sections.
 
 ## Features
 

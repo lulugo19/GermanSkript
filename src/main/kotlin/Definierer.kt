@@ -32,7 +32,7 @@ class Definierer(startDatei: File): PipelineKomponente(startDatei) {
       funktionsAufruf.vollerName = holeVollenNamenVonFunktionsAufruf(funktionsAufruf, null)
     }
     return funktionsDefinitionsMapping.getOrElse(funktionsAufruf.vollerName!!) {
-      throw GermanScriptFehler.Undefiniert.Funktion(funktionsAufruf.verb.toUntyped(), funktionsAufruf)
+      throw GermanSkriptFehler.Undefiniert.Funktion(funktionsAufruf.verb.toUntyped(), funktionsAufruf)
     }
   }
 
@@ -44,7 +44,7 @@ class Definierer(startDatei: File): PipelineKomponente(startDatei) {
         return klassenDefinitionsMapping.getValue(klassenName)
       }
     }
-    throw GermanScriptFehler.Undefiniert.Typ(nomen.bezeichner.toUntyped())
+    throw GermanSkriptFehler.Undefiniert.Typ(nomen.bezeichner.toUntyped())
   }
 
   fun holeKlassenDefinition(klassenName: String): AST.Definition.Klasse {
@@ -70,7 +70,7 @@ class Definierer(startDatei: File): PipelineKomponente(startDatei) {
   private fun definiereFunktion(funktionsDefinition: AST.Definition.FunktionOderMethode.Funktion) {
     val vollerName = holeVollenNameVonFunktionsDefinition(funktionsDefinition, null)
     if (funktionsDefinitionsMapping.containsKey(vollerName)) {
-      throw GermanScriptFehler.DoppelteDefinition.Funktion(
+      throw GermanSkriptFehler.DoppelteDefinition.Funktion(
           funktionsDefinition.name.toUntyped(),
           funktionsDefinitionsMapping.getValue(vollerName)
       )
@@ -83,7 +83,7 @@ class Definierer(startDatei: File): PipelineKomponente(startDatei) {
     val vollerName = holeVollenNameVonFunktionsDefinition(methodenDefinition.funktion, methodenDefinition.reflexivPronomen)
     val klasse = holeKlassenDefinition(methodenDefinition.klasse.name)
     if (klasse.methoden.containsKey(vollerName)) {
-      throw GermanScriptFehler.DoppelteDefinition.Methode(
+      throw GermanSkriptFehler.DoppelteDefinition.Methode(
           methodenDefinition.funktion.name.toUntyped(),
           klasse.methoden.getValue(vollerName)
       )
@@ -96,7 +96,7 @@ class Definierer(startDatei: File): PipelineKomponente(startDatei) {
     val klasse = holeKlassenDefinition(konvertierung.klasse)
     val typName = konvertierung.typ.name.nominativ
     if (klasse.konvertierungen.containsKey(typName)) {
-      throw GermanScriptFehler.DoppelteDefinition.Konvertierung(
+      throw GermanSkriptFehler.DoppelteDefinition.Konvertierung(
           konvertierung.klasse.bezeichner.toUntyped(),
           klasse.konvertierungen.getValue(typName)
       )
@@ -176,10 +176,10 @@ class Definierer(startDatei: File): PipelineKomponente(startDatei) {
     val klassenName = klasse.typ.name.hauptWort(Kasus.NOMINATIV, Numerus.SINGULAR)
     val reservierteNamen = arrayOf("Zahl", "Boolean", "Zeichenfolge")
     if (reservierteNamen.contains(klassenName)) {
-      throw GermanScriptFehler.ReservierterTypName(klasse.typ.name.bezeichner.toUntyped())
+      throw GermanSkriptFehler.ReservierterTypName(klasse.typ.name.bezeichner.toUntyped())
     }
     if (klassenDefinitionsMapping.containsKey(klassenName)) {
-      throw GermanScriptFehler.DoppelteDefinition.Klasse(klasse.typ.name.bezeichner.toUntyped(),
+      throw GermanSkriptFehler.DoppelteDefinition.Klasse(klasse.typ.name.bezeichner.toUntyped(),
           klassenDefinitionsMapping.getValue(klassenName))
     }
     klassenDefinitionsMapping[klassenName] = klasse
