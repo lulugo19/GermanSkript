@@ -225,7 +225,7 @@ sealed class GermanSkriptFehler(private val fehlerName: String, val token: Token
   }
 
   class KonvertierungsFehler(token: Token, private val von: Typ, private val zu: Typ): GermanSkriptFehler("Konvertierungsfehler", token) {
-    override val nachricht get() = "Die Konvertierung von $von zu $zu ist nicht möglich."
+    override val nachricht get() = "Die Konvertierung von ${von.name} zu ${zu.name} ist nicht möglich."
   }
 
   class LaufzeitFehler(token: Token, val aufrufStapelString: String, val fehlerMeldung: String): GermanSkriptFehler("Laufzeitfehler", token) {
