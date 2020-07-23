@@ -47,8 +47,14 @@ val präpositionsFälle = mapOf<String, EnumSet<Kasus>>(
     "seit" to EnumSet.of(Kasus.DATIV),
     "von" to EnumSet.of(Kasus.DATIV),
     "zu" to EnumSet.of(Kasus.DATIV),
+    "zum" to EnumSet.of(Kasus.DATIV),
+    "zur" to EnumSet.of(Kasus.DATIV),
     "zufolge" to EnumSet.of(Kasus.DATIV),
     "zuliebe" to EnumSet.of(Kasus.DATIV),
+    "im" to EnumSet.of(Kasus.DATIV),
+    "unterm" to EnumSet.of(Kasus.DATIV),
+    "überm" to EnumSet.of(Kasus.DATIV),
+    "hinterm" to EnumSet.of(Kasus.DATIV),
 
     // Präpositionen Akkusativ
     "für" to EnumSet.of(Kasus.AKKUSATIV),
@@ -58,6 +64,9 @@ val präpositionsFälle = mapOf<String, EnumSet<Kasus>>(
     "gegen" to EnumSet.of(Kasus.AKKUSATIV),
     "ohne" to EnumSet.of(Kasus.AKKUSATIV),
     "wider" to EnumSet.of(Kasus.AKKUSATIV),
+    "ins" to EnumSet.of(Kasus.AKKUSATIV),
+    "durchs" to EnumSet.of(Kasus.AKKUSATIV),
+    "fürs" to EnumSet.of(Kasus.AKKUSATIV),
 
     // Präpositionen Dativ + Akkusativ
     "an" to EnumSet.of(Kasus.DATIV, Kasus.AKKUSATIV),

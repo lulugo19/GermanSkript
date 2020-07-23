@@ -1,0 +1,7 @@
+Deklination Maskulinum Singular(Name, Namens, Namen, Namen) Plural(Namen)
+
+Verb(Zahl) addiere die ZahlX zur ZahlY:
+    gebe die ZahlX plus die ZahlY zurück
+.
+
+schreibe die Zeile "Test: #{addiere die Zahl 3 zur Zahl 5}"

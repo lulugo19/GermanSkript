@@ -57,7 +57,7 @@ enum class Numerus(val anzeigeName: String, val zuweisung: String) {
     }
 }
 
-data class Token(val typ: TokenTyp, val wert: String, val dateiPfad: String, val anfang: Position, val ende: Position) {
+data class Token(val typ: TokenTyp, var wert: String, val dateiPfad: String, val anfang: Position, val ende: Position) {
     // um die Ausgabe zu vereinfachen
     // override fun toString(): String = typ.toString()
 
@@ -611,7 +611,9 @@ class Lexer(startDatei: File): PipelineKomponente(startDatei) {
                                     else -> großerBezeichner(nächstesWort, nextWordStartPos, nextWordEndPos)
                                 }
                             }))
-                            yield(Token(tokenTyp, nächstesWort, currentFile, nextWordStartPos, nextWordEndPos))
+                            val token = Token(tokenTyp, nächstesWort, currentFile, nextWordStartPos, nextWordEndPos)
+                            yield(token)
+                            yieldAll(präpositionArtikelVerschmelzung(token))
                         }
                     }
                     else {
@@ -620,8 +622,11 @@ class Lexer(startDatei: File): PipelineKomponente(startDatei) {
                 }
                 else -> yield(Token(WORT_MAPPING.getValue(erstesWort), erstesWort, currentFile, firstWordStartPos, firstWordEndPos))
             }
-            erstesWort.all { zeichen -> zeichen.isLowerCase() } -> yield(Token(TokenTyp.BEZEICHNER_KLEIN(erstesWort),
-                erstesWort, currentFile, firstWordStartPos, firstWordEndPos))
+            erstesWort.all { zeichen -> zeichen.isLowerCase() } -> {
+                val token = Token(TokenTyp.BEZEICHNER_KLEIN(erstesWort), erstesWort, currentFile, firstWordStartPos, firstWordEndPos)
+                yield(token)
+                yieldAll(präpositionArtikelVerschmelzung(token))
+            }
 
             else -> yield(
                 Token(großerBezeichner(erstesWort, firstWordStartPos, firstWordEndPos),
@@ -663,6 +668,27 @@ class Lexer(startDatei: File): PipelineKomponente(startDatei) {
             wort += next()!!
         }
         return wort
+    }
+
+    private val präpositionArtikelVerschmelzungsMap = mapOf<String, Pair<String, String>>(
+        "zum" to Pair("zu" , "dem"),
+        "zur" to Pair("zu" , "der"),
+        "im" to Pair("in" , "dem"),
+        "ins" to Pair("in" , "das"),
+        "durchs" to Pair("durch" , "das"),
+        "fürs" to Pair("für" , "das"),
+        "unterm" to Pair("unter" , "dem"),
+        "überm" to Pair("über" , "dem"),
+        "hinterm" to Pair("hinter" , "dem")
+    )
+
+    private fun präpositionArtikelVerschmelzung(präpToken: Token) = sequence<Token> {
+        if (präpositionArtikelVerschmelzungsMap.containsKey(präpToken.wert)) {
+            val (präposition, artikel) = präpositionArtikelVerschmelzungsMap.getValue(präpToken.wert)
+            präpToken.wert = präposition
+            val artikelToken = Token(TokenTyp.VORNOMEN.ARTIKEL.BESTIMMT, artikel, currentFile, präpToken.anfang, präpToken.ende)
+            yield(artikelToken)
+        }
     }
 }
 
