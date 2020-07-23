@@ -136,8 +136,8 @@ Die Operatoren bilden folgende Klassen:
 | Logisch | um Booleans miteinander zu verketten  |
 | Vergleich | Werte vergleichen |
 
-Die Operatoren Gleichheit `==` und Ungleichheit `!=` können bei allen Typen verwendet werden, um die Gleichheit
-zu überprüfen. Alle anderen Operatoren können nur bei den Inbuild-Typen `Zahl`, `Liste`, `Boolean` verwendet werden.
+Die Operatoren Gleichheit `=` und Ungleichheit `!=` können bei allen Typen verwendet werden, um die Gleichheit
+zu überprüfen. Alle anderen Operatoren können nur bei den Inbuild-Typen `Zeichenfolge`, `Zahl`, `Liste`, `Boolean` verwendet werden.
 
 
 | Funktion | Symbol | Text | Assoziativität | Bindungskraft | Klasse |
@@ -157,35 +157,178 @@ zu überprüfen. Alle anderen Operatoren können nur bei den Inbuild-Typen `Zahl
 | Modulo | `mod` | `modulo` | links | 5 | Arithmetisch |
 | Hoch | `^` | `hoch` | rechts | 6 | Arithmetisch |
 
+Der plus-Operator (`+`) kann bei Zeichenfolgen, sowie bei Listen verwendet werden, um Zeichenfolgen, bzw. Listen zu verketten.
+
 ### Variablen-Deklarationen
 Variablen werden in GermanSkript über die *bestimmten Artikel* `der, die, das`
 oder die *unbestimmten Artikel* `ein, eine, einige` und den Zuweisungswörtern `ist` oder `sind` deklariert.
+Variablen müssen in GermanSkript direkt bei der Deklaration initialisiert werden.
 
 Wenn man *die bestimmen Artikel* verwendet, werden unveränderliche Variablen deklariert,
 die nicht erneut zugewiesen werden können. Variablen die mit *unbestimmten Artikeln* deklariert werden
-können neu zugewiesen werden.
+können jedoch neu zugewiesen werden.
 
 Das Zuweisungswort `sind` wird verwendet, wenn eine Liste deklariert wird und sonst wird immer das Zuweisungswort `ist`
 verwendet.
 
 ```
-die Zeichenfolge ist "Hallo Welt!"
+Deklination Femininum Singular(Welt) Plural(Welten)
 
-ein Zahl ist
+// unveränderbare Variable die nicht erneut zugewiesen werden kann
+die Welt ist "Hallo Welt"
+schreibe die Zeile Welt     // gibt "Hallo Welt" aus
+
+// veränderbare Variable die erneut zugewiesen kann
+eine Zahl ist 10
+// gibt 10 aus
+schreibe die Zahl 
+// weist Zahl neu zu
+eine Zahl ist die Zahl plus 32
+// gibt 42 aus
+schreibe die Zahl 
 ```
+
+### Variablen und Bereiche
+Ein Bereich fängt in GermanSkript mit einem Doppelpunkt `:` an und endet mit einem einfachen Punkt `.`.
+
+Bereiche werden in GermanSkript an verschiedenen Stellen wie bei Schleifen, Bedingungen und Funktionen verwendet.
+Man kann aber auch einfach so ein Bereich erstellen, indem man einfach ein `:` schreibt. Dann etwas in den Bereich schreibt
+und den Bereich mit einem `.` beendet.
+
+Variablen sind nur innerhalb des Bereiches gültig, indem sie deklariert wurden sind. Von einem inneren Bereich können auf Variablen
+des äußeren Bereichs zugegriffen werden, aber nicht anders herum.
+
+Innerhalb eines Bereichs müssen verschiedene Variablen, unterschiedliche Namen haben. Jedoch kann in einem inneren Bereich
+der Variablenname einer Variable des äußeren Bereichs wieder verwendet werden. Die äußere Variable wird dann überdeckt (*Shadowing*).
+
+Beispiel:
+
+```
+Deklination Femininum Singular(Variable) Plural(Variablen)
+
+eine Variable ist "Erste Variable"
+// neuer Bereich
+:
+    schreibe die Zeile Variable // Erste Variable
+    eine Variable ist "Erste veränderte Variable"
+    schreibe die Zeile Variable // Erste veränderte Variable
+    
+    // hier wird eine neue Variable erstellt, die die aus dem äußeren Bereich überdeckt
+    eine neue Variable ist "Zweite Variable"
+    schreibe die Zeile Variable // Zweite Variable
+.
+schreibe die Zeile Variable // Erste veränderte Variable
+```
+
+Hier sieht man auch ein neues Schlüsselwort namens `neue`. 
+Dieses braucht man nur, um eine neue veränderbare Variable mit dem gleichen Namen zu erstellen.
+Da man unveränderbare Variablen nicht neu zuweisen kann, braucht man bei ihnen **nicht** das Schlüsselwort `neu`,
+weil dann immer eine neue Variable erstellt wird.
 
 ### Bedingungen
 
+Bedingungen erlauben es GermanSkript-Code nur auszuführen, wenn eine bestimmte 
+Bedingung (ein Boolean: `wahr` oder `falsch`) zutrifft.
+
+Wenn Vergleichsoperatoren wie `gleich`, `ungleich`, `kleiner`, `größer`, usw. verwendet werden, kann optional
+hinter dem Vergleich das Wort `ist` kommen, sodass es sich mehr wie Deutsch liest.
+
+```
+die Zahl ist 42
+
+wenn die Zahl gleich 3 ist:
+  schreibe die Zeile "Alle guten Dinge sind drei!".
+sonst wenn die Zahl gleich 42 ist:
+  schreibe die Zeile "Die Antwort auf alles.".
+sonst: schreibe die Zahl.
+
+// es wird "Die Antwort auf alles." augegeben
+```
+
 ### Solange-Schleifen
+
+Solange-Schleifen sind äquivalent zu der `while`-Schleife anderer Programmiersprachen.
+
 ```
-solange Bedingung:
-    // mache etwas
+Deklination Maskulinum Singular(Zähler, Zählers, Zähler, Zähler) Plural(Zähler, Zähler, Zählern, Zähler)
+
+ein Zähler ist 3
+schreibe die Zeile "Countdown: "
+
+solange der Zähler größer gleich 0 ist:
+    schreibe die Zahl Zähler
+    ein Zähler ist der Zähler - 1
 .
+schreibe die Zeile "Los!"
+
+/*
+Ausgabe:
+Countdown:
+3
+2
+1
+0
+Los!
+*/
+```
+### Funktionen
+Wie in anderen Programmierprachen, kann man in GermanSkript, Code in Funktionen auslagern und diese Funktionen immer
+wieder aufrufen, wenn man sie braucht. Funktionen in GermanSkript können aus mehreren Wörtern bestehen. Die Parameternamen
+werden zum Teil des Namens der Funktion. Parameter werden mit Präpositionen und/oder Kommas voneinander abgegrenzt. 
+
+Das Syntax einer Funktionsdefinition ist:
+
+```Verb[(Rückgabetyp)] bezeichner Parameter [Suffix]: (Sätze|intern).```
+
+Parameter: `[Objekt] [Kommaliste(Präposition)]`
+
+Um dies zu verdeutlichen hier einige Beispiele.
+
+| Funktionsdefinition | RückgabeTyp | Funktionsaufruf Beispiel | vollständiger Funktionsname |
+| ------------------- | ----------- | --------------- | --------------------------- |
+| `Verb schreibe die Zeichenfolge Zeile:.` | keiner | `schreibe die Zeile "Hallo Welt"` | schreibe die Zeile |
+| `Verb(Zahl) runde die Zahl ab:.` | `Zahl` | `runde die Zahl 3,14 ab` | runde die Zahl ab |
+| `Verb(Verbindung) verbinde den Client mit der Zeichenfolge IP über die Zahl Port:.` | `Verbindung` | `verbinde den Client mit der IP "127.0.0.1" über den Port 80` | verbinde den Client mit der IP über den Port |
+| `Verb begrüße die Zeichenfolge Person mit der Zeichenfolge Begrüßung, der Zeichenfolge Abschied nach der Zeichenfolge Anfang:.` | keiner | `begrüße die Person "Max" mit der Begrüßung "Hallo", dem Abschied "Bye" nach dem Anfang "An einem wunderschönen Tag..."` | begrüße die Person mit der Begrüßung, dem Abschied nach dem Anfang |
+
+
+Hier ist noch ein anderers Beispiel. Die Definition und der Aufruf der [Fakultätsfunktion](https://de.wikipedia.org/wiki/Fakult%C3%A4t_(Mathematik)).
+```
+// Funktionsdefinition
+Verb(Zahl) fakultät von der Zahl:
+    wenn die Zahl gleich 0 ist: gebe 1 zurück.
+    sonst: gebe die Zahl * (fakultät von der Zahl - 1) zurück.
+.
+
+// Funktionsaufruf
+die Zahl ist fakultät von der Zahl 5
+schreibe die Zeile "Die Fakultät von der Zahl 5 ist: " + die Zahl als Zeichenfolge
 ```
 
-### Für Jede Schleifen
+### Listen
 
-### Funktionen
+Wenn man mehrere Werte des gleichen Typs hat, ist es oft praktisch diese in einer Liste zu speichern.
+Um eine Liste zu erstellen braucht man den Plural des Typen wowie den Artikel `einige`.
+In die eckigen Klammern kommen dann die Elemente der Liste. 
+
+```
+die Zahlen sind einige Zahlen[2, 3, 5, 7, 11, 13, 17]
+schreibe die Zeile (die Anzahl der Zahlen) // 7
+```
+
+Um auf ein bestimmtes Element über einen nullbasierten Index zuzugreifen, wird
+die Einzahl und dann wieder eckige Klammern verwendet.
+
+```
+schreibe die Zahl[0] // 2
+schreibe die Zahl[1] // 3
+
+eine Zahl ist 2
+solange die Zahl kleiner der Anzahl der Zahlen ist:
+```
+
+
+### Für-Jede-Schleifen
 
 ### Klassen (Nomen)
 

@@ -115,7 +115,7 @@ Jeder Operator hat neben einem Symbol auch noch eine Textrepräsentation, die st
 
 Umso höher die Bindungskraft, desto mehr bindet der Operator seine Operanden.
 
-Die Operatoren Gleichheit `==` und Ungleichheit `!=` können bei allen Typen verwendet werden, um die Gleichheit
+Die Operatoren Gleichheit `=` und Ungleichheit `!=` können bei allen Typen verwendet werden, um die Gleichheit
 zu überprüfen. Alle anderen Operatoren können nur bei den Inbuild-Typen `Zahl`, `Liste`, `Boolean` verwendet werden.
 Das Überladen von Operatoren ist voerst nicht vorgesehen.
 
