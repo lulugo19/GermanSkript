@@ -1,15 +1,15 @@
 {
 	"$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
-	"name": "GermanScript",
-	"scopeName": "source.germanscript",
+	"name": "GermanSkript",
+	"scopeName": "source.germanskript",
 	"patterns": [
 		{
-			"name": "comment.line.double-dash.germanscript",
+			"name": "comment.line.double-dash.germanskript",
 			"begin": "\\/\\/",
 			"end": "$"
 		},
 		{
-			"name": "comment.block.germanscript",
+			"name": "comment.block.germanskript",
 			"begin": "\\/\\*",
 			"end": "\\*\\/"
 		},
@@ -39,11 +39,11 @@
 		"keywords": {
 		  "patterns": [
 			{
-			  "name": "keyword.control.germanscript",
+			  "name": "keyword.control.germanskript",
 			  "match": "\\b(wenn|dann|sonst|solange|für|jeden|jede|jedes|fortfahren|abbrechen|gebe|zurück|intern)\\b"
 			},
 			{
-			  "name": "keyword.other.germanscript",
+			  "name": "keyword.other.germanskript",
 			  "match": "\\b(Maskulinum|Femininum|Neutrum)\\b"
 			}
 		  ]
@@ -74,16 +74,16 @@
 		  ]
 		},
 		"strings": {
-		  "name": "string.quoted.double.germanscript",
+		  "name": "string.quoted.double.germanskript",
 		  "begin": "\"",
 		  "end": "\"",
 		  "patterns": [
 			{
-			  "name": "constant.character.escape.germanscript",
+			  "name": "constant.character.escape.germanskript",
 			  "match": "\\\\."
 			},
 			{
-			  "name": "keyword.operator.interpolation.germanscript",
+			  "name": "keyword.operator.interpolation.germanskript",
 			  "begin": "#\\{",
 			  "end": "\\}",
 			  "patterns": [
@@ -95,11 +95,11 @@
 		  ]
 		},
 		"numbers": {
-		  "name": "constant.numeric.germanscript",
+		  "name": "constant.numeric.germanskript",
 		  "match": "-?([1-9]\\d{1,2}|\\d)(?:\\.\\d{3})*(?:,\\d+)?"
 		},
 		"booleans": {
-		  "name": "constant.language.germanscript",
+		  "name": "constant.language.germanskript",
 		  "match": "\\b(wahr|falsch)\\b"
 		},
 		"objects": {
@@ -117,18 +117,18 @@
 			}
 		},
 		"classdefs": {
-		  "name": "meta.class.germanscript",
+		  "name": "meta.class.germanskript",
 		  "begin": "\\b(Nomen) *(([A-ZÖÄÜ][a-zöäüß]*)+) *(mit)?",
 		  "end": ":",
 		  "beginCaptures": {
 			"1": {
-				"name": "storage.type.class.germanscript"
+				"name": "storage.type.class.germanskript"
 			},
 			"2": {
-			  "name": "entity.name.type.class.germanscript"
+			  "name": "entity.name.type.class.germanskript"
 			},
 			"3": {
-			  "name": "keyword.other.germanscript"
+			  "name": "keyword.other.germanskript"
 			}
 		  },
 		  "patterns": [
@@ -138,21 +138,21 @@
 		  ]
 		},
 		"fundefs": {
-		  "name": "meta.function.germanscript",
+		  "name": "meta.function.germanskript",
 		  "begin": "\\b(Verb)( *\\( *(([A-ZÖÄÜ][a-zöäüß]*)+) *\\))?( *(für) *(([A-ZÖÄÜ][a-zöäüß]*)+))?",
 		  "end": ":",
 		  "beginCaptures": {
 				"1": {
-					"name": "storage.type.function.germanscript"
+					"name": "storage.type.function.germanskript"
 				},
 				"2": {
-					"name": "entity.name.type.germanscript"
+					"name": "entity.name.type.germanskript"
 				},
 				"6": {
-					"name": "keyword.other.germanscript"
+					"name": "keyword.other.germanskript"
 				},
 				"7": {
-					"name": "entity.name.type.class.germanscript"
+					"name": "entity.name.type.class.germanskript"
 				}
 		  },
 		  "patterns": [
@@ -165,20 +165,20 @@
 		  ]
 		},
 		"vardecls": {
-		  "name": "meta.vardecl.germanscript",
+		  "name": "meta.vardecl.germanskript",
 		  "match": "\\b(der|die|das|ein|eine|einige|mein|meine|jener|jene|jenes|dieser|diese|dieses) *((neue|neuer|neues) *)?([A-ZÖÄÜ][a-zöäüß]*)+ *(ist|sind)",
 		  "captures": {
 			"1": {
-			  "name": "storage.type.var.germanscript"
+			  "name": "storage.type.var.germanskript"
 			},
 			"3": {
-			  "name": "storage.type.modifier.neu.germanscript"
+			  "name": "storage.type.modifier.neu.germanskript"
 			},
 			"4": {
-			  "name": "variable.other.germanscript"
+			  "name": "variable.other.germanskript"
 			},
 			"5": {
-			  "name": "keyword.operator.germanscript"
+			  "name": "keyword.operator.germanskript"
 			}
 		  }
 		},
@@ -201,12 +201,12 @@
 					"end": "\\)",
 					"beginCaptures": {
 						"1": {
-							"name": "keyword.other.germanscript"
+							"name": "keyword.other.germanskript"
 						}
 					},
 					"patterns": [
 						{
-							"name": "constant.other.word.germanscript",
+							"name": "constant.other.word.germanskript",
 							"match": "\\b([A-ZÖÄÜ][a-zöäüß]*)"
 						}
 					]
@@ -216,11 +216,11 @@
 		"vars": {
 		  "patterns": [
 			{
-			  "name": "variable.other.germanscript",
+			  "name": "variable.other.germanskript",
 			  "match": "(\\b(der|die|das|den|des|dem|ein|eine|eines|einer|einige|einigen|einiger|mein|meine|meines|meiner|meinem|meinen|dein|deine|deines|deiner|deinem|deinen))? *(([A-ZÖÄÜ][a-zöäüß]*)+)"
 			},
 			{
-			  "name": "variable.language.germanscript",
+			  "name": "variable.language.germanskript",
 			  "match": "(Ich|Du)"
 			}
 		  ]
@@ -229,13 +229,13 @@
 		  "match": "\\b(der|die|das|den|des|dem|ein|eine|eines|einer|einige|einigen|einiger) *(([A-ZÖÄÜ][a-zöäüß]*)+) *(([A-ZÖÄÜ][a-zöäüß]*)+)?",
 		  "captures": {
 			"1": {
-			  "name": "entity.name.type.germanscript"
+			  "name": "entity.name.type.germanskript"
 			},
 			"2": {
-			  "name": "entity.name.type.germanscript"
+			  "name": "entity.name.type.germanskript"
 			},
 			"4": {
-			  "name": "variable.parameter.germanscript"
+			  "name": "variable.parameter.germanskript"
 			}
 		  }
 		},
@@ -244,18 +244,18 @@
 		  "match": "\\b(der|die|das|den|des|dem|ein|eine|eines|einer|einige|einigen|einiger|mein|meine|meines|meiner|meinem|meinen|dein|deine|deines|deiner|deinem|deinen) *(([A-ZÖÄÜ][a-zöäüß]*)+) *(([A-ZÖÄÜ][a-zöäüß]*)+)?",
 		  "captures": {
 			"1": {
-			  "name": "variable.parameter.germanscript"
+			  "name": "variable.parameter.germanskript"
 			},
 			"2": {
-			  "name": "variable.parameter.germanscript"
+			  "name": "variable.parameter.germanskript"
 			},
 			"4": {
-			  "name": "variable.other.germanscript"
+			  "name": "variable.other.germanskript"
 			}
 		  }
 		},
 		"operators": {
-		  "name": "keyword.operator.germanscript",
+		  "name": "keyword.operator.germanskript",
 		  "match": "(\\||&|=|!=|>|<|>=|<=|\\+|-|\\*|\\/|mod|\\^)|(\\b(ist|sind|oder|und|gleich|ungleich|größer|kleiner|(größer *gleich)|(kleiner *gleich)|mal|durch|modulo|hoch|als)\\b)"
 		},
 		"functions": {
