@@ -96,7 +96,8 @@ class Deklinierer(startDatei: File): PipelineKomponente(startDatei) {
             when (fehler) {
               is Duden.DudenFehler.NotFoundFehler, is Duden.DudenFehler.ParseFehler ->
                 throw GermanSkriptFehler.DudenFehler.WortNichtGefundenFehler(wort.toUntyped(), wort.wert)
-              is Duden.DudenFehler.KeinInternetFehler -> throw GermanSkriptFehler.DudenFehler.Verbindungsfehler(wort.toUntyped(), wort.wert)
+              is Duden.DudenFehler.KeinInternetFehler, is Duden.DudenFehler.TimeoutFehler, is Duden.DudenFehler.DudenServerFehler ->
+                throw GermanSkriptFehler.DudenFehler.Verbindungsfehler(wort.toUntyped(), wort.wert)
             }
           }
         })

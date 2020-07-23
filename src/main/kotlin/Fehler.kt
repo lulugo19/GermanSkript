@@ -15,6 +15,7 @@ sealed class GermanSkriptFehler(private val fehlerName: String, val token: Token
         get() = "Ungültige Zeichenfolge '${token.wert}'. ${details?: ""}"
     }
 
+
     class UngültigeEscapeSequenz(token: Token): SyntaxFehler(token) {
       override val nachricht: String = "Ungültige Escape Sequenz '${token.wert}' in Zeichenfolge."
     }
@@ -66,7 +67,7 @@ sealed class GermanSkriptFehler(private val fehlerName: String, val token: Token
 
     class Verbindungsfehler(token: Token, wort: String) : DudenFehler(token, wort) {
       override val nachricht: String
-        get() = "Das wort '$wort' konnte nicht im Duden nachgeschaut werden, da keine Netzwerk-Verbindung zum Online-Duden besteht."
+        get() = "Das Wort '$wort' konnte nicht im Duden nachgeschaut werden, da keine Netzwerk-Verbindung zum Online-Duden besteht."
     }
   }
 
