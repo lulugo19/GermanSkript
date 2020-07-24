@@ -5,7 +5,7 @@ Deklination Neutrum Singular(Alter, Alters, Alter, Alter) Plural(Alter)
 Nomen Person mit
     der Zeichenfolge VorName,
     der Zeichenfolge NachName,
-    der Zahl Alter:
+    einer Zahl Alter:
 
     // weitere Eigenschaft
     dieser Name ist "#{mein VorName} #{mein NachName}"

@@ -117,6 +117,11 @@ sealed class GermanSkriptFehler(private val fehlerName: String, val token: Token
       override val nachricht: String
         get() = "Falscher Numerus. Das Nomen muss im ${numerus.anzeigeName} '$erwartetesNomen' stehen."
     }
+
+    class PluralErwartet(token: Token): GrammatikFehler(token) {
+      override val nachricht: String
+        get() = "Es wird ein Ausdruck im Plural erwartet. Doch der Ausdruck '${token.wert}' ist im Singular."
+    }
   }
 
   sealed class DoppelteDefinition(token: Token): GermanSkriptFehler("Definitionsfehler", token) {

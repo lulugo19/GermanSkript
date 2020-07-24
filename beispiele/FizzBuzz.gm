@@ -8,7 +8,8 @@ solange die Zahl <= 100 ist:
     wenn die Zahl mod 3 gleich 0 ist: eine Ausgabe ist die Ausgabe + "Fizz".
     wenn die Zahl mod 5 gleich 0:eine Ausgabe ist die Ausgabe + "Buzz".
 
-    wenn die Länge der Ausgabe größer 0 ist: schreibe die Zeile Ausgabe.
+    // leere Zeichenfolge als Boolean ist 'falsch'
+    wenn die Ausgabe als Boolean: schreibe die Zeile Ausgabe.
     sonst: schreibe die Zeile Zahl als Zeichenfolge.
 
     // Zähler hochzählen
