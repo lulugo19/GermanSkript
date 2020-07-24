@@ -242,7 +242,7 @@ sonst wenn die Zahl gleich 42 ist:
   schreibe die Zeile "Die Antwort auf alles.".
 sonst: schreibe die Zahl.
 
-// es wird "Die Antwort auf alles." augegeben
+// es wird "Die Antwort auf alles." ausgegeben
 ```
 
 ### Solange-Schleifen
@@ -305,6 +305,40 @@ die Zahl ist fakultät von der Zahl 5
 schreibe die Zeile "Die Fakultät von der Zahl 5 ist: " + die Zahl als Zeichenfolge
 ```
 
+### Zeichenfolgen
+
+Zeichenfolgen (Literale) werde in GermanSkript zwischen den Anführungszeichen `" "` geschrieben.
+Mit dem `+`-Operator kann man Zeichenfolgen aneinander ketten.
+
+```
+die Welt ist " Welt"
+die Zeichenfolge ist "Hallo " + die Welt
+```
+
+#### Zeichenfolge-Interpolation
+Bei längeren Zeichenfolgen, in denen mehrere Variablen vorkommen, kann die Verkettung von
+Zeichenfolgen über den `+`-Operator schnell unübersichtlich werden. Deshalb bietet GermanSkript
+die Zeichenfolgen-Interpolation an, bei der man Ausrücke direkt in Zeichenfolgen einbetten kann.
+Diese startet innerhalb einer Zeichenfolge mit `#{` und endet mit `}`.
+
+*ohne Zeichenfolgen-Interpolation*
+```
+die ZahlX ist 5
+die ZahlY ist 10
+das Ergebnis ist die ZahlX + die ZahlY
+schreibe die Zeile die ZahlX als Zeichenfolge + " + " 
+    + die ZahlY als Zeichenfolge + " = " 
+    + das Ergebnis als Zeichenfolge
+```
+
+*mit Zeichenfolgen-Interpolation*
+```
+die ZahlX ist 5
+die ZahlY ist 10
+das Ergebnis ist die ZahlX + die ZahlY
+schreibe die Zeile "#{die ZahlX} + #{die ZahlY} = #{das Ergebnis}"
+```
+
 ### Listen
 
 Wenn man mehrere Werte des gleichen Typs hat, ist es oft praktisch diese in einer Liste zu speichern.
@@ -313,31 +347,259 @@ In die eckigen Klammern kommen dann die Elemente der Liste.
 
 ```
 die Zahlen sind einige Zahlen[2, 3, 5, 7, 11, 13, 17]
-schreibe die Zeile (die AnZahl der Zahlen) // 7
+schreibe die AnZahl der Zahlen // 7
 ```
 
 Um auf ein bestimmtes Element über einen nullbasierten Index zuzugreifen, wird
-die Einzahl und dann wieder eckige Klammern verwendet.
+der Singular und dann wieder eckige Klammern verwendet.
 
 ```
 schreibe die Zahl[0] // 2
 schreibe die Zahl[1] // 3
 
-eine Zahl ist 2
-solange die Zahl kleiner als die AnZahl der Zahlen ist:
-    schreibe die Zahl
-    eine Zahl ist die Zahl minus 1
+ein Index ist 2
+solange der Index kleiner als die AnZahl der Zahlen ist:
+    schreibe die Zahl[Index]
+    ein Index ist der Index plus 1
 .
 ```
 
-
 ### Für-Jede-Schleifen
+Für jede Schleifen, liefern eine syntaktisch sehr simple Möglichkeit über alle Elemente
+einer Liste zu durchlaufen. Nach den Schlüsselwörter `für jede` kommt das Singular
+der Listenvariable.
+
+```
+die Zahlen sind einige Zahlen[2, 3, 5, 7, 11, 13, 17]
+
+für jede Zahl:
+    schreibe die Zahl
+.
+```
+
+Man kann es auch ohne den Singular und mit einem selbst gewählten Bezeichner machen. 
+Aber dann braucht man noch das Schlüsselwort `in`.
+
+```
+für jedes X in den Zahlen:
+    schreibe die Zahl X
+.
+```
+
+Man kann die Liste auch direkt nach dem `in` als Ausdruck stehen haben.
+```
+für jede Zahl in einigen Zahlen[2, 4, 8, 16, 32, 64]:
+    schreibe die Zahl
+.
+```
 
 ### Klassen (Nomen)
 
-### Objektinitialisierung
+Klassen kapseln Daten und Methoden, die auf diesen Daten operieren.
+Die Daten einer Klasse werden in GermanSkript Eigenschaften genannt.
+Methoden sind unabhängig von der Klassendefinition. Dazu kommen wir später.
+
+Eine Klassendefinitionen startet mit dem Schlüsselwort `Nomen`. Anschließend kommt
+der Klassenname, welcher ein deutsches Nomen sein muss. Dann kommen die Klasseneigenschaften und
+der Konstruktor. Hier ist wieder die Unterscheidung zwischen unveränderlichen Eigenschaften
+(*bestimmte Artikel*) und veränderlichen Eigenschaften (*unbestimmte Artikel*) wichtig.
+
+Innerhalb des Konstruktors kann man weitere Klasseneigenschaften definieren. Dies geschieht wie eine
+normale Variablendeklaration nur mit den Demonstrativpronomen (`dieser`, `diese`, `dieses`)
+für unveränderbare Eigenschaften und (`jener`, `jene`, `jenes`) für veränderbare Eigenschaften.
+
+Auf die eigenen Eigenschaften kann innerhalb des Konstruktors oder in Methoden mit dem Personalpronomen `mein`
+zugegriffen werden.
+
+```
+Deklination Femininum Singular(Person) Plural(Personen)
+Deklination Maskulinum Singular(Name, Namens, Namen, Namen) Plural(Namen)
+Deklination Neutrum Singular(Alter, Alters, Alter, Alter) Plural(Alter)
+
+Nomen Person mit
+    der Zeichenfolge VorName,
+    der Zeichenfolge NachName,
+    einer Zahl Alter:
+
+    // weitere Eigenschaft
+    dieser Name ist "#{mein VorName} #{mein NachName}"
+    schreibe die Zeile "Die Person #{mein Name} (#{mein Alter} Jahre alt) wurde erstellt!"
+.
+```
+
+Ein Objekt der Klasse wird dann folgendermaßen erstellt. 
+Alle Eigenschaften müssen in der richtigen Reihenfolge angegeben werden.
+
+```
+die Person ist eine Person mit
+    dem VorNamen "Lukas", 
+    dem NachNamen "Gobelet", 
+    dem Alter 22
+```
+
+Von außen kann man nun auf die Eigenschaften des Objekts mit dem Genitiv drauf zugreifen.
+Man hat von außen nur lesenden Zugriff auf die Eigenschaften und kann diese nicht verändern.
+
+```
+der Name ist der Name der Person
+schreibe die Zeile Name // Lukas Gobelet
+
+die Zahl ist das Alter der Person
+schreibe die Zahl // 22
+```
+
+Innerhalb einer Klasse kann man die Eigenschaften jedoch über `mein` ändern, wenn diese als veränderbar
+deklariert wurden sind.
 
 ### Methoden
+
+Methoden werden genau so wie Funktionen definiert werden. Der einzige Unterschied ist, dass man das
+Schlüsselwort `für` verwendet um anzugegeben für welche Klasse die Methode definiert werden soll.
+
+```
+Verb für Person werde älter:
+    mein Alter ist mein Alter plus 1 
+.
+```
+
+Es können auch Methoden mit dem Reflexivpronomen `mich` als Objekt definiert werden.
+Diese spielen eine spezielle Rolle. Dazu kommen wir später.
+
+```
+Deklination Duden(Begrüßung)
+
+Verb für Person begrüße mich mit der Zeichenfolge Begrüßung:
+    schreibe die Zeile "#{Begrüßung} #{mein VorName}!"
+.
+```
+
+Um die Methoden aufzurufen gibt es die sogenannten Methodenbereiche.
+Innerhalb eines Methodenbereichs, kann eine Methode genauso wie eine Funktion
+aufgerufen werden. Außerdem kann man innerhalb eines Methodenbereiches mit dem
+Personalpronomen `dein` auch ohne den Genitiv auf die Eigenschaften eines Objekts zugreifen.
+
+Methodenbereiche starten mit dem Objekt, dann mit einem `:`, und enden mit einem Ausrufezeichen `!`, 
+anstatt wie normale Bereiche mit einem Punkt.
+
+```
+die Person ist eine Person mit
+    dem VorNamen "Lukas", 
+    dem NachNamen "Gobelet", 
+    dem Alter 22
+
+// beginne den Methodenbereich
+Person:
+    schreibe die Zahl (dein Alter) // 22
+    werde älter
+    schreibe die Zahl (dein Alter) // 23
+    
+    begrüße dich mit der Begrüßung "Hey" // Hey Lukas!
+!
+```
+
+Bei `begrüße dich` kann man sehen, dass das Reflexivpronomen `mich` in der Definition
+in dem Methodenblock mit `dich` ersetzt wurde.
+
+Über diesen rein kosmetischen Nutzen hinaus, haben Reflexivpronomen jedoch noch einen anderen Nutzen.
+Methoden mit Reflexivpronomen kann man auch außerhalb eines Methodenblocks wie eine ganz normale
+Funktion aufrufen. Dafür wird das Pronomen mit dem Namen der Klasse ersetzt:
+
+```
+// außerhalb des Methodenblocks
+begrüße die Person mit der Begrüßung "Yieepiee" // Yieepiee Lukas!
+```
+
+Wenn es bei dieser Art des Aufrufes eine Funktion gibt, die genauso heißt wie die Methode, dann
+wird diese vor der Methode bevorzugt.
+
+
+### Konvertierungen
+
+Für Konvertierungen gibt es in GermanSkript eine eigene Syntax. Hierfür schreibt man nach dem Ausdruck,
+der konvertiert werden soll das `als`-Schlüsselwort und dann den Typ, in den der Ausdruck konvertiert
+werden soll.
+
+```
+die Zahl ist 10
+schreibe die Zeile (die Zahl * die Zahl) als Zeichenfolge // 100
+```
+
+Für die Standardtypen sind einige Konvertierungen definiert. Wie z.B. eine Zahl als Zeichenfolge,
+oder eine Zeichenfolge als Boolean, jenachdem ob die Zeichenfolge leer ist oder nicht.
+
+Darüber hinaus ist es möglich für Klassen eigene Konvertierungen zu definieren:
+
+```
+die Person ist eine Person mit
+    dem VorNamen "Max",
+    dem NachNamen "Mustermann",
+    dem Alter 42
+
+
+als Zeichenfolge für Person:
+    gebe "#{mein Name} (#{mein Alter} Jahre alt)" zurück
+.
+
+// gibt "Max Mustermann (42 Jahre alt) aus
+schreibe die Zeile (die Person als Zeichenfolge)
+```
+
+### Importieren
+
+Man kann sein GermanSkript-Programm über mehrere Dateien schreiben.
+Hierfür gibt es die `importiere`-Anweisung. Es werden nur Definitionen importiert. 
+Also Funktions-, Methoden-, Klassen- und Konvertierungsdefinitionen.
+Das importierte Skript wird also nicht ausgeführt.
+
+*Programm.gm*
+```
+importiere "./Person.gm"
+
+eine Person ist eine Person mit
+    dem VorNamen "Max"
+    dem NachNamen "Mustermann"
+    dem Alter 42
+```
+
+*Person.gm*
+```
+Deklination Femininum Singular(Person) Plural(Personen)
+Deklination Maskulinum Singular(Name, Namens, Namen, Namen) Plural(Namen)
+Deklination Neutrum Singular(Alter, Alters, Alter, Alter) Plural(Alter)
+
+Nomen Person mit
+    der Zeichenfolge VorName,
+    der Zeichenfolge NachName,
+    einer Zahl Alter:
+
+    // weitere Eigenschaft
+    dieser Name ist "#{mein VorName} #{mein NachName}"
+    schreibe die Zeile "Die Person #{mein Name} (#{mein Alter} Jahre alt) wurde erstellt!"
+.
+```
+
+### Standardbibliothek
+Die [Standardbibliothek](./stdbib/stdbib.gm) enthält einige Funktionen und außerdem Methoden für Listen. 
+Da GermanSkript noch mitten in der Entwicklung ist, wird diese hier nicht genauer aufgeführt.
+
+Die bisher wichtigsten Funktionen in der Standardbibliothek sind das Schreiben in die Standardausgabe
+und das Lesen von der Standardeingabe.
+
+| Funktion | Beschreibung |
+| -------- | ------------ |
+| `schreibe die Zeichenfolge` | Schreibt eine Zeichenfolge in die Standardausgabe |
+| `schreibe die Zeile` | Schreibt eine ganz Zeile in die Standardausgabe |
+| `lese` | Liest eine ganze Zeile von der Standardeingabe. Gibt die Eingabe als Zeichenfolge zurück.
+
+## Syntax-Highligthing
+Syntax-Highlighting  wird über eine TextMate-Grammar
+[hier](./syntax_highlighting/syntaxes/germanskript.tmLanguage.json) unterstützt.
+
+Das Syntax-Highlighting wurde als VS-Code-Erweiterung erstellt.
+Um es für VS-Code zu nutzen, kann der Ordner `./syntax-highlighting` in `%USER-PROFILE%/.vscode/extensions`
+kopiert werden.
+Außerdem kann man das Syntax-Highlighting auch in IntelliJ über das TextMate-Plugin importieren.
+Bei anderen Editoren klappt es wahrscheinlich auch.
 
 ## Roadmap
 - weitere Sprachfeatures wie Module, Interfaces, Vererbung, ... (siehe [Iteration 3](./iterationen/iter_3/SPEC.md))
