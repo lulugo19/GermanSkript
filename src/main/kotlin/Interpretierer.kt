@@ -50,7 +50,7 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
     private val stapel = Stack<AufrufStapelElement>()
 
     fun top(): AufrufStapelElement = stapel.peek()
-    fun push(funktionsAufruf: AST.IAufruf, neueUmgebung: Umgebung<Wert>, objekt: Wert.Objekt? = null) {
+    fun push(funktionsAufruf: AST.IAufruf, neueUmgebung: Umgebung<Wert>, aufrufObjekt: Wert.Objekt? = null) {
       val objekt = when (funktionsAufruf) {
         is AST.Programm -> null
         is AST.Funktion -> when (funktionsAufruf.aufrufTyp) {
@@ -59,7 +59,7 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
           FunktionsAufrufTyp.METHODEN_BLOCK_AUFRUF -> top().umgebung.holeMethodenBlockObjekt()
           FunktionsAufrufTyp.METHODEN_OBJEKT_AUFRUF -> evaluiereAusdruck(funktionsAufruf.objekt!!.wert)
         }
-        is AST.Ausdruck.ObjektInstanziierung, is AST.Ausdruck.Konvertierung -> objekt
+        is AST.Ausdruck.ObjektInstanziierung, is AST.Ausdruck.Konvertierung -> aufrufObjekt
         else -> throw Exception("Unbehandelter Funktionsaufruftyp")
       } as Wert.Objekt?
       stapel.push(AufrufStapelElement(funktionsAufruf, objekt, neueUmgebung))
@@ -449,8 +449,8 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
     }
     return when (konvertierung.typ.typ!!) {
       is Typ.Zahl -> konvertiereZuZahl(konvertierung, wert)
-      is Typ.Boolean -> konvertiereZuBoolean(konvertierung, wert)
-      is Typ.Zeichenfolge -> konvertiereZuZeichenfolge(konvertierung, wert)
+      is Typ.Boolean -> konvertiereZuBoolean(wert)
+      is Typ.Zeichenfolge -> konvertiereZuZeichenfolge(wert)
       else -> throw Exception("Typprüfer sollte diesen Fall schon überprüfen!")
     }
   }
@@ -472,7 +472,7 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
     }
   }
 
-  private fun konvertiereZuZeichenfolge(konvertierung: AST.Ausdruck.Konvertierung, wert: Wert): Wert.Zeichenfolge {
+  private fun konvertiereZuZeichenfolge(wert: Wert): Wert.Zeichenfolge {
     return when (wert) {
       is Wert.Zeichenfolge -> wert
       is Wert.Boolean -> Wert.Zeichenfolge(if(wert.boolean) "wahr" else "falsch")
@@ -480,7 +480,7 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
     }
   }
 
-  private fun konvertiereZuBoolean(konvertierung: AST.Ausdruck.Konvertierung, wert: Wert): Wert.Boolean {
+  private fun konvertiereZuBoolean(wert: Wert): Wert.Boolean {
     return when (wert) {
       is Wert.Boolean -> wert
       is Wert.Zeichenfolge -> Wert.Boolean(wert.zeichenfolge.isNotEmpty())
@@ -492,6 +492,6 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
 }
 
 fun main() {
-  val interpreter = Interpretierer(File("./iterationen/iter_2/stdbib_test.gm"))
+  val interpreter = Interpretierer(File("./iterationen/iter_2/code.gm"))
   interpreter.interpretiere()
 }

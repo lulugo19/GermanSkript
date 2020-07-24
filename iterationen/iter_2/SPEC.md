@@ -186,7 +186,7 @@ Client: verbinde dich
     - beinhaltet das Element
     - füge das Element hinzu
     - lösche das Element am Index
-    - ein Feld Anzahl
+    - eine Eigenschaft `AnZahl`
 
 ## TODO
 -[x] Wörterbuch-Bug beheben (Lukas)

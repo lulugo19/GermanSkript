@@ -58,7 +58,7 @@ ein Zähler ist 0
 solange wahr:
     ein Zähler ist der Zähler plus 1
     wenn der Zähler > 10: abbrechen.
-    wenn der Zähler % 2 gleich 1: fortfahren.
+    wenn der Zähler mod 2 gleich 1: fortfahren.
     schreibe die Zahl (der Zähler)
 .
 

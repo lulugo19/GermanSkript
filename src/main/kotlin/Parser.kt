@@ -400,8 +400,8 @@ private sealed class SubParser<T: AST>() {
     }
 
     // pratt parsing: https://matklad.github.io/2020/04/13/simple-but-powerful-pratt-parsing.html
-    private fun parseBinärenAusdruck(minBindungskraft: Double, mitArtikel: Boolean, links: AST.Ausdruck? = null) : AST.Ausdruck {
-      var links = links?: parseEinzelnerAusdruck(mitArtikel)
+    private fun parseBinärenAusdruck(minBindungskraft: Double, mitArtikel: Boolean, linkerA: AST.Ausdruck? = null) : AST.Ausdruck {
+      var links = linkerA?: parseEinzelnerAusdruck(mitArtikel)
 
       loop@ while (true) {
         val operator = when (val tokenTyp = peekType()) {
@@ -415,6 +415,11 @@ private sealed class SubParser<T: AST>() {
           break
         }
         val operatorToken = expect<TokenTyp.OPERATOR>("Operator")
+
+        // Hinter den Operatoren 'kleiner' und 'größer' kann optional das Wort 'als' kommen
+        if ((operator == Operator.KLEINER || operator == Operator.GRÖßER) && peek().wert == "als") {
+          next()
+        }
 
         // Das String-Interpolations Token ist nur dafür da, dass innerhalb einer String Interpolation wieder der Nominativ verwendet wird
         val inStringInterpolation = parseOptional<TokenTyp.STRING_INTERPOLATION>() != null

@@ -313,7 +313,7 @@ In die eckigen Klammern kommen dann die Elemente der Liste.
 
 ```
 die Zahlen sind einige Zahlen[2, 3, 5, 7, 11, 13, 17]
-schreibe die Zeile (die Anzahl der Zahlen) // 7
+schreibe die Zeile (die AnZahl der Zahlen) // 7
 ```
 
 Um auf ein bestimmtes Element über einen nullbasierten Index zuzugreifen, wird
@@ -324,7 +324,10 @@ schreibe die Zahl[0] // 2
 schreibe die Zahl[1] // 3
 
 eine Zahl ist 2
-solange die Zahl kleiner der Anzahl der Zahlen ist:
+solange die Zahl kleiner als die AnZahl der Zahlen ist:
+    schreibe die Zahl
+    eine Zahl ist die Zahl minus 1
+.
 ```
 
 

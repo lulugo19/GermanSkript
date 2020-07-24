@@ -2,7 +2,6 @@ Deklination Femininum Singular(Zahl) Plural(Zahlen)
 Deklination Femininum Singular(Zeichenfolge) Plural(Zeichenfolgen)
 Deklination Neutrum Singular(Boolean) Plural(Booleans)
 Deklination Femininum Singular(Liste) Plural(Listen)
-Deklination Femininum Singular(Anzahl) Plural(Anzahlen)
 Deklination Femininum Singular(Zeile) Plural(Zeilen)
 Deklination Femininum Singular(Länge) Plural(Längen)
 Deklination Maskulinum Singular(Typ, Typs, Typ, Typ) Plural(Typen)
@@ -53,7 +52,7 @@ Verb(Zeichenfolgen) trenne die Zeichenfolge zwischen der Zeichenfolge Separator:
 
 // Listen Definition und Methoden
 Nomen Liste:
-    jene Anzahl ist 0
+    jene AnZahl ist 0
 .
 
 Verb(Boolean) für Liste beinhaltet den Typ: intern.

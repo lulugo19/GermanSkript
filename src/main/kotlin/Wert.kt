@@ -88,7 +88,7 @@ sealed class Wert {
       }
 
       override fun holeEigenschaft(eigenschaftsName: AST.Nomen): Wert {
-        if (eigenschaftsName.nominativ == "Anzahl") {
+        if (eigenschaftsName.nominativ == "AnZahl") {
           return Zahl(elemente.size.toDouble())
         }
         throw Exception("Die Eigenschaft ${eigenschaftsName.nominativ} ist für den Typen Liste nicht definiert.")

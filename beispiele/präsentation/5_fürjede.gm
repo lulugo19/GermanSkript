@@ -20,7 +20,7 @@ für jede Zahl:
     eine Summe ist die Summe + die Zahl
 .
 
-der Durchschnitt ist die Summe durch die Anzahl der Zahlen
+der Durchschnitt ist die Summe durch die AnZahl der Zahlen
 
 schreibe die Zeile "Die Summe beträgt: #{die Summe}"
 schreibe die Zeile "Der Durchschnitt beträgt: #{der Durchschnitt}"
