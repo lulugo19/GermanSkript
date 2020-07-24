@@ -24,6 +24,7 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
 
   private fun ausdruckMussTypSein(ausdruck: AST.Ausdruck, erwarteterTyp: Typ): Typ {
     val ausdruckTyp = evaluiereAusdruck(ausdruck)
+    @Suppress("NAME_SHADOWING")
     var erwarteterTyp = erwarteterTyp
     if (erwarteterTyp is Typ.Generic) {
       // TODO: Wenn das Methodenblock-Objekt nicht existiert oder keine Liste (kein generischer Typ ist) müssen wir irgendetwas machen
@@ -70,7 +71,7 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
     if (deklaration.istEigenschaftsNeuZuweisung) {
       val klasse = zuÜberprüfendeKlasse!!
       val eigenschaft = holeEigenschaftAusKlasse(deklaration.name, klasse)
-      if (eigenschaft.name.unveränderlich) {
+      if (eigenschaft.typKnoten.name.unveränderlich) {
         throw GermanSkriptFehler.EigenschaftsFehler.EigenschaftUnveränderlich(deklaration.name.bezeichner.toUntyped())
       }
       val eigenschaftTyp = eigenschaft.typKnoten.typ!!
@@ -186,7 +187,7 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
     }
 
     if (funktionsAufruf.funktionsDefinition == null) {
-      throw GermanSkriptFehler.Undefiniert.Funktion(funktionsAufruf.verb.toUntyped(), funktionsAufruf)
+      throw undefiniertFehler!!
     }
     val funktionsDefinition = funktionsAufruf.funktionsDefinition!!
 
