@@ -466,7 +466,7 @@ Es können auch Methoden mit dem Reflexivpronomen `mich` als Objekt definiert we
 Diese spielen eine spezielle Rolle. Dazu kommen wir später.
 
 ```
-Deklination Duden(Begrüßung)
+Deklination Femininum Singular(Begrüßung) Plural(Begrüßungen)
 
 Verb für Person begrüße mich mit der Zeichenfolge Begrüßung:
     schreibe die Zeile "#{Begrüßung} #{mein VorName}!"

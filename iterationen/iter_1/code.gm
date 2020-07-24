@@ -73,11 +73,11 @@ für jede Zahl:
 
 // Listenindex
 schreibe den Bereich "Listen Index"
-schreibe die Zeichenfolge "Die erste Primzahl ist: "
+schreibe die Zeichenfolge "Die erste Zahl ist: "
 schreibe die Zahl[0]
-schreibe die Zeichenfolge "Die vierte Primzahl ist: "
+schreibe die Zeichenfolge "Die vierte Zahl ist: "
 schreibe die Zahl[die Zahl[0] + 1]
-schreibe die Zeichenfolge "Die fünfte Primzahl ist: "
+schreibe die Zeichenfolge "Die fünfte Zahl ist: "
 schreibe die Zahl[4]
 
 //Lese-Funktion

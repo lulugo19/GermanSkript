@@ -1,14 +1,28 @@
 Deklination Maskulinum Singular(Name, Namens, Namen, Namen) Plural(Namen)
 Deklination Neutrum Singular(Alter, Alters, Alter, Alter) Plural(Alter)
 Deklination Femininum Singular(Person) Plural(Personen)
+Deklination Femininum Singular(Begrüßung) Plural(Begrüßungen)
+
 
 Nomen Person mit
     der Zeichenfolge NachName,
     der Zeichenfolge VorName,
-    der Zahl Alter:.
+    einer Zahl Alter:
+
+    dieser Name ist "#{mein VorName} #{mein NachName}"
+.
+
+Verb für Person werde älter:
+    mein Alter ist mein Alter plus 1
+.
 
 Verb für Person stelle mich vor:
-    schreibe die Zeile "Mein Name ist #{mein VorName} #{mein NachName} und ich bin #{mein Alter} Jahre alt.".
+    schreibe die Zeile "Mein Name ist #{mein VorName} #{mein NachName} und ich bin #{mein Alter} Jahre alt."
+.
+
+Verb für Person begrüße mich mit der Zeichenfolge Begrüßung:
+    schreibe die Zeile "#{Begrüßung} #{mein VorName}!"
+.
 
 als Zeichenfolge für Person:
     gebe "#{mein VorName} #{mein NachName} (#{mein Alter} Jahre alt)" zurück
@@ -17,8 +31,9 @@ als Zeichenfolge für Person:
 die Person ist eine Person mit dem NachNamen "Mustermann", dem VorNamen "Max", dem Alter 24
 
 Person:
-    schreibe die Zeile dein NachName
-    stelle dich vor
+    schreibe die Zeile dein Name
+    begrüße die Person mit der Begrüßung "Hey"
 !
+
 stelle die Person vor
 schreibe die Zeile Person als Zeichenfolge
