@@ -79,9 +79,3 @@ schreibe die Zeichenfolge "Die vierte Zahl ist: "
 schreibe die Zahl[die Zahl[0] + 1]
 schreibe die Zeichenfolge "Die fünfte Zahl ist: "
 schreibe die Zahl[4]
-
-//Lese-Funktion
-schreibe den Bereich "Eingabe"
-schreibe die Zeichenfolge "Gebe deinen Namen ein: "
-der Name ist lese
-schreibe die Zeichenfolge "Dein Name ist " + den Namen

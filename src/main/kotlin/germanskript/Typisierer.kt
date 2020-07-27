@@ -1,4 +1,6 @@
-import util.SimpleLogger
+package germanskript
+
+import germanskript.util.SimpleLogger
 import java.io.File
 
 
@@ -11,7 +13,7 @@ sealed class Typ(val name: String) {
 
   object Zahl : Typ("Zahl") {
     override val definierteOperatoren: Map<Operator, Typ> = mapOf(
-          Operator.PLUS to  Zahl,
+          Operator.PLUS to Zahl,
           Operator.MINUS to Zahl,
           Operator.MAL to Zahl,
           Operator.GETEILT to Zahl,

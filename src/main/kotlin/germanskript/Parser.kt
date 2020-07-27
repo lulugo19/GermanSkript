@@ -1,4 +1,6 @@
-import util.Peekable
+package germanskript
+
+import germanskript.util.Peekable
 import java.io.File
 import java.util.*
 
@@ -140,13 +142,13 @@ private sealed class SubParser<T: AST>() {
         is TokenTyp.VORNOMEN.POSSESSIV_PRONOMEN.MEIN -> {
           if (!hierarchyContainsAnyNode(ASTKnotenID.METHODEN_DEFINITION, ASTKnotenID.KLASSEN_DEFINITION)) {
             throw GermanSkriptFehler.SyntaxFehler.ParseFehler(vornomen.toUntyped(), null,
-              "Das Possessivpronomen '${vornomen.wert}' darf nur in Methodendefinitionen oder in Konstruktoren verwendet werden.")
+                "Das Possessivpronomen '${vornomen.wert}' darf nur in Methodendefinitionen oder in Konstruktoren verwendet werden.")
           }
         }
         is TokenTyp.VORNOMEN.POSSESSIV_PRONOMEN.DEIN -> {
           if (!hierarchyContainsNode(ASTKnotenID.METHODEN_BLOCK)) {
             throw GermanSkriptFehler.SyntaxFehler.ParseFehler(vornomen.toUntyped(), null,
-              "Das Possessivpronomen '${vornomen.wert}' darf nur in Methodenblöcken verwendet werden.")
+                "Das Possessivpronomen '${vornomen.wert}' darf nur in Methodenblöcken verwendet werden.")
           }
         }
       }
@@ -263,7 +265,7 @@ private sealed class SubParser<T: AST>() {
       TokenTyp.VORNOMEN.POSSESSIV_PRONOMEN.MEIN -> AST.Ausdruck.SelbstEigenschaftsZugriff(nomen)
       TokenTyp.VORNOMEN.POSSESSIV_PRONOMEN.DEIN -> AST.Ausdruck.MethodenBlockEigenschaftsZugriff(nomen)
       is TokenTyp.VORNOMEN.DEMONSTRATIV_PRONOMEN -> throw GermanSkriptFehler.SyntaxFehler.ParseFehler(nomen.vornomen.toUntyped(), null,
-        "Die Demonstrativpronomen 'diese' und 'jene' dürfen nicht in Ausdrücken verwendet werden.")
+          "Die Demonstrativpronomen 'diese' und 'jene' dürfen nicht in Ausdrücken verwendet werden.")
     }
 
     return when(peekType()){
@@ -297,7 +299,7 @@ private sealed class SubParser<T: AST>() {
   }
 
   protected fun<T: AST> parseBereich(erwartetesEndToken: TokenTyp = TokenTyp.PUNKT, parser: () -> T): T {
-    expect<TokenTyp.DOPPELPUNKT>(":")
+    expect<TokenTyp.DOPPELPUNKT>("':'")
     val result = parser()
     überspringeLeereZeilen()
     val endToken = next()
@@ -421,7 +423,7 @@ private sealed class SubParser<T: AST>() {
           next()
         }
 
-        // Das String-Interpolations Token ist nur dafür da, dass innerhalb einer String Interpolation wieder der Nominativ verwendet wird
+        // Das String-Interpolations germanskript.Token ist nur dafür da, dass innerhalb einer String Interpolation wieder der Nominativ verwendet wird
         val inStringInterpolation = parseOptional<TokenTyp.STRING_INTERPOLATION>() != null
         überspringeLeereZeilen()
 
@@ -458,7 +460,7 @@ private sealed class SubParser<T: AST>() {
         is TokenTyp.REFERENZ.DU -> {
           if (!hierarchyContainsNode(ASTKnotenID.METHODEN_BLOCK)) {
             throw GermanSkriptFehler.SyntaxFehler.ParseFehler(next(), null,
-              "Die Methodenblockreferenz 'Du' darf nur in einem Methodenblock vorkommen.")
+                "Die Methodenblockreferenz 'Du' darf nur in einem Methodenblock vorkommen.")
           }
           AST.Ausdruck.MethodenBlockReferenz(next().toTyped())
         }

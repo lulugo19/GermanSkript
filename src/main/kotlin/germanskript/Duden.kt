@@ -1,9 +1,11 @@
+package germanskript
+
 import java.io.InputStreamReader
 import java.net.HttpURLConnection
 import java.net.URL
 import java.util.*
 import kotlinx.coroutines.*
-import util.SimpleLogger
+import germanskript.util.SimpleLogger
 import java.lang.Exception
 import kotlin.math.absoluteValue
 import kotlin.system.measureTimeMillis
@@ -76,7 +78,7 @@ object Duden {
       var match = regexTableForm.find(htmlDocument)
 
       val deklination = if (match != null) {
-        val values = match.groupValues.map(::normalisiere)
+        val values = match.groupValues.map(Duden::normalisiere)
         val genus = when (values[1]) {
           "der" -> Genus.MASKULINUM
           "die" -> Genus.FEMININUM
@@ -86,7 +88,7 @@ object Duden {
       } else {
         match = regexShortForm.find(htmlDocument)
         if (match != null) {
-          val values = match.groupValues.map(::normalisiere)
+          val values = match.groupValues.map(Duden::normalisiere)
           val genus = when (values[1]) {
             "der" -> Genus.MASKULINUM
             "die" -> Genus.FEMININUM
@@ -172,5 +174,5 @@ fun main() = runBlocking<Unit> {
   "Kind", "Person", "Student", "Glocke", "Schwester", "Bruder", "Schwein", "Schaf", "Wacht", "Mann", "Rechteck")
 
   asynchroneDudenAnfragen(worte)
-  //synchroneDudenAnfragen(worte)
+  //germanskript.synchroneDudenAnfragen(worte)
 }

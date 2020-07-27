@@ -1,3 +1,5 @@
+package germanskript
+
 sealed class GermanSkriptFehler(private val fehlerName: String, val token: Token): Exception() {
   abstract val nachricht: String
 
@@ -23,7 +25,7 @@ sealed class GermanSkriptFehler(private val fehlerName: String, val token: Token
     class ParseFehler(token: Token, private val erwartet: String? = null, private val details: String? = null): SyntaxFehler(token) {
       override val nachricht: String
         get() {
-          var msg = "Unerwartetes Token '${token.wert}'."
+          var msg = "Unerwartetes germanskript.Token '${token.wert}'."
           if (erwartet != null) {
             msg += " $erwartet Erwartet."
           }
@@ -197,7 +199,7 @@ sealed class GermanSkriptFehler(private val fehlerName: String, val token: Token
 
     class ObjektErwartet(token: Token): TypFehler(token) {
       override val nachricht: String
-        get() = "Es wird ein Objekt erwartet und kein primitiver Wert (Zahl, Zeichenfolge, Boolean)."
+        get() = "Es wird ein Objekt erwartet und kein primitiver germanskript.Wert (Zahl, Zeichenfolge, Boolean)."
     }
   }
 

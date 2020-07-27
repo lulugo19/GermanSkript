@@ -1,3 +1,5 @@
+package germanskript
+
 import java.text.*
 import java.math.*
 import kotlin.math.*
@@ -50,7 +52,7 @@ sealed class Wert {
     override fun hashCode(): Int = this.zahl.hashCode()
 
     operator fun rem(other: Zahl) = Zahl(this.zahl % other.zahl)
-    fun pow(other: Zahl): Zahl   = Zahl(this.zahl.pow(other.zahl))
+    fun pow(other: Zahl): Zahl = Zahl(this.zahl.pow(other.zahl))
     fun toInt() = zahl.toInt()
     fun toDouble() = zahl
     fun round() = zahl.roundToInt()

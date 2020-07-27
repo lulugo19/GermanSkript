@@ -1,3 +1,5 @@
+package germanskript
+
 import java.util.*
 import kotlin.collections.HashMap
 
@@ -38,7 +40,7 @@ sealed class AST {
     }
   }
 
-  // visit implementation for all the leaf nodes
+  // germanskript.visit implementation for all the leaf nodes
   fun visit(onVisit: (AST) -> Boolean) {
     if (onVisit(this)) {
       for (child in children) {
@@ -166,14 +168,14 @@ sealed class AST {
     )
     sealed class FunktionOderMethode(): Definition(){
       data class Funktion(
-              val rückgabeTyp: TypKnoten?,
-              val name: TypedToken<TokenTyp.BEZEICHNER_KLEIN>,
-              val objekt: TypUndName?,
-              val präpositionsParameter: List<PräpositionsParameter>,
-              val suffix: TypedToken<TokenTyp.BEZEICHNER_KLEIN>?,
-              val sätze: List<Satz>,
-              var vollerName: String? = null
-      ):FunktionOderMethode() {
+          val rückgabeTyp: TypKnoten?,
+          val name: TypedToken<TokenTyp.BEZEICHNER_KLEIN>,
+          val objekt: TypUndName?,
+          val präpositionsParameter: List<PräpositionsParameter>,
+          val suffix: TypedToken<TokenTyp.BEZEICHNER_KLEIN>?,
+          val sätze: List<Satz>,
+          var vollerName: String? = null
+      ): FunktionOderMethode() {
 
         private val _parameter: MutableList<TypUndName> = mutableListOf()
         val parameter: List<TypUndName> = _parameter
@@ -368,7 +370,7 @@ sealed class AST {
     data class Konvertierung(
         val ausdruck: Ausdruck,
         val typ: TypKnoten
-    ):Ausdruck(), IAufruf {
+    ): Ausdruck(), IAufruf {
       override val token = typ.name.bezeichner.toUntyped()
       override val vollerName = "als ${typ.name}"
     }

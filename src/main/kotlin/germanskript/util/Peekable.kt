@@ -1,4 +1,4 @@
-package util
+package germanskript.util
 
 import java.util.*
 

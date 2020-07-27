@@ -1,3 +1,6 @@
+import germanskript.GermanSkriptFehler
+import germanskript.Interpretierer
+
 import java.io.File
 
 fun main(args: Array<String>) {

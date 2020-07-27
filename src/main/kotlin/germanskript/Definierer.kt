@@ -1,3 +1,5 @@
+package germanskript
+
 import java.io.File
 
 class Definierer(startDatei: File): PipelineKomponente(startDatei) {

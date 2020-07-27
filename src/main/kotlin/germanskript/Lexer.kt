@@ -1,4 +1,6 @@
-import util.Peekable
+package germanskript
+
+import germanskript.util.Peekable
 import java.io.File
 import java.util.*
 
@@ -64,7 +66,7 @@ data class Token(val typ: TokenTyp, var wert: String, val dateiPfad: String, val
     fun <T: TokenTyp> toTyped() = TypedToken<T>(typ as T, wert, dateiPfad, anfang, ende)
 
     open class Position(val zeile: Int, val spalte: Int) {
-        object Ende: Token.Position(-1, -1)
+        object Ende: Position(-1, -1)
 
         override fun toString(): String {
             return "($zeile, $spalte)"
@@ -171,7 +173,7 @@ sealed class TokenTyp(val anzeigeName: String) {
     object NEUE_ZEILE: TokenTyp("neue Zeile")
     object EOF: TokenTyp("'EOF'")
     data class OPERATOR(val operator: Operator): TokenTyp("Operator")
-    // imaginäres Token
+    // imaginäres germanskript.Token
     object STRING_INTERPOLATION: TokenTyp("String-Interpolation")
 
     // Identifier
@@ -466,7 +468,7 @@ class Lexer(startDatei: File): PipelineKomponente(startDatei) {
               SYMBOL_MAPPING.getValue(symbolString[0])
           }
           else -> {
-              TokenTyp.UNDEFINIERT
+            TokenTyp.UNDEFINIERT
           }
         }
         val endPos = currentTokenPos
@@ -556,7 +558,7 @@ class Lexer(startDatei: File): PipelineKomponente(startDatei) {
         // String Interpolation
         yield(Token(
             TokenTyp.ZEICHENFOLGE(Wert.Zeichenfolge(zeichenfolge)),
-            '"' + zeichenfolge + '"' ,currentFile,  startPosition, currentTokenPos))
+            '"' + zeichenfolge + '"', currentFile, startPosition, currentTokenPos))
         next() // #
         next() // {
         yield(Token(TokenTyp.OPERATOR(Operator.PLUS), "+", currentFile, currentTokenPos, currentTokenPos))

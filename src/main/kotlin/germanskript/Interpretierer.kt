@@ -1,6 +1,9 @@
+package germanskript
+
 import java.io.File
 import java.text.ParseException
 import java.util.*
+import kotlin.math.*
 import kotlin.random.Random
 
 class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
@@ -218,7 +221,7 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
   }
 
   override fun evaluiereListe(ausdruck: AST.Ausdruck.Liste): Wert {
-    return Wert.Objekt.Liste(listenKlassenDefinition , ausdruck.elemente.map(::evaluiereAusdruck).toMutableList())
+    return Wert.Objekt.Liste(listenKlassenDefinition, ausdruck.elemente.map(::evaluiereAusdruck).toMutableList())
   }
 
   override fun evaluiereObjektInstanziierung(instanziierung: AST.Ausdruck.ObjektInstanziierung): Wert {
@@ -266,7 +269,7 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
       is Wert.Zahl -> {
         if ((rechts as Wert.Zahl).isZero() && operator == Operator.GETEILT) {
           throw GermanSkriptFehler.LaufzeitFehler(holeErstesTokenVonAusdruck(ausdruck.rechts), aufrufStapel.toString(),
-            "Division durch 0. Es kann nicht durch 0 dividiert werden.")
+              "Division durch 0. Es kann nicht durch 0 dividiert werden.")
         }
         zahlOperation(operator, links, rechts)
       }
@@ -334,7 +337,7 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
     val index = (evaluiereAusdruck(listenElement.index) as Wert.Zahl).toInt()
     if (index >= liste.elemente.size) {
       throw GermanSkriptFehler.LaufzeitFehler(holeErstesTokenVonAusdruck(listenElement.index),
-        aufrufStapel.toString(),"Index außerhalb des Bereichs. Der Index ist $index, doch die Länge der Liste ist ${liste.elemente.size}.\n")
+          aufrufStapel.toString(), "Index außerhalb des Bereichs. Der Index ist $index, doch die Länge der Liste ist ${liste.elemente.size}.\n")
     }
     return liste.elemente[index]
   }
@@ -363,32 +366,32 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
 
       "runde die Zahl" to {
         val zahl = umgebung.leseVariable("Zahl")!!.wert as Wert.Zahl
-        rückgabeWert = Wert.Zahl(kotlin.math.round(zahl.zahl))
+        rückgabeWert = Wert.Zahl(round(zahl.zahl))
       },
 
       "runde die Zahl ab" to {
         val zahl = umgebung.leseVariable("Zahl")!!.wert as Wert.Zahl
-        rückgabeWert = Wert.Zahl(kotlin.math.floor(zahl.zahl))
+        rückgabeWert = Wert.Zahl(floor(zahl.zahl))
       },
 
       "runde die Zahl auf" to {
         val zahl = umgebung.leseVariable("Zahl")!!.wert as Wert.Zahl
-        rückgabeWert = Wert.Zahl(kotlin.math.ceil(zahl.zahl))
+        rückgabeWert = Wert.Zahl(ceil(zahl.zahl))
       },
 
       "sinus von der Zahl" to {
         val zahl = umgebung.leseVariable("Zahl")!!.wert as Wert.Zahl
-        rückgabeWert = Wert.Zahl(kotlin.math.sin(zahl.zahl))
+        rückgabeWert = Wert.Zahl(sin(zahl.zahl))
       },
 
       "cosinus von der Zahl" to {
         val zahl = umgebung.leseVariable("Zahl")!!.wert as Wert.Zahl
-        rückgabeWert = Wert.Zahl(kotlin.math.cos(zahl.zahl))
+        rückgabeWert = Wert.Zahl(cos(zahl.zahl))
       },
 
       "tangens von der Zahl" to {
         val zahl = umgebung.leseVariable("Zahl")!!.wert as Wert.Zahl
-        rückgabeWert = Wert.Zahl(kotlin.math.tan(zahl.zahl))
+        rückgabeWert = Wert.Zahl(tan(zahl.zahl))
       },
 
       "randomisiere" to {
@@ -475,7 +478,7 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
   private fun konvertiereZuZeichenfolge(wert: Wert): Wert.Zeichenfolge {
     return when (wert) {
       is Wert.Zeichenfolge -> wert
-      is Wert.Boolean -> Wert.Zeichenfolge(if(wert.boolean) "wahr" else "falsch")
+      is Wert.Boolean -> Wert.Zeichenfolge(if (wert.boolean) "wahr" else "falsch")
       else -> Wert.Zeichenfolge(wert.toString())
     }
   }
@@ -492,6 +495,6 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
 }
 
 fun main() {
-  val interpreter = Interpretierer(File("./iterationen/iter_2/code.gm"))
+  val interpreter = Interpretierer(File("./iterationen/iter_1/code.gm"))
   interpreter.interpretiere()
 }

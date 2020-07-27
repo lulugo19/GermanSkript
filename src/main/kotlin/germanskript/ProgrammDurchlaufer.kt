@@ -1,3 +1,5 @@
+package germanskript
+
 import java.io.File
 
 abstract  class ProgrammDurchlaufer<T>(startDatei: File): PipelineKomponente(startDatei ) {

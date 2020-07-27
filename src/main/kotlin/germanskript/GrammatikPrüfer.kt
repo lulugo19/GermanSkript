@@ -1,4 +1,6 @@
-import util.SimpleLogger
+package germanskript
+
+import germanskript.util.SimpleLogger
 import java.io.File
 import java.util.*
 
@@ -34,7 +36,7 @@ class GrammatikPrüfer(startDatei: File): PipelineKomponente(startDatei) {
         is AST.Satz.MethodenBlock -> prüfeNomen(knoten.name, EnumSet.of(Kasus.NOMINATIV), Numerus.BEIDE)
         is AST.Ausdruck -> return@visit false
       }
-      // visit everything
+      // germanskript.visit everything
       true
     }
   }

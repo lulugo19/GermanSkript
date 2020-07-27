@@ -1,5 +1,7 @@
+package germanskript
+
 import java.io.File
-import util.SimpleLogger
+import germanskript.util.SimpleLogger
 
 class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
   val typisierer = Typisierer(startDatei)
@@ -18,7 +20,7 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
     definierer.klassenDefinitionen.forEach(::prüfeKlasse)
     definierer.funktionsDefinitionen.forEach(::prüfeFunktion)
 
-    // neue Umgebung
+    // neue germanskript.Umgebung
     durchlaufeAufruf(ast.programmStart!!, ast.sätze, Umgebung(), true,null)
   }
 
@@ -90,7 +92,7 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
       }
       else {
         // hier müssen wir überprüfen ob der Typ der Variable, die überschrieben werden sollen gleich
-        // dem neuen Wert ist
+        // dem neuen germanskript.Wert ist
         val vorherigerTyp = umgebung.leseVariable(deklaration.name.nominativ)
         val wert = if (vorherigerTyp != null) {
           if (vorherigerTyp.name.unveränderlich) {

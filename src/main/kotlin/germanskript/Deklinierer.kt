@@ -1,3 +1,5 @@
+package germanskript
+
 import kotlinx.coroutines.*
 import java.io.File
 import java.lang.Integer.min
@@ -103,7 +105,7 @@ class Deklinierer(startDatei: File): PipelineKomponente(startDatei) {
         })
       }
 
-      // only visit on global level
+      // only germanskript.visit on global level
       return@visit false
     }
 
@@ -249,9 +251,9 @@ fun wörterBuchTest() {
   println(wörterbuch.wortVergleichBerücksichtigeUmlaute("Bäume", "Baumhaus"))
 
   wörterbuch.fügeDeklinationHinzu(Deklination(Genus.MASKULINUM, arrayOf("Keks", " Keks", "Keks", "Keks"), arrayOf("Kekse", "Kekse", "Keksen", "Kekse")))
-  wörterbuch.fügeDeklinationHinzu(Deklination(Genus.MASKULINUM, arrayOf("Dose", "Dose", "Dose", "Dose"), arrayOf( "Dosen", "Dosen", "Dosen", "Dosen")))
+  wörterbuch.fügeDeklinationHinzu(Deklination(Genus.MASKULINUM, arrayOf("Dose", "Dose", "Dose", "Dose"), arrayOf("Dosen", "Dosen", "Dosen", "Dosen")))
   wörterbuch.fügeDeklinationHinzu(Deklination(Genus.MASKULINUM, arrayOf("Baum", "Baums", "Baum", "Baum"), arrayOf("Bäume", "Bäume", "Bäumen", "Bäumen")))
-  wörterbuch.fügeDeklinationHinzu(Deklination(Genus.MASKULINUM, arrayOf("Uhr", "Uhr", "Uhr", "Uhr"),arrayOf("Uhren", "Uhren", "Uhren", "Uhren" )))
+  wörterbuch.fügeDeklinationHinzu(Deklination(Genus.MASKULINUM, arrayOf("Uhr", "Uhr", "Uhr", "Uhr"), arrayOf("Uhren", "Uhren", "Uhren", "Uhren")))
   wörterbuch.fügeDeklinationHinzu(Deklination(Genus.MASKULINUM, arrayOf("Baumhaus", "Baumhauses", "Baumhaus", "Baumhaus"), arrayOf("Baumhäuser", "Baumhäuser", "Baumhäusern", "Baumhäuser")))
 
   wörterbuch.print()
@@ -264,7 +266,7 @@ fun wörterBuchTest() {
 }
 
 fun main() {
-  // wörterBuchTest()
+  // germanskript.wörterBuchTest()
 
   val deklanierer = Deklinierer(File("./iterationen/iter_2/code.gms"))
   deklanierer.deklaniere()

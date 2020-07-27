@@ -1,3 +1,5 @@
+package germanskript
+
 import java.util.*
 
 val präpositionsFälle = mapOf<String, EnumSet<Kasus>>(
