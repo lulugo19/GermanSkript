@@ -27,7 +27,7 @@ teste die Zahl 12
 schreibe den Bereich "Fakultät"
 Verb(Zahl) fakultät von der Zahl:
     wenn die Zahl gleich 0 ist: gebe 1 zurück.
-    sonst: gebe die Zahl * (fakultät von der Zahl (die Zahl -1)) zurück.
+    sonst: gebe die Zahl * (fakultät von der Zahl -1) zurück.
 .
 
 schreibe die Zeichenfolge "Die Fakultät von der Zahl 5 ist: "
@@ -57,8 +57,8 @@ schreibe die Zeile "Gebe nur die geraden Zahlen von 1 bis 10 aus."
 ein Zähler ist 0
 solange wahr:
     ein Zähler ist der Zähler plus 1
-    wenn der Zähler > 10: abbrechen.
-    wenn der Zähler mod 2 gleich 1: fortfahren.
+    wenn der Zähler > 10 ist: abbrechen.
+    wenn der Zähler mod 2 gleich 1 ist: fortfahren.
     schreibe die Zahl (der Zähler)
 .
 

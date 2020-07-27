@@ -426,8 +426,8 @@ class Lexer(startDatei: File): PipelineKomponente(startDatei) {
                     continue
                 }
                 yieldAll(when {
+                    zeichen.isDigit() || zeichen == '-' && peek(1)?.isDigit() == true -> zahl().also { kannWortLesen = false }
                     SYMBOL_MAPPING.containsKey(zeichen) -> symbol().also { kannWortLesen = true }
-                    zeichen.isDigit() -> zahl().also { kannWortLesen = false }
                     zeichen == '"' -> zeichenfolge(false).also { kannWortLesen = false }
                     kannWortLesen && zeichen.isLetter() -> wort().also { kannWortLesen = false }
                     zeichen == '}'&& inStringInterpolation -> beendeStringInterpolation()
@@ -482,6 +482,9 @@ class Lexer(startDatei: File): PipelineKomponente(startDatei) {
     private fun zahl(): Sequence<Token> = sequence {
         val startPos = currentTokenPos
         var zahlenString = ""
+        if (peek() == '-') {
+            zahlenString += next()
+        }
         var hinternKomma = false
         while (peek() != null) {
             val zeichen = peek()!!

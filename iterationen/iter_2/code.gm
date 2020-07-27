@@ -110,7 +110,7 @@ schreibe die Zeile "Die Summe ist: " + die Summe als Zeichenfolge
 schreibe den Bereich "Variablendeklarationen"
 Deklination Femininum Singular(Variable) Plural(Variablen)
 eine Variable ist "Erste Variable"
-wenn wahr:
+wenn:
     schreibe die Zeile Variable // Erste Variable
     eine Variable ist "Zweite Variable"
     schreibe die Zeile Variable // Zweite Variable
