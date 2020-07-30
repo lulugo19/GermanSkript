@@ -121,6 +121,7 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
       if (methodenBlockObjekt.klassenDefinition.methoden.containsKey(funktionsAufruf.vollerName!!)) {
         val methodenDefinition = methodenBlockObjekt.klassenDefinition.methoden.getValue(funktionsAufruf.vollerName!!).funktion
         funktionsAufruf.funktionsDefinition = methodenDefinition
+        funktionsAufruf.vollerName = "für ${methodenBlockObjekt.klassenDefinition.typ.name.bezeichner.wert}: ${funktionsAufruf.vollerName}"
         funktionsAufruf.aufrufTyp = FunktionsAufrufTyp.METHODEN_BLOCK_AUFRUF
       }
       else if (methodenBlockObjekt is Typ.KlassenTyp.Liste && funktionsAufruf.objekt != null) {
@@ -129,7 +130,7 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
         val typWort = typDeklination.getForm(funktionsAufruf.objekt.name.fälle.first(), funktionsAufruf.objekt.name.numerus!!)
         val methodenName = definierer.holeVollenNamenVonFunktionsAufruf(funktionsAufruf, "$artikel $typWort")
         if (methodenBlockObjekt.klassenDefinition.methoden.containsKey(methodenName)) {
-          funktionsAufruf.vollerName = methodenName
+          funktionsAufruf.vollerName = "für Liste: $methodenName"
           funktionsAufruf.funktionsDefinition = methodenBlockObjekt.klassenDefinition.methoden.getValue(methodenName).funktion
           funktionsAufruf.aufrufTyp = FunktionsAufrufTyp.METHODEN_BLOCK_AUFRUF
         }
@@ -148,6 +149,7 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
         if (klasse.methoden.containsKey(funktionsAufruf.vollerName!!)) {
           funktionsAufruf.funktionsDefinition = klasse.methoden.getValue(funktionsAufruf.vollerName!!).funktion
           funktionsAufruf.aufrufTyp = FunktionsAufrufTyp.METHODEN_SELBST_AUFRUF
+          funktionsAufruf.vollerName = "für ${klasse.typ.name.bezeichner.wert}: ${funktionsAufruf.vollerName}"
         } else if (funktionsAufruf.reflexivPronomen != null && funktionsAufruf.reflexivPronomen.typ == TokenTyp.REFLEXIV_PRONOMEN.MICH) {
           throw  GermanSkriptFehler.Undefiniert.Methode(funktionsAufruf.verb.toUntyped(), funktionsAufruf, klasse.typ.name.nominativ)
         }
@@ -181,7 +183,7 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
         }
         val methodenName = definierer.holeVollenNamenVonFunktionsAufruf(funktionsAufruf, reflexivPronomen)
         if (methoden.containsKey(methodenName)) {
-          funktionsAufruf.vollerName = methodenName
+          funktionsAufruf.vollerName = "für ${klassenTyp.name.bezeichner}: ${methodenName}"
           funktionsAufruf.funktionsDefinition = methoden.getValue(methodenName).funktion
           funktionsAufruf.aufrufTyp = FunktionsAufrufTyp.METHODEN_OBJEKT_AUFRUF
         }

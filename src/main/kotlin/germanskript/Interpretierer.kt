@@ -421,13 +421,13 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
             .map { Wert.Zeichenfolge(it) }.toMutableList())
       },
 
-      "beinhaltet den Typ" to {
+      "für Liste: beinhaltet den Typ" to {
         val objekt = aufrufStapel.top().objekt!! as Wert.Objekt.Liste
         val element = umgebung.leseVariable("Typ")!!.wert
         rückgabeWert = Wert.Boolean(objekt.elemente.contains(element))
       },
 
-      "füge den Typ hinzu" to {
+      "für Liste: füge den Typ hinzu" to {
         val objekt = aufrufStapel.top().objekt!! as Wert.Objekt.Liste
         val element = umgebung.leseVariable("Typ")!!.wert
         objekt.elemente.add(element)
@@ -435,7 +435,7 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
         Unit
       },
 
-      "entferne an dem Index" to {
+      "für Liste: entferne an dem Index" to {
         val objekt = aufrufStapel.top().objekt!! as Wert.Objekt.Liste
         val index = umgebung.leseVariable("Index")!!.wert as Wert.Zahl
         objekt.elemente.removeAt(index.toInt())
@@ -495,6 +495,6 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
 }
 
 fun main() {
-  val interpreter = Interpretierer(File("./iterationen/iter_1/code.gm"))
+  val interpreter = Interpretierer(File("./iterationen/iter_2/code.gm"))
   interpreter.interpretiere()
 }

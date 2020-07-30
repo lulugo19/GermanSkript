@@ -27,7 +27,7 @@ teste die Zahl 12
 schreibe den Bereich "Fakultät"
 Verb(Zahl) fakultät von der Zahl:
     wenn die Zahl gleich 0 ist: gebe 1 zurück.
-    sonst: gebe die Zahl * (fakultät von der Zahl -1) zurück.
+    sonst: gebe die Zahl * (fakultät von der Zahl - 1) zurück.
 .
 
 schreibe die Zeichenfolge "Die Fakultät von der Zahl 5 ist: "
