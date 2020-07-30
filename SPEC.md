@@ -503,6 +503,8 @@ Konstanten sind unveränderbar und können nur einmal zugewiesen werden. Nur Zah
 
 Beispiel: `Konstante PI ist 3.14159265359`
 
+### Fehler-Handling
+
 ### Alias
 
 `Alias BezeichnerP ist Typ`

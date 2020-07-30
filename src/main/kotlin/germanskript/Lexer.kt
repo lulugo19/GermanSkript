@@ -700,6 +700,6 @@ class Lexer(startDatei: File): PipelineKomponente(startDatei) {
 
 
 fun main() {
-    Lexer(File("./iterationen/iter_2/code.gms"))
+    Lexer(File("./iterationen/iter_2/code.gm"))
         .tokeniziere().takeWhile { token -> token.typ != TokenTyp.EOF }.forEach { println(it) }
 }

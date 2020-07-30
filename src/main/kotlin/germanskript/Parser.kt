@@ -6,6 +6,7 @@ import java.util.*
 
 enum class ASTKnotenID {
   PROGRAMM,
+  MODUL,
   AUSDRUCK,
   VARIABLEN_DEKLARATION,
   FUNKTIONS_AUFRUF,
@@ -378,6 +379,7 @@ private sealed class SubParser<T: AST>() {
       val nextToken = peek()
       return when(nextToken.typ) {
         is TokenTyp.DEKLINATION -> subParse(Definition.DeklinationsDefinition)
+        is TokenTyp.MODUL -> subParse(Definition.Modul)
         is TokenTyp.NOMEN -> subParse(Definition.Klasse)
         is TokenTyp.VERB -> parseFunktionOderMethode()
         is TokenTyp.ALS -> subParse(Definition.Konvertierung)
@@ -585,11 +587,18 @@ private sealed class SubParser<T: AST>() {
   }
 
   sealed class Satz<T: AST.Satz>(): SubParser<T>() {
+    override fun bewacheKnoten() {
+      if (parentNodeId == ASTKnotenID.MODUL) {
+        throw GermanSkriptFehler.SyntaxFehler.ParseFehler(next(), null, "In einem Modul sind nur weitere Definitioen und keine Sätze erlaubt.")
+      }
+    }
+
     object Intern: Satz<AST.Satz.Intern>() {
       override val id: ASTKnotenID
         get() = ASTKnotenID.INTERN
 
       override fun bewacheKnoten() {
+        super.bewacheKnoten()
         if (!hierarchyContainsAnyNode(ASTKnotenID.FUNKTIONS_DEFINITION, ASTKnotenID.METHODEN_DEFINITION)) {
           throw GermanSkriptFehler.SyntaxFehler.ParseFehler(next(), null, "Das Schlüsselwort 'intern' darf nur in einer Funktionsdefinition stehen.")
         }
@@ -767,8 +776,9 @@ private sealed class SubParser<T: AST>() {
 
     override fun bewacheKnoten() {
       // eine Definition kann nur im globalen Programm geschrieben werden
-      if (depth != 1) {
-        throw GermanSkriptFehler.SyntaxFehler.UngültigerBereich(next(), "Definitionen können nur im globalem Bereich geschrieben werden.")
+      if (depth != 1 && parentNodeId != ASTKnotenID.MODUL) {
+        throw GermanSkriptFehler.SyntaxFehler.UngültigerBereich(next(),
+            "Definitionen können nur im globalem Bereich oder in Modulen geschrieben werden.")
       }
     }
 
@@ -777,6 +787,18 @@ private sealed class SubParser<T: AST>() {
       val bezeichner = parseOptional<TokenTyp.BEZEICHNER_GROSS>()
       val name = if (bezeichner != null) AST.Nomen(null, bezeichner) else typ
       return AST.Definition.TypUndName(AST.TypKnoten(typ), name)
+    }
+
+    object Modul: Definition<AST.Definition.Modul>() {
+      override val id = ASTKnotenID.MODUL
+
+      override fun parseImpl(): AST.Definition.Modul {
+        expect<TokenTyp.MODUL>("'Modul'")
+        val name = expect<TokenTyp.BEZEICHNER_GROSS>("Bezeichner")
+        val definitionen =  parseBereich { subParse(Programm()) }.definitionen
+        return AST.Definition.Modul(name, definitionen)
+      }
+
     }
 
     object DeklinationsDefinition: Definition<AST.Definition.DeklinationsDefinition>() {
@@ -933,6 +955,6 @@ private sealed class SubParser<T: AST>() {
 }
 
 fun main() {
-  val ast = Parser(File("./iterationen/iter_2/code.gms")).parse()
+  val ast = Parser(File("./iterationen/iter_2/code.gm")).parse()
   println(ast)
 }

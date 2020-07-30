@@ -21,6 +21,8 @@ sealed class AST {
   open val children = emptySequence<AST>()
   var parent: AST? = null
     protected set
+  var tiefe: Int = 0
+    protected set
 
   inline fun<reified T: AST> findNodeInParents(): T? {
     var par = this.parent
@@ -33,10 +35,11 @@ sealed class AST {
     return null
   }
 
-  protected fun setParentForChildren() {
+  protected fun setParentForChildren(tiefe: Int) {
+    this.tiefe = tiefe
     for (child in children) {
       child.parent = this
-      child.setParentForChildren()
+      child.setParentForChildren(tiefe)
     }
   }
 
@@ -52,7 +55,7 @@ sealed class AST {
   data class Nomen(
       val vornomen: TypedToken<TokenTyp.VORNOMEN>?,
       val bezeichner: TypedToken<TokenTyp.BEZEICHNER_GROSS>
-  ) {
+  ): AST() {
     var deklination: Deklination? = null
     var vornomenString: String? = null
     var numerus: Numerus? = null
@@ -86,7 +89,9 @@ sealed class AST {
   data class TypKnoten(
       val name: Nomen,
       var typ: Typ? = null
-  )
+  ): AST() {
+    override val children = sequenceOf(name)
+  }
 
   interface IAufruf {
     val token: Token
@@ -94,9 +99,11 @@ sealed class AST {
   }
 
   // Wurzelknoten
-  data class Programm(val programmStart: Token?, val definitionen: List<Definition>, val sätze: List<Satz>): AST(), IAufruf {
+  data class Programm(val programmStart: Token?, override val definitionen: List<Definition>, val sätze: List<Satz>):
+      AST(), IAufruf, IDefinitionsContainer {
     override val vollerName = "starte das Programm"
     override val token get() = programmStart!!
+    override val wörterbuch = Wörterbuch()
 
     override val children = sequence {
       yieldAll(definitionen)
@@ -105,7 +112,7 @@ sealed class AST {
 
     init {
       // go through the whole AST and set the parents
-      setParentForChildren()
+      setParentForChildren(0)
     }
   }
 
@@ -149,24 +156,34 @@ sealed class AST {
   }
 
   sealed class Definition : AST() {
+    data class TypUndName(
+        val typKnoten: TypKnoten,
+        val name: Nomen
+    ): AST() {
+      val istPrivat get() = typKnoten.name.vornomen!!.typ is TokenTyp.VORNOMEN.DEMONSTRATIV_PRONOMEN
+      override val children = sequenceOf(typKnoten, name)
+    }
+
+    data class PräpositionsParameter(
+        val präposition: Präposition,
+        val parameter: List<TypUndName>
+    ): AST() {
+      override val children = sequence { yieldAll(parameter) }
+    }
+
+
+    data class Modul(val name: TypedToken<TokenTyp.BEZEICHNER_GROSS>, override val definitionen: List<Definition>):
+        Definition(), IDefinitionsContainer {
+      override val children: Sequence<AST> = sequence { yieldAll(definitionen) }
+      override val wörterbuch = Wörterbuch()
+    }
 
     sealed class DeklinationsDefinition: Definition() {
       data class Definition(val deklination: Deklination): DeklinationsDefinition()
       data class Duden(val wort: TypedToken<TokenTyp.BEZEICHNER_GROSS>): DeklinationsDefinition()
     }
 
-    data class TypUndName(
-        val typKnoten: TypKnoten,
-        val name: Nomen
-    ) {
-      val istPrivat get() = typKnoten.name.vornomen!!.typ is TokenTyp.VORNOMEN.DEMONSTRATIV_PRONOMEN
-    }
-
-    data class PräpositionsParameter(
-        val präposition: Präposition,
-        val parameter: List<TypUndName>
-    )
-    sealed class FunktionOderMethode(): Definition(){
+    sealed class FunktionOderMethode(): Definition() {
       data class Funktion(
           val rückgabeTyp: TypKnoten?,
           val name: TypedToken<TokenTyp.BEZEICHNER_KLEIN>,
@@ -189,7 +206,16 @@ sealed class AST {
           }
         }
 
-        override val children = sequence { yieldAll(sätze) }
+        override val children = sequence {
+          if (rückgabeTyp != null) {
+            yield(rückgabeTyp!!)
+          }
+          if (objekt != null) {
+            yield(objekt!!)
+          }
+          yieldAll(präpositionsParameter)
+          yieldAll(sätze)
+        }
       }
 
       data class Methode(
@@ -197,7 +223,10 @@ sealed class AST {
           val klasse: TypKnoten,
           val reflexivPronomen: TypedToken<TokenTyp.REFLEXIV_PRONOMEN>?
       ): FunktionOderMethode() {
-        override val children = sequence { yieldAll(funktion.sätze) }
+        override val children = sequence {
+          yield(klasse)
+          yield(funktion)
+        }
       }
 
     }
@@ -210,7 +239,14 @@ sealed class AST {
     ): Definition() {
       val methoden: HashMap<String, FunktionOderMethode.Methode> = HashMap()
       val konvertierungen: HashMap<String, Konvertierung> = HashMap()
-      override val children = sequence {yieldAll(konstruktorSätze)}
+      override val children = sequence {
+        yield(typ)
+        if (elternKlasse != null) {
+          yield(elternKlasse!!)
+        }
+        yieldAll(eigenschaften)
+        yieldAll(konstruktorSätze)
+      }
     }
 
     data class Konvertierung(
@@ -218,7 +254,11 @@ sealed class AST {
         val klasse: Nomen,
         val sätze: List<Satz>
     ): Definition() {
-      override val children: Sequence<AST> = sequence { yieldAll(sätze) }
+      override val children: Sequence<AST> = sequence {
+        yield(typ)
+        yield(klasse)
+        yieldAll(sätze)
+      }
     }
 
     data class Import(
@@ -243,7 +283,7 @@ sealed class AST {
         val zuweisungsOperator: TypedToken<TokenTyp.ZUWEISUNG>,
         val ausdruck: Ausdruck
     ): Satz() {
-      override val children = sequenceOf(ausdruck)
+      override val children = sequenceOf(name, ausdruck)
 
       val istEigenschaftsNeuZuweisung = name.vornomen!!.typ == TokenTyp.VORNOMEN.POSSESSIV_PRONOMEN.MEIN
       val istEigenschaft = name.vornomen!!.typ is TokenTyp.VORNOMEN.DEMONSTRATIV_PRONOMEN
@@ -295,6 +335,8 @@ sealed class AST {
         val sätze: List<Satz>
     ): Satz() {
       override val children = sequence {
+          yield(singular)
+          yield(binder)
           if (liste != null) {
             yield(liste!!)
           }
@@ -307,7 +349,10 @@ sealed class AST {
     }
 
     data class MethodenBlock(val name: Nomen, val sätze: List<Satz>): Satz(){
-      override val children = sequence { yieldAll(sätze) }
+      override val children = sequence {
+        yield(name)
+        yieldAll(sätze)
+      }
     }
 
     data class Zurückgabe(val erstesToken: TypedToken<TokenTyp.BEZEICHNER_KLEIN>, val ausdruck: Ausdruck?): Satz() {
@@ -323,7 +368,7 @@ sealed class AST {
       val name: Nomen,
       val wert: Ausdruck
   ): AST() {
-    override val children = sequenceOf(wert)
+    override val children = sequenceOf(name, wert)
   }
 
   data class PräpositionsArgumente(val präposition: Präposition, val argumente: List<Argument>): AST() {
@@ -337,17 +382,22 @@ sealed class AST {
 
     data class Boolean(val boolean: TypedToken<TokenTyp.BOOLEAN>) : Ausdruck()
 
-    data class Variable(val name: Nomen) : Ausdruck()
+    data class Variable(val name: Nomen) : Ausdruck() {
+      override val children = sequenceOf(name)
+    }
 
     data class Liste(val pluralTyp: Nomen, val elemente: List<Ausdruck>): Ausdruck() {
-      override val children = sequence { yieldAll(elemente) }
+      override val children = sequence {
+        yield(pluralTyp)
+        yieldAll( elemente)
+      }
     }
 
     data class ListenElement(
         val singular: Nomen,
         val index: Ausdruck
     ): Ausdruck() {
-      override val children = sequenceOf(index)
+      override val children = sequenceOf(singular, index)
     }
 
     data class FunktionsAufruf(val aufruf: Funktion): Ausdruck() {
@@ -373,13 +423,18 @@ sealed class AST {
     ): Ausdruck(), IAufruf {
       override val token = typ.name.bezeichner.toUntyped()
       override val vollerName = "als ${typ.name}"
+
+      override val children = sequenceOf(ausdruck, typ)
     }
 
     data class ObjektInstanziierung(
         val klasse: TypKnoten,
         val eigenschaftsZuweisungen: List<Argument>
     ): Ausdruck(), IAufruf {
-      override val children = sequence { yieldAll(eigenschaftsZuweisungen) }
+      override val children = sequence {
+        yield(klasse)
+        yieldAll(eigenschaftsZuweisungen)
+      }
 
       override val token: Token = klasse.name.bezeichner.toUntyped()
 
@@ -397,16 +452,20 @@ sealed class AST {
         val eigenschaftsName: Nomen,
         val objekt: Ausdruck
     ): Ausdruck() {
-      override val children = sequenceOf(objekt)
+      override val children = sequenceOf(eigenschaftsName , objekt)
     }
 
     data class MethodenBlockEigenschaftsZugriff(
         val eigenschaftsName: Nomen
-    ): Ausdruck()
+    ): Ausdruck() {
+      override val children = sequenceOf(eigenschaftsName)
+    }
 
     data class SelbstEigenschaftsZugriff(
         val eigenschaftsName: Nomen
-    ): Ausdruck()
+    ): Ausdruck() {
+      override val children = sequenceOf(eigenschaftsName)
+    }
 
     data class SelbstReferenz(val ich: TypedToken<TokenTyp.REFERENZ.ICH>): Ausdruck()
     data class MethodenBlockReferenz(val du: TypedToken<TokenTyp.REFERENZ.DU>): Ausdruck()

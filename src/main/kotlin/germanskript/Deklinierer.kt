@@ -70,43 +70,54 @@ data class Deklination(
   }
 }
 
-typealias DudenAnfrage = Pair<TypedToken<TokenTyp.BEZEICHNER_GROSS>, Deferred<Deklination>>
+data class DudenAnfrage(
+    val dudenDeklination: AST.Definition.DeklinationsDefinition.Duden,
+    val anfrage: Deferred<Deklination>
+)
+
+interface IDefinitionsContainer {
+  val definitionen: List<AST.Definition>
+  val wörterbuch: Wörterbuch
+}
 
 class Deklinierer(startDatei: File): PipelineKomponente(startDatei) {
   val ast = Parser(startDatei).parse()
-  val wörterbuch = Wörterbuch()
 
   fun deklaniere() = runBlocking {
     val dudenAnfragen = mutableMapOf<String, MutableList<DudenAnfrage>>()
-    ast.definitionen.visit { knoten ->
-      if (knoten is AST.Definition.DeklinationsDefinition.Definition) {
-        try {
-          wörterbuch.fügeDeklinationHinzu(knoten.deklination)
-        }
-        catch (fehler: Wörterbuch.DoppelteDeklinationFehler) {
-          // Doppelte Deklinationen werden einfach ingoriert
-          // TODO: Vielleicht sollte eine Warnung ausgegeben werden
-        }
+    ast.visit { knoten ->
+      if (knoten !is IDefinitionsContainer) {
+        return@visit false
       }
-      else if (knoten is AST.Definition.DeklinationsDefinition.Duden) {
-        dudenAnfragen.computeIfAbsent(knoten.wort.dateiPfad) { mutableListOf() } += (knoten.wort to async(Dispatchers.IO) {
+      for (definition in knoten.definitionen) {
+        if (definition is AST.Definition.DeklinationsDefinition.Definition) {
+          try {
+            knoten.wörterbuch.fügeDeklinationHinzu(definition.deklination)
+          }
+          catch (fehler: Wörterbuch.DoppelteDeklinationFehler) {
+            // Doppelte Deklinationen werden einfach ingoriert
+            // TODO: Vielleicht sollte eine Warnung ausgegeben werden
+          }
+        }
+        else if (knoten is AST.Definition.DeklinationsDefinition.Duden) {
+          val anfrage = async(Dispatchers.IO) {
             val wort = knoten.wort
             try {
               return@async Duden.dudenGrammatikAnfrage(wort.wert)
             }
             catch (fehler: Duden.DudenFehler) {
-            when (fehler) {
-              is Duden.DudenFehler.NotFoundFehler, is Duden.DudenFehler.ParseFehler ->
-                throw GermanSkriptFehler.DudenFehler.WortNichtGefundenFehler(wort.toUntyped(), wort.wert)
-              is Duden.DudenFehler.KeinInternetFehler, is Duden.DudenFehler.TimeoutFehler, is Duden.DudenFehler.DudenServerFehler ->
-                throw GermanSkriptFehler.DudenFehler.Verbindungsfehler(wort.toUntyped(), wort.wert)
+              when (fehler) {
+                is Duden.DudenFehler.NotFoundFehler, is Duden.DudenFehler.ParseFehler ->
+                  throw GermanSkriptFehler.DudenFehler.WortNichtGefundenFehler(wort.toUntyped(), wort.wert)
+                is Duden.DudenFehler.KeinInternetFehler, is Duden.DudenFehler.TimeoutFehler, is Duden.DudenFehler.DudenServerFehler ->
+                  throw GermanSkriptFehler.DudenFehler.Verbindungsfehler(wort.toUntyped(), wort.wert)
+              }
             }
           }
-        })
+          dudenAnfragen.computeIfAbsent(knoten.wort.dateiPfad) { mutableListOf()} += DudenAnfrage(knoten, anfrage)
+        }
       }
-
-      // only germanskript.visit on global level
-      return@visit false
+      return@visit true
     }
 
     löseDudenAnfragenAuf(dudenAnfragen)
@@ -117,12 +128,13 @@ class Deklinierer(startDatei: File): PipelineKomponente(startDatei) {
     for ((datei, dudenAnfragen) in anfragenNachDatei.entries) {
       val quellCodeDatei = File(datei)
       val quellCodeZeilen = quellCodeDatei.readLines().toMutableList()
-      for ((token, anfrage) in dudenAnfragen) {
+      for ((dudenDekl, anfrage) in dudenAnfragen) {
         try {
           val deklination = anfrage.await()
-          wörterbuch.fügeDeklinationHinzu(deklination)
+          (dudenDekl.parent as IDefinitionsContainer).wörterbuch.fügeDeklinationHinzu(deklination)
           // minus 1, da die Zeilen bei 1 anfangen zu zählen
-          quellCodeZeilen[token.anfang.zeile-1] = deklination.toString()
+          // füge bei den Dudendeklinationen Tabs hinzu
+          quellCodeZeilen[dudenDekl.wort.anfang.zeile-1] = "\t".repeat(dudenDekl.tiefe) + deklination.toString()
         }
         catch (fehler: Wörterbuch.DoppelteDeklinationFehler) {
           // TODO: Bei doppelten Deklinationen sollte später vielleicht eine Warnung ausgegeben werden
@@ -131,16 +143,26 @@ class Deklinierer(startDatei: File): PipelineKomponente(startDatei) {
       quellCodeDatei.writeText(quellCodeZeilen.joinToString("\n"))
     }
   }
-  
-  fun holeDeklination(nomen: AST.Nomen): Deklination {
-    try {
-      return wörterbuch.holeDeklination(nomen.hauptWort)
-    } catch (error: Wörterbuch.WortNichtGefunden) {
-      throw GermanSkriptFehler.UnbekanntesWort(nomen.bezeichner.toUntyped(), nomen.hauptWort)
+
+  companion object {
+    fun holeDeklination(nomen: AST.Nomen): Deklination {
+      var knoten: AST = nomen
+      while (knoten !is IDefinitionsContainer) {
+        knoten = knoten.parent!!
+      }
+      var definitionsContainer = knoten as IDefinitionsContainer?
+      while (true) {
+        try {
+          return definitionsContainer!!.wörterbuch.holeDeklination(nomen.hauptWort)
+        } catch (fehler: Wörterbuch.WortNichtGefunden) {
+          definitionsContainer = (definitionsContainer as AST).parent as IDefinitionsContainer?
+          if (definitionsContainer == null) {
+            throw GermanSkriptFehler.UnbekanntesWort(nomen.bezeichner.toUntyped(), nomen.hauptWort)
+          }
+        }
+      }
     }
   }
-
-  fun druckeWörterbuch() = wörterbuch.print()
 }
 
 class Wörterbuch {
@@ -268,7 +290,7 @@ fun wörterBuchTest() {
 fun main() {
   // germanskript.wörterBuchTest()
 
-  val deklanierer = Deklinierer(File("./iterationen/iter_2/code.gms"))
+  val deklanierer = Deklinierer(File("./iterationen/iter_2/code.gm"))
   deklanierer.deklaniere()
-  deklanierer.druckeWörterbuch()
+  deklanierer.ast.wörterbuch.print()
 }
