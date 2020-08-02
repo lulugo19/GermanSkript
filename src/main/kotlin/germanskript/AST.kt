@@ -35,6 +35,10 @@ sealed class AST {
     return null
   }
 
+  fun setParentNode(parent: AST) {
+    this.parent = parent
+  }
+
   protected fun setParentForChildren(tiefe: Int) {
     this.tiefe = tiefe
     for (child in children) {
@@ -88,8 +92,9 @@ sealed class AST {
 
   data class TypKnoten(
       val name: Nomen,
-      var typ: Typ? = null
+      val modulPfad: List<TypedToken<TokenTyp.BEZEICHNER_GROSS>>
   ): AST() {
+    var typ: Typ? = null
     override val children = sequenceOf(name)
   }
 
@@ -98,15 +103,32 @@ sealed class AST {
     val vollerName: String?
   }
 
-  // Wurzelknoten
-  data class Programm(val programmStart: Token?, override val definitionen: List<Definition>, val sätze: List<Satz>):
-      AST(), IAufruf, IDefinitionsContainer {
-    override val vollerName = "starte das Programm"
-    override val token get() = programmStart!!
-    override val wörterbuch = Wörterbuch()
+  class DefinitionsContainer(): AST() {
+    val deklinationen = mutableListOf<Definition.DeklinationsDefinition>()
+    val funktionenOderMethoden = mutableListOf<Definition.FunktionOderMethode>()
+    val konvertierungen = mutableListOf<Definition.Konvertierung>()
+    val klassen: MutableMap<String, Definition.Klasse> = mutableMapOf()
+    val funktionen: MutableMap<String, Definition.FunktionOderMethode.Funktion> = mutableMapOf()
+    val module: MutableMap<String, Definition.Modul> = mutableMapOf()
+    val wörterbuch = Wörterbuch()
 
     override val children = sequence {
-      yieldAll(definitionen)
+      yieldAll(deklinationen)
+      yieldAll(funktionenOderMethoden)
+      yieldAll(konvertierungen)
+      yieldAll(klassen.values)
+      yieldAll(module.values)
+    }
+  }
+
+  // Wurzelknoten
+  data class Programm(val programmStart: Token?, val definitionen: DefinitionsContainer, val sätze: List<Satz>):
+      AST(), IAufruf {
+    override val vollerName = "starte das Programm"
+    override val token get() = programmStart!!
+
+    override val children = sequence {
+      yield(definitionen)
       yieldAll(sätze)
     }
 
@@ -117,6 +139,7 @@ sealed class AST {
   }
 
   data class Funktion(
+      val modulPfad: List<TypedToken<TokenTyp.BEZEICHNER_GROSS>>,
       val verb: TypedToken<TokenTyp.BEZEICHNER_KLEIN>,
       val objekt: Argument?,
       val reflexivPronomen: TypedToken<TokenTyp.REFLEXIV_PRONOMEN>?,
@@ -156,6 +179,7 @@ sealed class AST {
   }
 
   sealed class Definition : AST() {
+
     data class TypUndName(
         val typKnoten: TypKnoten,
         val name: Nomen
@@ -172,10 +196,9 @@ sealed class AST {
     }
 
 
-    data class Modul(val name: TypedToken<TokenTyp.BEZEICHNER_GROSS>, override val definitionen: List<Definition>):
-        Definition(), IDefinitionsContainer {
-      override val children: Sequence<AST> = sequence { yieldAll(definitionen) }
-      override val wörterbuch = Wörterbuch()
+    data class Modul(val name: TypedToken<TokenTyp.BEZEICHNER_GROSS>, val definitionen: DefinitionsContainer):
+        Definition() {
+      override val children: Sequence<AST> = sequenceOf(definitionen)
     }
 
     sealed class DeklinationsDefinition: Definition() {
@@ -251,7 +274,7 @@ sealed class AST {
 
     data class Konvertierung(
         val typ: TypKnoten,
-        val klasse: Nomen,
+        val klasse: TypKnoten,
         val sätze: List<Satz>
     ): Definition() {
       override val children: Sequence<AST> = sequence {

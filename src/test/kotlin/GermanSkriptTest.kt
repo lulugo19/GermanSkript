@@ -301,4 +301,41 @@ class GermanSkriptTest {
 
     testGermanSkriptSource(source, expectedOutput)
   }
+
+  @Test
+  @DisplayName("Modul")
+  fun module() {
+    val source = """
+      Verb hallo:
+        schreibe die Zeile "Hallo Welt"
+      .
+      
+      Modul Foo:
+        Verb hallo:
+          schreibe die Zeile "Hallo Foo"
+        .
+        
+        Modul Bar:
+          Verb hallo:
+            schreibe die Zeile "Hallo Bar"
+          .
+        .
+      .
+      
+      hallo
+      Foo::hallo
+      Foo::Bar::hallo
+    """.trimIndent()
+
+    val expectedOutput = """
+      Hallo Welt
+      Hallo Foo
+      Hallo Bar
+      
+    """.trimIndent()
+
+    testGermanSkriptSource(source, expectedOutput)
+  }
+
+
 }

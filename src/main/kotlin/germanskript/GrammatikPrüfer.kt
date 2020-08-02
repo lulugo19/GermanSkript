@@ -288,7 +288,7 @@ class GrammatikPrüfer(startDatei: File): PipelineKomponente(startDatei) {
 
   private fun prüfeKonvertierungsDefinition(konvertierung: AST.Definition.Konvertierung) {
     prüfeNomen(konvertierung.typ.name, EnumSet.of(Kasus.NOMINATIV), EnumSet.of(Numerus.SINGULAR))
-    prüfeNomen(konvertierung.klasse, EnumSet.of(Kasus.NOMINATIV), EnumSet.of(Numerus.SINGULAR))
+    prüfeNomen(konvertierung.klasse.name, EnumSet.of(Kasus.NOMINATIV), EnumSet.of(Numerus.SINGULAR))
   }
 
 

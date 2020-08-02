@@ -55,7 +55,7 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
     durchlaufeAufruf(klasse.typ.name.bezeichner.toUntyped(), klasse.konstruktorSätze, Umgebung(), true,null)
     klasse.methoden.values.forEach {methode -> prüfeFunktion(methode.funktion)}
     klasse.konvertierungen.values.forEach {konvertierung ->
-      durchlaufeAufruf(konvertierung.klasse.bezeichner.toUntyped(), konvertierung.sätze, Umgebung(), true, konvertierung.typ.typ!!)
+      durchlaufeAufruf(konvertierung.klasse.name.bezeichner.toUntyped(), konvertierung.sätze, Umgebung(), true, konvertierung.typ.typ!!)
     }
   }
 
@@ -82,7 +82,8 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
     else if (deklaration.istEigenschaft) {
       val klasse = zuÜberprüfendeKlasse!!
       val wert = evaluiereAusdruck(deklaration.ausdruck)
-      val typ = AST.TypKnoten(deklaration.name, wert)
+      val typ = AST.TypKnoten(deklaration.name, emptyList())
+      typ.typ = wert
       klasse.eigenschaften.add(AST.Definition.TypUndName(typ, deklaration.name))
     }
     else {
@@ -304,8 +305,7 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
   }
 
   override fun evaluiereObjektInstanziierung(instanziierung: AST.Ausdruck.ObjektInstanziierung): Typ {
-    typisierer.typisiereTypKnoten(instanziierung.klasse)
-    val klasse = instanziierung.klasse.typ!!
+    val klasse = typisierer.bestimmeTypen(instanziierung.klasse)!!
     if (klasse !is Typ.KlassenTyp) {
       throw GermanSkriptFehler.TypFehler.ObjektErwartet(instanziierung.klasse.name.bezeichner.toUntyped())
     }
@@ -386,8 +386,7 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
 
   override fun evaluiereKonvertierung(konvertierung: AST.Ausdruck.Konvertierung): Typ{
     val ausdruck = evaluiereAusdruck(konvertierung.ausdruck)
-    typisierer.typisiereTypKnoten(konvertierung.typ)
-    val konvertierungsTyp = konvertierung.typ.typ!!
+    val konvertierungsTyp = typisierer.bestimmeTypen(konvertierung.typ)!!
     if (!ausdruck.kannNachTypKonvertiertWerden(konvertierungsTyp)){
       throw GermanSkriptFehler.KonvertierungsFehler(konvertierung.typ.name.bezeichner.toUntyped(),
           ausdruck, konvertierungsTyp)

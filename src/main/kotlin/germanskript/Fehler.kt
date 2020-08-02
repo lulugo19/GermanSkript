@@ -25,7 +25,7 @@ sealed class GermanSkriptFehler(private val fehlerName: String, val token: Token
     class ParseFehler(token: Token, private val erwartet: String? = null, private val details: String? = null): SyntaxFehler(token) {
       override val nachricht: String
         get() {
-          var msg = "Unerwartetes germanskript.Token '${token.wert}'."
+          var msg = "Unerwartetes Token '${token.wert}'."
           if (erwartet != null) {
             msg += " $erwartet Erwartet."
           }
@@ -142,10 +142,15 @@ sealed class GermanSkriptFehler(private val fehlerName: String, val token: Token
         get() = "Die Klasse '${token.wert}' ist schon in ${definition.typ.name.bezeichner.position} definiert."
     }
 
+    class Modul(token: Token, private val definition: AST.Definition.Modul): DoppelteDefinition(token) {
+      override val nachricht: String
+        get() = "Das Modul '${token.wert}' ist schon in ${definition.name.position} definiert."
+    }
+
     class Konvertierung(token: Token, private val konvertierung: AST.Definition.Konvertierung): DoppelteDefinition(token) {
       override val nachricht: String
-        get() = "Die Konvertierung von '${konvertierung.klasse.nominativ}' zu '${konvertierung.typ.name.nominativ}'\n" +
-            "ist schon in ${konvertierung.klasse.bezeichner.position} definiert."
+        get() = "Die Konvertierung von '${konvertierung.klasse.name.nominativ}' zu '${konvertierung.typ.name.nominativ}'\n" +
+            "ist schon in ${konvertierung.klasse.name.bezeichner.position} definiert."
     }
   }
 
@@ -162,7 +167,8 @@ sealed class GermanSkriptFehler(private val fehlerName: String, val token: Token
   sealed class Undefiniert(token: Token): GermanSkriptFehler("Undefiniert Fehler", token) {
     class Funktion(token: Token, private val funktionsAufruf: AST.Funktion): Undefiniert(token) {
       override val nachricht: String
-        get() = "Die Funktion '${funktionsAufruf.vollerName!!}' ist nicht definiert."
+        get() = "Die Funktion '${funktionsAufruf.modulPfad.joinToString("::") { it.wert } +  "::" + funktionsAufruf.vollerName!!}' " +
+            "ist nicht definiert."
     }
 
     class Methode(token: Token, private val methodenAufruf: AST.Funktion, private val klassenName: String): Undefiniert(token) {
@@ -175,9 +181,9 @@ sealed class GermanSkriptFehler(private val fehlerName: String, val token: Token
         get() = "Die Variable '$name' ist nicht definiert.'"
     }
 
-    class Typ(token: Token): Undefiniert(token) {
+    class Typ constructor(token: Token, val typ: AST.TypKnoten): Undefiniert(token) {
       override val nachricht: String
-        get() = "Der Typ '${token.wert}' ist nicht definiert."
+        get() = "Der Typ '${typ.modulPfad.joinToString("::") { it.wert } + "::" + typ.name.bezeichner.wert}' ist nicht definiert."
     }
 
     class Operator(token: Token, private val typ: String): Undefiniert(token){
@@ -188,6 +194,11 @@ sealed class GermanSkriptFehler(private val fehlerName: String, val token: Token
     class Eigenschaft(token: Token, private val klasse: String): Undefiniert(token) {
       override val nachricht: String
         get() = "Die Eigenschaft '${token.wert}' ist für die Klasse '$klasse' nicht definiert."
+    }
+
+    class Modul(token: Token): Undefiniert(token) {
+      override val nachricht: String
+        get() = "Das Modul `${token.wert}` ist nicht definiert."
     }
   }
 

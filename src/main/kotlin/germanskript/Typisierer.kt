@@ -100,46 +100,51 @@ class Typisierer(startDatei: File): PipelineKomponente(startDatei) {
   }
 
   fun bestimmeTypen(nomen: AST.Nomen): Typ {
-    val singularTyp = when(nomen.hauptWort(Kasus.NOMINATIV, Numerus.SINGULAR)) {
+    val typKnoten = AST.TypKnoten(nomen, emptyList())
+    // setze den Parent hier manuell vom Nomen
+    typKnoten.setParentNode(nomen.parent!!)
+    return bestimmeTypen(typKnoten)!!
+  }
+
+  fun bestimmeTypen(typKnoten: AST.TypKnoten?): Typ? {
+    if (typKnoten == null) {
+      return null
+    }
+    val singularTyp = when(typKnoten.name.hauptWort(Kasus.NOMINATIV, Numerus.SINGULAR)) {
       "Zahl" -> Typ.Zahl
       "Zeichenfolge" -> Typ.Zeichenfolge
       "Boolean" -> Typ.Boolean
       "Typ" -> Typ.Generic
       "Liste" -> Typ.KlassenTyp.Liste(listenKlassenDefinition, Typ.Generic)
-      else -> Typ.KlassenTyp.Klasse(definierer.holeKlassenDefinition(nomen))
+      else -> Typ.KlassenTyp.Klasse(definierer.holeKlassenDefinition(typKnoten))
     }
-    return if (nomen.numerus == Numerus.SINGULAR) {
+    typKnoten.typ = if (typKnoten.name.numerus == Numerus.SINGULAR) {
       singularTyp
     } else {
       Typ.KlassenTyp.Liste(listenKlassenDefinition, singularTyp)
     }
+    return typKnoten.typ
    }
 
-  fun typisiereTypKnoten(typKnoten: AST.TypKnoten?) {
-    if (typKnoten != null) {
-      typKnoten.typ = bestimmeTypen(typKnoten.name)
-    }
-  }
-
   private fun typisiereFunktion(funktion: AST.Definition.FunktionOderMethode.Funktion) {
-    typisiereTypKnoten(funktion.rückgabeTyp)
-    typisiereTypKnoten(funktion.objekt?.typKnoten)
+    bestimmeTypen(funktion.rückgabeTyp)
+    bestimmeTypen(funktion.objekt?.typKnoten)
     for (parameter in funktion.parameter) {
-      typisiereTypKnoten(parameter.typKnoten)
+      bestimmeTypen(parameter.typKnoten)
     }
   }
 
   private fun typisiereKlasse(klasse: AST.Definition.Klasse) {
-    typisiereTypKnoten(klasse.typ)
+    bestimmeTypen(klasse.typ)
     for (eigenschaft in klasse.eigenschaften) {
-      typisiereTypKnoten(eigenschaft.typKnoten)
+      bestimmeTypen(eigenschaft.typKnoten)
     }
     klasse.methoden.values.forEach{ methode ->
       methode.klasse.typ = Typ.KlassenTyp.Klasse(klasse)
       typisiereFunktion(methode.funktion)
     }
     klasse.konvertierungen.values.forEach { konvertierung ->
-      typisiereTypKnoten(konvertierung.typ)
+      bestimmeTypen(konvertierung.typ)
     }
   }
 }
