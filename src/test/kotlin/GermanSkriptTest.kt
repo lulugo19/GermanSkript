@@ -322,15 +322,23 @@ class GermanSkriptTest {
         .
       .
       
+      Modul Foo::Bar:
+        Verb test:
+          schreibe die Zeile "Test"
+        .
+      .
+      
       hallo
       Foo::hallo
       Foo::Bar::hallo
+      Foo::Bar::test
     """.trimIndent()
 
     val expectedOutput = """
       Hallo Welt
       Hallo Foo
       Hallo Bar
+      Test
       
     """.trimIndent()
 

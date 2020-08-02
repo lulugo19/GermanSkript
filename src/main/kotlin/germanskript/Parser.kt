@@ -887,9 +887,14 @@ private sealed class SubParser<T: AST>() {
 
       override fun parseImpl(): AST.Definition.Modul {
         expect<TokenTyp.MODUL>("'Modul'")
+        val modulPfad = parseModulPfad()
         val name = expect<TokenTyp.BEZEICHNER_GROSS>("Bezeichner")
         val definitionen =  parseBereich { subParse(Programm()) }.definitionen
-        return AST.Definition.Modul(name, definitionen)
+        return modulPfad.reversed().fold(AST.Definition.Modul(name, definitionen)) { modul, bezeichner ->
+          val definitionen = AST.DefinitionsContainer()
+          definitionen.module[modul.name.wert] = AST.Definition.Modul(modul.name, modul.definitionen)
+          AST.Definition.Modul(bezeichner, definitionen)
+        }
       }
 
     }
