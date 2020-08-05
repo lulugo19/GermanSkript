@@ -167,8 +167,7 @@ sealed class GermanSkriptFehler(private val fehlerName: String, val token: Token
   sealed class Undefiniert(token: Token): GermanSkriptFehler("Undefiniert Fehler", token) {
     class Funktion(token: Token, private val funktionsAufruf: AST.Funktion): Undefiniert(token) {
       override val nachricht: String
-        get() = "Die Funktion '${funktionsAufruf.modulPfad.joinToString("::") { it.wert } +  "::" + funktionsAufruf.vollerName!!}' " +
-            "ist nicht definiert."
+        get() = "Die Funktion '${funktionsAufruf.vollständigerName}' ist nicht definiert."
     }
 
     class Methode(token: Token, private val methodenAufruf: AST.Funktion, private val klassenName: String): Undefiniert(token) {
@@ -183,7 +182,7 @@ sealed class GermanSkriptFehler(private val fehlerName: String, val token: Token
 
     class Typ constructor(token: Token, val typ: AST.TypKnoten): Undefiniert(token) {
       override val nachricht: String
-        get() = "Der Typ '${typ.modulPfad.joinToString("::") { it.wert } + "::" + typ.name.bezeichner.wert}' ist nicht definiert."
+        get() = "Der Typ '${typ.vollständigerName}' ist nicht definiert."
     }
 
     class Operator(token: Token, private val typ: String): Undefiniert(token){
@@ -199,6 +198,27 @@ sealed class GermanSkriptFehler(private val fehlerName: String, val token: Token
     class Modul(token: Token): Undefiniert(token) {
       override val nachricht: String
         get() = "Das Modul `${token.wert}` ist nicht definiert."
+    }
+  }
+
+  sealed class Mehrdeutigkeit(token: Token): GermanSkriptFehler("Mehrdeutigkeit", token) {
+    class Klasse(token: Token, private val klasseA: AST.Definition.Klasse, private val klasseB: AST.Definition.Klasse):
+      Mehrdeutigkeit(token) {
+      override val nachricht: String
+        get() = "Es ist unklar welche Klasse gemeint ist.\n" +
+            "Entweder die Klasse '${klasseA.typ.vollständigerName}' in ${klasseA.typ.name.bezeichner.position}\n" +
+            "oder die Klasse '${klasseB.typ.vollständigerName}' in ${klasseB.typ.name.bezeichner.position}."
+
+    }
+
+    class Funktion(
+        token: Token,
+        private val funktionA: AST.Definition.FunktionOderMethode.Funktion,
+        private val funktionB: AST.Definition.FunktionOderMethode.Funktion): Mehrdeutigkeit(token) {
+
+      override val nachricht: String
+        get() = "Es ist unklar welche Funktion gemeint ist.\n" +
+            "Entweder die Funktion in ${funktionA.name.position} oder die Funktion in ${funktionB.name.position}."
     }
   }
 

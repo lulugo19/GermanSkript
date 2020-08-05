@@ -26,14 +26,16 @@ enum class ASTKnotenID {
   OBJEKT_INSTANZIIERUNG,
   EIGENSCHAFTS_ZUGRIFF,
   KONVERTIERUNGS_DEFINITION,
-  IMPORT
+  IMPORT,
+  VERWENDE,
+  BEREICH
 }
 
 class Parser(startDatei: File): PipelineKomponente(startDatei) {
   fun parse(): AST.Programm {
     val lexer = Lexer(startDatei)
     val tokens = Peekable(lexer.tokeniziere().iterator())
-    val ast = SubParser.Programm(lexer).parse(tokens, Stack())
+    val ast = SubParser.Programm(ASTKnotenID.PROGRAMM, lexer).parse(tokens, Stack())
     if (tokens.peek(0)!!.typ !is TokenTyp.EOF) {
       throw GermanSkriptFehler.SyntaxFehler.ParseFehler(tokens.next()!!, "EOF")
     }
@@ -260,9 +262,19 @@ private sealed class SubParser<T: AST>() {
     }
   }
 
-  protected fun parseNomenAusdruck(nomen: AST.Nomen, inBinärenAusdruck: Boolean): AST.Ausdruck {
+  protected inline fun<reified VornomenT: TokenTyp.VORNOMEN> parseNomenAusdruck(
+      erwartetesVornomen: String,
+      inBinärenAusdruck: Boolean
+  ): Pair<AST.Nomen, AST.Ausdruck> {
+    val vornomen = expect<VornomenT>(erwartetesVornomen)
+    var modulPfad: List<TypedToken<TokenTyp.BEZEICHNER_GROSS>>? = null
+    if (vornomen.typ == TokenTyp.VORNOMEN.ARTIKEL.UNBESTIMMT) {
+      modulPfad = parseModulPfad()
+    }
+    val bezeichner = parseGroßenBezeichner(modulPfad == null)
+    val nomen = AST.Nomen(vornomen, bezeichner)
     val nächstesToken = peek()
-    val ausdruck = when (nomen.vornomen!!.typ) {
+    val ausdruck = when (vornomen.typ) {
       is TokenTyp.VORNOMEN.ARTIKEL.BESTIMMT -> when (nächstesToken.typ) {
         is TokenTyp.OFFENE_ECKIGE_KLAMMER -> subParse(NomenAusdruck.ListenElement(nomen))
         is TokenTyp.VORNOMEN.ARTIKEL -> {
@@ -271,56 +283,47 @@ private sealed class SubParser<T: AST>() {
             else -> AST.Ausdruck.Variable(nomen)
           }
         }
-        else -> when(nomen.vornomen.typ) {
+        else -> when(vornomen.typ) {
           TokenTyp.VORNOMEN.ARTIKEL.BESTIMMT -> AST.Ausdruck.Variable(nomen)
           TokenTyp.VORNOMEN.POSSESSIV_PRONOMEN.MEIN -> AST.Ausdruck.SelbstEigenschaftsZugriff(nomen)
           TokenTyp.VORNOMEN.POSSESSIV_PRONOMEN.DEIN -> AST.Ausdruck.MethodenBlockEigenschaftsZugriff(nomen)
-          else -> throw GermanSkriptFehler.SyntaxFehler.ParseFehler(nomen.vornomen.toUntyped(), "bestimmter Artikel oder Possessivpronomen")
+          else -> throw GermanSkriptFehler.SyntaxFehler.ParseFehler(vornomen.toUntyped(), "bestimmter Artikel oder Possessivpronomen")
         }
       }
       is TokenTyp.VORNOMEN.ARTIKEL.UNBESTIMMT ->  {
         when (nächstesToken.typ) {
           is TokenTyp.OFFENE_ECKIGE_KLAMMER -> subParse(NomenAusdruck.Liste(nomen))
           else -> {
-            // Hier wird ein Klassenamen zusammen mit eventuellen Modulnamen geparst
-            // parseTyp kann hier nicht angewendet werden, da das 'Nomen' bereits geparst wurden ist
-            val modulPfad = mutableListOf<TypedToken<TokenTyp.BEZEICHNER_GROSS>>()
-            if (peekType() == TokenTyp.DOPPEL_DOPPELPUNKT) {
-              expect<TokenTyp.DOPPEL_DOPPELPUNKT>("'::'")
-              modulPfad += nomen.bezeichner
-              while (peekType(1) == TokenTyp.DOPPEL_DOPPELPUNKT) {
-                modulPfad += expect("Bezeichner")
-                expect<TokenTyp.DOPPEL_DOPPELPUNKT>("'::'")
-              }
-            }
-            val klassenName = if (modulPfad.isEmpty()) nomen.bezeichner else parseGroßenBezeichner(false)
-            val klasse = AST.TypKnoten(AST.Nomen(nomen.vornomen, klassenName), modulPfad)
+            val klasse = AST.TypKnoten(nomen, modulPfad!!)
             subParse(NomenAusdruck.ObjektInstanziierung(klasse))
           }
         }
       }
       TokenTyp.VORNOMEN.POSSESSIV_PRONOMEN.MEIN -> AST.Ausdruck.SelbstEigenschaftsZugriff(nomen)
       TokenTyp.VORNOMEN.POSSESSIV_PRONOMEN.DEIN -> AST.Ausdruck.MethodenBlockEigenschaftsZugriff(nomen)
-      is TokenTyp.VORNOMEN.DEMONSTRATIV_PRONOMEN -> throw GermanSkriptFehler.SyntaxFehler.ParseFehler(nomen.vornomen.toUntyped(), null,
+      is TokenTyp.VORNOMEN.DEMONSTRATIV_PRONOMEN -> throw GermanSkriptFehler.SyntaxFehler.ParseFehler(vornomen.toUntyped(), null,
           "Die Demonstrativpronomen 'diese' und 'jene' dürfen nicht in Ausdrücken verwendet werden.")
+      else -> throw Exception("Dieser Fall sollte nie ausgeführt werden.")
     }
 
     return when(peekType()){
       is TokenTyp.ALS -> {
         next()
         val typ = parseTypOhneArtikel(false)
-        AST.Ausdruck.Konvertierung(ausdruck, typ)
+        Pair(nomen, AST.Ausdruck.Konvertierung(ausdruck, typ))
       }
       is TokenTyp.OPERATOR -> {
-         if (inBinärenAusdruck) ausdruck else subParse(Ausdruck(mitVornomen = true, optionalesIstNachVergleich = false, linkerAusdruck = ausdruck))
+         val operatorAusdruck  =
+             if (inBinärenAusdruck) ausdruck
+             else subParse(Ausdruck(mitVornomen = true, optionalesIstNachVergleich = false, linkerAusdruck = ausdruck))
+        Pair(nomen, operatorAusdruck)
       }
-      else -> ausdruck
+      else -> Pair(nomen, ausdruck)
     }
   }
 
   fun parseArgument(): AST.Argument {
-    val nomen = parseNomenMitVornomen<TokenTyp.VORNOMEN>("Vornomen", true)
-    var wert = parseNomenAusdruck(nomen, false)
+    var (nomen, wert) = parseNomenAusdruck<TokenTyp.VORNOMEN>("Vornomen", false)
     if (wert is AST.Ausdruck.Variable) {
       wert = when(peekType()) {
         is TokenTyp.NEUE_ZEILE,
@@ -346,12 +349,11 @@ private sealed class SubParser<T: AST>() {
     return result
   }
 
-  protected fun parseSätze(endToken: TokenTyp = TokenTyp.PUNKT): List<AST.Satz> =  parseBereich(endToken) { subParse(Programm()) }.sätze
+  protected fun parseSätze(endToken: TokenTyp = TokenTyp.PUNKT): List<AST.Satz> =
+      parseBereich(endToken) { subParse(Programm(id)) }.sätze
   // endregion
 
-  class Programm(private val lexer: Lexer? = null): SubParser<AST.Programm>() {
-    override val id: ASTKnotenID
-      get() = ASTKnotenID.PROGRAMM
+  class Programm(override val id: ASTKnotenID, private val lexer: Lexer? = null): SubParser<AST.Programm>() {
 
     val istInGlobalenBereich = lexer != null
 
@@ -401,7 +403,14 @@ private sealed class SubParser<T: AST>() {
           when (nextToken.wert) {
             "gebe", "zurück" -> subParse(Satz.Zurückgabe)
             "für" -> subParse(Satz.FürJedeSchleife)
-            "importiere" -> null
+            "importiere" -> when {
+              peekType(1) is TokenTyp.ZEICHENFOLGE -> null
+              else -> subParse(Satz.FunktionsAufruf)
+            }
+            "verwende" -> when {
+              peekType(1) is TokenTyp.BEZEICHNER_GROSS -> null
+              else -> subParse(Satz.FunktionsAufruf)
+            }
             else -> subParse(Satz.FunktionsAufruf)
           }
         is TokenTyp.BEZEICHNER_GROSS -> {
@@ -439,17 +448,19 @@ private sealed class SubParser<T: AST>() {
           }
           container.klassen[klassenName] = klasse
         }
-        is TokenTyp.VERB -> parseFunktionOderMethode().also {
-          container.funktionenOderMethoden += it
+        is TokenTyp.VERB -> parseFunktionOderMethode().also { funktion ->
+          container.funktionenOderMethoden += funktion
         }
-        is TokenTyp.ALS -> subParse(Definition.Konvertierung).also {
-          container.konvertierungen += it
+        is TokenTyp.ALS -> subParse(Definition.Konvertierung).also { konvertierung ->
+          container.konvertierungen += konvertierung
         }
         is TokenTyp.BEZEICHNER_KLEIN -> {
-          if (nextToken.wert == "importiere") {
-            subParse(Definition.Import)
-          } else {
-            null
+          when (nextToken.wert) {
+            "importiere" -> subParse(Definition.Import)
+            "verwende" -> subParse(Definition.Verwende).also { verwende ->
+              container.verwende += verwende
+            }
+            else -> null
           }
         }
         else -> null
@@ -544,7 +555,8 @@ private sealed class SubParser<T: AST>() {
         is TokenTyp.ZAHL -> AST.Ausdruck.Zahl(next().toTyped())
         is TokenTyp.BOOLEAN -> AST.Ausdruck.Boolean(next().toTyped())
         is TokenTyp.BEZEICHNER_KLEIN -> AST.Ausdruck.FunktionsAufruf(subParse(FunktionsAufruf))
-        is TokenTyp.VORNOMEN -> parseNomenAusdruck(parseNomenMitVornomen<TokenTyp.VORNOMEN>("Vornomen", true), true)
+        is TokenTyp.VORNOMEN ->
+          parseNomenAusdruck<TokenTyp.VORNOMEN>("Vornomen", true).second
         is TokenTyp.REFERENZ.ICH -> {
           if (!hierarchyContainsNode(ASTKnotenID.METHODEN_DEFINITION)) {
             throw GermanSkriptFehler.SyntaxFehler.ParseFehler(next(), null,
@@ -650,7 +662,7 @@ private sealed class SubParser<T: AST>() {
           }
           AST.Ausdruck.EigenschaftsZugriff(nomen, objekt)
         } else {
-          val objekt = parseNomenAusdruck(parseNomenMitVornomen<TokenTyp.VORNOMEN.ARTIKEL>("Artikel", true), inBinärenAusdruck)
+          val objekt = parseNomenAusdruck<TokenTyp.VORNOMEN.ARTIKEL>("Artikel", inBinärenAusdruck).second
           AST.Ausdruck.EigenschaftsZugriff(nomen, objekt)
         }
       }
@@ -869,7 +881,7 @@ private sealed class SubParser<T: AST>() {
   sealed class Definition<T: AST.Definition>(): SubParser<T>() {
 
     override fun bewacheKnoten() {
-      if (parentNodeId != ASTKnotenID.PROGRAMM) {
+      if (!(parentNodeId == ASTKnotenID.PROGRAMM || parentNodeId == ASTKnotenID.MODUL)) {
         throw GermanSkriptFehler.SyntaxFehler.UngültigerBereich(next(),
             "Definitionen können nur im globalem Bereich oder in Modulen geschrieben werden.")
       }
@@ -889,11 +901,11 @@ private sealed class SubParser<T: AST>() {
         expect<TokenTyp.MODUL>("'Modul'")
         val modulPfad = parseModulPfad()
         val name = expect<TokenTyp.BEZEICHNER_GROSS>("Bezeichner")
-        val definitionen =  parseBereich { subParse(Programm()) }.definitionen
+        val definitionen =  parseBereich { subParse(Programm(id)) }.definitionen
         return modulPfad.reversed().fold(AST.Definition.Modul(name, definitionen)) { modul, bezeichner ->
-          val definitionen = AST.DefinitionsContainer()
-          definitionen.module[modul.name.wert] = AST.Definition.Modul(modul.name, modul.definitionen)
-          AST.Definition.Modul(bezeichner, definitionen)
+          val container = AST.DefinitionsContainer()
+          container.module[modul.name.wert] = AST.Definition.Modul(modul.name, modul.definitionen)
+          AST.Definition.Modul(bezeichner, container)
         }
       }
 
@@ -1045,6 +1057,17 @@ private sealed class SubParser<T: AST>() {
         parseKleinesSchlüsselwort("importiere")
         val dateiPfad = expect<TokenTyp.ZEICHENFOLGE>("Dateipfad")
         return AST.Definition.Import(dateiPfad)
+      }
+    }
+
+    object Verwende: Definition<AST.Definition.Verwende>() {
+      override val id = ASTKnotenID.VERWENDE
+
+      override fun parseImpl(): AST.Definition.Verwende {
+        parseKleinesSchlüsselwort("verwende")
+        val modulPfad = parseModulPfad()
+        val modulOderKlasse = expect<TokenTyp.BEZEICHNER_GROSS>("Bezeichner")
+        return AST.Definition.Verwende(modulPfad, modulOderKlasse)
       }
     }
   }

@@ -10,7 +10,7 @@ class GermanSkriptTest {
 
   private fun runGermanSkriptSource(germanSkriptSource: String) {
     // erstelle temporäre Datei mit dem Source-Code
-    val tempFile = createTempFile("germanskript_test_temp", "gm")
+    val tempFile = createTempFile("germanskript_test_temp", ".gm")
     tempFile.writeText(germanSkriptSource)
 
     val interpretierer = Interpretierer(tempFile)
@@ -303,7 +303,7 @@ class GermanSkriptTest {
   }
 
   @Test
-  @DisplayName("Modul")
+  @DisplayName("Modul (Funktionen)")
   fun module() {
     val source = """
       Verb hallo:
@@ -339,6 +339,63 @@ class GermanSkriptTest {
       Hallo Foo
       Hallo Bar
       Test
+      
+    """.trimIndent()
+
+    testGermanSkriptSource(source, expectedOutput)
+  }
+
+  @Test
+  @DisplayName("verwende Module")
+  fun verwendeModule() {
+    val source = """
+      Modul A:
+        Modul B:
+          Verb test: schreibe die Zeile "Test".
+        .
+      .
+      verwende A::B
+      test
+    """.trimIndent()
+
+    val expectedOutput = """
+      Test
+      
+    """.trimIndent()
+
+    testGermanSkriptSource(source, expectedOutput)
+  }
+
+  @Test
+  @DisplayName("verwende Module (komplexer)")
+  fun verwendeModuleKomplexer() {
+    val source = """
+      Deklination Neutrum Singular(Bar) Plural(Bars)
+      Deklination Neutrum Singular(Foo) Plural(Foos)
+      
+      Modul A:
+        verwende C
+        Modul B:
+          Nomen Foo mit dem Bar:.
+          
+          Verb für Bar test:
+            schreibe die Zeile "Bar"
+          .
+        .
+        Modul C:
+          Nomen Bar:.
+        .
+      .
+      
+      verwende A
+      
+      das Foo ist ein B::Foo mit einem C::Bar
+      das Bar ist das Bar des Foo
+      Bar: test!
+    """.trimIndent()
+
+    val expectedOutput = """
+      Bar
       
     """.trimIndent()
 

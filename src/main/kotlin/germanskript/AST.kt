@@ -96,6 +96,8 @@ sealed class AST {
   ): AST() {
     var typ: Typ? = null
     override val children = sequenceOf(name)
+    val vollständigerName: String = modulPfad.joinToString("::") { it.wert } +
+        (if (modulPfad.isEmpty()) "" else "::")  + name.bezeichner.wert
   }
 
   interface IAufruf {
@@ -107,9 +109,12 @@ sealed class AST {
     val deklinationen = mutableListOf<Definition.DeklinationsDefinition>()
     val funktionenOderMethoden = mutableListOf<Definition.FunktionOderMethode>()
     val konvertierungen = mutableListOf<Definition.Konvertierung>()
-    val klassen: MutableMap<String, Definition.Klasse> = mutableMapOf()
+    val klassen = mutableMapOf<String, Definition.Klasse>()
     val funktionen: MutableMap<String, Definition.FunktionOderMethode.Funktion> = mutableMapOf()
-    val module: MutableMap<String, Definition.Modul> = mutableMapOf()
+    val module = mutableMapOf<String, Definition.Modul>()
+    val verwende = mutableListOf<Definition.Verwende>()
+    val verwendeteModule = mutableListOf<DefinitionsContainer>()
+    val verwendeteKlassen = mutableMapOf<String, Definition.Klasse>()
     val wörterbuch = Wörterbuch()
 
     override val children = sequence {
@@ -153,6 +158,8 @@ sealed class AST {
     val argumente: List<Argument> = _argumente
     var funktionsDefinition: Definition.FunktionOderMethode.Funktion? = null
     var aufrufTyp: FunktionsAufrufTyp = FunktionsAufrufTyp.FUNKTIONS_AUFRUF
+    val vollständigerName = modulPfad.joinToString("::") { it.wert } +
+        (if (modulPfad.isEmpty()) "" else "::") + vollerName
 
     init {
       if (objekt != null) {
@@ -289,6 +296,11 @@ sealed class AST {
     ): Definition() {
       val pfad = dateiPfad.typ.zeichenfolge.zeichenfolge
     }
+
+    data class Verwende(
+        val modulPfad: List<TypedToken<TokenTyp.BEZEICHNER_GROSS>>,
+        val modulOderKlasse: TypedToken<TokenTyp.BEZEICHNER_GROSS>
+    ): Definition()
   }
 
 
