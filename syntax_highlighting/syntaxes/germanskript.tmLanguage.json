@@ -20,6 +20,9 @@
 		  "include": "#fundefs"
 		},
 		{
+      "include": "#moduls"
+		},
+		{
 		  "include": "#vardecls"
 		},
 		{
@@ -42,10 +45,10 @@
 			  "name": "keyword.control.germanskript",
 			  "match": "\\b(wenn|dann|sonst|solange|für|jeden|jede|jedes|fortfahren|abbrechen|gebe|zurück|intern)\\b"
 			},
-			{
+		    {
 			  "name": "keyword.other.germanskript",
-			  "match": "\\b(Maskulinum|Femininum|Neutrum)\\b"
-			}
+			  "match": "\\b(importiere|verwende|Modul)\\b"
+		    }
 		  ]
 		},
 		"expressions": {
@@ -118,11 +121,11 @@
 		},
 		"classdefs": {
 		  "name": "meta.class.germanskript",
-		  "begin": "\\b(Nomen) *(([A-ZÖÄÜ][a-zöäüß]*)+) *(mit)?",
+		  "begin": "\\s*(Nomen) *(([A-ZÖÄÜ][a-zöäüß]*)+) *(mit)?",
 		  "end": ":",
 		  "beginCaptures": {
 			"1": {
-				"name": "storage.type.class.germanskript"
+			  "name": "storage.type.class.germanskript"
 			},
 			"2": {
 			  "name": "entity.name.type.class.germanskript"
@@ -136,10 +139,10 @@
 			  "include": "#params"
 			}
 		  ]
-		},
+    },
 		"fundefs": {
 		  "name": "meta.function.germanskript",
-		  "begin": "\\b(Verb)( *\\( *(([A-ZÖÄÜ][a-zöäüß]*)+) *\\))?( *(für) *(([A-ZÖÄÜ][a-zöäüß]*)+))?",
+		  "begin": "\\s*(Verb)(\\s*\\( *(([A-ZÖÄÜ][a-zöäüß]*)+)\\s*\\))?( *(für) *(([A-ZÖÄÜ][a-zöäüß]*)+))?",
 		  "end": ":",
 		  "beginCaptures": {
 				"1": {
@@ -163,28 +166,44 @@
 			  "include": "#functions"
 			}
 		  ]
-		},
+    },
+    "moduls": {
+      "name": "meta.modul.germanskript",
+      "begin": "\\s*(Modul)\\s*((([A-ZÖÄÜ][a-zöäüß]*)+)::)*(([A-ZÖÄÜ][a-zöäüß]*)+)",
+      "end": ":",
+      "beginCaptures": {
+        "1": {
+          "name": "keyword.other.modul.germanskript"
+        },
+        "3": {
+          "name": "entity.name.modul.germanskript"
+        },
+        "5": {
+          "name": "entity.name.modul.germanskript"
+        }
+      }
+    },
 		"vardecls": {
 		  "name": "meta.vardecl.germanskript",
-		  "match": "\\b(der|die|das|ein|eine|einige|mein|meine|jener|jene|jenes|dieser|diese|dieses) *((neue|neuer|neues) *)?([A-ZÖÄÜ][a-zöäüß]*)+ *(ist|sind)",
+		  "match": "(?<=(^|;))\\s*(der|die|das|ein|eine|einige|mein|meine|jener|jene|jenes|dieser|diese|dieses) *((neue|neuer|neues) *)?([A-ZÖÄÜ][a-zöäüß]*)+ *(ist|sind)",
 		  "captures": {
-			"1": {
+			"2": {
 			  "name": "storage.type.var.germanskript"
 			},
-			"3": {
+			"4": {
 			  "name": "storage.type.modifier.neu.germanskript"
 			},
-			"4": {
+			"5": {
 			  "name": "variable.other.germanskript"
 			},
-			"5": {
+			"6": {
 			  "name": "keyword.operator.germanskript"
 			}
 		  }
 		},
 		"declinations": {
 			"name": "meta.declination",
-			"begin": "\\b(Deklination) *(Maskulinum|Neutrum|Femininum)?",
+			"begin": "\\s*(Deklination) *(Maskulinum|Neutrum|Femininum)?",
 			"end": "$",
 			"beginCaptures": {
 				"1": {
