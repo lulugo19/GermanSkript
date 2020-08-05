@@ -370,10 +370,10 @@ class GermanSkriptTest {
   @DisplayName("verwende Module (komplexer)")
   fun verwendeModuleKomplexer() {
     val source = """
-      Deklination Neutrum Singular(Bar) Plural(Bars)
-      Deklination Neutrum Singular(Foo) Plural(Foos)
-      
       Modul A:
+        Deklination Neutrum Singular(Bar) Plural(Bars)
+        Deklination Neutrum Singular(Foo) Plural(Foos)
+        
         verwende C
         Modul B:
           Nomen Foo mit dem Bar:.

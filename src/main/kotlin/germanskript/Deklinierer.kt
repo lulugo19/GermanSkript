@@ -76,9 +76,11 @@ data class DudenAnfrage(
 )
 
 class Deklinierer(startDatei: File): PipelineKomponente(startDatei) {
-  val ast = Parser(startDatei).parse()
+  val modulAuflöser = ModulAuflöser(startDatei)
+  val ast = modulAuflöser.ast
 
   fun deklaniere() = runBlocking {
+    modulAuflöser.löseModulPfadeAuf()
     val dudenAnfragen = mutableMapOf<String, MutableList<DudenAnfrage>>()
     ast.visit { knoten ->
       when (knoten) {
@@ -142,18 +144,46 @@ class Deklinierer(startDatei: File): PipelineKomponente(startDatei) {
     }
   }
 
-  companion object {
-    fun holeDeklination(nomen: AST.Nomen): Deklination {
-      var container: AST.DefinitionsContainer? = nomen.findNodeInParents() ?:
-          nomen.findNodeInParents<AST.Programm>()!!.definitionen
-      while (true) {
-        try {
-          return container!!.wörterbuch.holeDeklination(nomen.hauptWort)
-        } catch (fehler: Wörterbuch.WortNichtGefunden) {
-          container = container!!.findNodeInParents()
-          if (container == null) {
-            throw GermanSkriptFehler.UnbekanntesWort(nomen.bezeichner.toUntyped(), nomen.hauptWort)
-          }
+  fun holeDeklination(nomen: AST.Nomen): Deklination {
+    val container: AST.DefinitionsContainer? = nomen.findNodeInParents() ?:
+    nomen.findNodeInParents<AST.Programm>()!!.definitionen
+
+    val modulPfad = nomen.findNodeInParents<AST.Funktion>()?.modulPfad ?:
+      nomen.findNodeInParents<AST.Ausdruck.ObjektInstanziierung>()?.klasse?.modulPfad
+    if (modulPfad != null && modulPfad.isNotEmpty()) {
+      val modul = modulAuflöser.findeModul(container!!, modulPfad)
+      try {
+        return holeDeklination(nomen, modul.definitionen)
+      } catch (fehler: GermanSkriptFehler.UnbekanntesWort) {
+        // just catch it...
+      }
+    }
+
+    try {
+      return holeDeklination(nomen, container!!)
+    } catch (fehler: GermanSkriptFehler.UnbekanntesWort) {
+      // just catch it...
+    }
+
+    for (verwendetesModul in container!!.verwendeteModule) {
+      try {
+        return holeDeklination(nomen, verwendetesModul)
+      } catch (fehler: GermanSkriptFehler.UnbekanntesWort) {
+        // just catch it
+      }
+    }
+    throw GermanSkriptFehler.UnbekanntesWort(nomen.bezeichner.toUntyped(), nomen.hauptWort)
+  }
+
+  private fun holeDeklination(nomen: AST.Nomen, container: AST.DefinitionsContainer): Deklination {
+    var container: AST.DefinitionsContainer? = container
+    while (true) {
+      try {
+        return container!!.wörterbuch.holeDeklination(nomen.hauptWort)
+      } catch (fehler: Wörterbuch.WortNichtGefunden) {
+        container = container!!.findNodeInParents()
+        if (container == null) {
+          throw GermanSkriptFehler.UnbekanntesWort(nomen.bezeichner.toUntyped(), nomen.hauptWort)
         }
       }
     }

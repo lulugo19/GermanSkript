@@ -51,7 +51,7 @@ class GrammatikPrüfer(startDatei: File): PipelineKomponente(startDatei) {
       nomen.numerus = Numerus.SINGULAR
       nomen.fälle.addAll(fälle)
     } else {
-      val deklination = Deklinierer.holeDeklination(nomen)
+      val deklination = deklinierer.holeDeklination(nomen)
       val deklinationsNumerus = deklination.getNumerus(bezeichner.hauptWort!!)
       deklinationsNumerus.retainAll(numerus)
       if (deklinationsNumerus.isEmpty()) {
@@ -102,7 +102,7 @@ class GrammatikPrüfer(startDatei: File): PipelineKomponente(startDatei) {
 
   private fun prüfeNumerus(nomen: AST.Nomen, numerus: Numerus) {
     if (nomen.numerus!! != numerus) {
-      val numerusForm = Deklinierer.holeDeklination(nomen).getForm(nomen.fälle.first(), numerus)
+      val numerusForm = deklinierer.holeDeklination(nomen).getForm(nomen.fälle.first(), numerus)
       throw GermanSkriptFehler.GrammatikFehler.FalscherNumerus(nomen.bezeichner.toUntyped(), numerus, numerusForm)
     }
   }
