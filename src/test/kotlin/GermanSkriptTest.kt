@@ -402,5 +402,24 @@ class GermanSkriptTest {
     testGermanSkriptSource(source, expectedOutput)
   }
 
+  @Test
+  @DisplayName("Zugriff auf einzelne Zeichen einer Zeichenfolge")
+  fun zeichenfolgeUmkehren() {
+    val source = """
+      Verb(Zeichenfolge) kehre die Zeichenfolge um:
+        ein Index ist die Länge der Zeichenfolge minus 1
+        ein ERGEBNIS ist ""
+        solange der Index größer gleich 0 ist:
+          ein ERGEBNIS ist das ERGEBNIS + die Zeichenfolge[Index]
+          ein Index ist der Index - 1
+        .
+        gebe das ERGEBNIS zurück
+      .
+      
+      schreibe die Zeichenfolge (kehre die Zeichenfolge "Hallo Welt" um)
+    """.trimIndent()
+
+    testGermanSkriptSource(source, "tleW ollaH")
+  }
 
 }

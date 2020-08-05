@@ -293,6 +293,15 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
 
   override fun evaluiereListenElement(listenElement: AST.Ausdruck.ListenElement): Typ {
     ausdruckMussTypSein(listenElement.index, Typ.Zahl)
+    val zeichenfolge = evaluiereVariable(listenElement.singular.hauptWort)
+    // Bei einem Zugriff auf einen Listenindex kann es sich auch um eine Zeichenfolge handeln
+    if (zeichenfolge != null) {
+      if (zeichenfolge !is Typ.Zeichenfolge) {
+        throw GermanSkriptFehler.TypFehler.FalscherTyp(
+            listenElement.singular.bezeichner.toUntyped(), zeichenfolge, "Zeichenfolge")
+      }
+      return Typ.Zeichenfolge
+    }
     return evaluiereListenSingular(listenElement.singular)
   }
 

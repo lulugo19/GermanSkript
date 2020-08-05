@@ -333,8 +333,19 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
   }
 
   override fun evaluiereListenElement(listenElement: AST.Ausdruck.ListenElement): Wert {
-    val liste = evaluiereVariable(listenElement.singular.ganzesWort(Kasus.NOMINATIV, Numerus.PLURAL)) as Wert.Objekt.Liste
     val index = (evaluiereAusdruck(listenElement.index) as Wert.Zahl).toInt()
+    val zeichenfolge = evaluiereVariable(listenElement.singular.hauptWort)
+    if (zeichenfolge != null && zeichenfolge is Wert.Zeichenfolge) {
+      val zeichenfolge = zeichenfolge.zeichenfolge
+      if (index >= zeichenfolge.length) {
+        throw GermanSkriptFehler.LaufzeitFehler(holeErstesTokenVonAusdruck(listenElement.index),
+            aufrufStapel.toString(), "Index außerhalb des Bereichs. Der Index ist $index, doch die Länge der Zeichenfolge ist ${zeichenfolge.length}.\n")
+      }
+      return Wert.Zeichenfolge(zeichenfolge[index].toString())
+    }
+
+    val liste = evaluiereVariable(listenElement.singular.ganzesWort(Kasus.NOMINATIV, Numerus.PLURAL)) as Wert.Objekt.Liste
+
     if (index >= liste.elemente.size) {
       throw GermanSkriptFehler.LaufzeitFehler(holeErstesTokenVonAusdruck(listenElement.index),
           aufrufStapel.toString(), "Index außerhalb des Bereichs. Der Index ist $index, doch die Länge der Liste ist ${liste.elemente.size}.\n")
