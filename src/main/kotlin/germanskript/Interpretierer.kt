@@ -45,8 +45,9 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
   }
 
   private class AufrufStapelElement(val aufruf: AST.IAufruf, val objekt: Wert.Objekt?, val umgebung: Umgebung<Wert>)
-  companion object {
-    private const val CALL_STACK_OUTPUT_LIMIT = 50
+
+  object Konstanten {
+     const val CALL_STACK_OUTPUT_LIMIT = 50
   }
 
   private inner class AufrufStapel {
@@ -78,7 +79,7 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
           "\n",
           "\t",
           "",
-          CALL_STACK_OUTPUT_LIMIT,
+          Konstanten.CALL_STACK_OUTPUT_LIMIT,
           "...",
           ::aufrufStapelElementToString
       )
@@ -151,7 +152,7 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
 
   override fun durchlaufeZurückgabe(zurückgabe: AST.Satz.Zurückgabe) {
     if (zurückgabe.ausdruck != null) {
-      rückgabeWert = evaluiereAusdruck(zurückgabe.ausdruck)
+      rückgabeWert = evaluiereAusdruck(zurückgabe.ausdruck!!)
     }
     flags.add(Flag.ZURÜCK)
   }
@@ -160,7 +161,7 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
     val inBedingung = bedingungsSatz.bedingungen.any(::durchlaufeBedingung)
 
     if (!inBedingung && bedingungsSatz.sonst != null ) {
-      durchlaufeSätze(bedingungsSatz.sonst, true)
+      durchlaufeSätze(bedingungsSatz.sonst!!, true)
     }
   }
 
@@ -231,7 +232,7 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
     }
     val klassenDefinition = (instanziierung.klasse.typ!! as Typ.KlassenTyp.Klasse).klassenDefinition
     val objekt = Wert.Objekt.SkriptObjekt(klassenDefinition, eigenschaften)
-    durchlaufeAufruf(instanziierung, klassenDefinition.konstruktorSätze, Umgebung(), true, objekt)
+    durchlaufeAufruf(instanziierung, klassenDefinition.sätze, Umgebung(), true, objekt)
     return objekt
   }
 
@@ -279,44 +280,47 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
     }
   }
 
-  private fun zeichenFolgenOperation(operator: Operator, links: Wert.Zeichenfolge, rechts: Wert.Zeichenfolge): Wert {
-    return when (operator) {
-      Operator.GLEICH -> Wert.Boolean(links == rechts)
-      Operator.UNGLEICH -> Wert.Boolean(links != rechts)
-      Operator.GRÖßER -> Wert.Boolean(links > rechts)
-      Operator.KLEINER -> Wert.Boolean(links < rechts)
-      Operator.GRÖSSER_GLEICH -> Wert.Boolean(links >= rechts)
-      Operator.KLEINER_GLEICH -> Wert.Boolean(links <= rechts)
-      Operator.PLUS -> Wert.Zeichenfolge(links + rechts)
-      else -> throw Exception("Operator $operator ist für den Typen Zeichenfolge nicht definiert.")
-    }
-  }
+  companion object {
 
-  private fun zahlOperation(operator: Operator, links: Wert.Zahl, rechts: Wert.Zahl): Wert {
-    return when(operator) {
-      Operator.GLEICH -> Wert.Boolean(links == rechts)
-      Operator.UNGLEICH -> Wert.Boolean(links != rechts)
-      Operator.GRÖßER -> Wert.Boolean(links > rechts)
-      Operator.KLEINER -> Wert.Boolean(links < rechts)
-      Operator.GRÖSSER_GLEICH -> Wert.Boolean(links >= rechts)
-      Operator.KLEINER_GLEICH -> Wert.Boolean(links <= rechts)
-      Operator.PLUS -> links + rechts
-      Operator.MINUS -> links - rechts
-      Operator.MAL -> links * rechts
-      Operator.GETEILT -> links / rechts
-      Operator.MODULO -> links % rechts
-      Operator.HOCH -> links.pow(rechts)
-      else -> throw Exception("Operator $operator ist für den Typen Zahl nicht definiert.")
+    fun zeichenFolgenOperation(operator: Operator, links: Wert.Zeichenfolge, rechts: Wert.Zeichenfolge): Wert {
+      return when (operator) {
+        Operator.GLEICH -> Wert.Boolean(links == rechts)
+        Operator.UNGLEICH -> Wert.Boolean(links != rechts)
+        Operator.GRÖßER -> Wert.Boolean(links > rechts)
+        Operator.KLEINER -> Wert.Boolean(links < rechts)
+        Operator.GRÖSSER_GLEICH -> Wert.Boolean(links >= rechts)
+        Operator.KLEINER_GLEICH -> Wert.Boolean(links <= rechts)
+        Operator.PLUS -> Wert.Zeichenfolge(links + rechts)
+        else -> throw Exception("Operator $operator ist für den Typen Zeichenfolge nicht definiert.")
+      }
     }
-  }
 
-  private fun booleanOperation(operator: Operator, links: Wert.Boolean, rechts: Wert.Boolean): Wert {
-    return when (operator) {
-      Operator.ODER -> Wert.Boolean(links.boolean || rechts.boolean)
-      Operator.UND -> Wert.Boolean(links.boolean && rechts.boolean)
-      Operator.GLEICH -> Wert.Boolean(links.boolean == rechts.boolean)
-      Operator.UNGLEICH -> Wert.Boolean(links.boolean != rechts.boolean)
-      else -> throw Exception("Operator $operator ist für den Typen Boolean nicht definiert.")
+    fun zahlOperation(operator: Operator, links: Wert.Zahl, rechts: Wert.Zahl): Wert {
+      return when (operator) {
+        Operator.GLEICH -> Wert.Boolean(links == rechts)
+        Operator.UNGLEICH -> Wert.Boolean(links != rechts)
+        Operator.GRÖßER -> Wert.Boolean(links > rechts)
+        Operator.KLEINER -> Wert.Boolean(links < rechts)
+        Operator.GRÖSSER_GLEICH -> Wert.Boolean(links >= rechts)
+        Operator.KLEINER_GLEICH -> Wert.Boolean(links <= rechts)
+        Operator.PLUS -> links + rechts
+        Operator.MINUS -> links - rechts
+        Operator.MAL -> links * rechts
+        Operator.GETEILT -> links / rechts
+        Operator.MODULO -> links % rechts
+        Operator.HOCH -> links.pow(rechts)
+        else -> throw Exception("Operator $operator ist für den Typen Zahl nicht definiert.")
+      }
+    }
+
+    fun booleanOperation(operator: Operator, links: Wert.Boolean, rechts: Wert.Boolean): Wert {
+      return when (operator) {
+        Operator.ODER -> Wert.Boolean(links.boolean || rechts.boolean)
+        Operator.UND -> Wert.Boolean(links.boolean && rechts.boolean)
+        Operator.GLEICH -> Wert.Boolean(links.boolean == rechts.boolean)
+        Operator.UNGLEICH -> Wert.Boolean(links.boolean != rechts.boolean)
+        else -> throw Exception("Operator $operator ist für den Typen Boolean nicht definiert.")
+      }
     }
   }
 

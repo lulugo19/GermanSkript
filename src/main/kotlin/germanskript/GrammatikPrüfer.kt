@@ -30,7 +30,7 @@ class GrammatikPrüfer(startDatei: File): PipelineKomponente(startDatei) {
         is AST.Satz.VariablenDeklaration -> prüfeVariablendeklaration(knoten)
         is AST.Satz.BedingungsTerm -> prüfeKontextbasiertenAusdruck(knoten.bedingung, null, EnumSet.of(Kasus.NOMINATIV), false)
         is AST.Satz.Zurückgabe -> if (knoten.ausdruck != null)
-            prüfeKontextbasiertenAusdruck(knoten.ausdruck, null, EnumSet.of(Kasus.AKKUSATIV), false)
+            prüfeKontextbasiertenAusdruck(knoten.ausdruck!!, null, EnumSet.of(Kasus.AKKUSATIV), false)
         is AST.Satz.FürJedeSchleife -> prüfeFürJedeSchleife(knoten)
         is AST.Satz.FunktionsAufruf -> prüfeFunktionsAufruf(knoten.aufruf)
         is AST.Satz.MethodenBlock -> prüfeNomen(knoten.name, EnumSet.of(Kasus.NOMINATIV), Numerus.BEIDE)

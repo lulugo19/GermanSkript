@@ -17,6 +17,10 @@ enum class FunktionsAufrufTyp {
   METHODEN_OBJEKT_AUFRUF,
 }
 
+interface IBereich {
+  var sätze: MutableList<AST.Satz>
+}
+
 sealed class AST {
   open val children = emptySequence<AST>()
   var parent: AST? = null
@@ -127,8 +131,8 @@ sealed class AST {
   }
 
   // Wurzelknoten
-  data class Programm(val programmStart: Token?, val definitionen: DefinitionsContainer, val sätze: List<Satz>):
-      AST(), IAufruf {
+  data class Programm(val programmStart: Token?, val definitionen: DefinitionsContainer, override var sätze: MutableList<Satz>):
+      AST(), IAufruf, IBereich {
     override val vollerName = "starte das Programm"
     override val token get() = programmStart!!
 
@@ -220,9 +224,9 @@ sealed class AST {
           val objekt: TypUndName?,
           val präpositionsParameter: List<PräpositionsParameter>,
           val suffix: TypedToken<TokenTyp.BEZEICHNER_KLEIN>?,
-          val sätze: List<Satz>,
+          override var sätze: MutableList<Satz>,
           var vollerName: String? = null
-      ): FunktionOderMethode() {
+      ): FunktionOderMethode(), IBereich {
 
         private val _parameter: MutableList<TypUndName> = mutableListOf()
         val parameter: List<TypUndName> = _parameter
@@ -265,8 +269,8 @@ sealed class AST {
         val typ: TypKnoten,
         val elternKlasse: TypKnoten?,
         val eigenschaften: MutableList<TypUndName>,
-        val konstruktorSätze: List<Satz>
-    ): Definition() {
+        override var sätze: MutableList<Satz>
+    ): Definition(), IBereich {
       val methoden: HashMap<String, FunktionOderMethode.Methode> = HashMap()
       val konvertierungen: HashMap<String, Konvertierung> = HashMap()
       override val children = sequence {
@@ -275,15 +279,15 @@ sealed class AST {
           yield(elternKlasse!!)
         }
         yieldAll(eigenschaften)
-        yieldAll(konstruktorSätze)
+        yieldAll(sätze)
       }
     }
 
     data class Konvertierung(
         val typ: TypKnoten,
         val klasse: TypKnoten,
-        val sätze: List<Satz>
-    ): Definition() {
+        override var sätze: MutableList<Satz>
+    ): Definition(), IBereich {
       override val children: Sequence<AST> = sequence {
         yield(typ)
         yield(klasse)
@@ -316,7 +320,7 @@ sealed class AST {
         val name: Nomen,
         val neu: TypedToken<TokenTyp.NEU>?,
         val zuweisungsOperator: TypedToken<TokenTyp.ZUWEISUNG>,
-        val ausdruck: Ausdruck
+        var ausdruck: Ausdruck
     ): Satz() {
       override val children = sequenceOf(name, ausdruck)
 
@@ -325,9 +329,9 @@ sealed class AST {
     }
 
     data class BedingungsTerm(
-        val bedingung: Ausdruck,
-        val sätze: List<Satz>
-    ): AST() {
+        var bedingung: Ausdruck,
+        override var sätze: MutableList<Satz>
+    ): AST(), IBereich {
       override val children = sequence {
           yield(bedingung)
           yieldAll(sätze)
@@ -335,16 +339,16 @@ sealed class AST {
     }
 
     data class Bereich(
-        val sätze: List<Satz>
-    ): Satz() {
+        override var sätze: MutableList<Satz>
+    ): Satz(), IBereich {
       override val children = sequence {
         yieldAll(sätze)
       }
     }
 
     data class Bedingung(
-        val bedingungen: List<BedingungsTerm>,
-        val sonst: List<Satz>?
+        val bedingungen: MutableList<BedingungsTerm>,
+        var sonst: List<Satz>?
     ): Satz() {
       override val children = sequence {
           yieldAll(bedingungen)
@@ -367,8 +371,8 @@ sealed class AST {
         val singular: Nomen,
         val binder: Nomen,
         val liste: Ausdruck?,
-        val sätze: List<Satz>
-    ): Satz() {
+        override var sätze: MutableList<Satz>
+    ): Satz(), IBereich {
       override val children = sequence {
           yield(singular)
           yield(binder)
@@ -383,14 +387,14 @@ sealed class AST {
       override val children = sequenceOf(aufruf)
     }
 
-    data class MethodenBlock(val name: Nomen, val sätze: List<Satz>): Satz(){
+    data class MethodenBlock(val name: Nomen, override var sätze: MutableList<Satz>): Satz(), IBereich {
       override val children = sequence {
         yield(name)
         yieldAll(sätze)
       }
     }
 
-    data class Zurückgabe(val erstesToken: TypedToken<TokenTyp.BEZEICHNER_KLEIN>, val ausdruck: Ausdruck?): Satz() {
+    data class Zurückgabe(val erstesToken: TypedToken<TokenTyp.BEZEICHNER_KLEIN>, var ausdruck: Ausdruck?): Satz() {
       override val children = sequence {
         if (ausdruck != null) {
           yield(ausdruck!!)
@@ -401,7 +405,7 @@ sealed class AST {
 
   data class Argument(
       val name: Nomen,
-      val wert: Ausdruck
+      var wert: Ausdruck
   ): AST() {
     override val children = sequenceOf(name, wert)
   }
@@ -421,7 +425,7 @@ sealed class AST {
       override val children = sequenceOf(name)
     }
 
-    data class Liste(val pluralTyp: Nomen, val elemente: List<Ausdruck>): Ausdruck() {
+    data class Liste(val pluralTyp: Nomen, var elemente: List<Ausdruck>): Ausdruck() {
       override val children = sequence {
         yield(pluralTyp)
         yieldAll( elemente)
@@ -430,7 +434,7 @@ sealed class AST {
 
     data class ListenElement(
         val singular: Nomen,
-        val index: Ausdruck
+        var index: Ausdruck
     ): Ausdruck() {
       override val children = sequenceOf(singular, index)
     }
@@ -453,7 +457,7 @@ sealed class AST {
     }
 
     data class Konvertierung(
-        val ausdruck: Ausdruck,
+        var ausdruck: Ausdruck,
         val typ: TypKnoten
     ): Ausdruck(), IAufruf {
       override val token = typ.name.bezeichner.toUntyped()

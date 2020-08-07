@@ -52,7 +52,7 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
 
   private fun prüfeKlasse(klasse: AST.Definition.Klasse) {
     zuÜberprüfendeKlasse = klasse
-    durchlaufeAufruf(klasse.typ.name.bezeichner.toUntyped(), klasse.konstruktorSätze, Umgebung(), true,null)
+    durchlaufeAufruf(klasse.typ.name.bezeichner.toUntyped(), klasse.sätze, Umgebung(), true,null)
     klasse.methoden.values.forEach {methode -> prüfeFunktion(methode.funktion)}
     klasse.konvertierungen.values.forEach {konvertierung ->
       durchlaufeAufruf(konvertierung.klasse.name.bezeichner.toUntyped(), konvertierung.sätze, Umgebung(), true, konvertierung.typ.typ!!)
@@ -224,7 +224,7 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
       if (zurückgabe.ausdruck == null) {
         throw GermanSkriptFehler.RückgabeFehler.RückgabeVergessen(zurückgabe.erstesToken.toUntyped(), rückgabeTyp!!)
       }
-      ausdruckMussTypSein(zurückgabe.ausdruck, rückgabeTyp!!)
+      ausdruckMussTypSein(zurückgabe.ausdruck!!, rückgabeTyp!!)
     }
     rückgabeErreicht = true
   }

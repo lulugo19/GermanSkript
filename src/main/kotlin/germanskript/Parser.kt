@@ -349,7 +349,7 @@ private sealed class SubParser<T: AST>() {
     return result
   }
 
-  protected fun parseSätze(endToken: TokenTyp = TokenTyp.PUNKT): List<AST.Satz> =
+  protected fun parseSätze(endToken: TokenTyp = TokenTyp.PUNKT): MutableList<AST.Satz> =
       parseBereich(endToken) { subParse(Programm(id)) }.sätze
   // endregion
 
