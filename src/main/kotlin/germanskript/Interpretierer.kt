@@ -23,7 +23,7 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
     typPrüfer.prüfe()
     try {
       aufrufStapel.push(ast, Umgebung())
-      durchlaufeSätze(ast.sätze, true)
+      durchlaufeBereich(ast.programm, true)
     } catch (fehler: Throwable) {
       when (fehler) {
         is StackOverflowError -> throw GermanSkriptFehler.LaufzeitFehler(
@@ -104,11 +104,19 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
   // region Sätze
   private fun durchlaufeBedingung(bedingung: AST.Satz.BedingungsTerm): Boolean {
       return if ((evaluiereAusdruck(bedingung.bedingung) as Wert.Boolean).boolean) {
-        durchlaufeSätze(bedingung.sätze, true)
+        durchlaufeBereich(bedingung.bereich, true)
         true
       } else {
         false
       }
+  }
+
+  override fun starteBereich(bereich: AST.Satz.Bereich) {
+    // hier muss nichts gemacht werden...
+  }
+
+  override fun beendeBereich(bereich: AST.Satz.Bereich) {
+    // hier muss nichts gemacht werden...
   }
 
   override fun durchlaufeVariablenDeklaration(deklaration: AST.Satz.VariablenDeklaration) {
@@ -121,16 +129,16 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
       // Da der Typprüfer schon überprüft ob Variablen überschrieben werden können
       // werden hier die Variablen immer überschrieben
       if (deklaration.name.unveränderlich || deklaration.neu != null) {
-        umgebung.schreibeVariable(deklaration.name, wert, !deklaration.name.unveränderlich)
+        umgebung.schreibeVariable(deklaration.name, wert, false)
       } else {
         umgebung.überschreibeVariable(deklaration.name, wert)
       }
     }
   }
 
-  private fun durchlaufeAufruf(aufruf: AST.IAufruf, sätze: List<AST.Satz>, umgebung: Umgebung<Wert>, neuerBereich: Boolean, objekt: Wert.Objekt?): Wert? {
+  private fun durchlaufeAufruf(aufruf: AST.IAufruf, bereich: AST.Satz.Bereich, umgebung: Umgebung<Wert>, neuerBereich: Boolean, objekt: Wert.Objekt?): Wert? {
     aufrufStapel.push(aufruf, umgebung, objekt)
-    durchlaufeSätze(sätze, neuerBereich)
+    durchlaufeBereich(bereich, neuerBereich)
     flags.remove(Flag.ZURÜCK)
     aufrufStapel.pop()
     return rückgabeWert
@@ -147,7 +155,7 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
       neueUmgebung.schreibeVariable(parameter[i].name, evaluiereAusdruck(argumente[i+j].wert), false)
     }
     val funktionsDefinition = funktionsAufruf.funktionsDefinition!!
-    return durchlaufeAufruf(funktionsAufruf, funktionsDefinition.sätze, neueUmgebung, false, null)
+    return durchlaufeAufruf(funktionsAufruf, funktionsDefinition.körper, neueUmgebung, false, null)
   }
 
   override fun durchlaufeZurückgabe(zurückgabe: AST.Satz.Zurückgabe) {
@@ -161,14 +169,14 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
     val inBedingung = bedingungsSatz.bedingungen.any(::durchlaufeBedingung)
 
     if (!inBedingung && bedingungsSatz.sonst != null ) {
-      durchlaufeSätze(bedingungsSatz.sonst!!, true)
+      durchlaufeBereich(bedingungsSatz.sonst!!, true)
     }
   }
 
   override fun durchlaufeSolangeSchleife(schleife: AST.Satz.SolangeSchleife) {
     while (!flags.contains(Flag.SCHLEIFE_ABBRECHEN) && (evaluiereAusdruck(schleife.bedingung.bedingung) as Wert.Boolean).boolean) {
       flags.remove(Flag.SCHLEIFE_FORTFAHREN)
-      durchlaufeSätze(schleife.bedingung.sätze, true)
+      durchlaufeBereich(schleife.bedingung.bereich, true)
     }
     flags.remove(Flag.SCHLEIFE_ABBRECHEN)
   }
@@ -183,7 +191,7 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
     for (element in liste.elemente) {
       flags.remove(Flag.SCHLEIFE_FORTFAHREN)
       umgebung.überschreibeVariable(schleife.binder, element)
-      durchlaufeSätze(schleife.sätze, true)
+      durchlaufeBereich(schleife.bereich, true)
       if (flags.contains(Flag.SCHLEIFE_ABBRECHEN)) {
         flags.remove(Flag.SCHLEIFE_ABBRECHEN)
         break
@@ -232,7 +240,7 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
     }
     val klassenDefinition = (instanziierung.klasse.typ!! as Typ.KlassenTyp.Klasse).klassenDefinition
     val objekt = Wert.Objekt.SkriptObjekt(klassenDefinition, eigenschaften)
-    durchlaufeAufruf(instanziierung, klassenDefinition.sätze, Umgebung(), true, objekt)
+    durchlaufeAufruf(instanziierung, klassenDefinition.konstruktor, Umgebung(), true, objekt)
     return objekt
   }
 
@@ -463,7 +471,7 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
     val wert = evaluiereAusdruck(konvertierung.ausdruck)
     if (wert is Wert.Objekt && wert.klassenDefinition.konvertierungen.containsKey(konvertierung.typ.name.nominativ)) {
       val konvertierungsDefinition = wert.klassenDefinition.konvertierungen.getValue(konvertierung.typ.name.nominativ)
-      return durchlaufeAufruf(konvertierung, konvertierungsDefinition.sätze, Umgebung(), true, wert)!!
+      return durchlaufeAufruf(konvertierung, konvertierungsDefinition.definition, Umgebung(), true, wert)!!
     }
     return when (konvertierung.typ.typ!!) {
       is Typ.Zahl -> konvertiereZuZahl(konvertierung, wert)

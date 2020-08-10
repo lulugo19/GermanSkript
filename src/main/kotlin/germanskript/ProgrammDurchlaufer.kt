@@ -8,18 +8,19 @@ abstract  class ProgrammDurchlaufer<T>(startDatei: File): PipelineKomponente(sta
   protected abstract val umgebung: Umgebung<T>
 
   // region Sätze
-  protected fun durchlaufeSätze(sätze: List<AST.Satz>, neuerBereich: Boolean)  {
+  protected fun durchlaufeBereich(bereich: AST.Satz.Bereich, neuerBereich: Boolean)  {
     if (neuerBereich) {
       umgebung.pushBereich()
     }
-    for (satz in sätze) {
+    starteBereich(bereich)
+    for (satz in bereich.sätze) {
       if (sollSätzeAbbrechen()) {
         return
       }
       when (satz) {
         is AST.Satz.VariablenDeklaration -> durchlaufeVariablenDeklaration(satz)
         is AST.Satz.FunktionsAufruf -> durchlaufeFunktionsAufruf(satz.aufruf, false)
-        is AST.Satz.Bereich -> durchlaufeSätze(satz.sätze, true)
+        is AST.Satz.Bereich -> durchlaufeBereich(satz, true)
         is AST.Satz.MethodenBlock -> durchlaufeMethodenBlock(satz)
         is AST.Satz.Zurückgabe -> durchlaufeZurückgabe(satz)
         is AST.Satz.Bedingung -> durchlaufeBedingungsSatz(satz)
@@ -30,6 +31,7 @@ abstract  class ProgrammDurchlaufer<T>(startDatei: File): PipelineKomponente(sta
         is AST.Satz.Intern -> durchlaufeIntern()
       }
     }
+    beendeBereich(bereich)
     if (neuerBereich) {
       umgebung.popBereich()
     }
@@ -60,7 +62,7 @@ abstract  class ProgrammDurchlaufer<T>(startDatei: File): PipelineKomponente(sta
     val wert = evaluiereVariable(methodenBlock.name)
     bevorDurchlaufeMethodenBlock(methodenBlock, wert)
     umgebung.pushBereich(wert)
-    durchlaufeSätze(methodenBlock.sätze, true)
+    durchlaufeBereich(methodenBlock.bereich, false)
     umgebung.popBereich()
   }
 
@@ -75,6 +77,8 @@ abstract  class ProgrammDurchlaufer<T>(startDatei: File): PipelineKomponente(sta
   protected abstract fun durchlaufeSolangeSchleife(schleife: AST.Satz.SolangeSchleife)
   protected abstract fun durchlaufeFürJedeSchleife(schleife: AST.Satz.FürJedeSchleife)
   protected abstract fun durchlaufeIntern()
+  protected abstract fun starteBereich(bereich: AST.Satz.Bereich)
+  protected abstract fun beendeBereich(bereich: AST.Satz.Bereich)
 
   // endregion
   protected fun evaluiereAusdruck(ausdruck: AST.Ausdruck): T {
@@ -98,11 +102,11 @@ abstract  class ProgrammDurchlaufer<T>(startDatei: File): PipelineKomponente(sta
     }
   }
 
-  private fun evaluiereVariable(name: AST.Nomen): T {
+  protected open fun evaluiereVariable(name: AST.Nomen): T {
     return umgebung.leseVariable(name).wert
   }
 
-  fun evaluiereVariable(variable: String): T? {
+  protected open fun evaluiereVariable(variable: String): T? {
     return umgebung.leseVariable(variable)?.wert
   }
 

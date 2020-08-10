@@ -349,8 +349,8 @@ private sealed class SubParser<T: AST>() {
     return result
   }
 
-  protected fun parseSätze(endToken: TokenTyp = TokenTyp.PUNKT): MutableList<AST.Satz> =
-      parseBereich(endToken) { subParse(Programm(id)) }.sätze
+  protected fun parseSätze(endToken: TokenTyp = TokenTyp.PUNKT): AST.Satz.Bereich =
+      parseBereich(endToken) { subParse(Programm(id)) }.programm
   // endregion
 
   class Programm(override val id: ASTKnotenID, private val lexer: Lexer? = null): SubParser<AST.Programm>() {
@@ -387,7 +387,7 @@ private sealed class SubParser<T: AST>() {
           }
         }
       }
-      return AST.Programm(programmStart, definitionen, sätze)
+      return AST.Programm(programmStart, definitionen, AST.Satz.Bereich(sätze))
     }
 
     fun parseSatz(): AST.Satz? {
@@ -395,7 +395,7 @@ private sealed class SubParser<T: AST>() {
       return when (nextToken.typ) {
         is TokenTyp.INTERN -> subParse(Satz.Intern)
         is TokenTyp.VORNOMEN -> subParse(Satz.VariablenDeklaration)
-        is TokenTyp.DOPPELPUNKT -> AST.Satz.Bereich(parseSätze(TokenTyp.PUNKT))
+        is TokenTyp.DOPPELPUNKT -> AST.Satz.Bereich(parseSätze(TokenTyp.PUNKT).sätze)
         is TokenTyp.WENN -> subParse(Satz.Bedingung)
         is TokenTyp.SOLANGE -> subParse(Satz.SolangeSchleife)
         is TokenTyp.FORTFAHREN, is TokenTyp.ABBRECHEN -> subParse(Satz.SchleifenKontrolle)

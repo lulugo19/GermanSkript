@@ -1,6 +1,7 @@
 package germanskript
 
 import java.io.File
+import java.util.*
 
 /**
  * Constant Folding: https: //en.wikipedia.org/wiki/Constant_folding
@@ -20,12 +21,12 @@ class KonstantenFalter(startDatei: File): ProgrammDurchlaufer<Wert?>(startDatei)
     typPrüfer.prüfe()
     definierer.funktionsDefinitionen.forEach(::falteFunktion)
     definierer.klassenDefinitionen.forEach(::falteKlasse)
-    durchlaufeAufruf( ast.sätze, Umgebung(), true)
+    durchlaufeAufruf(ast.programm, Umgebung(), true)
   }
 
-  private fun durchlaufeAufruf(sätze: List<AST.Satz>, umgebung: Umgebung<Wert?>, neuerBereich: Boolean) {
+  private fun durchlaufeAufruf(bereich: AST.Satz.Bereich, umgebung: Umgebung<Wert?>, neuerBereich: Boolean) {
     this.umgebung = umgebung
-    durchlaufeSätze(sätze, neuerBereich)
+    durchlaufeBereich(bereich, neuerBereich)
   }
 
   private fun falteFunktion(funktion: AST.Definition.FunktionOderMethode.Funktion) {
@@ -37,14 +38,14 @@ class KonstantenFalter(startDatei: File): ProgrammDurchlaufer<Wert?>(startDatei)
     for (parameter in funktion.parameter) {
       funktionsUmgebung.schreibeVariable(parameter.name, null, false)
     }
-    durchlaufeAufruf(funktion.sätze, funktionsUmgebung, false)
+    durchlaufeAufruf(funktion.körper, funktionsUmgebung, false)
   }
 
   private fun falteKlasse(klasse: AST.Definition.Klasse) {
-    durchlaufeAufruf(klasse.sätze, Umgebung(), true)
+    durchlaufeAufruf(klasse.konstruktor, Umgebung(), true)
     klasse.methoden.values.forEach {methode -> falteFunktion(methode.funktion)}
     klasse.konvertierungen.values.forEach {konvertierung ->
-      durchlaufeAufruf(konvertierung.sätze, Umgebung(), true)
+      durchlaufeAufruf(konvertierung.definition, Umgebung(), true)
     }
   }
 
@@ -69,19 +70,48 @@ class KonstantenFalter(startDatei: File): ProgrammDurchlaufer<Wert?>(startDatei)
     return  null
   }
 
+  class GeleseneVariable(val deklaration: AST.Satz.VariablenDeklaration, var wurdeGelesen: Boolean)
+
+  val geleseneVariablen = Stack<MutableMap<String, GeleseneVariable>>()
+
   override fun durchlaufeVariablenDeklaration(deklaration: AST.Satz.VariablenDeklaration) {
     deklaration.ausdruck = falteKonstante(deklaration.ausdruck)
     if (deklaration.istEigenschaftsNeuZuweisung || deklaration.istEigenschaft) {
       return
     }
     else {
+      val geleseneVariablen = geleseneVariablen.peek()!!
       val wert = evaluiereAusdruck(deklaration.ausdruck)
       if (deklaration.name.unveränderlich || deklaration.neu != null) {
-        umgebung.schreibeVariable(deklaration.name, wert, !deklaration.name.unveränderlich)
+        umgebung.schreibeVariable(deklaration.name, wert, false)
       } else {
         umgebung.überschreibeVariable(deklaration.name, wert)
+        if (!geleseneVariablen[deklaration.name.nominativ]!!.wurdeGelesen) {
+          val bereich = deklaration.parent as AST.Satz.Bereich
+          bereich.sätze.remove(geleseneVariablen[deklaration.name.nominativ]!!.deklaration)
+        }
       }
+      geleseneVariablen[deklaration.name.nominativ] = GeleseneVariable(deklaration, false)
     }
+  }
+
+  override fun starteBereich(bereich: AST.Satz.Bereich) {
+    geleseneVariablen.push(mutableMapOf())
+  }
+
+  override fun beendeBereich(bereich: AST.Satz.Bereich) {
+    // eliminiere alle Variablendeklarationen die nicht gelesen wurden
+    val unnötigeVariablendeklarationen = geleseneVariablen.peek().values.filter { it.wurdeGelesen }.map { it.deklaration }
+    bereich.sätze.removeAll(unnötigeVariablendeklarationen)
+    geleseneVariablen.pop()
+  }
+
+  override fun evaluiereVariable(name: AST.Nomen): Wert? {
+    val geleseneVariablen = geleseneVariablen.peek()
+    if (geleseneVariablen.containsKey(name.nominativ)) {
+      geleseneVariablen.getValue(name.nominativ).wurdeGelesen = true
+    }
+    return super.evaluiereVariable(name)
   }
 
   override fun durchlaufeZurückgabe(zurückgabe: AST.Satz.Zurückgabe) {
@@ -101,21 +131,21 @@ class KonstantenFalter(startDatei: File): ProgrammDurchlaufer<Wert?>(startDatei)
           eliminierteBedingungen.addAll(
               bedingungsSatz.bedingungen.takeLast(bedingungsSatz.bedingungen.size-1-index))
           bedingungsSatz.sonst = null
-          durchlaufeSätze(bedingung.sätze, true)
+          durchlaufeBereich(bedingung.bereich, true)
           break
         } else {
           eliminierteBedingungen.add(bedingung)
         }
       } else {
-        durchlaufeSätze(bedingung.sätze, true)
+        durchlaufeBereich(bedingung.bereich, true)
       }
     }
     bedingungsSatz.bedingungen.removeAll(eliminierteBedingungen)
     val ersteBedingung = bedingungsSatz.bedingungen[0]
     if (ersteBedingung.bedingung is AST.Ausdruck.Boolean &&
         (ersteBedingung.bedingung as AST.Ausdruck.Boolean).boolean.typ.boolean.boolean) {
-      val parent = bedingungsSatz.parent as IBereich
-      parent.sätze[parent.sätze.indexOf(bedingungsSatz)] = AST.Satz.Bereich(ersteBedingung.sätze)
+      val bereich = bedingungsSatz.parent as AST.Satz.Bereich
+      bereich.sätze[bereich.sätze.indexOf(bedingungsSatz)] = AST.Satz.Bereich(ersteBedingung.bereich.sätze)
     }
   }
 
@@ -214,6 +244,6 @@ fun main() {
   file.writeText(source)
   val falter = KonstantenFalter(file)
   falter.falteKonstanten()
-  falter.ast.sätze.forEach(::println)
+  falter.ast.programm.sätze.forEach(::println)
   file.delete()
 }

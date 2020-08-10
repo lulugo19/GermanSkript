@@ -21,7 +21,7 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
     definierer.funktionsDefinitionen.forEach(::prüfeFunktion)
 
     // neue germanskript.Umgebung
-    durchlaufeAufruf(ast.programmStart!!, ast.sätze, Umgebung(), true,null)
+    durchlaufeAufruf(ast.programmStart!!, ast.programm, Umgebung(), true,null)
   }
 
   private fun ausdruckMussTypSein(ausdruck: AST.Ausdruck, erwarteterTyp: Typ): Typ {
@@ -47,23 +47,23 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
     for (parameter in funktion.parameter) {
       funktionsUmgebung.schreibeVariable(parameter.name, parameter.typKnoten.typ!!, false)
     }
-    durchlaufeAufruf(funktion.name.toUntyped(), funktion.sätze, funktionsUmgebung, false, funktion.rückgabeTyp?.typ)
+    durchlaufeAufruf(funktion.name.toUntyped(), funktion.körper, funktionsUmgebung, false, funktion.rückgabeTyp?.typ)
   }
 
   private fun prüfeKlasse(klasse: AST.Definition.Klasse) {
     zuÜberprüfendeKlasse = klasse
-    durchlaufeAufruf(klasse.typ.name.bezeichner.toUntyped(), klasse.sätze, Umgebung(), true,null)
+    durchlaufeAufruf(klasse.typ.name.bezeichner.toUntyped(), klasse.konstruktor, Umgebung(), true,null)
     klasse.methoden.values.forEach {methode -> prüfeFunktion(methode.funktion)}
     klasse.konvertierungen.values.forEach {konvertierung ->
-      durchlaufeAufruf(konvertierung.klasse.name.bezeichner.toUntyped(), konvertierung.sätze, Umgebung(), true, konvertierung.typ.typ!!)
+      durchlaufeAufruf(konvertierung.klasse.name.bezeichner.toUntyped(), konvertierung.definition, Umgebung(), true, konvertierung.typ.typ!!)
     }
   }
 
-  private fun durchlaufeAufruf(token: Token, sätze: List<AST.Satz>, umgebung: Umgebung<Typ>, neuerBereich: Boolean, rückgabeTyp: Typ?) {
+  private fun durchlaufeAufruf(token: Token, bereich: AST.Satz.Bereich, umgebung: Umgebung<Typ>, neuerBereich: Boolean, rückgabeTyp: Typ?) {
     this.rückgabeTyp = rückgabeTyp
     this.umgebung = umgebung
     rückgabeErreicht = false
-    durchlaufeSätze(sätze, neuerBereich)
+    durchlaufeBereich(bereich, neuerBereich)
     if (rückgabeTyp != null && !rückgabeErreicht) {
       throw GermanSkriptFehler.RückgabeFehler.RückgabeVergessen(token, rückgabeTyp)
     }
@@ -226,17 +226,19 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
       }
       ausdruckMussTypSein(zurückgabe.ausdruck!!, rückgabeTyp!!)
     }
-    rückgabeErreicht = true
+    // Die Rückgabe ist nur auf alle Fälle erreichbar, wenn sie an keine Bedingung und in keiner Schleife ist
+    rückgabeErreicht = zurückgabe.findNodeInParents<AST.Satz.BedingungsTerm>() == null &&
+        zurückgabe.findNodeInParents<AST.Satz.FürJedeSchleife>() == null
   }
 
   private fun prüfeBedingung(bedingung: AST.Satz.BedingungsTerm) {
     ausdruckMussTypSein(bedingung.bedingung, Typ.Boolean)
-    durchlaufeSätze(bedingung.sätze, true)
+    durchlaufeBereich(bedingung.bereich, true)
   }
 
   override fun durchlaufeBedingungsSatz(bedingungsSatz: AST.Satz.Bedingung) {
     bedingungsSatz.bedingungen.forEach(::prüfeBedingung)
-    bedingungsSatz.sonst?.also {durchlaufeSätze(it, true)}
+    bedingungsSatz.sonst?.also {durchlaufeBereich(it, true)}
   }
 
   override fun durchlaufeSolangeSchleife(schleife: AST.Satz.SolangeSchleife) {
@@ -255,7 +257,7 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
     }
     umgebung.pushBereich()
     umgebung.schreibeVariable(schleife.binder, elementTyp, false)
-    durchlaufeSätze(schleife.sätze, true)
+    durchlaufeBereich(schleife.bereich, true)
     umgebung.popBereich()
   }
 
@@ -272,11 +274,19 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
   }
 
   override fun durchlaufeAbbrechen() {
-    // mache nichts hier
+    // hier muss nichts gemacht werden...
   }
 
   override fun durchlaufeFortfahren() {
-    // mache nichts hier
+    // hier muss nichts gemacht werden...
+  }
+
+  override fun starteBereich(bereich: AST.Satz.Bereich) {
+    // hier muss nichts gemacht werden...
+  }
+
+  override fun beendeBereich(bereich: AST.Satz.Bereich) {
+    // hier muss nichts gemacht werden...
   }
 
   override fun evaluiereZeichenfolge(ausdruck: AST.Ausdruck.Zeichenfolge) = Typ.Zeichenfolge
