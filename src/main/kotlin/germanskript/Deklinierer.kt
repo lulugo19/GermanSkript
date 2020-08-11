@@ -1,5 +1,6 @@
 package germanskript
 
+import germanskript.util.istVokal
 import kotlinx.coroutines.*
 import java.io.File
 import java.lang.Integer.min
@@ -8,7 +9,8 @@ import java.util.*
 data class Deklination(
     val genus: Genus,
     private val singular: Array<String>,
-    val plural: Array<String>
+    val plural: Array<String>,
+    val istNominalisiertesAdjektiv: Boolean = false
 ) {
   val nominativSingular: String get() = singular[0]
 
@@ -114,6 +116,11 @@ class Deklinierer(startDatei: File): PipelineKomponente(startDatei) {
               dudenAnfragen.computeIfAbsent(knoten.wort.dateiPfad) { mutableListOf()} += DudenAnfrage(knoten, anfrage)
             }
           }
+          for (typDefinition in knoten.definierteTypen.values) {
+            if (typDefinition is AST.Definition.Typdefinition.Schnittstelle) {
+              knoten.wörterbuch.fügeDeklinationHinzu(deklaniereAdjektiv(typDefinition))
+            }
+          }
           return@visit true
         }
         else -> return@visit false
@@ -121,6 +128,18 @@ class Deklinierer(startDatei: File): PipelineKomponente(startDatei) {
     }
 
     löseDudenAnfragenAuf(dudenAnfragen)
+  }
+
+  /**
+   * Das Adjektiv wird einfach groß als Nomen für die Deklination gespeichert. Auf die richtigen Endungen
+   * wird erst bei 'holeDeklination' geachtet.
+   */
+  private fun deklaniereAdjektiv(schnittstelle: AST.Definition.Typdefinition.Schnittstelle): Deklination {
+    val adjektiv = schnittstelle.name.wert.capitalize()
+
+    // Placeholder Formen
+    val formen = arrayOf(adjektiv, adjektiv, adjektiv, adjektiv)
+    return Deklination(Genus.NEUTRUM, formen, formen, true)
   }
 
   private suspend fun löseDudenAnfragenAuf(anfragenNachDatei: Map<String, List<DudenAnfrage>>) {
@@ -179,7 +198,7 @@ class Deklinierer(startDatei: File): PipelineKomponente(startDatei) {
     var container: AST.DefinitionsContainer? = container
     while (true) {
       try {
-        return container!!.wörterbuch.holeDeklination(nomen.hauptWort)
+        return container!!.wörterbuch.holeDeklination(nomen.hauptWort, nomen.vornomen?.typ)
       } catch (fehler: Wörterbuch.WortNichtGefunden) {
         container = container!!.findNodeInParents()
         if (container == null) {
@@ -225,7 +244,7 @@ class Wörterbuch {
     tabelle.add(lo, deklination)
   }
 
-  fun holeDeklination(wort: String): Deklination {
+  fun holeDeklination(wort: String, vornomen: TokenTyp.VORNOMEN?): Deklination {
     var lo = 0
     var hi = tabelle.size
     while (lo < hi) {
@@ -241,6 +260,12 @@ class Wörterbuch {
         if (deklination.fallSequenz.contains(wort)) {
           return deklination
         } else {
+          if (deklination.istNominalisiertesAdjektiv) {
+            val adjektivDeklination = dekliniereAdjektiv(wort, vornomen)
+            if (adjektivDeklination.fallSequenz.contains(wort)) {
+              return adjektivDeklination
+            }
+          }
           if (nominativSingular < wort) {
             lo = mid + 1
           } else {
@@ -256,6 +281,49 @@ class Wörterbuch {
     }
 
     throw WortNichtGefunden(wort)
+  }
+
+  val bestimmteAdjektivEndungen = Pair(arrayOf("e", "en", "en", "e"), arrayOf("en", "", "", "en"))
+  val unbestimmtAdjektivEndungen = Pair(arrayOf("es", "en", "en", "es"), arrayOf("en", "", "", "en"))
+  val ohneAdjektivEndungen = Pair(arrayOf("es", "en", "em", "es"), arrayOf("e", "er", "en", "e"))
+
+  private fun holeEndungen(vornomen: TokenTyp.VORNOMEN?) = when (vornomen) {
+    null -> ohneAdjektivEndungen
+    TokenTyp.VORNOMEN.ARTIKEL.BESTIMMT,
+    TokenTyp.VORNOMEN.DEMONSTRATIV_PRONOMEN.DIESE,
+    TokenTyp.VORNOMEN.DEMONSTRATIV_PRONOMEN.JENE -> bestimmteAdjektivEndungen
+    TokenTyp.VORNOMEN.ARTIKEL.UNBESTIMMT,
+    TokenTyp.VORNOMEN.POSSESSIV_PRONOMEN.MEIN,
+    TokenTyp.VORNOMEN.POSSESSIV_PRONOMEN.DEIN -> unbestimmtAdjektivEndungen
+  }
+
+  private fun dekliniereAdjektiv(adjektiv: String, vornomen: TokenTyp.VORNOMEN?): Deklination {
+    val (singularEndungen, pluralEndungen) = holeEndungen(vornomen)
+    val singular = adjektivMitEndungen(adjektiv, singularEndungen)
+    val plural = adjektivMitEndungen(adjektiv, pluralEndungen)
+    return Deklination(Genus.NEUTRUM, singular, plural, true)
+  }
+
+  private fun adjektivMitEndungen(adjektiv: String, endungen: Array<String>): Array<String> {
+    // für Regeln siehe https://deutsch.lingolia.com/de/grammatik/adjektive/deklination
+    var adjektiv = adjektiv
+    val endetAufE = adjektiv.last() == 'e'
+    if (adjektiv.dropLast(2) == "el") {
+      adjektiv = adjektiv.removeRange(adjektiv.length-2, adjektiv.length-1)
+    }
+    else if (adjektiv.dropLast(2) == "er" && adjektiv.getOrNull(adjektiv.length-3)?.istVokal() == true) {
+      adjektiv = adjektiv.removeRange(adjektiv.length-2, adjektiv.length-1)
+    }
+    else if (adjektiv == "hoch") {
+      adjektiv = "hoh"
+    }
+    return endungen.map { endung ->
+      adjektiv + (if (endetAufE && endung.getOrNull(0) == 'e') {
+        endung.drop(1)
+      } else {
+        endung
+      })
+    }.toTypedArray()
   }
 
   fun print() {
@@ -306,10 +374,10 @@ fun wörterBuchTest() {
   wörterbuch.print()
 
 
-  println(wörterbuch.holeDeklination("Bäume"))
-  println(wörterbuch.holeDeklination("Baumhaus"))
-  println(wörterbuch.holeDeklination("Dose"))
-  println(wörterbuch.holeDeklination("Uhr"))
+  println(wörterbuch.holeDeklination("Bäume", null))
+  println(wörterbuch.holeDeklination("Baumhaus", null))
+  println(wörterbuch.holeDeklination("Dose", null))
+  println(wörterbuch.holeDeklination("Uhr", null))
 }
 
 fun main() {

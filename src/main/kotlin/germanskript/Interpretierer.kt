@@ -148,14 +148,14 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
     rückgabeWert = null
     val neueUmgebung = Umgebung<Wert>()
     neueUmgebung.pushBereich()
-    val parameter = funktionsAufruf.funktionsDefinition!!.parameter
+    val parameter = funktionsAufruf.funktionsDefinition!!.signatur.parameter
     val j = if (funktionsAufruf.aufrufTyp == FunktionsAufrufTyp.METHODEN_OBJEKT_AUFRUF) 1 else 0
     val argumente = funktionsAufruf.argumente
     for (i in parameter.indices) {
       neueUmgebung.schreibeVariable(parameter[i].name, evaluiereAusdruck(argumente[i+j].wert), false)
     }
     val funktionsDefinition = funktionsAufruf.funktionsDefinition!!
-    return durchlaufeAufruf(funktionsAufruf, funktionsDefinition.körper, neueUmgebung, false, null)
+    return durchlaufeAufruf(funktionsAufruf, funktionsDefinition.definition, neueUmgebung, false, null)
   }
 
   override fun durchlaufeZurückgabe(zurückgabe: AST.Satz.Zurückgabe) {

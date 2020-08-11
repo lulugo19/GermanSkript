@@ -16,8 +16,8 @@ class ModulAuflöser(startDatei: File): PipelineKomponente(startDatei) {
           else löseModulPfadAuf(verwende, verwende.modulPfad).definitionen
       when {
         // einzelne Klassen zu verwenden hat Vorrang zu Modulen
-        verwendeteDefinitionen.klassen.containsKey(verwende.modulOderKlasse.wert) ->
-          definitionen.verwendeteKlassen[verwende.modulOderKlasse.wert] = verwendeteDefinitionen.klassen.getValue(verwende.modulOderKlasse.wert)
+        verwendeteDefinitionen.definierteTypen.containsKey(verwende.modulOderKlasse.wert) ->
+          definitionen.verwendeteTypen[verwende.modulOderKlasse.wert] = verwendeteDefinitionen.definierteTypen.getValue(verwende.modulOderKlasse.wert)
         verwendeteDefinitionen.module.containsKey(verwende.modulOderKlasse.wert) ->
           definitionen.verwendeteModule += verwendeteDefinitionen.module.getValue(verwende.modulOderKlasse.wert).definitionen
         else -> throw GermanSkriptFehler.Undefiniert.Modul(verwende.modulOderKlasse.toUntyped())

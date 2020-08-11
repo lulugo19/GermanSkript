@@ -21,6 +21,11 @@ class Definierer(startDatei: File): PipelineKomponente(startDatei) {
     }
     definitionen.konvertierungen.forEach(::definiereKonvertierung)
     definitionen.module.values.forEach {modul -> definiere(modul.definitionen)}
+    definitionen.definierteTypen.values.forEach { schnittstelle ->
+      if (schnittstelle is AST.Definition.Typdefinition.Schnittstelle) {
+        schnittstelle.methodenSignaturen.forEach { holeVollenNameVonFunktionsSignatur(it) }
+      }
+    }
   }
 
   private fun durchlaufeDefinitionsContainer(knoten: AST): Sequence<AST.DefinitionsContainer> = sequence {
@@ -63,63 +68,62 @@ class Definierer(startDatei: File): PipelineKomponente(startDatei) {
     }
   }
 
-  fun holeKlassenDefinition(klasse: AST.TypKnoten): AST.Definition.Klasse {
-    val teilWörter = klasse.name.bezeichner.typ.teilWörter
-    if (klasse.modulPfad.isEmpty()) {
-      var klassenDefinition: AST.Definition.Klasse? = null
-      for (definitionen in durchlaufeDefinitionsContainer(klasse)) {
+  fun holeTypDefinition(typ: AST.TypKnoten): AST.Definition.Typdefinition {
+    val teilWörter = typ.name.bezeichner.typ.teilWörter
+    if (typ.modulPfad.isEmpty()) {
+      var typDefinition: AST.Definition.Typdefinition? = null
+      for (definitionen in durchlaufeDefinitionsContainer(typ)) {
         for (i in teilWörter.indices) {
-          val klassenName = teilWörter.drop(teilWörter.size - 1 - i).joinToString("")
-          if (definitionen.klassen.containsKey(klassenName)) {
-            klassenDefinition = definitionen.klassen.getValue(klassenName)
+          val typName = teilWörter.drop(teilWörter.size - 1 - i).joinToString("")
+          if (definitionen.definierteTypen.containsKey(typName)) {
+            typDefinition = definitionen.definierteTypen.getValue(typName)
           }
-          if (definitionen.verwendeteKlassen.containsKey(klassenName)) {
-            val gefundeneKlassenDefinition = definitionen.verwendeteKlassen.getValue(klassenName)
-            if (klassenDefinition != null && klassenDefinition != gefundeneKlassenDefinition) {
-              throw GermanSkriptFehler.Mehrdeutigkeit.Klasse(klasse.name.bezeichner.toUntyped(), klassenDefinition,
+          if (definitionen.verwendeteTypen.containsKey(typName)) {
+            val gefundeneKlassenDefinition = definitionen.verwendeteTypen.getValue(typName)
+            if (typDefinition != null && typDefinition != gefundeneKlassenDefinition) {
+              throw GermanSkriptFehler.Mehrdeutigkeit.Typ(typ.name.bezeichner.toUntyped(), typDefinition,
                 gefundeneKlassenDefinition)
             }
-            klassenDefinition = gefundeneKlassenDefinition
+            typDefinition = gefundeneKlassenDefinition
           }
           for (verwendetesModul in definitionen.verwendeteModule) {
-            if (verwendetesModul.klassen.containsKey(klassenName)) {
-              val gefundeneKlassenDefinition = verwendetesModul.klassen.getValue(klassenName)
-              if (klassenDefinition != null && klassenDefinition != gefundeneKlassenDefinition) {
-                throw GermanSkriptFehler.Mehrdeutigkeit.Klasse(klasse.name.bezeichner.toUntyped(), klassenDefinition,
-                verwendetesModul.klassen.getValue(klassenName))
+            if (verwendetesModul.definierteTypen.containsKey(typName)) {
+              val gefundeneKlassenDefinition = verwendetesModul.definierteTypen.getValue(typName)
+              if (typDefinition != null && typDefinition != gefundeneKlassenDefinition) {
+                throw GermanSkriptFehler.Mehrdeutigkeit.Typ(typ.name.bezeichner.toUntyped(), typDefinition,
+                verwendetesModul.definierteTypen.getValue(typName))
               }
-              klassenDefinition = gefundeneKlassenDefinition
+              typDefinition = gefundeneKlassenDefinition
             }
           }
         }
       }
-      return klassenDefinition ?:
-        throw GermanSkriptFehler.Undefiniert.Typ(klasse.name.bezeichner.toUntyped(), klasse)
+      return typDefinition ?:
+        throw GermanSkriptFehler.Undefiniert.Typ(typ.name.bezeichner.toUntyped(), typ)
     } else {
-      val modul = modulAuflöser.löseModulPfadAuf(klasse, klasse.modulPfad)
+      val modul = modulAuflöser.löseModulPfadAuf(typ, typ.modulPfad)
       for (i in teilWörter.indices) {
         val klassenName = teilWörter.drop(teilWörter.size - 1 - i).joinToString("")
-        if (modul.definitionen.klassen.containsKey(klassenName)) {
-          return modul.definitionen.klassen.getValue(klassenName)
+        if (modul.definitionen.definierteTypen.containsKey(klassenName)) {
+          return modul.definitionen.definierteTypen.getValue(klassenName)
         }
       }
-      throw GermanSkriptFehler.Undefiniert.Typ(klasse.name.bezeichner.toUntyped(), klasse)
+      throw GermanSkriptFehler.Undefiniert.Typ(typ.name.bezeichner.toUntyped(), typ)
     }
   }
 
-  private fun holeVollenNameVonFunktionsDefinition(
-      funktionsDefinition: AST.Definition.FunktionOderMethode.Funktion,
-      reflexivPronomen: TypedToken<TokenTyp.REFLEXIV_PRONOMEN>?): String {
-    var vollerName = funktionsDefinition.name.wert
-    if (funktionsDefinition.objekt != null) {
-      val objekt = funktionsDefinition.objekt
+  private fun holeVollenNameVonFunktionsSignatur(
+      funktionsSignatur: AST.Definition.FunktionsSignatur): String {
+    var vollerName = funktionsSignatur.name.wert
+    if (funktionsSignatur.objekt != null) {
+      val objekt = funktionsSignatur.objekt
       val typ = objekt.typKnoten.name
       vollerName += " " + objekt.name.vornomenString!! + " " + objekt.name.hauptWort(typ.fälle.first(), typ.numerus!!)
     }
-    else if (reflexivPronomen != null) {
-      vollerName += " ${reflexivPronomen.wert}"
+    else if (funktionsSignatur.reflexivPronomen != null) {
+      vollerName += " ${funktionsSignatur.reflexivPronomen.wert}"
     }
-    for (präposition in funktionsDefinition.präpositionsParameter) {
+    for (präposition in funktionsSignatur.präpositionsParameter) {
       vollerName += " " + präposition.präposition.präposition.wert
       for (parameterIndex in präposition.parameter.indices) {
         val parameter = präposition.parameter[parameterIndex]
@@ -130,9 +134,10 @@ class Definierer(startDatei: File): PipelineKomponente(startDatei) {
         }
       }
     }
-    if (funktionsDefinition.suffix != null) {
-      vollerName += " " + funktionsDefinition.suffix.wert
+    if (funktionsSignatur.suffix != null) {
+      vollerName += " " + funktionsSignatur.suffix.wert
     }
+    funktionsSignatur.vollerName = vollerName
     return vollerName
   }
 
@@ -196,12 +201,14 @@ class Definierer(startDatei: File): PipelineKomponente(startDatei) {
   /**
    * Gibt alle Klassendefinitionen zurück.
    */
-  val klassenDefinitionen get(): Sequence<AST.Definition.Klasse> = sequence {
+  val klassenDefinitionen get(): Sequence<AST.Definition.Typdefinition.Klasse> = sequence {
     // Der Rückgabetyp der Funktionen muss explizit dranstehen. Ansonsten gibt es einen internen Fehler
     fun holeKlassenDefinitionen(container: AST.DefinitionsContainer):
-        Sequence<AST.Definition.Klasse> = sequence {
-      for (klasse in container.klassen.values) {
-        yield(klasse)
+        Sequence<AST.Definition.Typdefinition.Klasse> = sequence {
+      for (klasse in container.definierteTypen.values) {
+        if (klasse is AST.Definition.Typdefinition.Klasse) {
+          yield(klasse as AST.Definition.Typdefinition.Klasse)
+        }
       }
       for (modul in container.module.values) {
         yieldAll(holeKlassenDefinitionen(modul.definitionen))
@@ -212,8 +219,8 @@ class Definierer(startDatei: File): PipelineKomponente(startDatei) {
   }
 
   /** holt eine globale Klasse über den Namen der Klasse */
-  fun holeKlassenDefinition(klassenName: String): AST.Definition.Klasse {
-    return ast.definitionen.klassen.getValue(klassenName)
+  fun holeTypDefinition(klassenName: String): AST.Definition.Typdefinition {
+    return ast.definitionen.definierteTypen.getValue(klassenName)
   }
 
   fun gebeKlassenDefinitionenAus() {
@@ -224,38 +231,42 @@ class Definierer(startDatei: File): PipelineKomponente(startDatei) {
 
   fun gebeFunktionsDefinitionenAus() {
     for (funktion in funktionsDefinitionen) {
-      println("${funktion.vollerName!!}: $funktion")
+      println("${funktion.signatur.vollerName!!}: $funktion")
     }
   }
 
   private fun definiereFunktion(funktionsDefinition: AST.Definition.FunktionOderMethode.Funktion) {
-    val vollerName = holeVollenNameVonFunktionsDefinition(funktionsDefinition, null)
+    val vollerName = holeVollenNameVonFunktionsSignatur(funktionsDefinition.signatur)
     val definitionsContainer = funktionsDefinition.findNodeInParents<AST.DefinitionsContainer>()!!
     if (definitionsContainer.funktionen.containsKey(vollerName)) {
       throw GermanSkriptFehler.DoppelteDefinition.Funktion(
-          funktionsDefinition.name.toUntyped(),
+          funktionsDefinition.signatur.name.toUntyped(),
           definitionsContainer.funktionen.getValue(vollerName)
       )
     }
-    funktionsDefinition.vollerName = vollerName
     definitionsContainer.funktionen[vollerName] = funktionsDefinition
   }
 
   private fun definiereMethode(methodenDefinition: AST.Definition.FunktionOderMethode.Methode) {
-    val vollerName = holeVollenNameVonFunktionsDefinition(methodenDefinition.funktion, methodenDefinition.reflexivPronomen)
-    val klasse = holeKlassenDefinition(methodenDefinition.klasse)
+    val vollerName = holeVollenNameVonFunktionsSignatur(methodenDefinition.funktion.signatur)
+    val klasse = holeTypDefinition(methodenDefinition.klasse)
+    if (klasse !is AST.Definition.Typdefinition.Klasse) {
+      throw GermanSkriptFehler.KlasseErwartet(methodenDefinition.klasse.name.bezeichner.toUntyped())
+    }
     if (klasse.methoden.containsKey(vollerName)) {
       throw GermanSkriptFehler.DoppelteDefinition.Methode(
-          methodenDefinition.funktion.name.toUntyped(),
+          methodenDefinition.funktion.signatur.name.toUntyped(),
           klasse.methoden.getValue(vollerName)
       )
     }
-    methodenDefinition.funktion.vollerName = vollerName
     klasse.methoden[vollerName] = methodenDefinition
   }
 
   private fun definiereKonvertierung(konvertierung: AST.Definition.Konvertierung) {
-    val klasse = holeKlassenDefinition(konvertierung.klasse)
+    val klasse = holeTypDefinition(konvertierung.klasse)
+    if (klasse !is AST.Definition.Typdefinition.Klasse) {
+      throw GermanSkriptFehler.KlasseErwartet(konvertierung.klasse.name.bezeichner.toUntyped())
+    }
     val typName = konvertierung.typ.name.nominativ
     if (klasse.konvertierungen.containsKey(typName)) {
       throw GermanSkriptFehler.DoppelteDefinition.Konvertierung(

@@ -464,8 +464,8 @@ Beispiel:
 
 ```
 Adjektiv zeichenbar:
-    zeichne mich mit der Farbe
-    skaliere mich mit der Zahl.
+    Verb zeichne mich mit der Farbe
+    Verb skaliere mich mit der Zahl.
 ```
 
 | Kasus (Fall) | Singular | Plural |

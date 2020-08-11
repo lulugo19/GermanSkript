@@ -30,18 +30,18 @@ class KonstantenFalter(startDatei: File): ProgrammDurchlaufer<Wert?>(startDatei)
   }
 
   private fun falteFunktion(funktion: AST.Definition.FunktionOderMethode.Funktion) {
-    if (funktion.rückgabeTyp == null) {
+    if (funktion.signatur.rückgabeTyp == null) {
       return
     }
     val funktionsUmgebung = Umgebung<Wert?>()
     funktionsUmgebung.pushBereich()
-    for (parameter in funktion.parameter) {
+    for (parameter in funktion.signatur.parameter) {
       funktionsUmgebung.schreibeVariable(parameter.name, null, false)
     }
-    durchlaufeAufruf(funktion.körper, funktionsUmgebung, false)
+    durchlaufeAufruf(funktion.definition, funktionsUmgebung, false)
   }
 
-  private fun falteKlasse(klasse: AST.Definition.Klasse) {
+  private fun falteKlasse(klasse: AST.Definition.Typdefinition.Klasse) {
     durchlaufeAufruf(klasse.konstruktor, Umgebung(), true)
     klasse.methoden.values.forEach {methode -> falteFunktion(methode.funktion)}
     klasse.konvertierungen.values.forEach {konvertierung ->

@@ -109,19 +109,19 @@ sealed class AST {
     val deklinationen = mutableListOf<Definition.DeklinationsDefinition>()
     val funktionenOderMethoden = mutableListOf<Definition.FunktionOderMethode>()
     val konvertierungen = mutableListOf<Definition.Konvertierung>()
-    val klassen = mutableMapOf<String, Definition.Klasse>()
+    val definierteTypen: MutableMap<String, Definition.Typdefinition> = mutableMapOf()
     val funktionen: MutableMap<String, Definition.FunktionOderMethode.Funktion> = mutableMapOf()
     val module = mutableMapOf<String, Definition.Modul>()
     val verwende = mutableListOf<Definition.Verwende>()
     val verwendeteModule = mutableListOf<DefinitionsContainer>()
-    val verwendeteKlassen = mutableMapOf<String, Definition.Klasse>()
+    val verwendeteTypen = mutableMapOf<String, Definition.Typdefinition>()
     val wörterbuch = Wörterbuch()
 
     override val children = sequence {
       yieldAll(deklinationen)
       yieldAll(funktionenOderMethoden)
       yieldAll(konvertierungen)
-      yieldAll(klassen.values)
+      yieldAll(definierteTypen.values)
       yieldAll(module.values)
     }
   }
@@ -210,45 +210,50 @@ sealed class AST {
       data class Duden(val wort: TypedToken<TokenTyp.BEZEICHNER_GROSS>): DeklinationsDefinition()
     }
 
+    data class FunktionsSignatur(
+        val rückgabeTyp: TypKnoten?,
+        val name: TypedToken<TokenTyp.BEZEICHNER_KLEIN>,
+        val reflexivPronomen: TypedToken<TokenTyp.REFLEXIV_PRONOMEN>?,
+        val objekt: TypUndName?,
+        val präpositionsParameter: List<PräpositionsParameter>,
+        val suffix: TypedToken<TokenTyp.BEZEICHNER_KLEIN>?,
+        var vollerName: String? = null
+    ): Definition() {
+      private val _parameter: MutableList<TypUndName> = mutableListOf()
+      val parameter: List<TypUndName> = _parameter
+
+      init {
+        if (objekt != null) {
+          _parameter.add(objekt)
+        }
+        for (präposition in präpositionsParameter) {
+          _parameter.addAll(präposition.parameter)
+        }
+      }
+
+      override val children = sequence {
+        if (rückgabeTyp != null) {
+          yield(rückgabeTyp!!)
+        }
+        if (objekt != null) {
+          yield(objekt!!)
+        }
+        yieldAll(präpositionsParameter)
+      }
+    }
+
     sealed class FunktionOderMethode(): Definition() {
       data class Funktion(
-          val rückgabeTyp: TypKnoten?,
-          val name: TypedToken<TokenTyp.BEZEICHNER_KLEIN>,
-          val objekt: TypUndName?,
-          val präpositionsParameter: List<PräpositionsParameter>,
-          val suffix: TypedToken<TokenTyp.BEZEICHNER_KLEIN>?,
-          val körper: Satz.Bereich,
-          var vollerName: String? = null
+          val signatur: FunktionsSignatur,
+          val definition: Satz.Bereich
       ): FunktionOderMethode() {
 
-        private val _parameter: MutableList<TypUndName> = mutableListOf()
-        val parameter: List<TypUndName> = _parameter
-
-        init {
-          if (objekt != null) {
-            _parameter.add(objekt)
-          }
-          for (präposition in präpositionsParameter) {
-            _parameter.addAll(präposition.parameter)
-          }
-        }
-
-        override val children = sequence {
-          if (rückgabeTyp != null) {
-            yield(rückgabeTyp!!)
-          }
-          if (objekt != null) {
-            yield(objekt!!)
-          }
-          yieldAll(präpositionsParameter)
-          yield(körper)
-        }
+        override val children = sequenceOf(signatur, definition)
       }
 
       data class Methode(
           val funktion: Funktion,
-          val klasse: TypKnoten,
-          val reflexivPronomen: TypedToken<TokenTyp.REFLEXIV_PRONOMEN>?
+          val klasse: TypKnoten
       ): FunktionOderMethode() {
         override val children = sequence {
           yield(klasse)
@@ -258,21 +263,41 @@ sealed class AST {
 
     }
 
-    data class Klasse(
-        val typ: TypKnoten,
-        val elternKlasse: TypKnoten?,
-        val eigenschaften: MutableList<TypUndName>,
-        val konstruktor: Satz.Bereich
-    ): Definition() {
-      val methoden: HashMap<String, FunktionOderMethode.Methode> = HashMap()
-      val konvertierungen: HashMap<String, Konvertierung> = HashMap()
-      override val children = sequence {
-        yield(typ)
-        if (elternKlasse != null) {
-          yield(elternKlasse!!)
+    sealed class Typdefinition: Definition() {
+
+      abstract val namensToken: Token
+
+      data class Klasse(
+          val typ: TypKnoten,
+          val elternKlasse: TypKnoten?,
+          val eigenschaften: MutableList<TypUndName>,
+          val konstruktor: Satz.Bereich
+      ): Typdefinition() {
+        val methoden: HashMap<String, FunktionOderMethode.Methode> = HashMap()
+        val konvertierungen: HashMap<String, Konvertierung> = HashMap()
+
+        override val namensToken = typ.name.bezeichner.toUntyped()
+
+        override val children = sequence {
+          yield(typ)
+          if (elternKlasse != null) {
+            yield(elternKlasse!!)
+          }
+          yieldAll(eigenschaften)
+          yield(konstruktor)
         }
-        yieldAll(eigenschaften)
-        yield(konstruktor)
+      }
+
+      data class Schnittstelle(
+          val name: TypedToken<TokenTyp.BEZEICHNER_KLEIN>,
+          val methodenSignaturen: List<FunktionsSignatur>
+      ): Typdefinition() {
+
+        override val namensToken = name.toUntyped()
+
+        override val children = sequence {
+          yieldAll(methodenSignaturen)
+        }
       }
     }
 

@@ -28,7 +28,8 @@ enum class ASTKnotenID {
   KONVERTIERUNGS_DEFINITION,
   IMPORT,
   VERWENDE,
-  BEREICH
+  BEREICH,
+  SCHNITTSTELLE
 }
 
 class Parser(startDatei: File): PipelineKomponente(startDatei) {
@@ -95,7 +96,7 @@ private sealed class SubParser<T: AST>() {
     }
   }
 
-  protected fun parseFunktionOderMethode(): AST.Definition.FunktionOderMethode{
+  protected fun parseFunktionsAnfang(): AST.TypKnoten? {
     expect<TokenTyp.VERB>("Verb")
     var rückgabetyp: AST.TypKnoten? = null
     if (peekType() is TokenTyp.OFFENE_KLAMMER){
@@ -103,16 +104,18 @@ private sealed class SubParser<T: AST>() {
       rückgabetyp = parseTypOhneArtikel(false)
       expect<TokenTyp.GESCHLOSSENE_KLAMMER>(")")
     }
+    return rückgabetyp
+  }
+
+  protected fun parseFunktionOderMethode(): AST.Definition.FunktionOderMethode{
+    val rückgabetyp = parseFunktionsAnfang()
 
     val nächstesToken = peek()
     if (nächstesToken.wert == "für"){
       next()
       val klasse = parseTypOhneArtikel(false)
-      val reflexivPronomen = peek(1).let { token ->
-        if (token.typ is TokenTyp.REFLEXIV_PRONOMEN.MICH) token.toTyped<TokenTyp.REFLEXIV_PRONOMEN.MICH>() else null
-      }
-      val definition =  subParse(Definition.Funktion(ASTKnotenID.METHODEN_DEFINITION, rückgabetyp, reflexivPronomen != null))
-      return AST.Definition.FunktionOderMethode.Methode(definition, klasse, reflexivPronomen)
+      val definition =  subParse(Definition.Funktion(ASTKnotenID.METHODEN_DEFINITION, rückgabetyp, true))
+      return AST.Definition.FunktionOderMethode.Methode(definition, klasse)
     }
     return subParse(Definition.Funktion(ASTKnotenID.FUNKTIONS_DEFINITION, rückgabetyp, false))
   }
@@ -338,7 +341,7 @@ private sealed class SubParser<T: AST>() {
     return AST.Argument(nomen, wert)
   }
 
-  protected fun<T: AST> parseBereich(erwartetesEndToken: TokenTyp = TokenTyp.PUNKT, parser: () -> T): T {
+  protected fun<T> parseBereich(erwartetesEndToken: TokenTyp = TokenTyp.PUNKT, parser: () -> T): T {
     expect<TokenTyp.DOPPELPUNKT>("':'")
     val result = parser()
     überspringeLeereZeilen()
@@ -425,7 +428,18 @@ private sealed class SubParser<T: AST>() {
     }
 
     companion object {
-      val reservierteKlassenNamen = arrayOf("Zahl", "Boolean", "Zeichenfolge")
+      val reservierteTypNamen = arrayOf("Zahl", "Boolean", "Zeichenfolge")
+    }
+
+    fun überprüfeDoppelteDefinition(container: AST.DefinitionsContainer, typDef: AST.Definition.Typdefinition) {
+      val typName = typDef.namensToken.wert.capitalize()
+      if (reservierteTypNamen.contains(typName)) {
+        throw GermanSkriptFehler.ReservierterTypName(typDef.namensToken)
+      }
+      if (container.definierteTypen.containsKey(typName)) {
+        throw GermanSkriptFehler.DoppelteDefinition.Typ(typDef.namensToken,
+            container.definierteTypen.getValue(typName).namensToken)
+      }
     }
 
     fun parseDefinition(container: AST.DefinitionsContainer): AST.Definition? {
@@ -438,15 +452,12 @@ private sealed class SubParser<T: AST>() {
           mergeModule(container, modul)
         }
         is TokenTyp.NOMEN -> subParse(Definition.Klasse).also { klasse ->
-          val klassenName = klasse.typ.name.bezeichner.wert
-          if (reservierteKlassenNamen.contains(klassenName)) {
-            throw GermanSkriptFehler.ReservierterTypName(klasse.typ.name.bezeichner.toUntyped())
-          }
-          if (container.klassen.containsKey(klassenName)) {
-            throw GermanSkriptFehler.DoppelteDefinition.Klasse(klasse.typ.name.bezeichner.toUntyped(),
-                container.klassen.getValue(klassenName))
-          }
-          container.klassen[klassenName] = klasse
+          überprüfeDoppelteDefinition(container, klasse)
+          container.definierteTypen[klasse.namensToken.wert] = klasse
+        }
+        is TokenTyp.ADJEKTIV -> subParse(Definition.Schnittstelle).also { schnittstelle ->
+          überprüfeDoppelteDefinition(container, schnittstelle)
+          container.definierteTypen[schnittstelle.namensToken.wert.capitalize()] = schnittstelle
         }
         is TokenTyp.VERB -> parseFunktionOderMethode().also { funktion ->
           container.funktionenOderMethoden += funktion
@@ -476,12 +487,9 @@ private sealed class SubParser<T: AST>() {
         modulVorhanden.definitionen.funktionenOderMethoden.addAll(moduleNeu.definitionen.funktionenOderMethoden)
 
         // bei den Klassen müssen wir doppelte Definitionen erkennen
-        val klassen = modulVorhanden.definitionen.klassen
-        for ((klasseName, klasse) in moduleNeu.definitionen.klassen) {
-          if (klassen.containsKey(klasseName)) {
-            throw GermanSkriptFehler.DoppelteDefinition.Klasse(klasse.typ.name.bezeichner.toUntyped(), klassen.getValue(klasseName))
-          }
-          klassen[klasseName] = klasse
+        for ((typName, typ) in moduleNeu.definitionen.definierteTypen) {
+          überprüfeDoppelteDefinition(modulVorhanden.definitionen, typ)
+          modulVorhanden.definitionen.definierteTypen[typName] = typ
         }
 
         // Die Module müssen mit den anderen Modulen gemergt werden
@@ -977,25 +985,33 @@ private sealed class SubParser<T: AST>() {
       }
     }
 
-    class Funktion(
+    class FunktionsSignatur(
         override val id: ASTKnotenID,
         private val rückgabeTyp: AST.TypKnoten?,
-        private val hatReflexivPronomen: Boolean
-    ): Definition<AST.Definition.FunktionOderMethode.Funktion>() {
+        private val istMethode: Boolean
+    ): Definition<AST.Definition.FunktionsSignatur>() {
 
-      override fun parseImpl(): AST.Definition.FunktionOderMethode.Funktion {
+      override fun bewacheKnoten() {
+        // hier muss nichts überwacht werden
+        // Da eine Funktionssignatur zu Definitionen zählen und Definitionen nur
+        // im globalen Bereich oder in Modulen auftreten dürfen, muss bewacheKnoten() hier
+        // wieder überschrieben werden, da Funktionssignaturen innerhalb von Funktions-, Methoden- und
+        // Schnittstellendefinitionen verwendet werden
+      }
+
+      override fun parseImpl(): AST.Definition.FunktionsSignatur {
         val name = expect<TokenTyp.BEZEICHNER_KLEIN>("bezeichner")
-        val objekt = if (hatReflexivPronomen) {
-          next()
-          null
+        val reflexivPronomen = if (istMethode) parseOptional<TokenTyp.REFLEXIV_PRONOMEN>() else null
+        val objekt = if (reflexivPronomen == null) {
+          parseOptional<AST.Definition.TypUndName, TokenTyp.VORNOMEN.ARTIKEL.BESTIMMT> {
+            parseTypUndName<TokenTyp.VORNOMEN.ARTIKEL.BESTIMMT>("bestimmter Artikel") }
         } else {
-        parseOptional<AST.Definition.TypUndName, TokenTyp.VORNOMEN.ARTIKEL.BESTIMMT> {
-          parseTypUndName<TokenTyp.VORNOMEN.ARTIKEL.BESTIMMT>("bestimmter Artikel") }
+         null
         }
         val präpositionsParameter = parsePräpositionsParameter()
         val suffix = parseOptional<TokenTyp.BEZEICHNER_KLEIN>()
-        val sätze = parseSätze()
-        return AST.Definition.FunktionOderMethode.Funktion(rückgabeTyp, name, objekt, präpositionsParameter, suffix, sätze)
+
+        return AST.Definition.FunktionsSignatur(rückgabeTyp, name, reflexivPronomen, objekt, präpositionsParameter, suffix)
       }
 
       fun parsePräpositionsParameter(): List<AST.Definition.PräpositionsParameter> {
@@ -1010,11 +1026,24 @@ private sealed class SubParser<T: AST>() {
       }
     }
 
-    object Klasse: Definition<AST.Definition.Klasse>() {
+    class Funktion(
+        override val id: ASTKnotenID,
+        private val rückgabeTyp: AST.TypKnoten?,
+        private val hatReflexivPronomen: Boolean
+    ): Definition<AST.Definition.FunktionOderMethode.Funktion>() {
+
+      override fun parseImpl(): AST.Definition.FunktionOderMethode.Funktion {
+        val signatur = subParse(FunktionsSignatur(id, rückgabeTyp, hatReflexivPronomen))
+        val sätze = parseSätze()
+        return AST.Definition.FunktionOderMethode.Funktion(signatur, sätze)
+      }
+    }
+
+    object Klasse: Definition<AST.Definition.Typdefinition.Klasse>() {
       override val id: ASTKnotenID
         get() = ASTKnotenID.KLASSEN_DEFINITION
 
-      override fun parseImpl(): AST.Definition.Klasse {
+      override fun parseImpl(): AST.Definition.Typdefinition.Klasse {
         expect<TokenTyp.NOMEN>("'Nomen'")
         val name = AST.TypKnoten(parseNomenOhneVornomen(false), emptyList())
 
@@ -1034,7 +1063,27 @@ private sealed class SubParser<T: AST>() {
         }
 
         val konstruktorSätze = parseSätze()
-        return AST.Definition.Klasse(name, elternKlasse, eingenschaften.toMutableList(), konstruktorSätze)
+        return AST.Definition.Typdefinition.Klasse(name, elternKlasse, eingenschaften.toMutableList(), konstruktorSätze)
+      }
+    }
+
+    object Schnittstelle: Definition<AST.Definition.Typdefinition.Schnittstelle>() {
+      override val id = ASTKnotenID.SCHNITTSTELLE
+
+      override fun parseImpl(): AST.Definition.Typdefinition.Schnittstelle {
+        expect<TokenTyp.ADJEKTIV>("'Adjektiv'")
+        val name = expect<TokenTyp.BEZEICHNER_KLEIN>("bezeichner")
+        val definitionen = parseBereich {
+          überspringeLeereZeilen()
+          val signaturen = mutableListOf<AST.Definition.FunktionsSignatur>()
+          while (peekType() != TokenTyp.PUNKT) {
+            überspringeLeereZeilen()
+            val rückgabeTyp = parseFunktionsAnfang()
+            signaturen += subParse(FunktionsSignatur(id, rückgabeTyp, true))
+          }
+          signaturen
+        }
+        return AST.Definition.Typdefinition.Schnittstelle(name, definitionen)
       }
     }
 

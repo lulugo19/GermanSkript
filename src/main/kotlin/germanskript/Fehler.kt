@@ -78,6 +78,25 @@ sealed class GermanSkriptFehler(private val fehlerName: String, val token: Token
       get() = "Das Wort '$hauptWort' ist unbekannt. Füge eine Deklinationsanweisung für das Wort '$hauptWort' hinzu!"
   }
 
+  class KlasseErwartet(token: Token): GermanSkriptFehler("Klasse erwartet", token) {
+    override val nachricht: String get() {
+      return "Es wird eine Klasse erwartet. Eine Schnittstelle oder ein primitiver Typ sind hier nicht erlaubt."
+    }
+  }
+
+  class UnimplementierteSchnittstelle(
+      token: Token,
+      private val klasse: AST.Definition.Typdefinition.Klasse,
+      private val schnittstelle: AST.Definition.Typdefinition.Schnittstelle): GermanSkriptFehler("Unimplementierte Schnittstelle", token) {
+    override val nachricht: String get() {
+      val uninplementierteMethoden = schnittstelle.methodenSignaturen.filter {
+        !klasse.methoden.containsKey(it.vollerName!!)
+      }
+      return "Die Klasse '${klasse.typ.vollständigerName}' implementiert die Schnittstelle '${schnittstelle.name.wert}' nicht." +
+          "Folgende Methoden müssen implementiert werden:\n" + uninplementierteMethoden.joinToString("\n\t")
+    }
+  }
+
   sealed class ImportFehler(token: Token, protected val dateiPfad: String): GermanSkriptFehler("Importfehler", token) {
     class DateiNichtGefunden(token: Token, dateiPfad: String): ImportFehler(token, dateiPfad) {
       override val nachricht: String
@@ -89,8 +108,6 @@ sealed class GermanSkriptFehler(private val fehlerName: String, val token: Token
         get() = "Zyklischer Import! Die Datei '$dateiPfad' wurde bereits vorher schon importiert."
     }
   }
-
-
 
   sealed class GrammatikFehler(token: Token): GermanSkriptFehler("Grammatikfehler",token) {
 
@@ -129,22 +146,18 @@ sealed class GermanSkriptFehler(private val fehlerName: String, val token: Token
   sealed class DoppelteDefinition(token: Token): GermanSkriptFehler("Definitionsfehler", token) {
     class Funktion(token: Token, private val definition: AST.Definition.FunktionOderMethode.Funktion): DoppelteDefinition(token) {
       override val nachricht: String
-        get() = "Die Funktion '${definition.vollerName}' ist schon in ${definition.name.position} definiert."
+        get() = "Die Funktion '${definition.signatur.vollerName}' ist schon in ${definition.signatur.name.position} definiert."
     }
 
     class Methode(token: Token, private val definition: AST.Definition.FunktionOderMethode.Methode): DoppelteDefinition(token) {
       override val nachricht: String
-        get() = "Die Methode '${definition.funktion.vollerName}' für die Klasse '${definition.klasse.name.nominativ}' ist schon in ${definition.funktion.name.position} definiert."
+        get() = "Die Methode '${definition.funktion.signatur.vollerName}' für die Klasse '${definition.klasse.name.nominativ}' " +
+            "ist schon in ${definition.funktion.signatur.name.position} definiert."
     }
 
-    class Klasse(token: Token, private val definition: AST.Definition.Klasse): DoppelteDefinition(token) {
+    class Typ(token: Token, private val vorhandeneDefinition: Token): DoppelteDefinition(token) {
       override val nachricht: String
-        get() = "Die Klasse '${token.wert}' ist schon in ${definition.typ.name.bezeichner.position} definiert."
-    }
-
-    class Modul(token: Token, private val definition: AST.Definition.Modul): DoppelteDefinition(token) {
-      override val nachricht: String
-        get() = "Das Modul '${token.wert}' ist schon in ${definition.name.position} definiert."
+        get() = "Der Typ '${token.wert}' ist schon in ${vorhandeneDefinition.position} definiert."
     }
 
     class Konvertierung(token: Token, private val konvertierung: AST.Definition.Konvertierung): DoppelteDefinition(token) {
@@ -202,12 +215,12 @@ sealed class GermanSkriptFehler(private val fehlerName: String, val token: Token
   }
 
   sealed class Mehrdeutigkeit(token: Token): GermanSkriptFehler("Mehrdeutigkeit", token) {
-    class Klasse(token: Token, private val klasseA: AST.Definition.Klasse, private val klasseB: AST.Definition.Klasse):
+    class Typ(token: Token, private val typA: AST.Definition.Typdefinition, private val typB: AST.Definition.Typdefinition):
       Mehrdeutigkeit(token) {
       override val nachricht: String
         get() = "Es ist unklar welche Klasse gemeint ist.\n" +
-            "Entweder die Klasse '${klasseA.typ.vollständigerName}' in ${klasseA.typ.name.bezeichner.position}\n" +
-            "oder die Klasse '${klasseB.typ.vollständigerName}' in ${klasseB.typ.name.bezeichner.position}."
+            "Entweder die Klasse '${typA.namensToken.wert}' in ${typA.namensToken.position}\n" +
+            "oder die Klasse '${typB.namensToken.wert}' in ${typB.namensToken.position}."
 
     }
 
@@ -218,7 +231,8 @@ sealed class GermanSkriptFehler(private val fehlerName: String, val token: Token
 
       override val nachricht: String
         get() = "Es ist unklar welche Funktion gemeint ist.\n" +
-            "Entweder die Funktion in ${funktionA.name.position} oder die Funktion in ${funktionB.name.position}."
+            "Entweder die Funktion in ${funktionA.signatur.name.position} oder die Funktion in " +
+            "${funktionB.signatur.name.position}."
     }
   }
 

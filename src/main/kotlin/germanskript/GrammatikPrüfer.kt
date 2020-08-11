@@ -26,7 +26,7 @@ class GrammatikPrüfer(startDatei: File): PipelineKomponente(startDatei) {
         is AST.Definition.FunktionOderMethode.Funktion -> prüfeFunktionsDefinition(knoten)
         is AST.Definition.FunktionOderMethode.Methode -> prüfeMethodenDefinition(knoten)
         is AST.Definition.Konvertierung -> prüfeKonvertierungsDefinition(knoten)
-        is AST.Definition.Klasse -> prüfeKlassenDefinition(knoten)
+        is AST.Definition.Typdefinition.Klasse -> prüfeKlassenDefinition(knoten)
         is AST.Satz.VariablenDeklaration -> prüfeVariablendeklaration(knoten)
         is AST.Satz.BedingungsTerm -> prüfeKontextbasiertenAusdruck(knoten.bedingung, null, EnumSet.of(Kasus.NOMINATIV), false)
         is AST.Satz.Zurückgabe -> if (knoten.ausdruck != null)
@@ -260,13 +260,14 @@ class GrammatikPrüfer(startDatei: File): PipelineKomponente(startDatei) {
   }
 
   private fun prüfeFunktionsDefinition(funktionsDefinition: AST.Definition.FunktionOderMethode.Funktion) {
-    if (funktionsDefinition.rückgabeTyp != null) {
-      prüfeNomen(funktionsDefinition.rückgabeTyp.name, EnumSet.of(Kasus.NOMINATIV), Numerus.BEIDE)
+    val signatur = funktionsDefinition.signatur
+    if (signatur.rückgabeTyp != null) {
+      prüfeNomen(signatur.rückgabeTyp.name, EnumSet.of(Kasus.NOMINATIV), Numerus.BEIDE)
     }
-    if (funktionsDefinition.objekt != null) {
-      prüfeParameter(funktionsDefinition.objekt, EnumSet.of(Kasus.DATIV, Kasus.AKKUSATIV))
+    if (signatur.objekt != null) {
+      prüfeParameter(signatur.objekt, EnumSet.of(Kasus.DATIV, Kasus.AKKUSATIV))
     }
-    for (präposition in funktionsDefinition.präpositionsParameter) {
+    for (präposition in signatur.präpositionsParameter) {
       prüfePräpositionsParameter(präposition)
     }
     // logger.addLine("geprüft: $funktionsDefinition")
@@ -277,7 +278,7 @@ class GrammatikPrüfer(startDatei: File): PipelineKomponente(startDatei) {
     prüfeFunktionsDefinition(methodenDefinition.funktion)
   }
 
-  private fun prüfeKlassenDefinition(klasse: AST.Definition.Klasse) {
+  private fun prüfeKlassenDefinition(klasse: AST.Definition.Typdefinition.Klasse) {
     prüfeNomen(klasse.typ.name, EnumSet.of(Kasus.NOMINATIV), EnumSet.of(Numerus.SINGULAR))
 
     for (eigenschaft in klasse.eigenschaften) {

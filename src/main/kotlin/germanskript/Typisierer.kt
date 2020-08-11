@@ -61,10 +61,20 @@ sealed class Typ(val name: String) {
     override fun kannNachTypKonvertiertWerden(typ: Typ): kotlin.Boolean = false
   }
 
-  sealed class KlassenTyp(name: String): Typ(name) {
-    abstract val klassenDefinition: AST.Definition.Klasse
+  data class Schnittstelle(val definition: AST.Definition.Typdefinition.Schnittstelle): Typ(definition.name.wert.capitalize()) {
+    override val definierteOperatoren: Map<Operator, Typ> = mapOf(
+        Operator.GLEICH to Boolean
+    )
 
-    data class Klasse(override val klassenDefinition: AST.Definition.Klasse):
+    override fun kannNachTypKonvertiertWerden(typ: Typ): kotlin.Boolean {
+      return typ.name == this.name || typ == Zeichenfolge
+    }
+  }
+
+  sealed class KlassenTyp(name: String): Typ(name) {
+    abstract val klassenDefinition: AST.Definition.Typdefinition.Klasse
+
+    data class Klasse(override val klassenDefinition: AST.Definition.Typdefinition.Klasse):
         KlassenTyp(klassenDefinition.typ.name.hauptWort(Kasus.NOMINATIV, Numerus.SINGULAR)) {
         override val definierteOperatoren: Map<Operator, Typ> = mapOf(
             Operator.GLEICH to Boolean
@@ -75,7 +85,7 @@ sealed class Typ(val name: String) {
         }
     }
 
-    data class Liste(override val klassenDefinition: AST.Definition.Klasse, val elementTyp: Typ) : KlassenTyp("Liste($elementTyp)") {
+    data class Liste(override val klassenDefinition: AST.Definition.Typdefinition.Klasse, val elementTyp: Typ) : KlassenTyp("Liste($elementTyp)") {
       // Das hier muss umbedingt ein Getter sein, sonst gibt es Probleme mit StackOverflow
       override val definierteOperatoren: Map<Operator, Typ> get() = mapOf(
           Operator.PLUS to Liste(klassenDefinition, elementTyp),
@@ -89,12 +99,12 @@ sealed class Typ(val name: String) {
 class Typisierer(startDatei: File): PipelineKomponente(startDatei) {
   val definierer = Definierer(startDatei)
   val ast = definierer.ast
-  private var _listenKlassenDefinition: AST.Definition.Klasse? = null
+  private var _listenKlassenDefinition: AST.Definition.Typdefinition.Klasse? = null
   val listenKlassenDefinition get() = _listenKlassenDefinition!!
 
   fun typisiere() {
     definierer.definiere()
-    _listenKlassenDefinition = definierer.holeKlassenDefinition("Liste")
+    _listenKlassenDefinition = definierer.holeTypDefinition("Liste") as AST.Definition.Typdefinition.Klasse
     definierer.funktionsDefinitionen.forEach(::typisiereFunktion)
     definierer.klassenDefinitionen.forEach(::typisiereKlasse)
   }
@@ -116,7 +126,10 @@ class Typisierer(startDatei: File): PipelineKomponente(startDatei) {
       "Boolean" -> Typ.Boolean
       "Typ" -> Typ.Generic
       "Liste" -> Typ.KlassenTyp.Liste(listenKlassenDefinition, Typ.Generic)
-      else -> Typ.KlassenTyp.Klasse(definierer.holeKlassenDefinition(typKnoten))
+      else -> when (val typDef = definierer.holeTypDefinition(typKnoten)) {
+        is AST.Definition.Typdefinition.Klasse -> Typ.KlassenTyp.Klasse(typDef)
+        is AST.Definition.Typdefinition.Schnittstelle -> Typ.Schnittstelle(typDef)
+      }
     }
     typKnoten.typ = if (typKnoten.name.numerus == Numerus.SINGULAR) {
       singularTyp
@@ -127,14 +140,15 @@ class Typisierer(startDatei: File): PipelineKomponente(startDatei) {
    }
 
   private fun typisiereFunktion(funktion: AST.Definition.FunktionOderMethode.Funktion) {
-    bestimmeTypen(funktion.rückgabeTyp)
-    bestimmeTypen(funktion.objekt?.typKnoten)
-    for (parameter in funktion.parameter) {
+    val signatur = funktion.signatur
+    bestimmeTypen(signatur.rückgabeTyp)
+    bestimmeTypen(signatur.objekt?.typKnoten)
+    for (parameter in funktion.signatur.parameter) {
       bestimmeTypen(parameter.typKnoten)
     }
   }
 
-  private fun typisiereKlasse(klasse: AST.Definition.Klasse) {
+  private fun typisiereKlasse(klasse: AST.Definition.Typdefinition.Klasse) {
     bestimmeTypen(klasse.typ)
     for (eigenschaft in klasse.eigenschaften) {
       bestimmeTypen(eigenschaft.typKnoten)

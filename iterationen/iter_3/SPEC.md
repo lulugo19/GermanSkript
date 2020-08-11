@@ -130,7 +130,7 @@ Es soll so überarbeitet werden, dass nur noch Module importiert werden können.
 Eine Schnittstellendefinition besteht aus Methodensignaturen. Eine Schnittstelle wird automatisch für einen Typ
 implementiert, wenn sie alle Methoden definiert. Der Name einer Schnittstelle ist ein Adjektiv oder Partizip.
 Eine Schnittstelle hat alle Geschlechter. Bei der Variablendeklaration wird das Adjektiv oder Partizip nominalisiert, wenn
-der selbe Typname verwendet wird. Für die Deklination (Flexion) von Adjektiven gibt es in der deutschen
+der selbe Typname verwendet wird. Für die Deklination (Flektion) von Adjektiven gibt es in der deutschen
 Sprache feste [Regeln](https://deutsch.lingolia.com/de/grammatik/adjektive/deklination). Diese sollen vom Grammatik-Prüfer geprüft werden.
 Vor einem Schnittstellen-Argument steht dann immer das Adjektiv der Schnittstelle.
 
@@ -139,8 +139,8 @@ Beispiel:
 ```
 // Schnittstellen Definition
 Adjektiv zeichenbar:
-    zeichne mich mit der Zeichenfolge Farbe
-    skaliere mich mit der Zahl.
+    Verb zeichne mich mit der Zeichenfolge Farbe
+    Verb skaliere mich mit der Zahl.
 
 
 // Funktion mit Schnittstelle als Parameter

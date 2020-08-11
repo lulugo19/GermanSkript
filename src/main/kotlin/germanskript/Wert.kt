@@ -68,13 +68,13 @@ sealed class Wert {
     override fun toString(): String = boolean.toString()
   }
 
-  sealed class Objekt(val klassenDefinition: AST.Definition.Klasse): Wert() {
+  sealed class Objekt(val klassenDefinition: AST.Definition.Typdefinition.Klasse): Wert() {
     // TODO: String sollte eindeutigen Identifier zurückliefern
     override fun toString() = klassenDefinition.typ.name.nominativ
     abstract fun holeEigenschaft(eigenschaftsName: AST.Nomen): Wert
     abstract fun setzeEigenschaft(eigenschaftsName: AST.Nomen, wert: Wert)
 
-    class SkriptObjekt(klassenDefinition: AST.Definition.Klasse, val eigenschaften: HashMap<String, Wert>)
+    class SkriptObjekt(klassenDefinition: AST.Definition.Typdefinition.Klasse, val eigenschaften: HashMap<String, Wert>)
       : Objekt(klassenDefinition) {
       override fun holeEigenschaft(eigenschaftsName: AST.Nomen) = eigenschaften.getValue(eigenschaftsName.nominativ)
       override fun setzeEigenschaft(eigenschaftsName: AST.Nomen, wert: Wert) {
@@ -82,7 +82,7 @@ sealed class Wert {
       }
     }
 
-    class Liste(klassenDefinition: AST.Definition.Klasse ,val elemente: MutableList<Wert>): Objekt(klassenDefinition) {
+    class Liste(klassenDefinition: AST.Definition.Typdefinition.Klasse, val elemente: MutableList<Wert>): Objekt(klassenDefinition) {
       operator fun plus(liste: Liste) = Liste(klassenDefinition, (this.elemente + liste.elemente).toMutableList())
 
       override fun toString(): String {

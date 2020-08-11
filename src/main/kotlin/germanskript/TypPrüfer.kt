@@ -10,7 +10,7 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
   val logger = SimpleLogger()
   val ast: AST.Programm get() = typisierer.ast
 
-  private var zuÜberprüfendeKlasse: AST.Definition.Klasse? = null
+  private var zuÜberprüfendeKlasse: AST.Definition.Typdefinition.Klasse? = null
   private var rückgabeTyp: Typ? = null
   private var rückgabeErreicht = false
 
@@ -32,7 +32,17 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
       // TODO: Wenn das Methodenblock-Objekt nicht existiert oder keine Liste (kein generischer Typ ist) müssen wir irgendetwas machen
       erwarteterTyp = (umgebung.holeMethodenBlockObjekt() as Typ.KlassenTyp.Liste).elementTyp
     }
-    else if (ausdruckTyp != erwarteterTyp) {
+    else if (erwarteterTyp is Typ.Schnittstelle) {
+      if (ausdruckTyp !is Typ.KlassenTyp) {
+        throw GermanSkriptFehler.KlasseErwartet(holeErstesTokenVonAusdruck(ausdruck))
+      }
+      val methoden = ausdruckTyp.klassenDefinition.methoden
+      if (!erwarteterTyp.definition.methodenSignaturen.all { methoden.containsKey(it.vollerName!!) }) {
+        throw GermanSkriptFehler.UnimplementierteSchnittstelle(holeErstesTokenVonAusdruck(ausdruck),
+        ausdruckTyp.klassenDefinition, erwarteterTyp.definition)
+      }
+    }
+    if (ausdruckTyp != erwarteterTyp) {
       throw GermanSkriptFehler.TypFehler.FalscherTyp(holeErstesTokenVonAusdruck(ausdruck), ausdruckTyp, erwarteterTyp.name)
     }
     return erwarteterTyp
@@ -44,13 +54,14 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
   private fun prüfeFunktion(funktion: AST.Definition.FunktionOderMethode.Funktion) {
     val funktionsUmgebung = Umgebung<Typ>()
     funktionsUmgebung.pushBereich()
-    for (parameter in funktion.parameter) {
+    for (parameter in funktion.signatur.parameter) {
       funktionsUmgebung.schreibeVariable(parameter.name, parameter.typKnoten.typ!!, false)
     }
-    durchlaufeAufruf(funktion.name.toUntyped(), funktion.körper, funktionsUmgebung, false, funktion.rückgabeTyp?.typ)
+    val signatur = funktion.signatur
+    durchlaufeAufruf(signatur.name.toUntyped(), funktion.definition, funktionsUmgebung, false, signatur.rückgabeTyp?.typ)
   }
 
-  private fun prüfeKlasse(klasse: AST.Definition.Klasse) {
+  private fun prüfeKlasse(klasse: AST.Definition.Typdefinition.Klasse) {
     zuÜberprüfendeKlasse = klasse
     durchlaufeAufruf(klasse.typ.name.bezeichner.toUntyped(), klasse.konstruktor, Umgebung(), true,null)
     klasse.methoden.values.forEach {methode -> prüfeFunktion(methode.funktion)}
@@ -196,16 +207,16 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
     }
     val funktionsDefinition = funktionsAufruf.funktionsDefinition!!
 
-    if (istAusdruck && funktionsDefinition.rückgabeTyp == null) {
-      throw GermanSkriptFehler.SyntaxFehler.FunktionAlsAusdruckFehler(funktionsDefinition.name.toUntyped())
+    if (istAusdruck && funktionsDefinition.signatur.rückgabeTyp == null) {
+      throw GermanSkriptFehler.SyntaxFehler.FunktionAlsAusdruckFehler(funktionsDefinition.signatur.name.toUntyped())
     }
 
-    val parameter = funktionsDefinition.parameter
+    val parameter = funktionsDefinition.signatur.parameter
     val argumente = funktionsAufruf.argumente
     val j = if (funktionsAufruf.aufrufTyp == FunktionsAufrufTyp.METHODEN_OBJEKT_AUFRUF) 1 else 0
     val anzahlArgumente = argumente.size - j
     if (anzahlArgumente != parameter.size) {
-      throw GermanSkriptFehler.SyntaxFehler.AnzahlDerParameterFehler(funktionsDefinition.name.toUntyped())
+      throw GermanSkriptFehler.SyntaxFehler.AnzahlDerParameterFehler(funktionsDefinition.signatur.name.toUntyped())
     }
 
     // stimmen die Argument Typen mit den Parameter Typen überein?
@@ -213,7 +224,7 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
       ausdruckMussTypSein(argumente[i+j].wert, parameter[i].typKnoten.typ!!)
     }
 
-    return funktionsDefinition.rückgabeTyp?.typ
+    return funktionsDefinition.signatur.rückgabeTyp?.typ
   }
 
   override fun durchlaufeZurückgabe(zurückgabe: AST.Satz.Zurückgabe) {
@@ -379,7 +390,7 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
     return holeEigenschaftAusKlasse(eigenschaftsZugriff.eigenschaftsName, methodenBlockObjekt.klassenDefinition).typKnoten.typ!!
   }
 
-  private fun holeEigenschaftAusKlasse(eigenschaftsName: AST.Nomen, klasse: AST.Definition.Klasse): AST.Definition.TypUndName {
+  private fun holeEigenschaftAusKlasse(eigenschaftsName: AST.Nomen, klasse: AST.Definition.Typdefinition.Klasse): AST.Definition.TypUndName {
     for (eigenschaft in klasse.eigenschaften) {
       if (eigenschaftsName.nominativ == eigenschaft.name.nominativ) {
         return eigenschaft
@@ -417,7 +428,7 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
 }
 
 fun main() {
-  val typPrüfer = TypPrüfer(File("./iterationen/iter_2/code.gms"))
+  val typPrüfer = TypPrüfer(File("./beispiele/HalloWelt.gm"))
   typPrüfer.prüfe()
   typPrüfer.logger.print()
 }
