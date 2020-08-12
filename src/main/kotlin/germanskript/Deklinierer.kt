@@ -164,6 +164,7 @@ class Deklinierer(startDatei: File): PipelineKomponente(startDatei) {
   }
 
   fun holeDeklination(nomen: AST.Nomen): Deklination {
+    // TODO: Refactore. Das mit dem Fehlercatching ist etwas blöd...
     val container: AST.DefinitionsContainer? = nomen.findNodeInParents() ?:
     nomen.findNodeInParents<AST.Programm>()!!.definitionen
 

@@ -148,12 +148,6 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
     rückgabeWert = null
     val neueUmgebung = Umgebung<Wert>()
     neueUmgebung.pushBereich()
-    val parameter = funktionsAufruf.funktionsDefinition!!.signatur.parameter
-    val j = if (funktionsAufruf.aufrufTyp == FunktionsAufrufTyp.METHODEN_OBJEKT_AUFRUF) 1 else 0
-    val argumente = funktionsAufruf.argumente
-    for (i in parameter.indices) {
-      neueUmgebung.schreibeVariable(parameter[i].name, evaluiereAusdruck(argumente[i+j].wert), false)
-    }
     val funktionsDefinition = if (funktionsAufruf.funktionsDefinition != null) {
       funktionsAufruf.funktionsDefinition!!
     } else {
@@ -162,6 +156,13 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
       methode.funktion.signatur.vollerName = "für ${objekt.klassenDefinition.typ.name.nominativ}: ${methode.funktion.signatur.vollerName}"
       methode.funktion
     }
+    val parameter = funktionsDefinition.signatur.parameter
+    val j = if (funktionsAufruf.aufrufTyp == FunktionsAufrufTyp.METHODEN_OBJEKT_AUFRUF) 1 else 0
+    val argumente = funktionsAufruf.argumente
+    for (i in parameter.indices) {
+      neueUmgebung.schreibeVariable(parameter[i].name, evaluiereAusdruck(argumente[i+j].wert), false)
+    }
+
     return durchlaufeAufruf(funktionsAufruf, funktionsDefinition.definition, neueUmgebung, false, null)
   }
 

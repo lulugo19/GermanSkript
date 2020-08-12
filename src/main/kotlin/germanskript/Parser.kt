@@ -1088,9 +1088,9 @@ private sealed class SubParser<T: AST>() {
           überspringeLeereZeilen()
           val signaturen = mutableListOf<AST.Definition.FunktionsSignatur>()
           while (peekType() != TokenTyp.PUNKT) {
-            überspringeLeereZeilen()
             val rückgabeTyp = parseFunktionsAnfang()
             signaturen += subParse(FunktionsSignatur(id, rückgabeTyp, true))
+            überspringeLeereZeilen()
           }
           signaturen
         }

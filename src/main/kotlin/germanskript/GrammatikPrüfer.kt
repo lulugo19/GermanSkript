@@ -132,7 +132,16 @@ class GrammatikPrüfer(startDatei: File): PipelineKomponente(startDatei) {
     if (!adjektiv.bezeichner.wert.endsWith(endung)) {
       throw GermanSkriptFehler.GrammatikFehler.FalscheAdjektivEndung(adjektiv.bezeichner.toUntyped(), endung)
     }
-    adjektiv.normalisierung =  adjektiv.bezeichner.wert.capitalize().substring(0, adjektiv.bezeichner.wert.length - endung.length)
+    // wandel das Adejktiv Token, in ein Nomen Token um, sodass es vom Deklinierer gefunden werden kann
+    val adjektivToken = adjektiv.bezeichner
+    val adjektivGroß = adjektiv.bezeichner.wert.capitalize()
+    val nomen = AST.Nomen(
+        name.vornomen,
+        TypedToken(TokenTyp.BEZEICHNER_GROSS(arrayOf(adjektivGroß), ""),
+            adjektivGroß, adjektivToken.dateiPfad, adjektivToken.anfang, adjektivToken.ende)
+    )
+    nomen.setParentNode(adjektiv.parent!!)
+    adjektiv.normalisierung = deklinierer.holeDeklination(nomen).getForm(name.fälle.first(), name.numerus!!)
   }
 
   // region kontextbasierte Ausdrücke

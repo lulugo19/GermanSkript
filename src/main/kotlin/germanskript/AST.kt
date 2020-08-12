@@ -155,7 +155,7 @@ sealed class AST {
     val argumente: List<Argument> = _argumente
     var funktionsDefinition: Definition.FunktionOderMethode.Funktion? = null
     var aufrufTyp: FunktionsAufrufTyp = FunktionsAufrufTyp.FUNKTIONS_AUFRUF
-    val vollständigerName = modulPfad.joinToString("::") { it.wert } +
+    val vollständigerName: String get() = modulPfad.joinToString("::") { it.wert } +
         (if (modulPfad.isEmpty()) "" else "::") + vollerName
 
     init {
@@ -418,14 +418,20 @@ sealed class AST {
     }
   }
 
-  data class Adjektiv(val bezeichner: TypedToken<TokenTyp.BEZEICHNER_KLEIN>, var normalisierung: String? = null)
+  data class Adjektiv(val bezeichner: TypedToken<TokenTyp.BEZEICHNER_KLEIN>, var normalisierung: String? = null): AST()
 
   data class Argument(
       val adjektiv: Adjektiv?,
       val name: Nomen,
       var wert: Ausdruck
   ): AST() {
-    override val children = sequenceOf(name, wert)
+    override val children = sequence {
+      if (adjektiv != null) {
+        yield(adjektiv!!)
+      }
+      yield(name)
+      yield(wert)
+    }
   }
 
   data class PräpositionsArgumente(val präposition: Präposition, val argumente: List<Argument>): AST() {

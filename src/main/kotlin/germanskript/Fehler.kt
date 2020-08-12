@@ -91,7 +91,7 @@ sealed class GermanSkriptFehler(private val fehlerName: String, val token: Token
     override val nachricht: String get() {
       val uninplementierteMethoden = schnittstelle.methodenSignaturen.filter {
         !klasse.methoden.containsKey(it.vollerName!!)
-      }
+      }.map {it.vollerName}
       return "Die Klasse '${klasse.typ.vollständigerName}' implementiert die Schnittstelle '${schnittstelle.name.wert}' nicht." +
           "Folgende Methoden müssen implementiert werden:\n" + uninplementierteMethoden.joinToString("\n\t")
     }

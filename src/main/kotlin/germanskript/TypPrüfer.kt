@@ -46,7 +46,7 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
         ausdruckTyp.klassenDefinition, erwarteterTyp.definition)
       }
     }
-    if (ausdruckTyp != erwarteterTyp) {
+    else if (ausdruckTyp != erwarteterTyp) {
       throw GermanSkriptFehler.TypFehler.FalscherTyp(holeErstesTokenVonAusdruck(ausdruck), ausdruckTyp, erwarteterTyp.name)
     }
     return erwarteterTyp

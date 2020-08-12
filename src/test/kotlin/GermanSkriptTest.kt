@@ -431,7 +431,7 @@ class GermanSkriptTest {
       
       Adjektiv zeichenbar:
           Verb zeichne mich mit der Zeichenfolge Farbe
-          Verb skaliere mich mit der Zahl.
+          Verb skaliere mich um die Zahl.
 
       Verb zeichne das Zeichenbare mit der Zeichenfolge Farbe: 
           Zeichenbare: zeichne mich mit der Farbe!
@@ -443,17 +443,59 @@ class GermanSkriptTest {
            schreibe die Zeile "zeichne das Dreieck mit der Farbe #{die Farbe}"
       .
 
-      Verb für Dreieck skaliere mich:
-           schreibe die Zeile "skaliere das Dreieck"
+      Verb für Dreieck skaliere mich um die Zahl:
+           schreibe die Zeile "skaliere das Dreieck um #{die Zahl}"
       .
 
       das Dreieck ist ein Dreieck
 
       zeichne das zeichenbare Dreieck mit der Farbe "rot"
+      skaliere das Dreieck um die Zahl 2
     """.trimIndent()
 
     val expectedOutput = """
       zeichne das Dreieck mit der Farbe rot
+      skaliere das Dreieck um 2
+      
+    """.trimIndent()
+
+    testGermanSkriptSource(source, expectedOutput)
+  }
+
+  @Test
+  @DisplayName("Schnittstelle 2")
+  fun schnittstelle2() {
+    val source = """
+      Deklination Neutrum Singular(Fenster, Fensters, Fenster, Fenster) Plural(Fenster)
+      
+      Adjektiv klickbar:
+        Verb klick mich
+      .
+      
+      Verb registriere das KlickbareX:
+        wenn wahr:
+          KlickbareX: klick dich!
+        .
+      .
+      
+      Nomen Fenster:
+        jene AnZahl ist 0
+      .
+      
+      Verb für Fenster klick mich:
+        meine AnZahl ist meine AnZahl plus 1
+        schreibe die Zeile "Das Fenster wurde zum #{meine AnZahl}. angeklickt!"
+      .
+      
+      das Fenster ist ein Fenster
+      registriere das klickbare Fenster
+      
+      klick das Fenster
+    """.trimIndent()
+
+    val expectedOutput = """
+      Das Fenster wurde zum 1. angeklickt!
+      Das Fenster wurde zum 2. angeklickt!
       
     """.trimIndent()
 
