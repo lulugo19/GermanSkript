@@ -261,7 +261,7 @@ class Wörterbuch {
           return deklination
         } else {
           if (deklination.istNominalisiertesAdjektiv) {
-            val adjektivDeklination = dekliniereAdjektiv(wort, vornomen)
+            val adjektivDeklination = dekliniereAdjektiv(deklination.nominativSingular, vornomen)
             if (adjektivDeklination.fallSequenz.contains(wort)) {
               return adjektivDeklination
             }
@@ -283,18 +283,18 @@ class Wörterbuch {
     throw WortNichtGefunden(wort)
   }
 
-  val bestimmteAdjektivEndungen = Pair(arrayOf("e", "en", "en", "e"), arrayOf("en", "", "", "en"))
-  val unbestimmtAdjektivEndungen = Pair(arrayOf("es", "en", "en", "es"), arrayOf("en", "", "", "en"))
-  val ohneAdjektivEndungen = Pair(arrayOf("es", "en", "em", "es"), arrayOf("e", "er", "en", "e"))
+  private val bestimmterArtikelAdjektivEndungen = Pair(arrayOf("e", "en", "en", "e"), arrayOf("en", "", "", "en"))
+  private val unbestimmterArtikelAdjektivEndungen = Pair(arrayOf("es", "en", "en", "es"), arrayOf("en", "", "", "en"))
+  private val ohneArtikelAdjektivEndungen = Pair(arrayOf("es", "en", "em", "es"), arrayOf("e", "er", "en", "e"))
 
-  private fun holeEndungen(vornomen: TokenTyp.VORNOMEN?) = when (vornomen) {
-    null -> ohneAdjektivEndungen
+  fun holeEndungen(vornomen: TokenTyp.VORNOMEN?) = when (vornomen) {
+    null -> ohneArtikelAdjektivEndungen
     TokenTyp.VORNOMEN.ARTIKEL.BESTIMMT,
     TokenTyp.VORNOMEN.DEMONSTRATIV_PRONOMEN.DIESE,
-    TokenTyp.VORNOMEN.DEMONSTRATIV_PRONOMEN.JENE -> bestimmteAdjektivEndungen
+    TokenTyp.VORNOMEN.DEMONSTRATIV_PRONOMEN.JENE -> bestimmterArtikelAdjektivEndungen
     TokenTyp.VORNOMEN.ARTIKEL.UNBESTIMMT,
     TokenTyp.VORNOMEN.POSSESSIV_PRONOMEN.MEIN,
-    TokenTyp.VORNOMEN.POSSESSIV_PRONOMEN.DEIN -> unbestimmtAdjektivEndungen
+    TokenTyp.VORNOMEN.POSSESSIV_PRONOMEN.DEIN -> unbestimmterArtikelAdjektivEndungen
   }
 
   private fun dekliniereAdjektiv(adjektiv: String, vornomen: TokenTyp.VORNOMEN?): Deklination {

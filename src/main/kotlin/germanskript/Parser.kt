@@ -267,9 +267,13 @@ private sealed class SubParser<T: AST>() {
 
   protected inline fun<reified VornomenT: TokenTyp.VORNOMEN> parseNomenAusdruck(
       erwartetesVornomen: String,
-      inBinärenAusdruck: Boolean
-  ): Pair<AST.Nomen, AST.Ausdruck> {
+      inBinärenAusdruck: Boolean,
+      adjektivErlaubt: Boolean
+  ): Triple<AST.Adjektiv?, AST.Nomen, AST.Ausdruck> {
     val vornomen = expect<VornomenT>(erwartetesVornomen)
+    val adjektiv = (if (adjektivErlaubt) parseOptional<TokenTyp.BEZEICHNER_KLEIN>() else null).let {
+      if (it != null) AST.Adjektiv(it) else null
+    }
     var modulPfad: List<TypedToken<TokenTyp.BEZEICHNER_GROSS>>? = null
     if (vornomen.typ == TokenTyp.VORNOMEN.ARTIKEL.UNBESTIMMT) {
       modulPfad = parseModulPfad()
@@ -313,24 +317,25 @@ private sealed class SubParser<T: AST>() {
       is TokenTyp.ALS -> {
         next()
         val typ = parseTypOhneArtikel(false)
-        Pair(nomen, AST.Ausdruck.Konvertierung(ausdruck, typ))
+        Triple(adjektiv, nomen, AST.Ausdruck.Konvertierung(ausdruck, typ))
       }
       is TokenTyp.OPERATOR -> {
          val operatorAusdruck  =
              if (inBinärenAusdruck) ausdruck
              else subParse(Ausdruck(mitVornomen = true, optionalesIstNachVergleich = false, linkerAusdruck = ausdruck))
-        Pair(nomen, operatorAusdruck)
+        Triple(adjektiv, nomen, operatorAusdruck)
       }
-      else -> Pair(nomen, ausdruck)
+      else -> Triple(adjektiv, nomen, ausdruck)
     }
   }
 
   fun parseArgument(): AST.Argument {
-    var (nomen, wert) = parseNomenAusdruck<TokenTyp.VORNOMEN>("Vornomen", false)
-    if (wert is AST.Ausdruck.Variable) {
+    var (adjektiv, nomen, wert) = parseNomenAusdruck<TokenTyp.VORNOMEN>("Vornomen", false, true)
+    if (adjektiv == null && wert is AST.Ausdruck.Variable) {
       wert = when(peekType()) {
         is TokenTyp.NEUE_ZEILE,
         is TokenTyp.PUNKT,
+        is TokenTyp.AUSRUFEZEICHEN,
         is TokenTyp.KOMMA,
         is TokenTyp.BEZEICHNER_KLEIN,
         is TokenTyp.GESCHLOSSENE_KLAMMER -> wert
@@ -338,7 +343,7 @@ private sealed class SubParser<T: AST>() {
         else -> subParse(Ausdruck(mitVornomen = false, optionalesIstNachVergleich = false))
       }
     }
-    return AST.Argument(nomen, wert)
+    return AST.Argument(adjektiv, nomen, wert)
   }
 
   protected fun<T> parseBereich(erwartetesEndToken: TokenTyp = TokenTyp.PUNKT, parser: () -> T): T {
@@ -457,7 +462,13 @@ private sealed class SubParser<T: AST>() {
         }
         is TokenTyp.ADJEKTIV -> subParse(Definition.Schnittstelle).also { schnittstelle ->
           überprüfeDoppelteDefinition(container, schnittstelle)
-          container.definierteTypen[schnittstelle.namensToken.wert.capitalize()] = schnittstelle
+          var schnittstellenName = schnittstelle.namensToken.wert.capitalize()
+          // Das Adjektiv wird nominalisiert, indem es groß geschrieben wird und ein 'e' dran gehangen wird,
+          // falls noch kein 'e' am Ende vorhanden ist
+          if (!schnittstellenName.endsWith('e')) {
+            schnittstellenName += "e"
+          }
+          container.definierteTypen[schnittstellenName] = schnittstelle
         }
         is TokenTyp.VERB -> parseFunktionOderMethode().also { funktion ->
           container.funktionenOderMethoden += funktion
@@ -564,7 +575,7 @@ private sealed class SubParser<T: AST>() {
         is TokenTyp.BOOLEAN -> AST.Ausdruck.Boolean(next().toTyped())
         is TokenTyp.BEZEICHNER_KLEIN -> AST.Ausdruck.FunktionsAufruf(subParse(FunktionsAufruf))
         is TokenTyp.VORNOMEN ->
-          parseNomenAusdruck<TokenTyp.VORNOMEN>("Vornomen", true).second
+          parseNomenAusdruck<TokenTyp.VORNOMEN>("Vornomen", true, false).third
         is TokenTyp.REFERENZ.ICH -> {
           if (!hierarchyContainsNode(ASTKnotenID.METHODEN_DEFINITION)) {
             throw GermanSkriptFehler.SyntaxFehler.ParseFehler(next(), null,
@@ -670,7 +681,7 @@ private sealed class SubParser<T: AST>() {
           }
           AST.Ausdruck.EigenschaftsZugriff(nomen, objekt)
         } else {
-          val objekt = parseNomenAusdruck<TokenTyp.VORNOMEN.ARTIKEL>("Artikel", inBinärenAusdruck).second
+          val objekt = parseNomenAusdruck<TokenTyp.VORNOMEN.ARTIKEL>("Artikel", inBinärenAusdruck, false).third
           AST.Ausdruck.EigenschaftsZugriff(nomen, objekt)
         }
       }

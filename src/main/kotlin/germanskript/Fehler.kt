@@ -126,6 +126,11 @@ sealed class GermanSkriptFehler(private val fehlerName: String, val token: Token
       }
     }
 
+    class FalscheAdjektivEndung(token: Token, private val richtigeEndung: String): GrammatikFehler(token) {
+      override val nachricht: String
+        get() = "Das Adjektiv '${token.wert}' steht in der falschen Form. Es muss mit '-${richtigeEndung}' enden."
+    }
+
     class FalscheZuweisung(token: Token, private val numerus: Numerus) : GrammatikFehler(token) {
       override val nachricht: String
         get() = "Falsche Zuweisung '${token.wert}'. Die richtige Form der Zuweisung im ${numerus.anzeigeName} ist '${numerus.zuweisung}'." +

@@ -23,10 +23,11 @@ class GrammatikPrüfer(startDatei: File): PipelineKomponente(startDatei) {
 
     ast.visit() { knoten ->
       when (knoten) {
-        is AST.Definition.FunktionOderMethode.Funktion -> prüfeFunktionsDefinition(knoten)
+        is AST.Definition.FunktionOderMethode.Funktion -> prüfeFunktionsSignatur(knoten.signatur)
         is AST.Definition.FunktionOderMethode.Methode -> prüfeMethodenDefinition(knoten)
         is AST.Definition.Konvertierung -> prüfeKonvertierungsDefinition(knoten)
         is AST.Definition.Typdefinition.Klasse -> prüfeKlassenDefinition(knoten)
+        is AST.Definition.Typdefinition.Schnittstelle -> knoten.methodenSignaturen.forEach(::prüfeFunktionsSignatur)
         is AST.Satz.VariablenDeklaration -> prüfeVariablendeklaration(knoten)
         is AST.Satz.BedingungsTerm -> prüfeKontextbasiertenAusdruck(knoten.bedingung, null, EnumSet.of(Kasus.NOMINATIV), false)
         is AST.Satz.Zurückgabe -> if (knoten.ausdruck != null)
@@ -34,7 +35,7 @@ class GrammatikPrüfer(startDatei: File): PipelineKomponente(startDatei) {
         is AST.Satz.FürJedeSchleife -> prüfeFürJedeSchleife(knoten)
         is AST.Satz.FunktionsAufruf -> prüfeFunktionsAufruf(knoten.aufruf)
         is AST.Satz.MethodenBlock -> prüfeNomen(knoten.name, EnumSet.of(Kasus.NOMINATIV), Numerus.BEIDE)
-        is AST.Ausdruck -> return@visit false
+        is AST.Ausdruck, is AST.Nomen, is AST.Definition.FunktionsSignatur -> return@visit false
       }
       // germanskript.visit everything
       true
@@ -105,6 +106,33 @@ class GrammatikPrüfer(startDatei: File): PipelineKomponente(startDatei) {
       val numerusForm = deklinierer.holeDeklination(nomen).getForm(nomen.fälle.first(), numerus)
       throw GermanSkriptFehler.GrammatikFehler.FalscherNumerus(nomen.bezeichner.toUntyped(), numerus, numerusForm)
     }
+  }
+
+  val bestimmterArtikelAdjektivEndung = arrayOf(
+      arrayOf("e", "", "", "en"),
+      arrayOf("e", "en", "en", "e"),
+      arrayOf("e", "en", "en", "e"),
+      arrayOf("en", "", "", "en")
+  )
+
+  val unbestimmterArtikelAdjektivEndung = arrayOf(
+     arrayOf("er", "", "", "en"),
+     arrayOf("e", "", "", "e"),
+     arrayOf("es", "en", "en", "es"),
+     arrayOf("en", "", "", "en")
+  )
+
+  private fun prüfeAdjektiv(adjektiv: AST.Adjektiv, name: AST.Nomen) {
+    val endung = when(name.vornomen?.typ) {
+      is TokenTyp.VORNOMEN.ARTIKEL.BESTIMMT -> bestimmterArtikelAdjektivEndung
+      else -> unbestimmterArtikelAdjektivEndung
+    }[if (name.numerus!! == Numerus.SINGULAR) name.genus.ordinal else 3][name.fälle.first().ordinal]
+
+    // prüfe die korrekte Endung
+    if (!adjektiv.bezeichner.wert.endsWith(endung)) {
+      throw GermanSkriptFehler.GrammatikFehler.FalscheAdjektivEndung(adjektiv.bezeichner.toUntyped(), endung)
+    }
+    adjektiv.normalisierung =  adjektiv.bezeichner.wert.capitalize().substring(0, adjektiv.bezeichner.wert.length - endung.length)
   }
 
   // region kontextbasierte Ausdrücke
@@ -259,8 +287,7 @@ class GrammatikPrüfer(startDatei: File): PipelineKomponente(startDatei) {
     }
   }
 
-  private fun prüfeFunktionsDefinition(funktionsDefinition: AST.Definition.FunktionOderMethode.Funktion) {
-    val signatur = funktionsDefinition.signatur
+  private fun prüfeFunktionsSignatur(signatur: AST.Definition.FunktionsSignatur) {
     if (signatur.rückgabeTyp != null) {
       prüfeNomen(signatur.rückgabeTyp.name, EnumSet.of(Kasus.NOMINATIV), Numerus.BEIDE)
     }
@@ -270,12 +297,11 @@ class GrammatikPrüfer(startDatei: File): PipelineKomponente(startDatei) {
     for (präposition in signatur.präpositionsParameter) {
       prüfePräpositionsParameter(präposition)
     }
-    // logger.addLine("geprüft: $funktionsDefinition")
   }
 
   private fun prüfeMethodenDefinition(methodenDefinition: AST.Definition.FunktionOderMethode.Methode){
     prüfeNomen(methodenDefinition.klasse.name, EnumSet.of(Kasus.NOMINATIV), EnumSet.of(Numerus.SINGULAR))
-    prüfeFunktionsDefinition(methodenDefinition.funktion)
+    prüfeFunktionsSignatur(methodenDefinition.funktion.signatur)
   }
 
   private fun prüfeKlassenDefinition(klasse: AST.Definition.Typdefinition.Klasse) {
@@ -295,6 +321,9 @@ class GrammatikPrüfer(startDatei: File): PipelineKomponente(startDatei) {
 
   private fun prüfeArgument(argument: AST.Argument, fälle: EnumSet<Kasus>) {
     prüfeNomen(argument.name, fälle, Numerus.BEIDE)
+    if (argument.adjektiv != null) {
+      prüfeAdjektiv(argument.adjektiv, argument.name)
+    }
     prüfeKontextbasiertenAusdruck(argument.wert, argument.name, EnumSet.of(Kasus.NOMINATIV), false)
   }
 

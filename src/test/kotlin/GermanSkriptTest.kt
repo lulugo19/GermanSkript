@@ -422,4 +422,42 @@ class GermanSkriptTest {
     testGermanSkriptSource(source, "tleW ollaH")
   }
 
+  @Test
+  @DisplayName("Schnittstelle (Adjektiv)")
+  fun schnittstelle() {
+    val source = """
+      Deklination Femininum Singular(Farbe) Plural(Farben)
+      Deklination Neutrum Singular(Dreieck, Dreiecks, Dreieck, Dreieck) Plural(Dreiecke, Dreiecke, Dreiecken, Dreiecke)
+      
+      Adjektiv zeichenbar:
+          Verb zeichne mich mit der Zeichenfolge Farbe
+          Verb skaliere mich mit der Zahl.
+
+      Verb zeichne das Zeichenbare mit der Zeichenfolge Farbe: 
+          Zeichenbare: zeichne mich mit der Farbe!
+      .
+
+      Nomen Dreieck:.
+
+      Verb für Dreieck zeichne mich mit der Zeichenfolge Farbe:
+           schreibe die Zeile "zeichne das Dreieck mit der Farbe #{die Farbe}"
+      .
+
+      Verb für Dreieck skaliere mich:
+           schreibe die Zeile "skaliere das Dreieck"
+      .
+
+      das Dreieck ist ein Dreieck
+
+      zeichne das zeichenbare Dreieck mit der Farbe "rot"
+    """.trimIndent()
+
+    val expectedOutput = """
+      zeichne das Dreieck mit der Farbe rot
+      
+    """.trimIndent()
+
+    testGermanSkriptSource(source, expectedOutput)
+  }
+
 }

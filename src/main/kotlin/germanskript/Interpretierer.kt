@@ -154,7 +154,14 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
     for (i in parameter.indices) {
       neueUmgebung.schreibeVariable(parameter[i].name, evaluiereAusdruck(argumente[i+j].wert), false)
     }
-    val funktionsDefinition = funktionsAufruf.funktionsDefinition!!
+    val funktionsDefinition = if (funktionsAufruf.funktionsDefinition != null) {
+      funktionsAufruf.funktionsDefinition!!
+    } else {
+      val objekt = umgebung.holeMethodenBlockObjekt()!! as Wert.Objekt
+      val methode = objekt.klassenDefinition.methoden.getValue(funktionsAufruf.vollerName!!)
+      methode.funktion.signatur.vollerName = "für ${objekt.klassenDefinition.typ.name.nominativ}: ${methode.funktion.signatur.vollerName}"
+      methode.funktion
+    }
     return durchlaufeAufruf(funktionsAufruf, funktionsDefinition.definition, neueUmgebung, false, null)
   }
 

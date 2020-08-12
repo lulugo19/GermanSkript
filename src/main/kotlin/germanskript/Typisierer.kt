@@ -105,8 +105,14 @@ class Typisierer(startDatei: File): PipelineKomponente(startDatei) {
   fun typisiere() {
     definierer.definiere()
     _listenKlassenDefinition = definierer.holeTypDefinition("Liste") as AST.Definition.Typdefinition.Klasse
-    definierer.funktionsDefinitionen.forEach(::typisiereFunktion)
-    definierer.klassenDefinitionen.forEach(::typisiereKlasse)
+    definierer.funktionsDefinitionen.forEach { typisiereFunktionsSignatur(it.signatur)}
+    definierer.typDefinitionen.forEach {typDefinition ->
+      when (typDefinition) {
+        is AST.Definition.Typdefinition.Klasse -> typisiereKlasse(typDefinition)
+        is AST.Definition.Typdefinition.Schnittstelle ->
+          typDefinition.methodenSignaturen.forEach(::typisiereFunktionsSignatur)
+      }
+    }
   }
 
   fun bestimmeTypen(nomen: AST.Nomen): Typ {
@@ -139,11 +145,10 @@ class Typisierer(startDatei: File): PipelineKomponente(startDatei) {
     return typKnoten.typ
    }
 
-  private fun typisiereFunktion(funktion: AST.Definition.FunktionOderMethode.Funktion) {
-    val signatur = funktion.signatur
+  private fun typisiereFunktionsSignatur(signatur: AST.Definition.FunktionsSignatur) {
     bestimmeTypen(signatur.rückgabeTyp)
     bestimmeTypen(signatur.objekt?.typKnoten)
-    for (parameter in funktion.signatur.parameter) {
+    for (parameter in signatur.parameter) {
       bestimmeTypen(parameter.typKnoten)
     }
   }
@@ -155,7 +160,7 @@ class Typisierer(startDatei: File): PipelineKomponente(startDatei) {
     }
     klasse.methoden.values.forEach{ methode ->
       methode.klasse.typ = Typ.KlassenTyp.Klasse(klasse)
-      typisiereFunktion(methode.funktion)
+      typisiereFunktionsSignatur(methode.funktion.signatur)
     }
     klasse.konvertierungen.values.forEach { konvertierung ->
       bestimmeTypen(konvertierung.typ)

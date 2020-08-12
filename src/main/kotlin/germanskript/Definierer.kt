@@ -149,7 +149,7 @@ class Definierer(startDatei: File): PipelineKomponente(startDatei) {
       if (ersetzeObjekt != null) {
         vollerName += " $ersetzeObjekt"
       } else {
-        vollerName += " " + objekt.name.vornomenString!! + " " + objekt.name.hauptWort
+        vollerName += holeArgumentString(objekt)
       }
     } else if (funktionsAufruf.reflexivPronomen != null) {
       val reflexivPronomen = funktionsAufruf.reflexivPronomen
@@ -168,7 +168,7 @@ class Definierer(startDatei: File): PipelineKomponente(startDatei) {
       vollerName += " " + präposition.präposition.präposition.wert
       for (argumentIndex in präposition.argumente.indices) {
         val argument = präposition.argumente[argumentIndex]
-        vollerName += " " + argument.name.vornomenString!! + " " + argument.name.hauptWort
+        vollerName += holeArgumentString(argument)
         if (argumentIndex != präposition.argumente.size-1) {
           vollerName += ","
         }
@@ -178,6 +178,16 @@ class Definierer(startDatei: File): PipelineKomponente(startDatei) {
       vollerName += " " + funktionsAufruf.suffix.wert
     }
     return vollerName
+  }
+
+  private fun holeArgumentString(argument: AST.Argument): String {
+    return if (argument.adjektiv != null) {
+      val artikel = GrammatikPrüfer.holeVornomen(
+          TokenTyp.VORNOMEN.ARTIKEL.BESTIMMT, argument.name.fälle.first(), Genus.NEUTRUM, argument.name.numerus!!)
+      " " + artikel + " " + argument.adjektiv.normalisierung
+    } else {
+      " " + argument.name.vornomenString!! + " " + argument.name.hauptWort
+    }
   }
 
   /**
@@ -201,15 +211,11 @@ class Definierer(startDatei: File): PipelineKomponente(startDatei) {
   /**
    * Gibt alle Klassendefinitionen zurück.
    */
-  val klassenDefinitionen get(): Sequence<AST.Definition.Typdefinition.Klasse> = sequence {
+  val typDefinitionen get(): Sequence<AST.Definition.Typdefinition> = sequence {
     // Der Rückgabetyp der Funktionen muss explizit dranstehen. Ansonsten gibt es einen internen Fehler
     fun holeKlassenDefinitionen(container: AST.DefinitionsContainer):
-        Sequence<AST.Definition.Typdefinition.Klasse> = sequence {
-      for (klasse in container.definierteTypen.values) {
-        if (klasse is AST.Definition.Typdefinition.Klasse) {
-          yield(klasse as AST.Definition.Typdefinition.Klasse)
-        }
-      }
+        Sequence<AST.Definition.Typdefinition> = sequence {
+      yieldAll(container.definierteTypen.values)
       for (modul in container.module.values) {
         yieldAll(holeKlassenDefinitionen(modul.definitionen))
       }
@@ -224,8 +230,10 @@ class Definierer(startDatei: File): PipelineKomponente(startDatei) {
   }
 
   fun gebeKlassenDefinitionenAus() {
-    for (klasse in klassenDefinitionen)  {
-      println("${klasse.typ.name.bezeichner.wert}: $klasse")
+    for (klasse in typDefinitionen)  {
+      if (klasse is AST.Definition.Typdefinition.Klasse) {
+        println("${klasse.typ.name.bezeichner.wert}: $klasse")
+      }
     }
   }
 

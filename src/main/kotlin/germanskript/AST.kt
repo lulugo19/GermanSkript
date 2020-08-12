@@ -418,7 +418,10 @@ sealed class AST {
     }
   }
 
+  data class Adjektiv(val bezeichner: TypedToken<TokenTyp.BEZEICHNER_KLEIN>, var normalisierung: String? = null)
+
   data class Argument(
+      val adjektiv: Adjektiv?,
       val name: Nomen,
       var wert: Ausdruck
   ): AST() {

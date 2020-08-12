@@ -29,10 +29,10 @@ class ParserTest {
     """.trimIndent()
 
     val ast = parseGermanSkriptSource(source)
-    assertThat(ast.definitionen.definierteTypen.containsKey("Zeichenbar"))
-    assertThat(ast.definitionen.definierteTypen.getValue("Zeichenbar"))
+    assertThat(ast.definitionen.definierteTypen.containsKey("Zeichenbare"))
+    assertThat(ast.definitionen.definierteTypen.getValue("Zeichenbare"))
         .isInstanceOf(AST.Definition.Typdefinition.Schnittstelle::class.java)
-    val schnittstelle = ast.definitionen.definierteTypen.getValue("Zeichenbar") as AST.Definition.Typdefinition.Schnittstelle
+    val schnittstelle = ast.definitionen.definierteTypen.getValue("Zeichenbare") as AST.Definition.Typdefinition.Schnittstelle
     assertThat(schnittstelle.methodenSignaturen.size).isEqualTo(2)
     assertThat(schnittstelle.methodenSignaturen[0].name.wert).isEqualTo("zeichne")
     assertThat(schnittstelle.methodenSignaturen[1].name.wert).isEqualTo("skaliere")

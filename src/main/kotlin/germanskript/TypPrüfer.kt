@@ -17,7 +17,11 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
   fun prüfe() {
     typisierer.typisiere()
     // zuerst die Klassendefinitionen, damit noch private Eigenschaften definiert werden können
-    definierer.klassenDefinitionen.forEach(::prüfeKlasse)
+    definierer.typDefinitionen.forEach { typDefinition ->
+      if (typDefinition is AST.Definition.Typdefinition.Klasse) {
+        prüfeKlasse(typDefinition)
+      }
+    }
     definierer.funktionsDefinitionen.forEach(::prüfeFunktion)
 
     // neue germanskript.Umgebung
@@ -125,6 +129,7 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
     if (funktionsAufruf.vollerName == null) {
       funktionsAufruf.vollerName = definierer.holeVollenNamenVonFunktionsAufruf(funktionsAufruf, null)
     }
+    var funktionsSignatur: AST.Definition.FunktionsSignatur? = null
     logger.addLine("prüfe Funktionsaufruf in ${funktionsAufruf.verb.position}: ${funktionsAufruf.vollerName!!}")
     val methodenBlockObjekt = umgebung.holeMethodenBlockObjekt()
 
@@ -135,6 +140,7 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
         funktionsAufruf.funktionsDefinition = methodenDefinition
         funktionsAufruf.vollerName = "für ${methodenBlockObjekt.klassenDefinition.typ.name.bezeichner.wert}: ${funktionsAufruf.vollerName}"
         funktionsAufruf.aufrufTyp = FunktionsAufrufTyp.METHODEN_BLOCK_AUFRUF
+        funktionsSignatur = methodenDefinition.signatur
       }
       else if (methodenBlockObjekt is Typ.KlassenTyp.Liste && funktionsAufruf.objekt != null) {
         val objektName = funktionsAufruf.objekt.name
@@ -145,6 +151,7 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
           funktionsAufruf.vollerName = "für Liste: $methodenName"
           funktionsAufruf.funktionsDefinition = methodenBlockObjekt.klassenDefinition.methoden.getValue(methodenName).funktion
           funktionsAufruf.aufrufTyp = FunktionsAufrufTyp.METHODEN_BLOCK_AUFRUF
+          funktionsSignatur = funktionsAufruf.funktionsDefinition!!.signatur
         }
       }
       else if (funktionsAufruf.reflexivPronomen != null && funktionsAufruf.reflexivPronomen.typ == TokenTyp.REFLEXIV_PRONOMEN.DICH) {
@@ -154,14 +161,24 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
       }
     }
 
+    // Schnittstelle Aufruf
+    if (funktionsSignatur == null && methodenBlockObjekt is Typ.Schnittstelle) {
+      funktionsSignatur = methodenBlockObjekt.definition.methodenSignaturen.find { signatur -> signatur.vollerName!! == funktionsAufruf.vollerName!! }
+      if (funktionsSignatur != null) {
+        funktionsAufruf.vollerName = funktionsSignatur.vollerName
+        funktionsAufruf.aufrufTyp = FunktionsAufrufTyp.METHODEN_BLOCK_AUFRUF
+      }
+    }
+
     // ist Methoden-Selbst-Aufruf
-    if (funktionsAufruf.funktionsDefinition == null) {
+    if (funktionsSignatur == null) {
       if (zuÜberprüfendeKlasse != null) {
         val klasse = zuÜberprüfendeKlasse!!
         if (klasse.methoden.containsKey(funktionsAufruf.vollerName!!)) {
           funktionsAufruf.funktionsDefinition = klasse.methoden.getValue(funktionsAufruf.vollerName!!).funktion
           funktionsAufruf.aufrufTyp = FunktionsAufrufTyp.METHODEN_SELBST_AUFRUF
           funktionsAufruf.vollerName = "für ${klasse.typ.name.bezeichner.wert}: ${funktionsAufruf.vollerName}"
+          funktionsSignatur = funktionsAufruf.funktionsDefinition!!.signatur
         } else if (funktionsAufruf.reflexivPronomen != null && funktionsAufruf.reflexivPronomen.typ == TokenTyp.REFLEXIV_PRONOMEN.MICH) {
           throw  GermanSkriptFehler.Undefiniert.Methode(funktionsAufruf.verb.toUntyped(), funktionsAufruf, klasse.typ.name.nominativ)
         }
@@ -170,8 +187,9 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
 
     // ist normale Funktion
     val undefiniertFehler = try {
-      if (funktionsAufruf.funktionsDefinition == null) {
+      if (funktionsSignatur == null) {
         funktionsAufruf.funktionsDefinition = definierer.holeFunktionsDefinition(funktionsAufruf)
+        funktionsSignatur = funktionsAufruf.funktionsDefinition!!.signatur
         null
       } else {
         null
@@ -182,7 +200,7 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
 
     // ist Methoden-Objekt-Aufruf als letzte Möglichkeit
     // das bedeutet Funktionsnamen gehen vor Methoden-Objekt-Aufrufen
-    if (funktionsAufruf.funktionsDefinition == null && funktionsAufruf.objekt != null) {
+    if (funktionsSignatur == null && funktionsAufruf.objekt != null) {
       val klasse = typisierer.bestimmeTypen(funktionsAufruf.objekt.name)
       if (klasse is Typ.KlassenTyp) {
         val methoden = klasse.klassenDefinition.methoden
@@ -198,25 +216,25 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
           funktionsAufruf.vollerName = "für ${klassenTyp.name.bezeichner}: ${methodenName}"
           funktionsAufruf.funktionsDefinition = methoden.getValue(methodenName).funktion
           funktionsAufruf.aufrufTyp = FunktionsAufrufTyp.METHODEN_OBJEKT_AUFRUF
+          funktionsSignatur = funktionsAufruf.funktionsDefinition!!.signatur
         }
       }
     }
 
-    if (funktionsAufruf.funktionsDefinition == null) {
+    if (funktionsSignatur == null) {
       throw undefiniertFehler!!
     }
-    val funktionsDefinition = funktionsAufruf.funktionsDefinition!!
 
-    if (istAusdruck && funktionsDefinition.signatur.rückgabeTyp == null) {
-      throw GermanSkriptFehler.SyntaxFehler.FunktionAlsAusdruckFehler(funktionsDefinition.signatur.name.toUntyped())
+    if (istAusdruck && funktionsSignatur.rückgabeTyp == null) {
+      throw GermanSkriptFehler.SyntaxFehler.FunktionAlsAusdruckFehler(funktionsSignatur.name.toUntyped())
     }
 
-    val parameter = funktionsDefinition.signatur.parameter
+    val parameter = funktionsSignatur.parameter
     val argumente = funktionsAufruf.argumente
     val j = if (funktionsAufruf.aufrufTyp == FunktionsAufrufTyp.METHODEN_OBJEKT_AUFRUF) 1 else 0
     val anzahlArgumente = argumente.size - j
     if (anzahlArgumente != parameter.size) {
-      throw GermanSkriptFehler.SyntaxFehler.AnzahlDerParameterFehler(funktionsDefinition.signatur.name.toUntyped())
+      throw GermanSkriptFehler.SyntaxFehler.AnzahlDerParameterFehler(funktionsSignatur.name.toUntyped())
     }
 
     // stimmen die Argument Typen mit den Parameter Typen überein?
@@ -224,7 +242,7 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
       ausdruckMussTypSein(argumente[i+j].wert, parameter[i].typKnoten.typ!!)
     }
 
-    return funktionsDefinition.signatur.rückgabeTyp?.typ
+    return funktionsSignatur.rückgabeTyp?.typ
   }
 
   override fun durchlaufeZurückgabe(zurückgabe: AST.Satz.Zurückgabe) {
@@ -279,7 +297,7 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
   }
 
   override fun bevorDurchlaufeMethodenBlock(methodenBlock: AST.Satz.MethodenBlock, blockObjekt: Typ?) {
-    if (blockObjekt !is Typ.KlassenTyp) {
+    if (blockObjekt !is Typ.KlassenTyp && blockObjekt !is Typ.Schnittstelle) {
       throw GermanSkriptFehler.TypFehler.ObjektErwartet(methodenBlock.name.bezeichner.toUntyped())
     }
   }
