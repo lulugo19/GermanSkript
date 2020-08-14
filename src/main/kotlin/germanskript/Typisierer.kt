@@ -108,7 +108,6 @@ class Typisierer(startDatei: File): PipelineKomponente(startDatei) {
     definierer.funktionsDefinitionen.forEach { typisiereFunktionsSignatur(it.signatur)}
     definierer.typDefinitionen.forEach {typDefinition ->
       when (typDefinition) {
-        is AST.Definition.Typdefinition.Klasse -> typisiereKlasse(typDefinition)
         is AST.Definition.Typdefinition.Schnittstelle ->
           typDefinition.methodenSignaturen.forEach(::typisiereFunktionsSignatur)
       }
@@ -153,12 +152,12 @@ class Typisierer(startDatei: File): PipelineKomponente(startDatei) {
     }
   }
 
-  private fun typisiereKlasse(klasse: AST.Definition.Typdefinition.Klasse) {
+  fun typisiereKlasse(klasse: AST.Definition.Typdefinition.Klasse) {
     bestimmeTypen(klasse.typ)
     for (eigenschaft in klasse.eigenschaften) {
       bestimmeTypen(eigenschaft.typKnoten)
     }
-    klasse.methoden.values.forEach{ methode ->
+    klasse.methoden.values.forEach { methode ->
       methode.klasse.typ = Typ.KlassenTyp.Klasse(klasse)
       typisiereFunktionsSignatur(methode.funktion.signatur)
     }

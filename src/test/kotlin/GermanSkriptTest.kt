@@ -502,4 +502,60 @@ class GermanSkriptTest {
     testGermanSkriptSource(source, expectedOutput)
   }
 
+  @Test
+  @DisplayName("Vererbung")
+  fun vererbung() {
+    val quellCode = """
+      Deklination Femininum Singular(Person) Plural(Personen)
+      Deklination Maskulinum Singular(Student, Studenten, Studenten, Studenten) Plural(Studenten)
+      Deklination Maskulinum Singular(Name, Namens, Namen, Namen) Plural(Namen)
+      Deklination Neutrum Singular(Alter, Alters, Alter, Alter) Plural(Alter)
+      Deklination Maskulinum Singular(Studiengang, Studiengangs, Studiengang, Studiengang) Plural(Studiengänge)
+      
+      Nomen Person mit
+        der Zeichenfolge VorName,
+        der Zeichenfolge NachName,
+        einer Zahl Alter:
+        
+        dieser Name ist "#{mein VorName} #{mein NachName}"
+        schreibe die Zeile "#{mein Name} (#{mein Alter} Jahre alt) wurde erstellt!"
+      .
+      
+      Nomen Student als Person mit der Zeichenfolge Studiengang:
+        schreibe die Zeile "#{mein VorName} #{mein NachName} ist ein #{mein Studiengang}-Student!"
+      .
+      
+      Verb für Person stell mich vor:
+        schreibe die Zeile "Hallo, mein Name ist #{mein Name} und ich bin #{mein Alter} Jahre alt!"
+      .
+      
+      Verb für Student stell mich vor:
+        Super: stell mich vor!
+        schreibe die Zeile "Ich bin #{mein Studiengang}-Student."
+      .
+      
+      Verb stell die Person vor:
+        Person: stell dich vor!
+      .
+      
+      der Student ist ein Student mit 
+        dem VorNamen "Lukas",
+        dem NachNamen "Gobelet",
+        dem Alter 22,
+        dem Studiengang "Informatik"
+        
+      stell die Person Student vor
+    """.trimIndent()
+
+    val erwarteteAusgabe = """
+      Lukas Gobelet (22 Jahre alt) wurde erstellt!
+      Lukas Gobelet ist ein Informatik-Student!
+      Hallo, mein Name ist Lukas Gobelet und ich bin 22 Jahre alt!
+      Ich bin Informatik-Student.
+      
+    """.trimIndent()
+
+    testGermanSkriptSource(quellCode, erwarteteAusgabe)
+  }
+
 }

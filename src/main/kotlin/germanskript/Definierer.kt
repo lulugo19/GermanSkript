@@ -224,16 +224,16 @@ class Definierer(startDatei: File): PipelineKomponente(startDatei) {
     yieldAll(holeKlassenDefinitionen(ast.definitionen))
   }
 
+  inline fun<reified T: AST.Definition.Typdefinition> holeDefinitionen() = typDefinitionen.filter { it is T }.map {it as T}
+
   /** holt eine globale Klasse über den Namen der Klasse */
   fun holeTypDefinition(klassenName: String): AST.Definition.Typdefinition {
     return ast.definitionen.definierteTypen.getValue(klassenName)
   }
 
   fun gebeKlassenDefinitionenAus() {
-    for (klasse in typDefinitionen)  {
-      if (klasse is AST.Definition.Typdefinition.Klasse) {
-        println("${klasse.typ.name.bezeichner.wert}: $klasse")
-      }
+    for (klasse in holeDefinitionen<AST.Definition.Typdefinition.Klasse>())  {
+      println("${klasse.typ.name.bezeichner.wert}: $klasse")
     }
   }
 

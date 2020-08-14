@@ -109,6 +109,7 @@ sealed class TokenTyp(val anzeigeName: String) {
     object ALIAS: TokenTyp("'Alias'")
     object MODUL: TokenTyp("'Modul'")
     object INTERN: TokenTyp("'intern'")
+    object SUPER: TokenTyp("'Super'")
 
     // Artikel und Präpositionen
     data class ZUWEISUNG(val numerus: Numerus): TokenTyp("'ist' oder 'sind'")
@@ -254,6 +255,7 @@ private val WORT_MAPPING = mapOf<String, TokenTyp>(
     "abbrechen" to TokenTyp.ABBRECHEN,
     "als" to TokenTyp.ALS,
     "Modul" to TokenTyp.MODUL,
+    "Super" to TokenTyp.SUPER,
     // Werte
     "wahr" to TokenTyp.BOOLEAN(Wert.Boolean(true)),
     "falsch" to TokenTyp.BOOLEAN(Wert.Boolean(false)),

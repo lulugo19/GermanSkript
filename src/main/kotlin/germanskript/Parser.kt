@@ -29,7 +29,8 @@ enum class ASTKnotenID {
   IMPORT,
   VERWENDE,
   BEREICH,
-  SCHNITTSTELLE
+  SCHNITTSTELLE,
+  SUPER_BLOCK
 }
 
 class Parser(startDatei: File): PipelineKomponente(startDatei) {
@@ -404,6 +405,7 @@ private sealed class SubParser<T: AST>() {
         is TokenTyp.INTERN -> subParse(Satz.Intern)
         is TokenTyp.VORNOMEN -> subParse(Satz.VariablenDeklaration)
         is TokenTyp.DOPPELPUNKT -> AST.Satz.Bereich(parseSätze(TokenTyp.PUNKT).sätze)
+        is TokenTyp.SUPER -> subParse(Satz.SuperBlock)
         is TokenTyp.WENN -> subParse(Satz.Bedingung)
         is TokenTyp.SOLANGE -> subParse(Satz.SolangeSchleife)
         is TokenTyp.FORTFAHREN, is TokenTyp.ABBRECHEN -> subParse(Satz.SchleifenKontrolle)
@@ -777,6 +779,23 @@ private sealed class SubParser<T: AST>() {
         val name = parseNomenOhneVornomen(true)
         val sätze = parseSätze(TokenTyp.AUSRUFEZEICHEN)
         return AST.Satz.MethodenBlock(name, sätze)
+      }
+    }
+
+    object SuperBlock: Satz<AST.Satz.SuperBlock>() {
+      override val id: ASTKnotenID = ASTKnotenID.SUPER_BLOCK
+
+      override fun bewacheKnoten() {
+        if (!hierarchyContainsAnyNode(ASTKnotenID.METHODEN_DEFINITION, ASTKnotenID.KLASSEN_DEFINITION, ASTKnotenID.KONVERTIERUNGS_DEFINITION)) {
+          throw GermanSkriptFehler.SyntaxFehler.UngültigerBereich(next(), "Ein Super-Block kann nur in einer Methode, im Konstruktor oder in einer" +
+              "Konvertierungsdefinition verwendet werden.")
+        }
+      }
+
+      override fun parseImpl(): AST.Satz.SuperBlock {
+        expect<TokenTyp.SUPER>("'Super'")
+        val bereich = parseSätze(TokenTyp.AUSRUFEZEICHEN)
+        return AST.Satz.SuperBlock(bereich)
       }
     }
 

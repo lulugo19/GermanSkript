@@ -19,9 +19,9 @@ Bei der Objektinitialiserung müssen dann nicht nur die eigenen Eigenschaften, s
 der Elternklasse initialisiert werden.
 Methodendefinitionen der Elternklasse können in der Kindklasse überschrieben werden. 
 Sie können einfach so überschrieben werden. Man braucht kein neues Schlüsselwort.
-Um auf die Elternmethode der überschriebenen Methode zu verweisen, wird ein Methodenblock verwendet.
-Dieser Methodenblock startet mit `Wir`. Eigenschaften können auch überschrieben werden.
-Auf die Eigenschaften der Elternklasse kann dann mit dem Personalpronomen `uns` verwiesen werden.
+Um auf die Elternmethode der überschriebenen Methode zu verweisen, wird ein Block verwendet, der
+mit dem Schlüsselwort `Super` startet.
+
 
 Beispiel:
 
@@ -47,7 +47,7 @@ Nomen Student als Person mit
 .
 
 Verb für Student stell mich vor:
-    Wir: stell uns vor!
+    Super: stell mich vor!
     schreibe die Zeile "Ich studiere #{mein Studiengang} im #{mein Semester}. Semester"
 .
 

@@ -409,6 +409,10 @@ sealed class AST {
       override val children = sequenceOf(name, bereich)
     }
 
+    data class SuperBlock(val bereich: Bereich): Satz() {
+      override val children = sequenceOf(bereich)
+    }
+
     data class Zurückgabe(val erstesToken: TypedToken<TokenTyp.BEZEICHNER_KLEIN>, var ausdruck: Ausdruck?): Satz() {
       override val children = sequence {
         if (ausdruck != null) {

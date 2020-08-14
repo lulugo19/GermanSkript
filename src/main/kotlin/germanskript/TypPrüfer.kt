@@ -17,11 +17,8 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
   fun prüfe() {
     typisierer.typisiere()
     // zuerst die Klassendefinitionen, damit noch private Eigenschaften definiert werden können
-    definierer.typDefinitionen.forEach { typDefinition ->
-      if (typDefinition is AST.Definition.Typdefinition.Klasse) {
-        prüfeKlasse(typDefinition)
-      }
-    }
+    definierer.holeDefinitionen<AST.Definition.Typdefinition.Klasse>().forEach(::prüfeKlasse)
+
     definierer.funktionsDefinitionen.forEach(::prüfeFunktion)
 
     // neue germanskript.Umgebung
@@ -45,11 +42,23 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
         throw GermanSkriptFehler.UnimplementierteSchnittstelle(holeErstesTokenVonAusdruck(ausdruck),
         ausdruckTyp.klassenDefinition, erwarteterTyp.definition)
       }
+      return ausdruckTyp
+    }
+    if (ausdruckTyp is Typ.KlassenTyp && erwarteterTyp is Typ.KlassenTyp) {
+      // eine Kindklasse ist ein gültiger Typ für eine Elternklasse
+      var typ: Typ.KlassenTyp? = ausdruckTyp
+      while (typ != null) {
+        if (typ == erwarteterTyp) {
+          return erwarteterTyp
+        }
+        typ = ausdruckTyp.klassenDefinition.elternKlasse?.typ as Typ.KlassenTyp?
+      }
+      throw GermanSkriptFehler.TypFehler.FalscherTyp(holeErstesTokenVonAusdruck(ausdruck), ausdruckTyp, erwarteterTyp.name)
     }
     else if (ausdruckTyp != erwarteterTyp) {
       throw GermanSkriptFehler.TypFehler.FalscherTyp(holeErstesTokenVonAusdruck(ausdruck), ausdruckTyp, erwarteterTyp.name)
     }
-    return erwarteterTyp
+    return ausdruckTyp
   }
 
   // breche niemals Sätze ab
@@ -66,11 +75,40 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
   }
 
   private fun prüfeKlasse(klasse: AST.Definition.Typdefinition.Klasse) {
+    if (klasse.typ.typ != null) {
+      return
+    }
+    typisierer.typisiereKlasse(klasse)
+    // Da die Kindklasse abhängig von der Elternklasse ist, muss zuerst die Elternklasse geprüft werden
+    if (klasse.elternKlasse != null) {
+      if (klasse.elternKlasse.typ == null) {
+        typisierer.bestimmeTypen(klasse.elternKlasse)
+      }
+      val elternKlasse = klasse.elternKlasse.typ as Typ.KlassenTyp
+      prüfeKlasse(elternKlasse.klassenDefinition)
+      klasse.eigenschaften.addAll(0, elternKlasse.klassenDefinition.eigenschaften)
+    }
     zuÜberprüfendeKlasse = klasse
     durchlaufeAufruf(klasse.typ.name.bezeichner.toUntyped(), klasse.konstruktor, Umgebung(), true,null)
     klasse.methoden.values.forEach {methode -> prüfeFunktion(methode.funktion)}
     klasse.konvertierungen.values.forEach {konvertierung ->
       durchlaufeAufruf(konvertierung.klasse.name.bezeichner.toUntyped(), konvertierung.definition, Umgebung(), true, konvertierung.typ.typ!!)
+    }
+
+    fun fügeElternKlassenMethodenHinzu(elternKlasse: AST.Definition.Typdefinition.Klasse) {
+      for ((methodenName, methode) in elternKlasse.methoden) {
+        klasse.methoden.putIfAbsent(methodenName, methode)
+      }
+      for ((konvertierungsTyp, konvertierung) in elternKlasse.konvertierungen) {
+        klasse.konvertierungen.putIfAbsent(konvertierungsTyp, konvertierung)
+      }
+      if (elternKlasse.elternKlasse != null) {
+        fügeElternKlassenMethodenHinzu((elternKlasse.elternKlasse.typ as Typ.KlassenTyp).klassenDefinition)
+      }
+    }
+
+    if (klasse.elternKlasse != null) {
+      fügeElternKlassenMethodenHinzu((klasse.elternKlasse.typ as Typ.KlassenTyp).klassenDefinition)
     }
   }
 
@@ -135,33 +173,16 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
 
     // ist Methodenaufruf von Block-Variable
     if (methodenBlockObjekt is Typ.KlassenTyp) {
-      if (methodenBlockObjekt.klassenDefinition.methoden.containsKey(funktionsAufruf.vollerName!!)) {
-        val methodenDefinition = methodenBlockObjekt.klassenDefinition.methoden.getValue(funktionsAufruf.vollerName!!).funktion
-        funktionsAufruf.funktionsDefinition = methodenDefinition
-        funktionsAufruf.vollerName = "für ${methodenBlockObjekt.klassenDefinition.typ.name.bezeichner.wert}: ${funktionsAufruf.vollerName}"
-        funktionsAufruf.aufrufTyp = FunktionsAufrufTyp.METHODEN_BLOCK_AUFRUF
-        funktionsSignatur = methodenDefinition.signatur
-      }
-      else if (methodenBlockObjekt is Typ.KlassenTyp.Liste && funktionsAufruf.objekt != null) {
-        val objektName = funktionsAufruf.objekt.name
-        val artikel = GrammatikPrüfer.holeVornomen(TokenTyp.VORNOMEN.ARTIKEL.BESTIMMT, objektName.fälle.first(), typDeklination.genus, objektName.numerus!!)
-        val typWort = typDeklination.getForm(funktionsAufruf.objekt.name.fälle.first(), funktionsAufruf.objekt.name.numerus!!)
-        val methodenName = definierer.holeVollenNamenVonFunktionsAufruf(funktionsAufruf, "$artikel $typWort")
-        if (methodenBlockObjekt.klassenDefinition.methoden.containsKey(methodenName)) {
-          funktionsAufruf.vollerName = "für Liste: $methodenName"
-          funktionsAufruf.funktionsDefinition = methodenBlockObjekt.klassenDefinition.methoden.getValue(methodenName).funktion
-          funktionsAufruf.aufrufTyp = FunktionsAufrufTyp.METHODEN_BLOCK_AUFRUF
-          funktionsSignatur = funktionsAufruf.funktionsDefinition!!.signatur
-        }
-      }
-      else if (funktionsAufruf.reflexivPronomen != null && funktionsAufruf.reflexivPronomen.typ == TokenTyp.REFLEXIV_PRONOMEN.DICH) {
-        throw GermanSkriptFehler.Undefiniert.Methode(funktionsAufruf.verb.toUntyped(),
-            funktionsAufruf,
-            methodenBlockObjekt.klassenDefinition.typ.name.nominativ)
-      }
+      funktionsSignatur = findeMethode(
+          funktionsAufruf,
+          methodenBlockObjekt,
+          FunktionsAufrufTyp.METHODEN_BLOCK_AUFRUF,
+          TokenTyp.REFLEXIV_PRONOMEN.DICH,
+          true
+      )
     }
 
-    // Schnittstelle Aufruf
+    // Schnittstellen Aufruf
     if (funktionsSignatur == null && methodenBlockObjekt is Typ.Schnittstelle) {
       funktionsSignatur = methodenBlockObjekt.definition.methodenSignaturen.find { signatur -> signatur.vollerName!! == funktionsAufruf.vollerName!! }
       if (funktionsSignatur != null) {
@@ -171,18 +192,14 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
     }
 
     // ist Methoden-Selbst-Aufruf
-    if (funktionsSignatur == null) {
-      if (zuÜberprüfendeKlasse != null) {
-        val klasse = zuÜberprüfendeKlasse!!
-        if (klasse.methoden.containsKey(funktionsAufruf.vollerName!!)) {
-          funktionsAufruf.funktionsDefinition = klasse.methoden.getValue(funktionsAufruf.vollerName!!).funktion
-          funktionsAufruf.aufrufTyp = FunktionsAufrufTyp.METHODEN_SELBST_AUFRUF
-          funktionsAufruf.vollerName = "für ${klasse.typ.name.bezeichner.wert}: ${funktionsAufruf.vollerName}"
-          funktionsSignatur = funktionsAufruf.funktionsDefinition!!.signatur
-        } else if (funktionsAufruf.reflexivPronomen != null && funktionsAufruf.reflexivPronomen.typ == TokenTyp.REFLEXIV_PRONOMEN.MICH) {
-          throw  GermanSkriptFehler.Undefiniert.Methode(funktionsAufruf.verb.toUntyped(), funktionsAufruf, klasse.typ.name.nominativ)
-        }
-      }
+    if (funktionsSignatur == null && zuÜberprüfendeKlasse != null) {
+      funktionsSignatur = findeMethode(
+          funktionsAufruf,
+          Typ.KlassenTyp.Klasse(zuÜberprüfendeKlasse!!),
+          FunktionsAufrufTyp.METHODEN_SELBST_AUFRUF,
+          TokenTyp.REFLEXIV_PRONOMEN.MICH,
+          true
+      )
     }
 
     // ist normale Funktion
@@ -243,6 +260,59 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
     }
 
     return funktionsSignatur.rückgabeTyp?.typ
+  }
+
+  private fun findeMethode(
+      funktionsAufruf: AST.Funktion,
+      typ: Typ.KlassenTyp,
+      aufrufTyp: FunktionsAufrufTyp,
+      reflexivPronomen: TokenTyp.REFLEXIV_PRONOMEN,
+      erlaubeHoleElternDefinition: Boolean
+  ): AST.Definition.FunktionsSignatur? {
+
+    // versuche Methode in der Elternklasse zu finden
+    if (aufrufTyp == FunktionsAufrufTyp.METHODEN_SELBST_AUFRUF &&
+        erlaubeHoleElternDefinition && inSuperBlock && typ.klassenDefinition.elternKlasse != null) {
+      val signatur = findeMethode(
+          funktionsAufruf, typ.klassenDefinition.elternKlasse!!.typ!! as Typ.KlassenTyp,
+          aufrufTyp, reflexivPronomen, false
+      )
+      if (signatur != null) {
+        return signatur
+      }
+    }
+
+    // ist Methodenaufruf von Block-Variable
+    if (typ.klassenDefinition.methoden.containsKey(funktionsAufruf.vollerName!!)) {
+      val methodenDefinition = typ.klassenDefinition.methoden.getValue(funktionsAufruf.vollerName!!).funktion
+      // Bei einem Selbstaufruf wird die Methodendefinition festgelegt (kein dynamisches Binding)
+      if (aufrufTyp == FunktionsAufrufTyp.METHODEN_SELBST_AUFRUF) {
+        funktionsAufruf.funktionsDefinition = methodenDefinition
+        funktionsAufruf.vollerName = "für ${typ.klassenDefinition.typ.name.bezeichner.wert}: ${funktionsAufruf.vollerName}"
+      }
+      funktionsAufruf.aufrufTyp = aufrufTyp
+      return methodenDefinition.signatur
+    }
+    else if (typ is Typ.KlassenTyp.Liste && funktionsAufruf.objekt != null) {
+      val objektName = funktionsAufruf.objekt.name
+      val artikel = GrammatikPrüfer.holeVornomen(TokenTyp.VORNOMEN.ARTIKEL.BESTIMMT, objektName.fälle.first(), typDeklination.genus, objektName.numerus!!)
+      val typWort = typDeklination.getForm(funktionsAufruf.objekt.name.fälle.first(), funktionsAufruf.objekt.name.numerus!!)
+      val methodenName = definierer.holeVollenNamenVonFunktionsAufruf(funktionsAufruf, "$artikel $typWort")
+      if (typ.klassenDefinition.methoden.containsKey(methodenName)) {
+        funktionsAufruf.vollerName = "für Liste: $methodenName"
+        funktionsAufruf.funktionsDefinition = typ.klassenDefinition.methoden.getValue(methodenName).funktion
+        funktionsAufruf.aufrufTyp = aufrufTyp
+        return funktionsAufruf.funktionsDefinition!!.signatur
+      }
+    }
+    else if (funktionsAufruf.reflexivPronomen != null &&
+        funktionsAufruf.reflexivPronomen.typ == reflexivPronomen &&
+        typ.klassenDefinition.elternKlasse == null) {
+      throw GermanSkriptFehler.Undefiniert.Methode(funktionsAufruf.verb.toUntyped(),
+          funktionsAufruf,
+          typ.klassenDefinition.typ.name.nominativ)
+    }
+    return null
   }
 
   override fun durchlaufeZurückgabe(zurückgabe: AST.Satz.Zurückgabe) {
@@ -357,6 +427,7 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
     if (klasse !is Typ.KlassenTyp) {
       throw GermanSkriptFehler.TypFehler.ObjektErwartet(instanziierung.klasse.name.bezeichner.toUntyped())
     }
+
     val definition = klasse.klassenDefinition
 
     // die Eigenschaftszuweisungen müssen mit der Instanzzierung übereinstimmen, Außerdem müssen die Namen übereinstimmen

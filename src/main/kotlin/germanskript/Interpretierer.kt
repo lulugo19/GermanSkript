@@ -151,7 +151,8 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
     val funktionsDefinition = if (funktionsAufruf.funktionsDefinition != null) {
       funktionsAufruf.funktionsDefinition!!
     } else {
-      val objekt = umgebung.holeMethodenBlockObjekt()!! as Wert.Objekt
+      // dynamisches Binden von Methoden
+      val objekt = umgebung.holeMethodenBlockObjekt() as Wert.Objekt
       val methode = objekt.klassenDefinition.methoden.getValue(funktionsAufruf.vollerName!!)
       methode.funktion.signatur.vollerName = "für ${objekt.klassenDefinition.typ.name.nominativ}: ${methode.funktion.signatur.vollerName}"
       methode.funktion
@@ -248,7 +249,16 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
     }
     val klassenDefinition = (instanziierung.klasse.typ!! as Typ.KlassenTyp.Klasse).klassenDefinition
     val objekt = Wert.Objekt.SkriptObjekt(klassenDefinition, eigenschaften)
-    durchlaufeAufruf(instanziierung, klassenDefinition.konstruktor, Umgebung(), true, objekt)
+
+    fun führeKonstruktorAus(definition: AST.Definition.Typdefinition.Klasse) {
+      // Führe zuerst den Konstruktor der Elternklasse aus
+      if (definition.elternKlasse != null) {
+        führeKonstruktorAus((definition.elternKlasse.typ!! as Typ.KlassenTyp).klassenDefinition)
+      }
+      durchlaufeAufruf(instanziierung, definition.konstruktor, Umgebung(), true, objekt)
+    }
+
+    führeKonstruktorAus(klassenDefinition)
     return objekt
   }
 

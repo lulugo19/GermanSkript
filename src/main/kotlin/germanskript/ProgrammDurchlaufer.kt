@@ -6,6 +6,8 @@ abstract  class ProgrammDurchlaufer<T>(startDatei: File): PipelineKomponente(sta
   abstract val definierer: Definierer
 
   protected abstract val umgebung: Umgebung<T>
+  protected var inSuperBlock = false
+    private set
 
   // region Sätze
   protected fun durchlaufeBereich(bereich: AST.Satz.Bereich, neuerBereich: Boolean)  {
@@ -22,6 +24,12 @@ abstract  class ProgrammDurchlaufer<T>(startDatei: File): PipelineKomponente(sta
         is AST.Satz.FunktionsAufruf -> durchlaufeFunktionsAufruf(satz.aufruf, false)
         is AST.Satz.Bereich -> durchlaufeBereich(satz, true)
         is AST.Satz.MethodenBlock -> durchlaufeMethodenBlock(satz)
+        is AST.Satz.SuperBlock -> {
+          val prevInSuperBlock = inSuperBlock
+          inSuperBlock = true
+          durchlaufeBereich(satz.bereich, true)
+          inSuperBlock = prevInSuperBlock
+        }
         is AST.Satz.Zurückgabe -> durchlaufeZurückgabe(satz)
         is AST.Satz.Bedingung -> durchlaufeBedingungsSatz(satz)
         is AST.Satz.SolangeSchleife -> durchlaufeSolangeSchleife(satz)

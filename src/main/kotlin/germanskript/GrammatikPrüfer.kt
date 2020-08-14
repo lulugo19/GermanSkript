@@ -320,6 +320,10 @@ class GrammatikPrüfer(startDatei: File): PipelineKomponente(startDatei) {
       prüfeNomen(eigenschaft.typKnoten.name, EnumSet.of(Kasus.DATIV), Numerus.BEIDE)
       prüfeNomen(eigenschaft.name, EnumSet.of(Kasus.NOMINATIV), Numerus.BEIDE)
     }
+
+    if (klasse.elternKlasse != null) {
+      prüfeNomen(klasse.elternKlasse.name, EnumSet.of(Kasus.NOMINATIV), EnumSet.of(Numerus.SINGULAR))
+    }
   }
 
   private fun prüfeKonvertierungsDefinition(konvertierung: AST.Definition.Konvertierung) {

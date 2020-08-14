@@ -20,11 +20,7 @@ class KonstantenFalter(startDatei: File): ProgrammDurchlaufer<Wert?>(startDatei)
   fun falteKonstanten() {
     typPrüfer.prüfe()
     definierer.funktionsDefinitionen.forEach(::falteFunktion)
-    definierer.typDefinitionen.forEach { typDefinition ->
-      if (typDefinition is AST.Definition.Typdefinition.Klasse) {
-        falteKlasse(typDefinition)
-      }
-    }
+    definierer.holeDefinitionen<AST.Definition.Typdefinition.Klasse>().forEach(::falteKlasse)
     durchlaufeAufruf(ast.programm, Umgebung(), true)
   }
 
