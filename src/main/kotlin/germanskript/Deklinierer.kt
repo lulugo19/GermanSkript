@@ -164,7 +164,6 @@ class Deklinierer(startDatei: File): PipelineKomponente(startDatei) {
   }
 
   fun holeDeklination(nomen: AST.Nomen): Deklination {
-    // TODO: Refactore. Das mit dem Fehlercatching ist etwas blöd...
     val container: AST.DefinitionsContainer? = nomen.findNodeInParents() ?:
     nomen.findNodeInParents<AST.Programm>()!!.definitionen
 
@@ -172,30 +171,18 @@ class Deklinierer(startDatei: File): PipelineKomponente(startDatei) {
       nomen.findNodeInParents<AST.Ausdruck.ObjektInstanziierung>()?.klasse?.modulPfad
     if (modulPfad != null && modulPfad.isNotEmpty()) {
       val modul = modulAuflöser.findeModul(container!!, modulPfad)
-      try {
-        return holeDeklination(nomen, modul.definitionen)
-      } catch (fehler: GermanSkriptFehler.UnbekanntesWort) {
-        // just catch it...
-      }
+      holeDeklination(nomen, modul.definitionen)?.let { return it }
     }
 
-    try {
-      return holeDeklination(nomen, container!!)
-    } catch (fehler: GermanSkriptFehler.UnbekanntesWort) {
-      // just catch it...
-    }
+    holeDeklination(nomen, container!!)?.let { return it }
 
-    for (verwendetesModul in container!!.verwendeteModule) {
-      try {
-        return holeDeklination(nomen, verwendetesModul)
-      } catch (fehler: GermanSkriptFehler.UnbekanntesWort) {
-        // just catch it
-      }
+    for (verwendetesModul in container.verwendeteModule) {
+      holeDeklination(nomen, verwendetesModul)?.let { return it }
     }
     throw GermanSkriptFehler.UnbekanntesWort(nomen.bezeichner.toUntyped(), nomen.hauptWort)
   }
 
-  private fun holeDeklination(nomen: AST.Nomen, container: AST.DefinitionsContainer): Deklination {
+  private fun holeDeklination(nomen: AST.Nomen, container: AST.DefinitionsContainer): Deklination? {
     var container: AST.DefinitionsContainer? = container
     while (true) {
       try {
@@ -203,7 +190,7 @@ class Deklinierer(startDatei: File): PipelineKomponente(startDatei) {
       } catch (fehler: Wörterbuch.WortNichtGefunden) {
         container = container!!.findNodeInParents()
         if (container == null) {
-          throw GermanSkriptFehler.UnbekanntesWort(nomen.bezeichner.toUntyped(), nomen.hauptWort)
+          return null
         }
       }
     }
