@@ -25,6 +25,7 @@ Verb registriere das Klickbare:
 
 eine Zahl ist 0
 registriere etwas Klickbares:
+    die Zahl ist die Zahl plus 1
     schreibe die Zeile "Ich wurde zum #{die Zahl}. angeklickt."
 .
 ```

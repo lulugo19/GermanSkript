@@ -44,7 +44,7 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
     ZURÜCK,
   }
 
-  private class AufrufStapelElement(val aufruf: AST.IAufruf, val objekt: Wert.Objekt?, val umgebung: Umgebung<Wert>)
+  private class AufrufStapelElement(val aufruf: AST.IAufruf, val objekt: Wert?, val umgebung: Umgebung<Wert>)
 
   object Konstanten {
      const val CALL_STACK_OUTPUT_LIMIT = 50
@@ -65,7 +65,7 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
         }
         is AST.Ausdruck.ObjektInstanziierung, is AST.Ausdruck.Konvertierung -> aufrufObjekt
         else -> throw Exception("Unbehandelter Funktionsaufruftyp")
-      } as Wert.Objekt?
+      }
       stapel.push(AufrufStapelElement(funktionsAufruf, objekt, neueUmgebung))
     }
 
@@ -88,7 +88,7 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
     private fun aufrufStapelElementToString(element: AufrufStapelElement): String {
       val aufruf = element.aufruf
       var zeichenfolge = "'${aufruf.vollerName}' in ${aufruf.token.position}"
-      if (element.objekt != null) {
+      if (element.objekt is Wert.Objekt) {
         val klassenName = element.objekt.klassenDefinition.typ.name.hauptWort
         zeichenfolge = "'für $klassenName: ${aufruf.vollerName}' in ${aufruf.token.position}"
       }
@@ -122,7 +122,7 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
   override fun durchlaufeVariablenDeklaration(deklaration: AST.Satz.VariablenDeklaration) {
     if (deklaration.istEigenschaftsNeuZuweisung || deklaration.istEigenschaft) {
       // weise Eigenschaft neu zu
-      aufrufStapel.top().objekt!!.setzeEigenschaft(deklaration.name, evaluiereAusdruck(deklaration.ausdruck))
+      (aufrufStapel.top().objekt!! as Wert.Objekt).setzeEigenschaft(deklaration.name, evaluiereAusdruck(deklaration.ausdruck))
     }
     else {
       val wert = evaluiereAusdruck(deklaration.ausdruck)
@@ -146,25 +146,36 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
 
   override fun durchlaufeFunktionsAufruf(funktionsAufruf: AST.Funktion, istAusdruck: Boolean): Wert? {
     rückgabeWert = null
-    val neueUmgebung = Umgebung<Wert>()
-    neueUmgebung.pushBereich()
-    val funktionsDefinition = if (funktionsAufruf.funktionsDefinition != null) {
-      funktionsAufruf.funktionsDefinition!!
+    var funktionsUmgebung = Umgebung<Wert>()
+    val (signatur, körper) = if (funktionsAufruf.funktionsDefinition != null) {
+      val definition = funktionsAufruf.funktionsDefinition!!
+      definition.signatur to definition.körper
     } else {
       // dynamisches Binden von Methoden
-      val objekt = umgebung.holeMethodenBlockObjekt() as Wert.Objekt
-      val methode = objekt.klassenDefinition.methoden.getValue(funktionsAufruf.vollerName!!)
-      methode.funktion.signatur.vollerName = "für ${objekt.klassenDefinition.typ.name.nominativ}: ${methode.funktion.signatur.vollerName}"
-      methode.funktion
+      val objekt = umgebung.holeMethodenBlockObjekt()
+      when (objekt)
+      {
+        is Wert.Objekt -> {
+          val methode = objekt.klassenDefinition.methoden.getValue(funktionsAufruf.vollerName!!)
+          methode.funktion.signatur.vollerName = "für ${objekt.klassenDefinition.typ.name.nominativ}: ${methode.funktion.signatur.vollerName}"
+          methode.funktion.signatur to methode.funktion.körper
+        }
+        is Wert.Closure -> {
+          funktionsUmgebung = objekt.umgebung
+          objekt.signatur to objekt.körper
+        }
+        else -> throw Exception("Dieser Fall sollte nie eintreten.")
+      }
     }
-    val parameter = funktionsDefinition.signatur.parameter
+    funktionsUmgebung.pushBereich()
+    val parameter = signatur.parameter
     val j = if (funktionsAufruf.aufrufTyp == FunktionsAufrufTyp.METHODEN_OBJEKT_AUFRUF) 1 else 0
     val argumente = funktionsAufruf.argumente
     for (i in parameter.indices) {
-      neueUmgebung.schreibeVariable(parameter[i].name, evaluiereAusdruck(argumente[i+j].wert), false)
+      funktionsUmgebung.schreibeVariable(parameter[i].name, evaluiereAusdruck(argumente[i+j].wert), false)
     }
 
-    return durchlaufeAufruf(funktionsAufruf, funktionsDefinition.definition, neueUmgebung, false, null)
+    return durchlaufeAufruf(funktionsAufruf, körper, funktionsUmgebung, false, null)
   }
 
   override fun durchlaufeZurückgabe(zurückgabe: AST.Satz.Zurückgabe) {
@@ -271,7 +282,7 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
   }
 
   override fun evaluiereSelbstEigenschaftsZugriff(eigenschaftsZugriff: AST.Ausdruck.SelbstEigenschaftsZugriff): Wert {
-    val objekt = aufrufStapel.top().objekt!!
+    val objekt = aufrufStapel.top().objekt!! as Wert.Objekt
     return objekt.holeEigenschaft(eigenschaftsZugriff.eigenschaftsName)
   }
 
@@ -381,6 +392,11 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
           aufrufStapel.toString(), "Index außerhalb des Bereichs. Der Index ist $index, doch die Länge der Liste ist ${liste.elemente.size}.\n")
     }
     return liste.elemente[index]
+  }
+
+  override fun evaluiereClosure(closure: AST.Ausdruck.Closure): Wert {
+    val signatur = (closure.schnittstelle.typ as Typ.Schnittstelle).definition.methodenSignaturen[0]
+    return Wert.Closure(signatur, closure.körper, umgebung)
   }
   // endregion
 

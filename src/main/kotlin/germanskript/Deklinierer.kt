@@ -8,13 +8,13 @@ import java.util.*
 
 data class Deklination(
     val genus: Genus,
-    private val singular: Array<String>,
+    val singular: Array<String>,
     val plural: Array<String>,
     val istNominalisiertesAdjektiv: Boolean = false
 ) {
   val nominativSingular: String get() = singular[0]
 
-  fun getForm(kasus: Kasus, numerus: Numerus): String {
+  fun holeForm(kasus: Kasus, numerus: Numerus): String {
     val index = kasus.ordinal
     return if (numerus == Numerus.SINGULAR) {
       singular[index]
@@ -241,7 +241,6 @@ class Wörterbuch {
       val nominativSingular = deklination.nominativSingular
       // die minus 1 ist da weil die anderen Formen eines Worts nicht umbedingt immer mit dem
       // Nominativ anfangen müssen
-      // TODO: Ich weiß nicht ob diese Lösung stabil ist. Denk dir vielleicht etwas anderes aus.
       val maxLength = min(wort.length, nominativSingular.length) - 1
       if (wortVergleichBerücksichtigeUmlaute(wort.substring(0, maxLength),
               deklination.nominativSingular.substring(0, maxLength)) == 0) {
@@ -271,12 +270,12 @@ class Wörterbuch {
     throw WortNichtGefunden(wort)
   }
 
-  private val bestimmterArtikelAdjektivEndungen = Pair(arrayOf("e", "en", "en", "e"), arrayOf("en", "", "", "en"))
-  private val unbestimmterArtikelAdjektivEndungen = Pair(arrayOf("es", "en", "en", "es"), arrayOf("en", "", "", "en"))
+  private val bestimmterArtikelAdjektivEndungen = Pair(arrayOf("e", "en", "en", "e"), arrayOf("en", "en", "en", "en"))
+  private val unbestimmterArtikelAdjektivEndungen = Pair(arrayOf("es", "en", "en", "es"), arrayOf("en", "en", "en", "en"))
   private val ohneArtikelAdjektivEndungen = Pair(arrayOf("es", "en", "em", "es"), arrayOf("e", "er", "en", "e"))
 
   fun holeEndungen(vornomen: TokenTyp.VORNOMEN?) = when (vornomen) {
-    null -> ohneArtikelAdjektivEndungen
+    null, TokenTyp.VORNOMEN.ETWAS -> ohneArtikelAdjektivEndungen
     TokenTyp.VORNOMEN.ARTIKEL.BESTIMMT,
     TokenTyp.VORNOMEN.DEMONSTRATIV_PRONOMEN.DIESE,
     TokenTyp.VORNOMEN.DEMONSTRATIV_PRONOMEN.JENE -> bestimmterArtikelAdjektivEndungen

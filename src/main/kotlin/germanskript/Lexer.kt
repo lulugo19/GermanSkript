@@ -129,6 +129,8 @@ sealed class TokenTyp(val anzeigeName: String) {
             object DIESE: DEMONSTRATIV_PRONOMEN("Diese")
             object JENE: DEMONSTRATIV_PRONOMEN("Jene")
         }
+
+        object ETWAS: VORNOMEN("'etwas'")
     }
 
     sealed class REFLEXIV_PRONOMEN(pronomen: String): TokenTyp("Reflexivpronomen ('$pronomen')") {
@@ -337,7 +339,9 @@ private val WORT_MAPPING = mapOf<String, TokenTyp>(
     // neu
     "neuer" to TokenTyp.NEU(Genus.MASKULINUM),
     "neue" to TokenTyp.NEU(Genus.FEMININUM),
-    "neues" to TokenTyp.NEU(Genus.NEUTRUM)
+    "neues" to TokenTyp.NEU(Genus.NEUTRUM),
+
+    "etwas" to TokenTyp.VORNOMEN.ETWAS
 )
 
 class Lexer(startDatei: File): PipelineKomponente(startDatei) {

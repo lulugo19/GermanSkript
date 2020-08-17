@@ -558,4 +558,97 @@ class GermanSkriptTest {
     testGermanSkriptSource(quellCode, erwarteteAusgabe)
   }
 
+  @Test
+  @DisplayName("Closure")
+  fun closures() {
+    val quellCode = """
+      Adjektiv klickbar:
+          Verb klick mich
+      .
+
+      Verb registriere das Klickbare:
+          Klickbares: klick mich!
+      .
+
+      eine Zahl ist 0
+      registriere etwas Klickbares:
+          die Zahl ist die Zahl + 1
+          schreibe die Zeile "Ich wurde zum #{die Zahl}. angeklickt."
+      .
+    """.trimIndent()
+
+    val erwarteteAusgabe = """
+      Ich wurde zum 1. angeklickt.
+      
+    """.trimIndent()
+
+    testGermanSkriptSource(quellCode, erwarteteAusgabe)
+  }
+
+  @Test
+  @DisplayName("Closure zurückgeben")
+  fun closureZurückgeben() {
+    val quellCode = """
+      Adjektiv zählbar:
+        Verb(Zahl) zähle weiter
+      .
+      
+      Verb(Zählbares) zähler von der ZahlA zur ZahlB:
+        eine Zahl ist die ZahlA minus 1
+        
+        das Zählbare ist etwas Zählbares:
+          wenn die Zahl größer gleich die ZahlB ist:
+            eine Zahl ist die ZahlA minus 1
+          .
+          eine Zahl ist die Zahl plus 1
+          gebe die Zahl zurück
+        .
+        
+        gebe das Zählbare zurück
+      .
+      
+      das Zählbare ist zähler von der Zahl 1 zur Zahl 3
+      
+      Zählbares:
+        schreibe die Zeile (zähle weiter) als Zeichenfolge
+        schreibe die Zeile (zähle weiter) als Zeichenfolge
+        schreibe die Zeile (zähle weiter) als Zeichenfolge
+        schreibe die Zeile (zähle weiter) als Zeichenfolge
+        schreibe die Zeile (zähle weiter) als Zeichenfolge
+      !
+    """.trimIndent()
+
+    val erwarteteAusgabe = """
+      1
+      2
+      3
+      1
+      2
+      
+    """.trimIndent()
+
+    testGermanSkriptSource(quellCode, erwarteteAusgabe)
+  }
+
+  @Test
+  @DisplayName("Objektinitialisierung als Argument")
+  fun objektInitialisierungAlsArgument() {
+    val quellCode = """
+      Deklination Femininum Singular(Person) Plural(Person)
+      Deklination Maskulinum Singular(Name, Namens, Namen, Namen) Plural(Namen)
+      
+      Nomen Person mit der Zeichenfolge Name:.
+      
+      Verb begrüße die Person:
+        schreibe die Zeichenfolge "Hallo #{der Name der Person}!"
+      .
+      
+      begrüße eine Person mit dem Namen "Max"
+    """.trimIndent()
+
+    val erwarteteAusgabe = "Hallo Max!"
+
+    testGermanSkriptSource(quellCode, erwarteteAusgabe)
+  }
+
 }

@@ -34,15 +34,18 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
       erwarteterTyp = (umgebung.holeMethodenBlockObjekt() as Typ.KlassenTyp.Liste).elementTyp
     }
     else if (erwarteterTyp is Typ.Schnittstelle) {
-      if (ausdruckTyp !is Typ.KlassenTyp) {
-        throw GermanSkriptFehler.KlasseErwartet(holeErstesTokenVonAusdruck(ausdruck))
+      when (ausdruckTyp) {
+        is Typ.KlassenTyp -> {
+          val methoden = ausdruckTyp.klassenDefinition.methoden
+          if (!erwarteterTyp.definition.methodenSignaturen.all { methoden.containsKey(it.vollerName!!) }) {
+            throw GermanSkriptFehler.UnimplementierteSchnittstelle(holeErstesTokenVonAusdruck(ausdruck),
+                ausdruckTyp.klassenDefinition, erwarteterTyp.definition)
+          }
+          return ausdruckTyp
+        }
+        // es muss ein Closure sein
+        else -> return erwarteterTyp
       }
-      val methoden = ausdruckTyp.klassenDefinition.methoden
-      if (!erwarteterTyp.definition.methodenSignaturen.all { methoden.containsKey(it.vollerName!!) }) {
-        throw GermanSkriptFehler.UnimplementierteSchnittstelle(holeErstesTokenVonAusdruck(ausdruck),
-        ausdruckTyp.klassenDefinition, erwarteterTyp.definition)
-      }
-      return ausdruckTyp
     }
     if (ausdruckTyp is Typ.KlassenTyp && erwarteterTyp is Typ.KlassenTyp) {
       // eine Kindklasse ist ein gültiger Typ für eine Elternklasse
@@ -71,7 +74,7 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
       funktionsUmgebung.schreibeVariable(parameter.name, parameter.typKnoten.typ!!, false)
     }
     val signatur = funktion.signatur
-    durchlaufeAufruf(signatur.name.toUntyped(), funktion.definition, funktionsUmgebung, false, signatur.rückgabeTyp?.typ)
+    durchlaufeAufruf(signatur.name.toUntyped(), funktion.körper, funktionsUmgebung, false, signatur.rückgabeTyp?.typ)
   }
 
   private fun prüfeKlasse(klasse: AST.Definition.Typdefinition.Klasse) {
@@ -218,7 +221,12 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
     // ist Methoden-Objekt-Aufruf als letzte Möglichkeit
     // das bedeutet Funktionsnamen gehen vor Methoden-Objekt-Aufrufen
     if (funktionsSignatur == null && funktionsAufruf.objekt != null) {
-      val klasse = typisierer.bestimmeTypen(funktionsAufruf.objekt.name)
+      val klasse = try {
+        typisierer.bestimmeTypen(funktionsAufruf.objekt.name)
+      }
+      catch (fehler: GermanSkriptFehler.Undefiniert.Typ) {
+        null
+      }
       if (klasse is Typ.KlassenTyp) {
         val methoden = klasse.klassenDefinition.methoden
         val klassenTyp = klasse.klassenDefinition.typ
@@ -296,7 +304,7 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
     else if (typ is Typ.KlassenTyp.Liste && funktionsAufruf.objekt != null) {
       val objektName = funktionsAufruf.objekt.name
       val artikel = GrammatikPrüfer.holeVornomen(TokenTyp.VORNOMEN.ARTIKEL.BESTIMMT, objektName.fälle.first(), typDeklination.genus, objektName.numerus!!)
-      val typWort = typDeklination.getForm(funktionsAufruf.objekt.name.fälle.first(), funktionsAufruf.objekt.name.numerus!!)
+      val typWort = typDeklination.holeForm(funktionsAufruf.objekt.name.fälle.first(), funktionsAufruf.objekt.name.numerus!!)
       val methodenName = definierer.holeVollenNamenVonFunktionsAufruf(funktionsAufruf, "$artikel $typWort")
       if (typ.klassenDefinition.methoden.containsKey(methodenName)) {
         funktionsAufruf.vollerName = "für Liste: $methodenName"
@@ -514,6 +522,33 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
   }
 
   override fun evaluiereSelbstReferenz() = zuÜberprüfendeKlasse!!.typ.typ!!
+
+  override fun evaluiereClosure(closure: AST.Ausdruck.Closure): Typ.Schnittstelle {
+    val schnittstelle = typisierer.bestimmeTypen(closure.schnittstelle)
+    if (schnittstelle !is Typ.Schnittstelle) {
+      throw GermanSkriptFehler.SchnittstelleErwartet(closure.schnittstelle.name.bezeichner.toUntyped())
+    }
+    if (schnittstelle.definition.methodenSignaturen.size != 1) {
+      throw GermanSkriptFehler.UngültigeClosureSchnittstelle(closure.schnittstelle.name.bezeichner.toUntyped(), schnittstelle.definition)
+    }
+    val prevRückgabeTyp = rückgabeTyp
+    val prevRückgabeErreicht = rückgabeErreicht
+    val signatur = schnittstelle.definition.methodenSignaturen[0]
+    umgebung.pushBereich()
+    for (parameter in signatur.parameter) {
+      umgebung.schreibeVariable(parameter.name, parameter.typKnoten.typ!!, false)
+    }
+    durchlaufeAufruf(
+        closure.schnittstelle.name.bezeichner.toUntyped(),
+        closure.körper, umgebung,
+        false,
+        signatur.rückgabeTyp?.typ
+    )
+    umgebung.popBereich()
+    rückgabeTyp = prevRückgabeTyp
+    rückgabeErreicht = prevRückgabeErreicht
+    return schnittstelle
+  }
 }
 
 fun main() {

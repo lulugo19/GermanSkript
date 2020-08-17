@@ -2,6 +2,7 @@ package germanskript
 
 import java.io.File
 import java.util.*
+import kotlin.system.measureTimeMillis
 
 /**
  * Constant Folding: https: //en.wikipedia.org/wiki/Constant_folding
@@ -38,7 +39,7 @@ class KonstantenFalter(startDatei: File): ProgrammDurchlaufer<Wert?>(startDatei)
     for (parameter in funktion.signatur.parameter) {
       funktionsUmgebung.schreibeVariable(parameter.name, null, false)
     }
-    durchlaufeAufruf(funktion.definition, funktionsUmgebung, false)
+    durchlaufeAufruf(funktion.körper, funktionsUmgebung, false)
   }
 
   private fun falteKlasse(klasse: AST.Definition.Typdefinition.Klasse) {
@@ -213,6 +214,17 @@ class KonstantenFalter(startDatei: File): ProgrammDurchlaufer<Wert?>(startDatei)
 
   override fun evaluiereObjektInstanziierung(instanziierung: AST.Ausdruck.ObjektInstanziierung): Wert? {
     instanziierung.eigenschaftsZuweisungen.forEach {zuweisung -> zuweisung.wert = falteKonstante(zuweisung.wert)}
+    return null
+  }
+
+  override fun evaluiereClosure(closure: AST.Ausdruck.Closure): Wert? {
+    val signatur = (closure.schnittstelle.typ as Typ.Schnittstelle).definition.methodenSignaturen[0]
+    umgebung.pushBereich()
+    for (param in signatur.parameter) {
+      umgebung.schreibeVariable(param.name, null, true)
+    }
+    durchlaufeBereich(closure.körper, false)
+    umgebung.popBereich()
     return null
   }
 

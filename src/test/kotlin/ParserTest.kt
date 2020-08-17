@@ -22,13 +22,13 @@ class ParserTest {
   @Test
   @DisplayName("Parse Schnittstelle")
   fun parseSchnittstelle() {
-    val source = """
+    val quellCode = """
       Adjektiv zeichenbar:
         Verb zeichne mich mit der Zeichenfolge Farbe
         Verb skaliere mich mit der Zahl.
     """.trimIndent()
 
-    val ast = parseGermanSkriptSource(source)
+    val ast = parseGermanSkriptSource(quellCode)
     assertThat(ast.definitionen.definierteTypen.containsKey("Zeichenbare"))
     assertThat(ast.definitionen.definierteTypen.getValue("Zeichenbare"))
         .isInstanceOf(AST.Definition.Typdefinition.Schnittstelle::class.java)

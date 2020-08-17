@@ -101,4 +101,6 @@ sealed class Wert {
       }
     }
   }
+
+  class Closure(val signatur: AST.Definition.FunktionsSignatur, val körper: AST.Satz.Bereich, val umgebung: Umgebung<Wert>): Wert()
 }

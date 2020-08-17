@@ -30,7 +30,8 @@ enum class ASTKnotenID {
   VERWENDE,
   BEREICH,
   SCHNITTSTELLE,
-  SUPER_BLOCK
+  SUPER_BLOCK,
+  CLOSURE
 }
 
 class Parser(startDatei: File): PipelineKomponente(startDatei) {
@@ -276,7 +277,7 @@ private sealed class SubParser<T: AST>() {
       if (it != null) AST.Adjektiv(it) else null
     }
     var modulPfad: List<TypedToken<TokenTyp.BEZEICHNER_GROSS>>? = null
-    if (vornomen.typ == TokenTyp.VORNOMEN.ARTIKEL.UNBESTIMMT) {
+    if (vornomen.typ == TokenTyp.VORNOMEN.ARTIKEL.UNBESTIMMT || vornomen.typ == TokenTyp.VORNOMEN.ETWAS) {
       modulPfad = parseModulPfad()
     }
     val bezeichner = parseGroßenBezeichner(modulPfad == null)
@@ -306,6 +307,10 @@ private sealed class SubParser<T: AST>() {
             subParse(NomenAusdruck.ObjektInstanziierung(klasse))
           }
         }
+      }
+      is TokenTyp.VORNOMEN.ETWAS -> {
+        val schnittstelle = AST.TypKnoten(nomen, modulPfad!!)
+        subParse(NomenAusdruck.Closure(schnittstelle))
       }
       TokenTyp.VORNOMEN.POSSESSIV_PRONOMEN.MEIN -> AST.Ausdruck.SelbstEigenschaftsZugriff(nomen)
       TokenTyp.VORNOMEN.POSSESSIV_PRONOMEN.DEIN -> AST.Ausdruck.MethodenBlockEigenschaftsZugriff(nomen)
@@ -688,6 +693,15 @@ private sealed class SubParser<T: AST>() {
         }
       }
     }
+
+    class Closure(val typKnoten: AST.TypKnoten): NomenAusdruck<AST.Ausdruck.Closure>(typKnoten.name) {
+      override val id: ASTKnotenID = ASTKnotenID.CLOSURE
+
+      override fun parseImpl(): AST.Ausdruck.Closure {
+        val körper = parseSätze()
+        return AST.Ausdruck.Closure(typKnoten, körper)
+      }
+    }
   }
 
   object FunktionsAufruf: SubParser<AST.Funktion>() {
@@ -804,7 +818,12 @@ private sealed class SubParser<T: AST>() {
         get() = ASTKnotenID.ZURÜCKGABE
 
       override fun bewacheKnoten() {
-        if (!hierarchyContainsAnyNode(ASTKnotenID.FUNKTIONS_DEFINITION, ASTKnotenID.METHODEN_DEFINITION, ASTKnotenID.KONVERTIERUNGS_DEFINITION)) {
+        if (!hierarchyContainsAnyNode(
+                ASTKnotenID.FUNKTIONS_DEFINITION,
+                ASTKnotenID.METHODEN_DEFINITION,
+                ASTKnotenID.KONVERTIERUNGS_DEFINITION,
+                ASTKnotenID.CLOSURE
+            )) {
           throw GermanSkriptFehler.SyntaxFehler.ParseFehler(next(), null, "'gebe ... zurück' darf hier nicht stehen.")
         }
       }

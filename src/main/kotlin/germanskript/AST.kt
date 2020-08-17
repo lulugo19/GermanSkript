@@ -78,14 +78,14 @@ sealed class AST {
       if (istSymbol) {
         return bezeichner.typ.symbol
       }
-      return deklination!!.getForm(kasus, numerus)
+      return deklination!!.holeForm(kasus, numerus)
     }
 
     fun ganzesWort(kasus: Kasus, numerus: Numerus): String {
       if (istSymbol) {
         return bezeichner.typ.symbol
       }
-      return bezeichner.typ.ersetzeHauptWort(deklination!!.getForm(kasus, numerus))
+      return bezeichner.typ.ersetzeHauptWort(deklination!!.holeForm(kasus, numerus))
     }
   }
 
@@ -245,10 +245,10 @@ sealed class AST {
     sealed class FunktionOderMethode(): Definition() {
       data class Funktion(
           val signatur: FunktionsSignatur,
-          val definition: Satz.Bereich
+          val körper: Satz.Bereich
       ): FunktionOderMethode() {
 
-        override val children = sequenceOf(signatur, definition)
+        override val children = sequenceOf(signatur, körper)
       }
 
       data class Methode(
@@ -536,5 +536,9 @@ sealed class AST {
 
     data class SelbstReferenz(val ich: TypedToken<TokenTyp.REFERENZ.ICH>): Ausdruck()
     data class MethodenBlockReferenz(val du: TypedToken<TokenTyp.REFERENZ.DU>): Ausdruck()
+
+    data class Closure(val schnittstelle: TypKnoten, val körper: Satz.Bereich): Ausdruck() {
+      override val children = sequenceOf(schnittstelle, körper)
+    }
   }
 }

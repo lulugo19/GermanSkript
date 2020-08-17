@@ -73,8 +73,9 @@ class Definierer(startDatei: File): PipelineKomponente(startDatei) {
     if (typ.modulPfad.isEmpty()) {
       var typDefinition: AST.Definition.Typdefinition? = null
       for (definitionen in durchlaufeDefinitionsContainer(typ)) {
+        val hauptWort = typ.name.hauptWort(typ.name.fälle.first(), typ.name.numerus!!)
         for (i in teilWörter.indices) {
-          val typName = teilWörter.drop(teilWörter.size - 1 - i).joinToString("")
+          val typName = teilWörter.dropLast(1).drop(teilWörter.size - i).joinToString("") + hauptWort
           if (definitionen.definierteTypen.containsKey(typName)) {
             typDefinition = definitionen.definierteTypen.getValue(typName)
           }
@@ -186,7 +187,14 @@ class Definierer(startDatei: File): PipelineKomponente(startDatei) {
           TokenTyp.VORNOMEN.ARTIKEL.BESTIMMT, argument.name.fälle.first(), Genus.NEUTRUM, argument.name.numerus!!)
       " " + artikel + " " + argument.adjektiv.normalisierung
     } else {
-      " " + argument.name.vornomenString!! + " " + argument.name.hauptWort
+      val artikel = GrammatikPrüfer.holeVornomen(
+          TokenTyp.VORNOMEN.ARTIKEL.BESTIMMT,
+          argument.name.fälle.first(),
+          argument.name.genus,
+          argument.name.numerus!!
+      )
+
+      " " + artikel + " " + argument.name.hauptWort(argument.name.fälle.first(), argument.name.numerus!!)
     }
   }
 

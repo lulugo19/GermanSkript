@@ -84,6 +84,18 @@ sealed class GermanSkriptFehler(private val fehlerName: String, val token: Token
     }
   }
 
+  class SchnittstelleErwartet(token: Token): GermanSkriptFehler("Schnittstelle erwartet", token) {
+    override val nachricht: String
+      get() = "Es wird eine Schnittstelle erwartet. Eine Klasse oder ein primitiver Typ sind hier nicht erlaubt."
+  }
+
+  class UngültigeClosureSchnittstelle(token: Token, private val schnittstelle: AST.Definition.Typdefinition.Schnittstelle):
+      GermanSkriptFehler("Ungültige Closure-Schnittstelle", token) {
+    override val nachricht: String
+      get() = "Die Schnittstelle '${schnittstelle.name.wert}' in ${schnittstelle.name.position} kann nicht für ein Closure verwendet werden,\n" +
+          "da sie genau eine Methode definieren muss."
+  }
+
   class UnimplementierteSchnittstelle(
       token: Token,
       private val klasse: AST.Definition.Typdefinition.Klasse,

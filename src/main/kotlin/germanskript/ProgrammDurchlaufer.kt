@@ -63,6 +63,7 @@ abstract  class ProgrammDurchlaufer<T>(startDatei: File): PipelineKomponente(sta
       is AST.Ausdruck.MethodenBlockEigenschaftsZugriff -> ausdruck.eigenschaftsName.bezeichner.toUntyped()
       is AST.Ausdruck.SelbstReferenz -> ausdruck.ich.toUntyped()
       is AST.Ausdruck.MethodenBlockReferenz -> ausdruck.du.toUntyped()
+      is AST.Ausdruck.Closure -> ausdruck.schnittstelle.name.bezeichner.toUntyped()
     }
   }
 
@@ -107,6 +108,7 @@ abstract  class ProgrammDurchlaufer<T>(startDatei: File): PipelineKomponente(sta
       is AST.Ausdruck.MethodenBlockEigenschaftsZugriff -> evaluiereMethodenBlockEigenschaftsZugriff(ausdruck)
       is AST.Ausdruck.SelbstReferenz -> evaluiereSelbstReferenz()
       is AST.Ausdruck.MethodenBlockReferenz -> evaluiereMethodenBlockReferenz()
+      is AST.Ausdruck.Closure -> evaluiereClosure(ausdruck)
     }
   }
 
@@ -135,4 +137,5 @@ abstract  class ProgrammDurchlaufer<T>(startDatei: File): PipelineKomponente(sta
   protected abstract fun evaluiereSelbstEigenschaftsZugriff(eigenschaftsZugriff: AST.Ausdruck.SelbstEigenschaftsZugriff): T
   protected abstract fun evaluiereMethodenBlockEigenschaftsZugriff(eigenschaftsZugriff: AST.Ausdruck.MethodenBlockEigenschaftsZugriff): T
   protected abstract fun evaluiereSelbstReferenz(): T
+  protected abstract fun evaluiereClosure(closure: AST.Ausdruck.Closure): T
 }
