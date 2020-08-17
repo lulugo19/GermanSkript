@@ -108,6 +108,7 @@ sealed class TokenTyp(val anzeigeName: String) {
     object ADJEKTIV: TokenTyp("'Adjektiv'")
     object ALIAS: TokenTyp("'Alias'")
     object MODUL: TokenTyp("'Modul'")
+    object AUFZÄHLUNG: TokenTyp("'Aufzählung'")
     object INTERN: TokenTyp("'intern'")
     object SUPER: TokenTyp("'Super'")
 

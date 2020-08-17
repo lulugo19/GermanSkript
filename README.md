@@ -59,6 +59,7 @@ Iterationen:
 - [Iteration 1](iterationen/iter_1/SPEC.md)
 - [Iteration 2](iterationen/iter_2/SPEC.md)
 - [Iteration 3](./iterationen/iter_3/SPEC.md)
+- [Iteration 4](./iterationen/iter_4/SPEC.md)
 
 Wenn du Interesse daran hast, wie die Architektur des GermanSkript-Compilers aussieht, kannst
 du [hier](./CompilerPipeline.md) mehr Informationen zur Compiler-Pipeline finden.

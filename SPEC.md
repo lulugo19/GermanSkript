@@ -378,11 +378,11 @@ Nomen Person mit
     der Zeichenfolge Nachname,
     der Zahl Alter:
 
-    dieser VollerName ist Vorname + " " + Nachname
-    // jener VollerName ist Vorname + " " + Nachname
+    dieser Name ist Vorname + " " + Nachname
+    // jener Name ist Vorname + " " + Nachname
 .
 
-Nomen Student mit 
+Nomen Student als Person mit 
     einer Zeichenfolge Studiengang,
     einer Zahl Semester:.
 ```
@@ -501,7 +501,31 @@ zeichne das zeichenbare Dreieck.
 
 Konstanten sind unveränderbar und können nur einmal zugewiesen werden. Nur Zahlen-, Zeichenfolgen- oder Boolean-Literale können einer Konstante zugewiesen werden.
 
-Beispiel: `Konstante PI ist 3.14159265359`
+Beispiel: `Konstante PI ist 3,14159265359`
+
+### Closures
+`etwas Bezeichner: Sätze.`
+
+Closures funktionieren über die Schnittstellen (Adjektive). Wenn eine Schnittstelle nur eine einzige
+Methode definiert, dann kann man für diese Schnittstelle ein Closure erstellen. 
+Der Bezeichner, der nach dem Vornomen `etwas` kommt ist das nominalisierte Adjektiv der Schnittstelle.
+Closures bilden einen neuen Typen.
+
+```
+Adjektiv klickbar:
+    Verb klick mich
+.
+
+Verb registriere das Klickbare:
+    Klickbare: klick mich!
+.
+
+eine Zahl ist 0
+registriere etwas Klickbares:
+    schreibe die Zeile "Ich wurde zum #{die Zahl}. angeklickt."
+.
+```
+
 
 ### Fehler-Handling
 
@@ -658,7 +682,7 @@ schreibe die Zahl als Prozent // spezielle Umwandlung in String
 
 `Zahl [Zahlenname] [Einheit]`
 
-#### Einheitsdefintion
+#### Einheitsdefinition
 
 `Einheit(BezeichnerF, Symbol, Operationen)`
 
@@ -815,34 +839,3 @@ Als Zeichenfolge für Person:
 die Person Lukas ist eine Person mit dem "Lukas", dem Nachnamen "Gobelet"
 drucke die Zeichenfolge Lukas als Zeichenfolge // Lukas Gobelet
 ```
-
-## Todo
-
-Was wollen wir erstmal in der Sprache haben:
-
-- alias
-- Sätze:
-    - Variablendeklaration
-    - Variablen Neuzuweisung
-    - Bedingung
-    - Solange Schleife
-    - For-Schleife
-    - Methodenaufruf
-    - Funktionsaufruf
-- Definitionen:
-    - Klasse
-    - Methode
-    - Funktion
-- Typen:
-    - Zahlen
-    - Zeichenfolgen
-    - Listen
-    - Boolean
-    
-Schritte:
-1. Lexer überarbeiten <--- wir sind hier
-2. Parser überarbeiten <--- und hier
-    1. AST überarbeiten
-    2. Parser
-3. Checker schreiben
-4. Interpreter schreiben
