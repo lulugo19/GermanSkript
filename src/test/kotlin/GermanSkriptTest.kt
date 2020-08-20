@@ -8,7 +8,7 @@ import java.io.*
 
 class GermanSkriptTest {
 
-  private fun runGermanSkriptSource(germanSkriptSource: String) {
+  private fun führeGermanSkriptCodeAus(germanSkriptSource: String) {
     // erstelle temporäre Datei mit dem Source-Code
     val tempFile = createTempFile("germanskript_test_temp", ".gm")
     tempFile.writeText(germanSkriptSource)
@@ -21,15 +21,15 @@ class GermanSkriptTest {
     tempFile.delete()
   }
 
-  private fun testGermanSkriptSource(germanSkriptSource: String, expectedOutput: String) {
+  private fun testeGermanSkriptCode(quellCode: String, erwarteteAusgabe: String) {
     // leite den Standardoutput in einen Byte-Array-Stream um
     val myOut = ByteArrayOutputStream()
     System.setOut(PrintStream(myOut))
 
-    runGermanSkriptSource(germanSkriptSource)
+    führeGermanSkriptCodeAus(quellCode)
 
     val actual = myOut.toString()
-    assertThat(actual).isEqualToNormalizingNewlines(expectedOutput)
+    assertThat(actual).isEqualToNormalizingNewlines(erwarteteAusgabe)
 
     // set out back to stdout
     System.setOut(PrintStream(FileOutputStream(FileDescriptor.out)))
@@ -43,7 +43,7 @@ class GermanSkriptTest {
     """.trimIndent()
     val expectedOutput = "Hallo Welt\n"
 
-    testGermanSkriptSource(source, expectedOutput)
+    testeGermanSkriptCode(source, expectedOutput)
   }
 
   @Test
@@ -71,7 +71,7 @@ class GermanSkriptTest {
       
     """.trimIndent()
 
-    testGermanSkriptSource(source, expectedOutput)
+    testeGermanSkriptCode(source, expectedOutput)
   }
 
   @Test
@@ -95,7 +95,7 @@ class GermanSkriptTest {
       
     """.trimIndent()
 
-    testGermanSkriptSource(source, expectedOutput)
+    testeGermanSkriptCode(source, expectedOutput)
   }
 
   @Test
@@ -121,7 +121,7 @@ class GermanSkriptTest {
       
     """.trimIndent()
 
-    testGermanSkriptSource(source, expectedOutput)
+    testeGermanSkriptCode(source, expectedOutput)
   }
 
   @Test
@@ -147,7 +147,7 @@ class GermanSkriptTest {
       
     """.trimIndent()
 
-    testGermanSkriptSource(source, expectedOutput)
+    testeGermanSkriptCode(source, expectedOutput)
   }
 
   @Test
@@ -179,7 +179,7 @@ class GermanSkriptTest {
       
     """.trimIndent()
 
-    testGermanSkriptSource(source, expectedOutput)
+    testeGermanSkriptCode(source, expectedOutput)
   }
 
   @Test
@@ -205,7 +205,7 @@ class GermanSkriptTest {
       
     """.trimIndent()
 
-    testGermanSkriptSource(source, expectedOutput)
+    testeGermanSkriptCode(source, expectedOutput)
   }
 
   @Test
@@ -220,7 +220,7 @@ class GermanSkriptTest {
     """.trimIndent()
 
     assertThatExceptionOfType(GermanSkriptFehler.Variablenfehler::class.java).isThrownBy {
-      runGermanSkriptSource(source)
+      führeGermanSkriptCodeAus(source)
     }
   }
 
@@ -252,7 +252,7 @@ class GermanSkriptTest {
       
     """.trimIndent()
 
-    testGermanSkriptSource(source, expectedOutput)
+    testeGermanSkriptCode(source, expectedOutput)
   }
 
   @Test
@@ -299,7 +299,7 @@ class GermanSkriptTest {
       
     """.trimIndent()
 
-    testGermanSkriptSource(source, expectedOutput)
+    testeGermanSkriptCode(source, expectedOutput)
   }
 
   @Test
@@ -342,7 +342,7 @@ class GermanSkriptTest {
       
     """.trimIndent()
 
-    testGermanSkriptSource(source, expectedOutput)
+    testeGermanSkriptCode(source, expectedOutput)
   }
 
   @Test
@@ -363,7 +363,7 @@ class GermanSkriptTest {
       
     """.trimIndent()
 
-    testGermanSkriptSource(source, expectedOutput)
+    testeGermanSkriptCode(source, expectedOutput)
   }
 
   @Test
@@ -399,7 +399,7 @@ class GermanSkriptTest {
       
     """.trimIndent()
 
-    testGermanSkriptSource(source, expectedOutput)
+    testeGermanSkriptCode(source, expectedOutput)
   }
 
   @Test
@@ -419,7 +419,7 @@ class GermanSkriptTest {
       schreibe die Zeichenfolge (kehre die Zeichenfolge "Hallo Welt" um)
     """.trimIndent()
 
-    testGermanSkriptSource(source, "tleW ollaH")
+    testeGermanSkriptCode(source, "tleW ollaH")
   }
 
   @Test
@@ -459,7 +459,7 @@ class GermanSkriptTest {
       
     """.trimIndent()
 
-    testGermanSkriptSource(source, expectedOutput)
+    testeGermanSkriptCode(source, expectedOutput)
   }
 
   @Test
@@ -499,7 +499,7 @@ class GermanSkriptTest {
       
     """.trimIndent()
 
-    testGermanSkriptSource(source, expectedOutput)
+    testeGermanSkriptCode(source, expectedOutput)
   }
 
   @Test
@@ -555,7 +555,7 @@ class GermanSkriptTest {
       
     """.trimIndent()
 
-    testGermanSkriptSource(quellCode, erwarteteAusgabe)
+    testeGermanSkriptCode(quellCode, erwarteteAusgabe)
   }
 
   @Test
@@ -582,7 +582,7 @@ class GermanSkriptTest {
       
     """.trimIndent()
 
-    testGermanSkriptSource(quellCode, erwarteteAusgabe)
+    testeGermanSkriptCode(quellCode, erwarteteAusgabe)
   }
 
   @Test
@@ -627,14 +627,14 @@ class GermanSkriptTest {
       
     """.trimIndent()
 
-    testGermanSkriptSource(quellCode, erwarteteAusgabe)
+    testeGermanSkriptCode(quellCode, erwarteteAusgabe)
   }
 
   @Test
   @DisplayName("Objektinitialisierung als Argument")
   fun objektInitialisierungAlsArgument() {
     val quellCode = """
-      Deklination Femininum Singular(Person) Plural(Person)
+      Deklination Femininum Singular(Person) Plural(Personen)
       Deklination Maskulinum Singular(Name, Namens, Namen, Namen) Plural(Namen)
       
       Nomen Person mit der Zeichenfolge Name:.
@@ -648,7 +648,80 @@ class GermanSkriptTest {
 
     val erwarteteAusgabe = "Hallo Max!"
 
-    testGermanSkriptSource(quellCode, erwarteteAusgabe)
+    testeGermanSkriptCode(quellCode, erwarteteAusgabe)
+  }
+
+  @Test
+  @DisplayName("Alias Singular")
+  fun aliasSingular() {
+    val quellCode = """
+      Deklination Femininum Singular(Person) Plural(Personen)
+      Deklination Maskulinum Singular(Name, Namens, Namen, Namen) Plural(Namen)
+      Deklination Neutrum Singular(Alter) Plural(Alter)
+      
+      Alias Alter ist Zahl
+      Alias Name ist Zeichenfolge
+      
+      Nomen Person mit dem Namen, einem Alter:
+        schreibe die Zeile "#{mein Name} (#{mein Alter} Jahre alt) wurde erstellt!"
+      .
+      
+      die Person ist eine Person mit dem Namen "Lukas", dem Alter 22
+      das NeueAlter ist das Alter der Person plus 1
+      schreibe die Zeile "#{der Name der Person} ist jetzt #{das NeueAlter} Jahre alt!"
+    """.trimIndent()
+
+    val erwarteteAusgabe = """
+      Lukas (22 Jahre alt) wurde erstellt!
+      Lukas ist jetzt 23 Jahre alt!
+      
+    """.trimIndent()
+
+    testeGermanSkriptCode(quellCode, erwarteteAusgabe)
+  }
+
+  @Test
+  @DisplayName("Alias Plural")
+  fun aliasPlural() {
+    val quellCode = """
+      Deklination Femininum Singular(Person) Plural(Personen)
+      Deklination Maskulinum Singular(Mensch, Menschen, Menschen, Menschen) Plural(Menschen)
+      Deklination Maskulinum Singular(Name, Namens, Namen, Namen) Plural(Namen)
+      
+      Nomen Person mit der Zeichenfolge Name:.
+      
+      Alias Mensch ist Person
+      
+      die Menschen sind einige Menschen [(ein Mensch mit dem Namen "Max"), (eine Person mit dem Namen "Lukas")]
+      
+      für jeden Menschen:
+        schreibe die Zeile (der Name des Menschen)
+      .
+    """.trimIndent()
+
+    val erwarteteAusgabe = """
+      Max
+      Lukas
+      
+    """.trimIndent()
+
+    testeGermanSkriptCode(quellCode, erwarteteAusgabe)
+  }
+
+  @Test
+  @DisplayName("Alias Fehler")
+  fun aliasFehler() {
+    val quellCode = """
+      Deklination Neutrum Singular(Alter) Plural(Alter)
+      Deklination Femininum Singular(Menge) Plural(Mengen)
+      
+      Alias Menge ist Zahl
+      Alias Alter ist Menge
+    """.trimIndent()
+
+    assertThatExceptionOfType(GermanSkriptFehler.AliasFehler::class.java).isThrownBy {
+        führeGermanSkriptCodeAus(quellCode)
+    }
   }
 
 }

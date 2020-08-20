@@ -110,6 +110,7 @@ class Typisierer(startDatei: File): PipelineKomponente(startDatei) {
       when (typDefinition) {
         is AST.Definition.Typdefinition.Schnittstelle ->
           typDefinition.methodenSignaturen.forEach(::typisiereFunktionsSignatur)
+        is AST.Definition.Typdefinition.Alias -> bestimmeTypen(typDefinition.typ, false)
       }
     }
   }
@@ -118,14 +119,11 @@ class Typisierer(startDatei: File): PipelineKomponente(startDatei) {
     val typKnoten = AST.TypKnoten(nomen, emptyList())
     // setze den Parent hier manuell vom Nomen
     typKnoten.setParentNode(nomen.parent!!)
-    return bestimmeTypen(typKnoten)!!
+    return bestimmeTypen(typKnoten, true)!!
   }
 
-  fun bestimmeTypen(typKnoten: AST.TypKnoten?): Typ? {
-    if (typKnoten == null) {
-      return null
-    }
-    val singularTyp = when(typKnoten.name.hauptWort(Kasus.NOMINATIV, Numerus.SINGULAR)) {
+  private fun holeTypDefinition(typKnoten: AST.TypKnoten, aliasErlaubt: Boolean): Typ =
+    when(typKnoten.name.hauptWort(Kasus.NOMINATIV, Numerus.SINGULAR)) {
       "Zahl" -> Typ.Zahl
       "Zeichenfolge" -> Typ.Zeichenfolge
       "Boolean" -> Typ.Boolean
@@ -134,8 +132,21 @@ class Typisierer(startDatei: File): PipelineKomponente(startDatei) {
       else -> when (val typDef = definierer.holeTypDefinition(typKnoten)) {
         is AST.Definition.Typdefinition.Klasse -> Typ.KlassenTyp.Klasse(typDef)
         is AST.Definition.Typdefinition.Schnittstelle -> Typ.Schnittstelle(typDef)
+        is AST.Definition.Typdefinition.Alias -> {
+          if (!aliasErlaubt) {
+            throw GermanSkriptFehler.AliasFehler(typKnoten.name.bezeichner.toUntyped(), typDef)
+          }
+          holeTypDefinition(typDef.typ, false)
+        }
       }
     }
+
+
+  fun bestimmeTypen(typKnoten: AST.TypKnoten?, istAliasErlaubt: Boolean): Typ? {
+    if (typKnoten == null) {
+      return null
+    }
+    val singularTyp = holeTypDefinition(typKnoten, istAliasErlaubt)
     typKnoten.typ = if (typKnoten.name.numerus == Numerus.SINGULAR) {
       singularTyp
     } else {
@@ -145,24 +156,24 @@ class Typisierer(startDatei: File): PipelineKomponente(startDatei) {
    }
 
   private fun typisiereFunktionsSignatur(signatur: AST.Definition.FunktionsSignatur) {
-    bestimmeTypen(signatur.rückgabeTyp)
-    bestimmeTypen(signatur.objekt?.typKnoten)
+    bestimmeTypen(signatur.rückgabeTyp, true)
+    bestimmeTypen(signatur.objekt?.typKnoten, true)
     for (parameter in signatur.parameter) {
-      bestimmeTypen(parameter.typKnoten)
+      bestimmeTypen(parameter.typKnoten, true)
     }
   }
 
   fun typisiereKlasse(klasse: AST.Definition.Typdefinition.Klasse) {
-    bestimmeTypen(klasse.typ)
+    bestimmeTypen(klasse.typ, true)
     for (eigenschaft in klasse.eigenschaften) {
-      bestimmeTypen(eigenschaft.typKnoten)
+      bestimmeTypen(eigenschaft.typKnoten, true)
     }
     klasse.methoden.values.forEach { methode ->
       methode.klasse.typ = Typ.KlassenTyp.Klasse(klasse)
       typisiereFunktionsSignatur(methode.funktion.signatur)
     }
     klasse.konvertierungen.values.forEach { konvertierung ->
-      bestimmeTypen(konvertierung.typ)
+      bestimmeTypen(konvertierung.typ, true)
     }
   }
 }

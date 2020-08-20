@@ -299,6 +299,12 @@ sealed class AST {
           yieldAll(methodenSignaturen)
         }
       }
+
+      data class Alias(val name: Nomen, val typ: TypKnoten): Typdefinition() {
+        override val namensToken = name.bezeichner.toUntyped()
+
+        override val children = sequenceOf(name, typ)
+      }
     }
 
     data class Konvertierung(

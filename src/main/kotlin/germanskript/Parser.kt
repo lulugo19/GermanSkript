@@ -31,7 +31,8 @@ enum class ASTKnotenID {
   BEREICH,
   SCHNITTSTELLE,
   SUPER_BLOCK,
-  CLOSURE
+  CLOSURE,
+  ALIAS
 }
 
 class Parser(startDatei: File): PipelineKomponente(startDatei) {
@@ -479,6 +480,10 @@ private sealed class SubParser<T: AST>() {
         }
         is TokenTyp.VERB -> parseFunktionOderMethode().also { funktion ->
           container.funktionenOderMethoden += funktion
+        }
+        is TokenTyp.ALIAS -> subParse(Definition.Alias).also { alias ->
+          überprüfeDoppelteDefinition(container, alias)
+          container.definierteTypen[alias.name.bezeichner.wert] = alias
         }
         is TokenTyp.ALS -> subParse(Definition.Konvertierung).also { konvertierung ->
           container.konvertierungen += konvertierung
@@ -1133,6 +1138,21 @@ private sealed class SubParser<T: AST>() {
           signaturen
         }
         return AST.Definition.Typdefinition.Schnittstelle(name, definitionen)
+      }
+    }
+
+    object Alias: Definition<AST.Definition.Typdefinition.Alias>() {
+      override val id = ASTKnotenID.ALIAS
+
+      override fun parseImpl(): AST.Definition.Typdefinition.Alias {
+        expect<TokenTyp.ALIAS>("'Alias'")
+        val name = parseNomenOhneVornomen(false)
+        val zuweisung = expect<TokenTyp.ZUWEISUNG>("'ist'")
+        if (zuweisung.typ.numerus != Numerus.SINGULAR) {
+          throw GermanSkriptFehler.SyntaxFehler.ParseFehler(zuweisung.toUntyped(), "ist")
+        }
+        val typ = parseTypOhneArtikel(false)
+        return AST.Definition.Typdefinition.Alias(name, typ)
       }
     }
 

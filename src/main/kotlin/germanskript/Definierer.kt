@@ -73,19 +73,19 @@ class Definierer(startDatei: File): PipelineKomponente(startDatei) {
     if (typ.modulPfad.isEmpty()) {
       var typDefinition: AST.Definition.Typdefinition? = null
       for (definitionen in durchlaufeDefinitionsContainer(typ)) {
-        val hauptWort = typ.name.hauptWort(typ.name.fälle.first(), typ.name.numerus!!)
+        val hauptWort = typ.name.hauptWort(Kasus.NOMINATIV, Numerus.SINGULAR)
         for (i in teilWörter.indices) {
           val typName = teilWörter.dropLast(1).drop(teilWörter.size - i).joinToString("") + hauptWort
           if (definitionen.definierteTypen.containsKey(typName)) {
             typDefinition = definitionen.definierteTypen.getValue(typName)
           }
           if (definitionen.verwendeteTypen.containsKey(typName)) {
-            val gefundeneKlassenDefinition = definitionen.verwendeteTypen.getValue(typName)
-            if (typDefinition != null && typDefinition != gefundeneKlassenDefinition) {
+            val gefundeneDefinition = definitionen.verwendeteTypen.getValue(typName)
+            if (typDefinition != null && typDefinition != gefundeneDefinition) {
               throw GermanSkriptFehler.Mehrdeutigkeit.Typ(typ.name.bezeichner.toUntyped(), typDefinition,
-                gefundeneKlassenDefinition)
+                gefundeneDefinition)
             }
-            typDefinition = gefundeneKlassenDefinition
+            typDefinition = gefundeneDefinition
           }
           for (verwendetesModul in definitionen.verwendeteModule) {
             if (verwendetesModul.definierteTypen.containsKey(typName)) {

@@ -145,8 +145,7 @@ sealed class GermanSkriptFehler(private val fehlerName: String, val token: Token
 
     class FalscheZuweisung(token: Token, private val numerus: Numerus) : GrammatikFehler(token) {
       override val nachricht: String
-        get() = "Falsche Zuweisung '${token.wert}'. Die richtige Form der Zuweisung im ${numerus.anzeigeName} ist '${numerus.zuweisung}'." +
-            "Statt dem Wort kann auch das Symbol '=' verwendet werden."
+        get() = "Falsche Zuweisung '${token.wert}'. Die richtige Form der Zuweisung im ${numerus.anzeigeName} ist '${numerus.zuweisung}'."
     }
 
     class FalscherNumerus(token: Token, private  val numerus: Numerus, private val erwartetesNomen: String): GrammatikFehler(token) {
@@ -184,7 +183,7 @@ sealed class GermanSkriptFehler(private val fehlerName: String, val token: Token
     }
   }
 
-  class Variablenfehler(token: Token, deklaration: AST.Nomen): GermanSkriptFehler("VariablenFehler", token) {
+  class Variablenfehler(token: Token, deklaration: AST.Nomen): GermanSkriptFehler("Variablen Fehler", token) {
     override val nachricht = "Die Variable '${token.wert}' ist schon in ${deklaration.bezeichner.position} deklariert und kann nicht erneut deklariert werden."
   }
 
@@ -193,6 +192,9 @@ sealed class GermanSkriptFehler(private val fehlerName: String, val token: Token
       get() = "Der Name '${token.wert}' kann nicht als Klassenname verwendet werden, da dieser ein reservierter Typname ist."
   }
 
+  class AliasFehler(token: Token, alias: AST.Definition.Typdefinition.Alias): GermanSkriptFehler("Alias Fehler", token) {
+    override val nachricht = "Ein Alias kann nicht auf ein weiteres Alias ('${alias.name.nominativ}' in ${alias.name.bezeichner.position}) verweisen."
+  }
 
   sealed class Undefiniert(token: Token): GermanSkriptFehler("Undefiniert Fehler", token) {
     class Funktion(token: Token, private val funktionsAufruf: AST.Funktion): Undefiniert(token) {

@@ -28,6 +28,7 @@ class GrammatikPrüfer(startDatei: File): PipelineKomponente(startDatei) {
         is AST.Definition.Konvertierung -> prüfeKonvertierungsDefinition(knoten)
         is AST.Definition.Typdefinition.Klasse -> prüfeKlassenDefinition(knoten)
         is AST.Definition.Typdefinition.Schnittstelle -> knoten.methodenSignaturen.forEach(::prüfeFunktionsSignatur)
+        is AST.Definition.Typdefinition.Alias -> prüfeAlias(knoten)
         is AST.Satz.VariablenDeklaration -> prüfeVariablendeklaration(knoten)
         is AST.Satz.BedingungsTerm -> prüfeKontextbasiertenAusdruck(knoten.bedingung, null, EnumSet.of(Kasus.NOMINATIV), false)
         is AST.Satz.Zurückgabe -> if (knoten.ausdruck != null)
@@ -60,12 +61,17 @@ class GrammatikPrüfer(startDatei: File): PipelineKomponente(startDatei) {
             deklination.holeForm(fälle.first(), numerus.first())
         )
       }
-      nomen.numerus = deklinationsNumerus.first()
       nomen.deklination = deklination
-      for (kasus in fälle) {
-        val erwarteteForm = deklination.holeForm(kasus, nomen.numerus!!)
-        if (bezeichner.hauptWort!! == erwarteteForm) {
-          nomen.fälle.add(kasus)
+      for (numerus in deklinationsNumerus) {
+        nomen.numerus = numerus
+        for (kasus in fälle) {
+          val erwarteteForm = deklination.holeForm(kasus, numerus)
+          if (bezeichner.hauptWort!! == erwarteteForm) {
+            nomen.fälle.add(kasus)
+          }
+        }
+        if (nomen.fälle.isNotEmpty()) {
+          break
         }
       }
       if (nomen.fälle.isEmpty()) {
@@ -352,11 +358,15 @@ class GrammatikPrüfer(startDatei: File): PipelineKomponente(startDatei) {
     }
   }
 
+  private fun prüfeAlias(alias: AST.Definition.Typdefinition.Alias) {
+    prüfeNomen(alias.typ.name, EnumSet.of(Kasus.NOMINATIV), EnumSet.of(Numerus.SINGULAR))
+    prüfeNomen(alias.name, EnumSet.of(Kasus.NOMINATIV), EnumSet.of(Numerus.SINGULAR))
+  }
+
   private fun prüfeKonvertierungsDefinition(konvertierung: AST.Definition.Konvertierung) {
     prüfeNomen(konvertierung.typ.name, EnumSet.of(Kasus.NOMINATIV), EnumSet.of(Numerus.SINGULAR))
     prüfeNomen(konvertierung.klasse.name, EnumSet.of(Kasus.NOMINATIV), EnumSet.of(Numerus.SINGULAR))
   }
-
 
   private fun prüfeArgument(argument: AST.Argument, fälle: EnumSet<Kasus>) {
     prüfeNomen(argument.name, fälle, Numerus.BEIDE)

@@ -85,7 +85,7 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
     // Da die Kindklasse abhängig von der Elternklasse ist, muss zuerst die Elternklasse geprüft werden
     if (klasse.elternKlasse != null) {
       if (klasse.elternKlasse.typ == null) {
-        typisierer.bestimmeTypen(klasse.elternKlasse)
+        typisierer.bestimmeTypen(klasse.elternKlasse, true)
       }
       val elternKlasse = klasse.elternKlasse.typ as Typ.KlassenTyp
       prüfeKlasse(elternKlasse.klassenDefinition)
@@ -431,7 +431,7 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
   }
 
   override fun evaluiereObjektInstanziierung(instanziierung: AST.Ausdruck.ObjektInstanziierung): Typ {
-    val klasse = typisierer.bestimmeTypen(instanziierung.klasse)!!
+    val klasse = typisierer.bestimmeTypen(instanziierung.klasse, true)!!
     if (klasse !is Typ.KlassenTyp) {
       throw GermanSkriptFehler.TypFehler.ObjektErwartet(instanziierung.klasse.name.bezeichner.toUntyped())
     }
@@ -513,7 +513,7 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
 
   override fun evaluiereKonvertierung(konvertierung: AST.Ausdruck.Konvertierung): Typ{
     val ausdruck = evaluiereAusdruck(konvertierung.ausdruck)
-    val konvertierungsTyp = typisierer.bestimmeTypen(konvertierung.typ)!!
+    val konvertierungsTyp = typisierer.bestimmeTypen(konvertierung.typ, true)!!
     if (!ausdruck.kannNachTypKonvertiertWerden(konvertierungsTyp)){
       throw GermanSkriptFehler.KonvertierungsFehler(konvertierung.typ.name.bezeichner.toUntyped(),
           ausdruck, konvertierungsTyp)
@@ -524,7 +524,7 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
   override fun evaluiereSelbstReferenz() = zuÜberprüfendeKlasse!!.typ.typ!!
 
   override fun evaluiereClosure(closure: AST.Ausdruck.Closure): Typ.Schnittstelle {
-    val schnittstelle = typisierer.bestimmeTypen(closure.schnittstelle)
+    val schnittstelle = typisierer.bestimmeTypen(closure.schnittstelle, true)
     if (schnittstelle !is Typ.Schnittstelle) {
       throw GermanSkriptFehler.SchnittstelleErwartet(closure.schnittstelle.name.bezeichner.toUntyped())
     }
