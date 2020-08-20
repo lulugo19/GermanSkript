@@ -589,7 +589,7 @@ private sealed class SubParser<T: AST>() {
         is TokenTyp.VORNOMEN ->
           parseNomenAusdruck<TokenTyp.VORNOMEN>("Vornomen", true, false).third
         is TokenTyp.REFERENZ.ICH -> {
-          if (!hierarchyContainsNode(ASTKnotenID.METHODEN_DEFINITION)) {
+          if (!hierarchyContainsAnyNode(ASTKnotenID.METHODEN_DEFINITION, ASTKnotenID.KLASSEN_DEFINITION, ASTKnotenID.KONVERTIERUNGS_DEFINITION)) {
             throw GermanSkriptFehler.SyntaxFehler.ParseFehler(next(), null,
                 "Die Selbstreferenz 'Ich' darf nur in einem Konstruktor, Methoden- oder Kovertierungsdefinition vorkommen.")
           }

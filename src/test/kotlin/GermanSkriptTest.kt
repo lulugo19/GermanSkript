@@ -232,7 +232,6 @@ class GermanSkriptTest {
       Deklination Neutrum Singular(Alter, Alters, Alter, Alter) Plural(Alter)
       Deklination Femininum Singular(Person) Plural(Personen)
 
-
       Nomen Person mit
           der Zeichenfolge VorName,
           der Zeichenfolge NachName,
@@ -253,6 +252,39 @@ class GermanSkriptTest {
     """.trimIndent()
 
     testeGermanSkriptCode(source, expectedOutput)
+  }
+
+  @Test
+  @DisplayName("Eigene Konvertierungsdefinition")
+  fun konvertierungsDefinition() {
+    val quellCode = """
+      Deklination Maskulinum Singular(Name, Namens, Namen, Namen) Plural(Namen)
+      Deklination Neutrum Singular(Alter, Alters, Alter, Alter) Plural(Alter)
+      Deklination Femininum Singular(Person) Plural(Personen)
+
+      Nomen Person mit
+          der Zeichenfolge VorName,
+          der Zeichenfolge NachName,
+          einer Zahl Alter:
+
+          dieser Name ist "#{mein VorName} #{mein NachName}"
+          // Man könnte auch schreiben: Ich als Zeichenfolge + " wurde erstellt!"
+          schreibe die Zeile "#{Ich} wurde erstellt!"
+      .
+      
+      als Zeichenfolge für Person:
+        gebe "#{mein Name} (#{mein Alter} Jahre alt)" zurück
+      .
+      
+      die Person ist eine Person mit dem VorNamen "Max", dem NachNamen "Mustermann", dem Alter 29
+    """.trimIndent()
+
+    val erwarteteAusgabe = """
+      Max Mustermann (29 Jahre alt) wurde erstellt!
+      
+    """.trimIndent()
+
+    testeGermanSkriptCode(quellCode, erwarteteAusgabe)
   }
 
   @Test
