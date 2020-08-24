@@ -95,7 +95,14 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
     durchlaufeAufruf(klasse.typ.name.bezeichner.toUntyped(), klasse.konstruktor, Umgebung(), true,null)
     klasse.methoden.values.forEach {methode -> prüfeFunktion(methode.funktion)}
     klasse.konvertierungen.values.forEach {konvertierung ->
-      durchlaufeAufruf(konvertierung.klasse.name.bezeichner.toUntyped(), konvertierung.definition, Umgebung(), true, konvertierung.typ.typ!!)
+      durchlaufeAufruf(
+          konvertierung.klasse.name.bezeichner.toUntyped(),
+          konvertierung.definition, Umgebung(), true, konvertierung.typ.typ!!)
+    }
+    klasse.berechneteEigenschaften.values.forEach {eigenschaft ->
+      durchlaufeAufruf(eigenschaft.name.bezeichner.toUntyped(),
+          eigenschaft.definition, Umgebung(),
+          true, eigenschaft.rückgabeTyp.typ!!)
     }
 
     fun fügeElternKlassenMethodenHinzu(elternKlasse: AST.Definition.Typdefinition.Klasse) {
@@ -128,7 +135,7 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
   override fun durchlaufeVariablenDeklaration(deklaration: AST.Satz.VariablenDeklaration) {
     if (deklaration.istEigenschaftsNeuZuweisung) {
       val klasse = zuÜberprüfendeKlasse!!
-      val eigenschaft = holeEigenschaftAusKlasse(deklaration.name, klasse)
+      val eigenschaft = holeNormaleEigenschaftAusKlasse(deklaration.name, klasse)
       if (eigenschaft.typKnoten.name.unveränderlich) {
         throw GermanSkriptFehler.EigenschaftsFehler.EigenschaftUnveränderlich(deklaration.name.bezeichner.toUntyped())
       }
@@ -140,6 +147,9 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
       val wert = evaluiereAusdruck(deklaration.ausdruck)
       val typ = AST.TypKnoten(deklaration.name, emptyList())
       typ.typ = wert
+      if (klasse.eigenschaften.any {eigenschaft -> eigenschaft.name.nominativ == deklaration.name.nominativ}) {
+        throw GermanSkriptFehler.DoppelteEigenschaft(deklaration.name.bezeichner.toUntyped(), klasse)
+      }
       klasse.eigenschaften.add(AST.Definition.TypUndName(typ, deklaration.name))
     }
     else {
@@ -469,7 +479,7 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
   override fun evaluiereEigenschaftsZugriff(eigenschaftsZugriff: AST.Ausdruck.EigenschaftsZugriff): Typ {
     val klasse = evaluiereAusdruck(eigenschaftsZugriff.objekt)
     return if (klasse is Typ.KlassenTyp) {
-      holeEigenschaftAusKlasse(eigenschaftsZugriff.eigenschaftsName, klasse.klassenDefinition).typKnoten.typ!!
+      holeEigenschaftAusKlasse(eigenschaftsZugriff, klasse.klassenDefinition)
     } else if (klasse is Typ.Zeichenfolge && eigenschaftsZugriff.eigenschaftsName.nominativ == "Länge") {
       Typ.Zahl
     }
@@ -478,22 +488,36 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
     }
   }
 
-  override fun evaluiereSelbstEigenschaftsZugriff(eigenschaftsZugriff: AST.Ausdruck.SelbstEigenschaftsZugriff): Typ {
-    return holeEigenschaftAusKlasse(eigenschaftsZugriff.eigenschaftsName, zuÜberprüfendeKlasse!!).typKnoten.typ!!
-  }
+  override fun evaluiereSelbstEigenschaftsZugriff(eigenschaftsZugriff: AST.Ausdruck.SelbstEigenschaftsZugriff)
+    = holeEigenschaftAusKlasse(eigenschaftsZugriff, zuÜberprüfendeKlasse!!)
+
 
   override fun evaluiereMethodenBlockEigenschaftsZugriff(eigenschaftsZugriff: AST.Ausdruck.MethodenBlockEigenschaftsZugriff): Typ {
     val methodenBlockObjekt = umgebung.holeMethodenBlockObjekt() as Typ.KlassenTyp
-    return holeEigenschaftAusKlasse(eigenschaftsZugriff.eigenschaftsName, methodenBlockObjekt.klassenDefinition).typKnoten.typ!!
+    return holeEigenschaftAusKlasse(eigenschaftsZugriff, methodenBlockObjekt.klassenDefinition)
   }
 
-  private fun holeEigenschaftAusKlasse(eigenschaftsName: AST.Nomen, klasse: AST.Definition.Typdefinition.Klasse): AST.Definition.TypUndName {
+  private fun holeNormaleEigenschaftAusKlasse(eigenschaftsName: AST.Nomen, klasse: AST.Definition.Typdefinition.Klasse): AST.Definition.TypUndName {
     for (eigenschaft in klasse.eigenschaften) {
       if (eigenschaftsName.nominativ == eigenschaft.name.nominativ) {
         return eigenschaft
       }
     }
     throw GermanSkriptFehler.Undefiniert.Eigenschaft(eigenschaftsName.bezeichner.toUntyped(), klasse.typ.name.nominativ)
+  }
+
+  private fun holeEigenschaftAusKlasse(eigenschaftsZugriff: AST.Ausdruck.IEigenschaftsZugriff, klasse: AST.Definition.Typdefinition.Klasse): Typ {
+    val eigenschaftsName = eigenschaftsZugriff.eigenschaftsName
+    return try {
+      holeNormaleEigenschaftAusKlasse(eigenschaftsName, klasse).typKnoten.typ!!
+    } catch (fehler: GermanSkriptFehler.Undefiniert.Eigenschaft) {
+      if (!klasse.berechneteEigenschaften.containsKey(eigenschaftsName.nominativ)) {
+        throw fehler
+      } else {
+        eigenschaftsZugriff.aufrufName = "${eigenschaftsName.nominativ} von ${klasse.namensToken.wert}"
+        klasse.berechneteEigenschaften.getValue(eigenschaftsName.nominativ).rückgabeTyp.typ!!
+      }
+    }
   }
 
   override fun evaluiereBinärenAusdruck(ausdruck: AST.Ausdruck.BinärerAusdruck): Typ {

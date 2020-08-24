@@ -20,6 +20,7 @@ class Definierer(startDatei: File): PipelineKomponente(startDatei) {
       }
     }
     definitionen.konvertierungen.forEach(::definiereKonvertierung)
+    definitionen.eigenschaften.forEach(::definiereEigenschaft)
     definitionen.module.values.forEach {modul -> definiere(modul.definitionen)}
     definitionen.definierteTypen.values.forEach { schnittstelle ->
       if (schnittstelle is AST.Definition.Typdefinition.Schnittstelle) {
@@ -291,6 +292,24 @@ class Definierer(startDatei: File): PipelineKomponente(startDatei) {
       )
     }
     klasse.konvertierungen[typName] = konvertierung
+  }
+
+  private fun definiereEigenschaft(eigenschaft: AST.Definition.Eigenschaft) {
+    val klasse = holeTypDefinition(eigenschaft.klasse)
+    if (klasse !is AST.Definition.Typdefinition.Klasse) {
+      throw GermanSkriptFehler.KlasseErwartet(eigenschaft.klasse.name.bezeichner.toUntyped())
+    }
+    val eigenschaftsName = eigenschaft.name.nominativ
+    if (klasse.berechneteEigenschaften.containsKey(eigenschaftsName)) {
+      throw GermanSkriptFehler.DoppelteDefinition.Eigenschaft(
+          eigenschaft.name.bezeichner.toUntyped(),
+          klasse.berechneteEigenschaften.getValue(eigenschaftsName)
+      )
+    }
+    if (klasse.eigenschaften.any { eigenschaft -> eigenschaft.name.nominativ == eigenschaftsName }) {
+      throw GermanSkriptFehler.DoppelteEigenschaft(eigenschaft.name.bezeichner.toUntyped(), klasse)
+    }
+    klasse.berechneteEigenschaften[eigenschaftsName] = eigenschaft
   }
 }
 

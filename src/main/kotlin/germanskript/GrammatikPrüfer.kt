@@ -26,6 +26,7 @@ class GrammatikPrüfer(startDatei: File): PipelineKomponente(startDatei) {
         is AST.Definition.FunktionOderMethode.Funktion -> prüfeFunktionsSignatur(knoten.signatur)
         is AST.Definition.FunktionOderMethode.Methode -> prüfeMethodenDefinition(knoten)
         is AST.Definition.Konvertierung -> prüfeKonvertierungsDefinition(knoten)
+        is AST.Definition.Eigenschaft -> prüfeEigenschaftsDefinition(knoten)
         is AST.Definition.Typdefinition.Klasse -> prüfeKlassenDefinition(knoten)
         is AST.Definition.Typdefinition.Schnittstelle -> knoten.methodenSignaturen.forEach(::prüfeFunktionsSignatur)
         is AST.Definition.Typdefinition.Alias -> prüfeAlias(knoten)
@@ -261,6 +262,7 @@ class GrammatikPrüfer(startDatei: File): PipelineKomponente(startDatei) {
     prüfeNomen(konvertierung.typ.name, EnumSet.of(Kasus.NOMINATIV), EnumSet.of(Numerus.SINGULAR))
     prüfeKontextbasiertenAusdruck(konvertierung.ausdruck, null, fälle, pluralErwartet)
   }
+
   // endregion
   private fun prüfeVariablendeklaration(variablenDeklaration: AST.Satz.VariablenDeklaration) {
     val nomen = variablenDeklaration.name
@@ -364,8 +366,14 @@ class GrammatikPrüfer(startDatei: File): PipelineKomponente(startDatei) {
   }
 
   private fun prüfeKonvertierungsDefinition(konvertierung: AST.Definition.Konvertierung) {
-    prüfeNomen(konvertierung.typ.name, EnumSet.of(Kasus.NOMINATIV), EnumSet.of(Numerus.SINGULAR))
+    prüfeNomen(konvertierung.typ.name, EnumSet.of(Kasus.NOMINATIV), Numerus.BEIDE)
     prüfeNomen(konvertierung.klasse.name, EnumSet.of(Kasus.NOMINATIV), EnumSet.of(Numerus.SINGULAR))
+  }
+
+  private fun prüfeEigenschaftsDefinition(eigenschaft: AST.Definition.Eigenschaft) {
+    prüfeNomen(eigenschaft.rückgabeTyp.name, EnumSet.of(Kasus.NOMINATIV), Numerus.BEIDE)
+    prüfeNomen(eigenschaft.name, EnumSet.of(Kasus.NOMINATIV), Numerus.BEIDE)
+    prüfeNomen(eigenschaft.klasse.name, EnumSet.of(Kasus.NOMINATIV), EnumSet.of(Numerus.SINGULAR))
   }
 
   private fun prüfeArgument(argument: AST.Argument, fälle: EnumSet<Kasus>) {

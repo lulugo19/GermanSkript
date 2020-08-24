@@ -181,6 +181,15 @@ sealed class GermanSkriptFehler(private val fehlerName: String, val token: Token
         get() = "Die Konvertierung von '${konvertierung.klasse.name.nominativ}' zu '${konvertierung.typ.name.nominativ}'\n" +
             "ist schon in ${konvertierung.klasse.name.bezeichner.position} definiert."
     }
+
+    class Eigenschaft(token: Token, eigenschaft: AST.Definition.Eigenschaft): DoppelteDefinition(token) {
+      override val nachricht = "Die berechnete Eigenschaft '${eigenschaft.name.nominativ}' ist schon in\n" +
+          "${eigenschaft.name.bezeichner.position} definiert."
+    }
+  }
+
+  class DoppelteEigenschaft(token: Token, klasse: AST.Definition.Typdefinition.Klasse): GermanSkriptFehler("Doppelte Eigenschaft", token) {
+    override val nachricht = "Die Klasse '${klasse.namensToken.wert}' hat bereits eine Eigenschaft mit dem Namen ${token.wert}."
   }
 
   class Variablenfehler(token: Token, deklaration: AST.Nomen): GermanSkriptFehler("Variablen Fehler", token) {

@@ -405,6 +405,21 @@ mit dem Genitiv: `Artikelb Eigenschaft ArtikelGb AusdruckG`
 
 Beispiel: `der Name der Person`
 
+### berechnete Eigenschaften einer Klasse
+`Eigenschaft(Typ) BezeichnerN für Typ: Sätze.`
+
+Eine berechnete Eigenschaft ist eine Eigenschaft die sich aus anderen Eigenschaften der Klasse ergibt.
+
+Beispiel:
+
+```
+Eigenschaft(Zeichenfolge) Name für Person:
+    gebe meinen VorNamen + " " meinen NachNamen zurück
+.
+
+die Person ist eine Person mit dem VorNamen "Max", dem NachNamen "Mustermann"
+schreibe die Zeichenfolge (der Name der Person) // Max Mustermann
+```
 
 ### Definieren einer Methode
 

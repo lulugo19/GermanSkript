@@ -175,6 +175,9 @@ class Typisierer(startDatei: File): PipelineKomponente(startDatei) {
     klasse.konvertierungen.values.forEach { konvertierung ->
       bestimmeTypen(konvertierung.typ, true)
     }
+    klasse.berechneteEigenschaften.values.forEach {eigenschaft ->
+      bestimmeTypen(eigenschaft.rückgabeTyp, true)
+    }
   }
 }
 

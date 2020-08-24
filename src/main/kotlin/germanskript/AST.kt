@@ -109,6 +109,7 @@ sealed class AST {
     val deklinationen = mutableListOf<Definition.DeklinationsDefinition>()
     val funktionenOderMethoden = mutableListOf<Definition.FunktionOderMethode>()
     val konvertierungen = mutableListOf<Definition.Konvertierung>()
+    val eigenschaften = mutableListOf<Definition.Eigenschaft>()
     val definierteTypen: MutableMap<String, Definition.Typdefinition> = mutableMapOf()
     val funktionen: MutableMap<String, Definition.FunktionOderMethode.Funktion> = mutableMapOf()
     val module = mutableMapOf<String, Definition.Modul>()
@@ -121,6 +122,7 @@ sealed class AST {
       yieldAll(deklinationen)
       yieldAll(funktionenOderMethoden)
       yieldAll(konvertierungen)
+      yieldAll(eigenschaften)
       yieldAll(definierteTypen.values)
       yieldAll(module.values)
     }
@@ -260,7 +262,6 @@ sealed class AST {
           yield(funktion)
         }
       }
-
     }
 
     sealed class Typdefinition: Definition() {
@@ -274,6 +275,7 @@ sealed class AST {
           val konstruktor: Satz.Bereich
       ): Typdefinition() {
         val methoden: HashMap<String, FunktionOderMethode.Methode> = HashMap()
+        val berechneteEigenschaften: HashMap<String, Eigenschaft> = HashMap()
         val konvertierungen: HashMap<String, Konvertierung> = HashMap()
 
         override val namensToken = typ.name.bezeichner.toUntyped()
@@ -312,11 +314,16 @@ sealed class AST {
         val klasse: TypKnoten,
         val definition: Satz.Bereich
     ): Definition() {
-      override val children: Sequence<AST> = sequence {
-        yield(typ)
-        yield(klasse)
-        yield(definition)
-      }
+      override val children = sequenceOf(typ, klasse, definition)
+    }
+
+    data class Eigenschaft(
+        val rückgabeTyp: TypKnoten,
+        val name: Nomen,
+        val klasse: TypKnoten,
+        val definition: Satz.Bereich
+    ): Definition() {
+      override val children = sequenceOf(rückgabeTyp, name, klasse, definition)
     }
 
     data class Import(
@@ -521,23 +528,37 @@ sealed class AST {
       }
     }
 
+    interface IEigenschaftsZugriff: IAufruf {
+      val eigenschaftsName: Nomen
+      var aufrufName: String?
+    }
+
     data class EigenschaftsZugriff(
-        val eigenschaftsName: Nomen,
+        override val eigenschaftsName: Nomen,
         val objekt: Ausdruck
-    ): Ausdruck() {
+    ): Ausdruck(), IEigenschaftsZugriff {
       override val children = sequenceOf(eigenschaftsName , objekt)
+      override val token = eigenschaftsName.bezeichner.toUntyped()
+      override var aufrufName: String? = null
+      override val vollerName get() = aufrufName
     }
 
     data class MethodenBlockEigenschaftsZugriff(
-        val eigenschaftsName: Nomen
-    ): Ausdruck() {
+        override val eigenschaftsName: Nomen
+    ): Ausdruck(), IEigenschaftsZugriff {
       override val children = sequenceOf(eigenschaftsName)
+      override val token = eigenschaftsName.bezeichner.toUntyped()
+      override var aufrufName: String? = null
+      override val vollerName get() = aufrufName
     }
 
     data class SelbstEigenschaftsZugriff(
-        val eigenschaftsName: Nomen
-    ): Ausdruck() {
+        override val eigenschaftsName: Nomen
+    ): Ausdruck(), IEigenschaftsZugriff {
       override val children = sequenceOf(eigenschaftsName)
+      override val token = eigenschaftsName.bezeichner.toUntyped()
+      override var aufrufName: String? = null
+      override val vollerName get() = aufrufName
     }
 
     data class SelbstReferenz(val ich: TypedToken<TokenTyp.REFERENZ.ICH>): Ausdruck()

@@ -108,6 +108,7 @@ sealed class TokenTyp(val anzeigeName: String) {
     object ADJEKTIV: TokenTyp("'Adjektiv'")
     object ALIAS: TokenTyp("'Alias'")
     object MODUL: TokenTyp("'Modul'")
+    object EIGENSCHAFT: TokenTyp("'Eigenschaft'")
     object AUFZÄHLUNG: TokenTyp("'Aufzählung'")
     object INTERN: TokenTyp("'intern'")
     object SUPER: TokenTyp("'Super'")
@@ -247,6 +248,7 @@ private val WORT_MAPPING = mapOf<String, TokenTyp>(
     "Neutrum" to TokenTyp.GENUS(Genus.NEUTRUM),
     "Nomen" to TokenTyp.NOMEN,
     "Verb" to TokenTyp.VERB,
+    "Eigenschaft" to TokenTyp.EIGENSCHAFT,
     "intern" to TokenTyp.INTERN,
     "Adjektiv" to TokenTyp.ADJEKTIV,
     "Alias" to TokenTyp.ALIAS,

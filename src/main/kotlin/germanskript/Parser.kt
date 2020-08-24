@@ -32,7 +32,8 @@ enum class ASTKnotenID {
   SCHNITTSTELLE,
   SUPER_BLOCK,
   CLOSURE,
-  ALIAS
+  ALIAS,
+  EIGENSCHAFTS_DEFINITION,
 }
 
 class Parser(startDatei: File): PipelineKomponente(startDatei) {
@@ -488,6 +489,9 @@ private sealed class SubParser<T: AST>() {
         is TokenTyp.ALS -> subParse(Definition.Konvertierung).also { konvertierung ->
           container.konvertierungen += konvertierung
         }
+        is TokenTyp.EIGENSCHAFT -> subParse(Definition.Eigenschaft).also { eigenschaft ->
+          container.eigenschaften += eigenschaft
+        }
         is TokenTyp.BEZEICHNER_KLEIN -> {
           when (nextToken.wert) {
             "importiere" -> subParse(Definition.Import)
@@ -591,7 +595,7 @@ private sealed class SubParser<T: AST>() {
         is TokenTyp.REFERENZ.ICH -> {
           if (!hierarchyContainsAnyNode(ASTKnotenID.METHODEN_DEFINITION, ASTKnotenID.KLASSEN_DEFINITION, ASTKnotenID.KONVERTIERUNGS_DEFINITION)) {
             throw GermanSkriptFehler.SyntaxFehler.ParseFehler(next(), null,
-                "Die Selbstreferenz 'Ich' darf nur in einem Konstruktor, Methoden- oder Kovertierungsdefinition vorkommen.")
+                "Die Selbstreferenz 'Ich' darf nur in einem Konstruktor, Methoden- oder Konvertierungsdefinition vorkommen.")
           }
           AST.Ausdruck.SelbstReferenz(next().toTyped())
         }
@@ -686,7 +690,7 @@ private sealed class SubParser<T: AST>() {
         return if (nomen.vornomen!!.typ is TokenTyp.VORNOMEN.POSSESSIV_PRONOMEN) {
           val eigenschaft = parseNomenOhneVornomen(false)
           val vornomenTyp = nomen.vornomen.typ
-          val objekt = if (vornomenTyp is TokenTyp.VORNOMEN.POSSESSIV_PRONOMEN.MEIN) {
+          val objekt: AST.Ausdruck = if (vornomenTyp is TokenTyp.VORNOMEN.POSSESSIV_PRONOMEN.MEIN) {
             AST.Ausdruck.SelbstEigenschaftsZugriff(eigenschaft)
           } else {
             AST.Ausdruck.MethodenBlockEigenschaftsZugriff(eigenschaft)
@@ -827,7 +831,8 @@ private sealed class SubParser<T: AST>() {
                 ASTKnotenID.FUNKTIONS_DEFINITION,
                 ASTKnotenID.METHODEN_DEFINITION,
                 ASTKnotenID.KONVERTIERUNGS_DEFINITION,
-                ASTKnotenID.CLOSURE
+                ASTKnotenID.CLOSURE,
+                ASTKnotenID.EIGENSCHAFTS_DEFINITION
             )) {
           throw GermanSkriptFehler.SyntaxFehler.ParseFehler(next(), null, "'gebe ... zurück' darf hier nicht stehen.")
         }
@@ -1164,7 +1169,24 @@ private sealed class SubParser<T: AST>() {
         val typ = parseTypOhneArtikel(false)
         parseKleinesSchlüsselwort("für")
         val klasse = parseTypOhneArtikel(false)
-        return AST.Definition.Konvertierung(typ, klasse, parseSätze())
+        val definition = parseSätze()
+        return AST.Definition.Konvertierung(typ, klasse, definition)
+      }
+    }
+
+    object Eigenschaft: Definition<AST.Definition.Eigenschaft>() {
+      override val id = ASTKnotenID.EIGENSCHAFTS_DEFINITION
+
+      override fun parseImpl(): AST.Definition.Eigenschaft {
+        expect<TokenTyp.EIGENSCHAFT>("'Eigenschaft'")
+        expect<TokenTyp.OFFENE_KLAMMER>("'('")
+        val rückgabeTyp = parseTypOhneArtikel(false)
+        expect<TokenTyp.GESCHLOSSENE_KLAMMER>("')'")
+        val name = parseNomenOhneVornomen(false)
+        parseKleinesSchlüsselwort("für")
+        val klasse = parseTypOhneArtikel(false)
+        val definition = parseSätze()
+        return AST.Definition.Eigenschaft(rückgabeTyp, name, klasse, definition)
       }
     }
 

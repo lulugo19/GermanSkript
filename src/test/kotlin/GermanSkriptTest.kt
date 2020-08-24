@@ -756,4 +756,23 @@ class GermanSkriptTest {
     }
   }
 
+  @Test
+  @DisplayName("berechnete Eigenschaften")
+  fun berechneteEigenschaften() {
+    val quellCode = """
+      Deklination Femininum Singular(Person) Plural(Personen)
+      Deklination Maskulinum Singular(Name, Namens, Namen, Namen) Plural(Namen)
+      
+      Nomen Person mit der Zeichenfolge VorName, der Zeichenfolge NachName:.
+      
+      Eigenschaft(Zeichenfolge) Name für Person:
+        gebe meinen VorNamen + " " + meinen NachNamen zurück
+      .
+      
+      die Person ist eine Person mit dem VorNamen "Max", dem NachNamen "Mustermann"
+      schreibe die Zeichenfolge (der Name der Person)
+    """.trimIndent()
+
+    testeGermanSkriptCode(quellCode, "Max Mustermann")
+  }
 }

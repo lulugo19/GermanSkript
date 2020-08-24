@@ -3,6 +3,7 @@ package germanskript
 import java.io.File
 import java.text.ParseException
 import java.util.*
+import kotlin.NoSuchElementException
 import kotlin.math.*
 import kotlin.random.Random
 
@@ -63,7 +64,9 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
           FunktionsAufrufTyp.METHODEN_BLOCK_AUFRUF -> top().umgebung.holeMethodenBlockObjekt()
           FunktionsAufrufTyp.METHODEN_OBJEKT_AUFRUF -> evaluiereAusdruck(funktionsAufruf.objekt!!.wert)
         }
-        is AST.Ausdruck.ObjektInstanziierung, is AST.Ausdruck.Konvertierung -> aufrufObjekt
+        is AST.Ausdruck.ObjektInstanziierung,
+        is AST.Ausdruck.Konvertierung,
+        is AST.Ausdruck.IEigenschaftsZugriff  -> aufrufObjekt
         else -> throw Exception("Unbehandelter Funktionsaufruftyp")
       }
       stapel.push(AufrufStapelElement(funktionsAufruf, objekt, neueUmgebung))
@@ -273,9 +276,18 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
     return objekt
   }
 
+  private fun holeEigenschaft(zugriff: AST.Ausdruck.IEigenschaftsZugriff, objekt: Wert.Objekt): Wert {
+    return try {
+      objekt.holeEigenschaft(zugriff.eigenschaftsName)
+    } catch (nichtGefunden: NoSuchElementException) {
+      val berechneteEigenschaft = objekt.klassenDefinition.berechneteEigenschaften.getValue(zugriff.eigenschaftsName.nominativ)
+      durchlaufeAufruf(zugriff, berechneteEigenschaft.definition, Umgebung(), true, objekt)!!
+    }
+  }
+
   override fun evaluiereEigenschaftsZugriff(eigenschaftsZugriff: AST.Ausdruck.EigenschaftsZugriff): Wert {
     return when (val objekt = evaluiereAusdruck(eigenschaftsZugriff.objekt)) {
-      is Wert.Objekt -> objekt.holeEigenschaft(eigenschaftsZugriff.eigenschaftsName)
+      is Wert.Objekt -> holeEigenschaft(eigenschaftsZugriff, objekt)
       is Wert.Zeichenfolge -> Wert.Zahl(objekt.zeichenfolge.length.toDouble())
       else -> throw Exception("Dies sollte nie passieren, weil der Typprüfer diesen Fall schon überprüft")
     }
@@ -283,12 +295,12 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
 
   override fun evaluiereSelbstEigenschaftsZugriff(eigenschaftsZugriff: AST.Ausdruck.SelbstEigenschaftsZugriff): Wert {
     val objekt = aufrufStapel.top().objekt!! as Wert.Objekt
-    return objekt.holeEigenschaft(eigenschaftsZugriff.eigenschaftsName)
+    return holeEigenschaft(eigenschaftsZugriff, objekt)
   }
 
   override fun evaluiereMethodenBlockEigenschaftsZugriff(eigenschaftsZugriff: AST.Ausdruck.MethodenBlockEigenschaftsZugriff): Wert {
     val objekt = umgebung.holeMethodenBlockObjekt()!! as Wert.Objekt
-    return objekt.holeEigenschaft(eigenschaftsZugriff.eigenschaftsName)
+    return holeEigenschaft(eigenschaftsZugriff, objekt)
   }
 
   override fun evaluiereSelbstReferenz(): Wert = aufrufStapel.top().objekt!!

@@ -3,6 +3,7 @@
 ## hinzugefügte Features
 - Closures
 - Alias
+- berechnete Eigenschaften einer Klasse
 - Aufzählungen
 - Für-Jede-Schleife über Zahlen
 - (Adjektive als Teil von Bezeichnern)
@@ -38,6 +39,22 @@ Beispiel:
 `Alias Alter ist Zahl`
 
 Ein Typ kann über den Alias einen andern Namen bekommen, über dem man auf diesen Typ verweisen kann.
+
+## berechnete Eigenschaften einer Klasse
+`Eigenschaft(Typ) BezeichnerN für Typ: Sätze.`
+
+Eine berechnete Eigenschaft ist eine Eigenschaft die sich aus anderen Eigenschaften der Klasse ergibt.
+
+Beispiel:
+
+```
+Eigenschaft(Zeichenfolge) Name für Person:
+    gebe meinen VorNamen + " " meinen NachNamen zurück
+.
+
+die Person ist eine Person mit dem VorNamen "Max", dem NachNamen "Mustermann"
+schreibe die Zeichenfolge (der Name der Person) // Max Mustermann
+```
 
 ## Aufzählungen
 Aufzählungen können beliebig viele Eigenschaften haben.
