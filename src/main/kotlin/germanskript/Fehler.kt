@@ -186,6 +186,11 @@ sealed class GermanSkriptFehler(private val fehlerName: String, val token: Token
       override val nachricht = "Die berechnete Eigenschaft '${eigenschaft.name.nominativ}' ist schon in\n" +
           "${eigenschaft.name.bezeichner.position} definiert."
     }
+
+    class Konstante(token: Token, konstante: AST.Definition.Konstante): DoppelteDefinition(token) {
+      override val nachricht =" Die Konstante '${konstante.wert}' ist schon in\n" +
+          "${konstante.name.position} definiert."
+    }
   }
 
   class DoppelteEigenschaft(token: Token, klasse: AST.Definition.Typdefinition.Klasse): GermanSkriptFehler("Doppelte Eigenschaft", token) {
@@ -221,9 +226,14 @@ sealed class GermanSkriptFehler(private val fehlerName: String, val token: Token
         get() = "Die Variable '$name' ist nicht definiert.'"
     }
 
-    class Typ constructor(token: Token, val typ: AST.TypKnoten): Undefiniert(token) {
+    class Typ(token: Token, typ: AST.TypKnoten): Undefiniert(token) {
       override val nachricht: String
-        get() = "Der Typ '${typ.vollständigerName}' ist nicht definiert."
+          = "Der Typ '${typ.vollständigerName}' ist nicht definiert."
+    }
+
+    class Konstante(token: Token, konstante: AST.Ausdruck.Konstante): Undefiniert(token) {
+      override val nachricht: String
+        = "Die Konstante '${konstante.vollständigerName}' ist nicht definiert."
     }
 
     class Operator(token: Token, private val typ: String): Undefiniert(token){
@@ -243,10 +253,10 @@ sealed class GermanSkriptFehler(private val fehlerName: String, val token: Token
   }
 
   sealed class Mehrdeutigkeit(token: Token): GermanSkriptFehler("Mehrdeutigkeit", token) {
-    class Typ(token: Token, private val typA: AST.Definition.Typdefinition, private val typB: AST.Definition.Typdefinition):
+    class Typ(token: Token, typA: AST.Definition.Typdefinition, typB: AST.Definition.Typdefinition):
       Mehrdeutigkeit(token) {
       override val nachricht: String
-        get() = "Es ist unklar welche Klasse gemeint ist.\n" +
+          = "Es ist unklar welche Klasse gemeint ist.\n" +
             "Entweder die Klasse '${typA.namensToken.wert}' in ${typA.namensToken.position}\n" +
             "oder die Klasse '${typB.namensToken.wert}' in ${typB.namensToken.position}."
 
@@ -254,13 +264,20 @@ sealed class GermanSkriptFehler(private val fehlerName: String, val token: Token
 
     class Funktion(
         token: Token,
-        private val funktionA: AST.Definition.FunktionOderMethode.Funktion,
-        private val funktionB: AST.Definition.FunktionOderMethode.Funktion): Mehrdeutigkeit(token) {
+        funktionA: AST.Definition.FunktionOderMethode.Funktion,
+        funktionB: AST.Definition.FunktionOderMethode.Funktion): Mehrdeutigkeit(token) {
 
-      override val nachricht: String
-        get() = "Es ist unklar welche Funktion gemeint ist.\n" +
+      override val nachricht: String = "Es ist unklar welche Funktion gemeint ist.\n" +
             "Entweder die Funktion in ${funktionA.signatur.name.position} oder die Funktion in " +
             "${funktionB.signatur.name.position}."
+    }
+
+    class Konstante(
+        token: Token, konstanteA: AST.Definition.Konstante, konstanteB: AST.Definition.Konstante
+    ): Mehrdeutigkeit(token) {
+      override val nachricht: String = "Es ist unklar welche Konstante gemeint ist.\n" +
+          "Entweder die Konstante in ${konstanteA.name.position} oder die Konstante in " +
+          "${konstanteB.name.position}."
     }
   }
 
@@ -272,7 +289,7 @@ sealed class GermanSkriptFehler(private val fehlerName: String, val token: Token
 
     class ObjektErwartet(token: Token): TypFehler(token) {
       override val nachricht: String
-        get() = "Es wird ein Objekt erwartet und kein primitiver germanskript.Wert (Zahl, Zeichenfolge, Boolean)."
+        get() = "Es wird ein Objekt erwartet und kein primitiver Typ (Zahl, Zeichenfolge, Boolean)."
     }
   }
 
@@ -306,6 +323,10 @@ sealed class GermanSkriptFehler(private val fehlerName: String, val token: Token
 
   class KonvertierungsFehler(token: Token, private val von: Typ, private val zu: Typ): GermanSkriptFehler("Konvertierungsfehler", token) {
     override val nachricht get() = "Die Konvertierung von ${von.name} zu ${zu.name} ist nicht möglich."
+  }
+
+  class KonstantenFehler(token: Token): GermanSkriptFehler("Konstantenfehler", token) {
+    override val nachricht = "Einer Konstanten können nur feste Werte (Zeichenfolge, Zahl, Bool) zugewiesen werden."
   }
 
   class LaufzeitFehler(token: Token, val aufrufStapelString: String, val fehlerMeldung: String): GermanSkriptFehler("Laufzeitfehler", token) {

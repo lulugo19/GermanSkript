@@ -9,65 +9,68 @@ sealed class Typ(val name: String) {
   val logger = SimpleLogger()
 
   abstract val definierteOperatoren: Map<Operator, Typ>
-  abstract fun kannNachTypKonvertiertWerden(typ: Typ): kotlin.Boolean
+  abstract fun kannNachTypKonvertiertWerden(typ: Typ): Boolean
 
-  object Zahl : Typ("Zahl") {
-    override val definierteOperatoren: Map<Operator, Typ> = mapOf(
-          Operator.PLUS to Zahl,
-          Operator.MINUS to Zahl,
-          Operator.MAL to Zahl,
-          Operator.GETEILT to Zahl,
-          Operator.MODULO to Zahl,
-          Operator.HOCH to Zahl,
-          Operator.GRÖßER to Boolean,
-          Operator.KLEINER to Boolean,
-          Operator.GRÖSSER_GLEICH to Boolean,
-          Operator.KLEINER_GLEICH to Boolean,
-          Operator.UNGLEICH to Boolean,
-          Operator.GLEICH to Boolean
-      )
+  sealed class Primitiv(name: String): Typ(name) {
+    object Zahl : Primitiv("Zahl") {
+      override val definierteOperatoren: Map<Operator, Typ> = mapOf(
+            Operator.PLUS to Zahl,
+            Operator.MINUS to Zahl,
+            Operator.MAL to Zahl,
+            Operator.GETEILT to Zahl,
+            Operator.MODULO to Zahl,
+            Operator.HOCH to Zahl,
+            Operator.GRÖßER to Boolean,
+            Operator.KLEINER to Boolean,
+            Operator.GRÖSSER_GLEICH to Boolean,
+            Operator.KLEINER_GLEICH to Boolean,
+            Operator.UNGLEICH to Boolean,
+            Operator.GLEICH to Boolean
+        )
 
-    override fun kannNachTypKonvertiertWerden(typ: Typ) = typ == Zahl || typ == Zeichenfolge || typ == Boolean
-  }
+      override fun kannNachTypKonvertiertWerden(typ: Typ) = typ == Zahl || typ == Zeichenfolge || typ == Boolean
+    }
 
-  object Zeichenfolge : Typ("Zeichenfolge") {
-    override val definierteOperatoren: Map<Operator, Typ> = mapOf(
-          Operator.PLUS to Zeichenfolge,
-          Operator.GLEICH to Boolean,
-          Operator.UNGLEICH to Boolean,
-          Operator.GRÖßER to Boolean,
-          Operator.KLEINER to Boolean,
-          Operator.GRÖSSER_GLEICH to Boolean,
-          Operator.KLEINER_GLEICH to Boolean
-      )
-    override fun kannNachTypKonvertiertWerden(typ: Typ) = typ == Zeichenfolge || typ == Zahl || typ == Boolean
-  }
+    object Zeichenfolge : Primitiv("Zeichenfolge") {
+      override val definierteOperatoren: Map<Operator, Typ> = mapOf(
+            Operator.PLUS to Zeichenfolge,
+            Operator.GLEICH to Boolean,
+            Operator.UNGLEICH to Boolean,
+            Operator.GRÖßER to Boolean,
+            Operator.KLEINER to Boolean,
+            Operator.GRÖSSER_GLEICH to Boolean,
+            Operator.KLEINER_GLEICH to Boolean
+        )
+      override fun kannNachTypKonvertiertWerden(typ: Typ) = typ == Zeichenfolge || typ == Zahl || typ == Boolean
+    }
 
-  object Boolean : Typ("Boolean") {
-    override val definierteOperatoren: Map<Operator, Typ> = mapOf(
-          Operator.UND to Boolean,
-          Operator.ODER to Boolean,
-          Operator.GLEICH to Boolean,
-          Operator.UNGLEICH to Boolean
-      )
+    object Boolean : Primitiv("Boolean") {
+      override val definierteOperatoren: Map<Operator, Typ> = mapOf(
+            Operator.UND to Boolean,
+            Operator.ODER to Boolean,
+            Operator.GLEICH to Boolean,
+            Operator.UNGLEICH to Boolean
+        )
 
-    override fun kannNachTypKonvertiertWerden(typ: Typ) = typ == Boolean || typ == Zeichenfolge || typ == Zahl
+      override fun kannNachTypKonvertiertWerden(typ: Typ) = typ == Boolean || typ == Zeichenfolge || typ == Zahl
+    }
+
   }
 
   object Generic : Typ("Generic") {
     override val definierteOperatoren: Map<Operator, Typ>
       get() = mapOf()
 
-    override fun kannNachTypKonvertiertWerden(typ: Typ): kotlin.Boolean = false
+    override fun kannNachTypKonvertiertWerden(typ: Typ): Boolean = false
   }
 
   data class Schnittstelle(val definition: AST.Definition.Typdefinition.Schnittstelle): Typ(definition.name.wert.capitalize()) {
     override val definierteOperatoren: Map<Operator, Typ> = mapOf(
-        Operator.GLEICH to Boolean
+        Operator.GLEICH to Primitiv.Boolean
     )
 
-    override fun kannNachTypKonvertiertWerden(typ: Typ): kotlin.Boolean {
-      return typ.name == this.name || typ == Zeichenfolge
+    override fun kannNachTypKonvertiertWerden(typ: Typ): Boolean {
+      return typ.name == this.name || typ == Primitiv.Zeichenfolge
     }
   }
 
@@ -77,11 +80,11 @@ sealed class Typ(val name: String) {
     data class Klasse(override val klassenDefinition: AST.Definition.Typdefinition.Klasse):
         KlassenTyp(klassenDefinition.typ.name.hauptWort(Kasus.NOMINATIV, Numerus.SINGULAR)) {
         override val definierteOperatoren: Map<Operator, Typ> = mapOf(
-            Operator.GLEICH to Boolean
+            Operator.GLEICH to Primitiv.Boolean
         )
 
-        override fun kannNachTypKonvertiertWerden(typ: Typ): kotlin.Boolean {
-          return typ.name == this.name || typ == Zeichenfolge || klassenDefinition.konvertierungen.containsKey(typ.name)
+        override fun kannNachTypKonvertiertWerden(typ: Typ): Boolean {
+          return typ.name == this.name || typ == Primitiv.Zeichenfolge || klassenDefinition.konvertierungen.containsKey(typ.name)
         }
     }
 
@@ -89,9 +92,9 @@ sealed class Typ(val name: String) {
       // Das hier muss umbedingt ein Getter sein, sonst gibt es Probleme mit StackOverflow
       override val definierteOperatoren: Map<Operator, Typ> get() = mapOf(
           Operator.PLUS to Liste(klassenDefinition, elementTyp),
-          Operator.GLEICH to Boolean
+          Operator.GLEICH to Primitiv.Boolean
       )
-      override fun kannNachTypKonvertiertWerden(typ: Typ) = typ.name == this.name || typ == Zeichenfolge
+      override fun kannNachTypKonvertiertWerden(typ: Typ) = typ.name == this.name || typ == Primitiv.Zeichenfolge
     }
   }
 }
@@ -124,9 +127,9 @@ class Typisierer(startDatei: File): PipelineKomponente(startDatei) {
 
   private fun holeTypDefinition(typKnoten: AST.TypKnoten, aliasErlaubt: Boolean): Typ =
     when(typKnoten.name.hauptWort(Kasus.NOMINATIV, Numerus.SINGULAR)) {
-      "Zahl" -> Typ.Zahl
-      "Zeichenfolge" -> Typ.Zeichenfolge
-      "Boolean" -> Typ.Boolean
+      "Zahl" -> Typ.Primitiv.Zahl
+      "Zeichenfolge" -> Typ.Primitiv.Zeichenfolge
+      "Boolean" -> Typ.Primitiv.Boolean
       "Typ" -> Typ.Generic
       "Liste" -> Typ.KlassenTyp.Liste(listenKlassenDefinition, Typ.Generic)
       else -> when (val typDef = definierer.holeTypDefinition(typKnoten)) {

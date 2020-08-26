@@ -24,7 +24,7 @@ sealed class AST {
   var tiefe: Int = 0
     protected set
 
-  inline fun<reified T: AST> findNodeInParents(): T? {
+  inline fun<reified T> findNodeInParents(): T? {
     var par = this.parent
     while (par != null) {
       if (par is T) {
@@ -110,12 +110,14 @@ sealed class AST {
     val funktionenOderMethoden = mutableListOf<Definition.FunktionOderMethode>()
     val konvertierungen = mutableListOf<Definition.Konvertierung>()
     val eigenschaften = mutableListOf<Definition.Eigenschaft>()
+    val konstanten =  mutableMapOf<String, Definition.Konstante>()
     val definierteTypen: MutableMap<String, Definition.Typdefinition> = mutableMapOf()
     val funktionen: MutableMap<String, Definition.FunktionOderMethode.Funktion> = mutableMapOf()
     val module = mutableMapOf<String, Definition.Modul>()
     val verwende = mutableListOf<Definition.Verwende>()
     val verwendeteModule = mutableListOf<DefinitionsContainer>()
     val verwendeteTypen = mutableMapOf<String, Definition.Typdefinition>()
+    val verwendeteKonstanten = mutableMapOf<String, Definition.Konstante>()
     val wörterbuch = Wörterbuch()
 
     override val children = sequence {
@@ -123,6 +125,7 @@ sealed class AST {
       yieldAll(funktionenOderMethoden)
       yieldAll(konvertierungen)
       yieldAll(eigenschaften)
+      yieldAll(konstanten.values)
       yieldAll(definierteTypen.values)
       yieldAll(module.values)
     }
@@ -326,6 +329,14 @@ sealed class AST {
       override val children = sequenceOf(rückgabeTyp, name, klasse, definition)
     }
 
+    data class Konstante(
+        val name: TypedToken<TokenTyp.BEZEICHNER_GROSS>,
+        var wert: Ausdruck
+    ): Definition() {
+      override val children = sequenceOf(wert)
+      var typ: Typ? = null
+    }
+
     data class Import(
         val dateiPfad: TypedToken<TokenTyp.ZEICHENFOLGE>
     ): Definition() {
@@ -351,9 +362,9 @@ sealed class AST {
         val name: Nomen,
         val neu: TypedToken<TokenTyp.NEU>?,
         val zuweisungsOperator: TypedToken<TokenTyp.ZUWEISUNG>,
-        var ausdruck: Ausdruck
+        var wert: Ausdruck
     ): Satz() {
-      override val children = sequenceOf(name, ausdruck)
+      override val children = sequenceOf(name, wert)
 
       val istEigenschaftsNeuZuweisung = name.vornomen!!.typ == TokenTyp.VORNOMEN.POSSESSIV_PRONOMEN.MEIN
       val istEigenschaft = name.vornomen!!.typ is TokenTyp.VORNOMEN.DEMONSTRATIV_PRONOMEN
@@ -426,10 +437,10 @@ sealed class AST {
       override val children = sequenceOf(bereich)
     }
 
-    data class Zurückgabe(val erstesToken: TypedToken<TokenTyp.BEZEICHNER_KLEIN>, var ausdruck: Ausdruck?): Satz() {
+    data class Zurückgabe(val erstesToken: TypedToken<TokenTyp.BEZEICHNER_KLEIN>, var wert: Ausdruck?): Satz() {
       override val children = sequence {
-        if (ausdruck != null) {
-          yield(ausdruck!!)
+        if (wert != null) {
+          yield(wert!!)
         }
       }
     }
@@ -464,6 +475,17 @@ sealed class AST {
 
     data class Variable(val name: Nomen) : Ausdruck() {
       override val children = sequenceOf(name)
+      var konstante: Konstante? = null
+    }
+
+    data class Konstante(
+        val modulPfad: List<TypedToken<TokenTyp.BEZEICHNER_GROSS>>,
+        val name: TypedToken<TokenTyp.BEZEICHNER_GROSS>
+    ): Ausdruck() {
+      val vollständigerName: String = modulPfad.joinToString("::") { it.wert } +
+          (if (modulPfad.isEmpty()) "" else "::")  + name.wert
+
+      var wert: Ausdruck? = null
     }
 
     data class Liste(val pluralTyp: Nomen, var elemente: List<Ausdruck>): Ausdruck() {
@@ -498,13 +520,13 @@ sealed class AST {
     }
 
     data class Konvertierung(
-        var ausdruck: Ausdruck,
+        var wert: Ausdruck,
         val typ: TypKnoten
     ): Ausdruck(), IAufruf {
       override val token = typ.name.bezeichner.toUntyped()
       override val vollerName = "als ${typ.name}"
 
-      override val children = sequenceOf(ausdruck, typ)
+      override val children = sequenceOf(wert, typ)
     }
 
     data class ObjektInstanziierung(

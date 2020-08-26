@@ -14,12 +14,15 @@ class ModulAuflöser(startDatei: File): PipelineKomponente(startDatei) {
       val verwendeteDefinitionen =
           if (verwende.modulPfad.isEmpty()) definitionen
           else löseModulPfadAuf(verwende, verwende.modulPfad).definitionen
+      val name = verwende.modulOderKlasse.wert
       when {
-        // einzelne Klassen zu verwenden hat Vorrang zu Modulen
-        verwendeteDefinitionen.definierteTypen.containsKey(verwende.modulOderKlasse.wert) ->
-          definitionen.verwendeteTypen[verwende.modulOderKlasse.wert] = verwendeteDefinitionen.definierteTypen.getValue(verwende.modulOderKlasse.wert)
-        verwendeteDefinitionen.module.containsKey(verwende.modulOderKlasse.wert) ->
-          definitionen.verwendeteModule += verwendeteDefinitionen.module.getValue(verwende.modulOderKlasse.wert).definitionen
+        // Priorität: Konstanten -> Typen -> Module
+        verwendeteDefinitionen.konstanten.containsKey(name) ->
+          definitionen.verwendeteKonstanten[name] = verwendeteDefinitionen.konstanten.getValue(name)
+        verwendeteDefinitionen.definierteTypen.containsKey(name) ->
+          definitionen.verwendeteTypen[name] = verwendeteDefinitionen.definierteTypen.getValue(name)
+        verwendeteDefinitionen.module.containsKey(name) ->
+          definitionen.verwendeteModule += verwendeteDefinitionen.module.getValue(name).definitionen
         else -> throw GermanSkriptFehler.Undefiniert.Modul(verwende.modulOderKlasse.toUntyped())
       }
     }

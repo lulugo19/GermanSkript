@@ -775,4 +775,82 @@ class GermanSkriptTest {
 
     testeGermanSkriptCode(quellCode, "Max Mustermann")
   }
+
+  @Test
+  @DisplayName("Konstante")
+  fun konstante() {
+    val quellCode = """
+      Modul MatheX:
+        Konstante PI ist 3,14159265
+      .
+      
+      die Zahl ist 2 * MatheX::PI
+      schreibe die Zahl
+    """.trimIndent()
+
+    val erwarteteAusgabe = """
+      6,2831853
+      
+    """.trimIndent()
+
+    testeGermanSkriptCode(quellCode, erwarteteAusgabe)
+  }
+
+  @Test
+  @DisplayName("Verwende Konstante")
+  fun verwendeKonstante() {
+    val quellCode = """
+      Modul MatheX:
+        Konstante PI ist 3,14159265
+      .
+      
+      verwende MatheX::PI
+      
+      schreibe die Zahl PI
+    """.trimIndent()
+
+    val erwarteteAusgabe = """
+      3,14159265
+      
+    """.trimIndent()
+
+    testeGermanSkriptCode(quellCode, erwarteteAusgabe)
+  }
+
+  @Test
+  @DisplayName("Variable überschreibt Konstante")
+  fun variableÜberschreibtKonstante() {
+    val quellCode = """
+      Modul MatheX:
+        Konstante PI ist 3,14159265
+      .
+      
+      verwende MatheX
+      
+      das PI ist 3
+      schreibe die Zahl MatheX::PI
+      schreibe die Zahl PI
+    """.trimIndent()
+
+    val erwarteteAusgabe = """
+      3,14159265
+      3
+      
+    """.trimIndent()
+
+    testeGermanSkriptCode(quellCode, erwarteteAusgabe)
+  }
+
+  @Test
+  @DisplayName("Konstante ist Literal")
+  fun konstanteIstLiteral() {
+    val quellCode = """
+      // eine Konstante kann keine Liste sein
+      Konstante PI ist einige Zahlen[1, 2, 3, 4]
+    """.trimIndent()
+
+    assertThatExceptionOfType(GermanSkriptFehler.KonstantenFehler::class.java).isThrownBy {
+      führeGermanSkriptCodeAus(quellCode)
+    }
+  }
 }

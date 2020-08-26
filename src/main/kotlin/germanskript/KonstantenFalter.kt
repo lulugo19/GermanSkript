@@ -2,7 +2,6 @@ package germanskript
 
 import java.io.File
 import java.util.*
-import kotlin.system.measureTimeMillis
 
 /**
  * Constant Folding: https: //en.wikipedia.org/wiki/Constant_folding
@@ -51,11 +50,10 @@ class KonstantenFalter(startDatei: File): ProgrammDurchlaufer<Wert?>(startDatei)
   }
 
   private fun falteKonstante(originalerAusdruck: AST.Ausdruck): AST.Ausdruck {
-    val konstanterWert = evaluiereAusdruck(originalerAusdruck)
-    return when (konstanterWert) {
-      is Wert.Zahl -> AST.Ausdruck.Zahl(TypedToken(TokenTyp.ZAHL(konstanterWert), "", "", Token.Position.Ende, Token.Position.Ende))
-      is Wert.Zeichenfolge -> AST.Ausdruck.Zeichenfolge(TypedToken(TokenTyp.ZEICHENFOLGE(konstanterWert), "", "", Token.Position.Ende, Token.Position.Ende))
-      is Wert.Boolean -> AST.Ausdruck.Boolean(TypedToken(TokenTyp.BOOLEAN(konstanterWert), "", "", Token.Position.Ende, Token.Position.Ende))
+    return when (val konstanterWert = evaluiereAusdruck(originalerAusdruck)) {
+      is Wert.Primitiv.Zahl -> AST.Ausdruck.Zahl(TypedToken(TokenTyp.ZAHL(konstanterWert), "", "", Token.Position.Ende, Token.Position.Ende))
+      is Wert.Primitiv.Zeichenfolge -> AST.Ausdruck.Zeichenfolge(TypedToken(TokenTyp.ZEICHENFOLGE(konstanterWert), "", "", Token.Position.Ende, Token.Position.Ende))
+      is Wert.Primitiv.Boolean -> AST.Ausdruck.Boolean(TypedToken(TokenTyp.BOOLEAN(konstanterWert), "", "", Token.Position.Ende, Token.Position.Ende))
       else -> originalerAusdruck
     }
   }
@@ -76,13 +74,13 @@ class KonstantenFalter(startDatei: File): ProgrammDurchlaufer<Wert?>(startDatei)
   val geleseneVariablen = Stack<MutableMap<String, GeleseneVariable>>()
 
   override fun durchlaufeVariablenDeklaration(deklaration: AST.Satz.VariablenDeklaration) {
-    deklaration.ausdruck = falteKonstante(deklaration.ausdruck)
+    deklaration.wert = falteKonstante(deklaration.wert)
     if (deklaration.istEigenschaftsNeuZuweisung || deklaration.istEigenschaft) {
       return
     }
     else {
       val geleseneVariablen = geleseneVariablen.peek()!!
-      val wert = evaluiereAusdruck(deklaration.ausdruck)
+      val wert = evaluiereAusdruck(deklaration.wert)
       if (deklaration.name.unveränderlich || deklaration.neu != null) {
         umgebung.schreibeVariable(deklaration.name, wert, false)
       } else {
@@ -112,12 +110,15 @@ class KonstantenFalter(startDatei: File): ProgrammDurchlaufer<Wert?>(startDatei)
     if (geleseneVariablen.containsKey(name.nominativ)) {
       geleseneVariablen.getValue(name.nominativ).wurdeGelesen = true
     }
+
     return super.evaluiereVariable(name)
   }
 
+  override fun evaluiereKonstante(konstante: AST.Ausdruck.Konstante): Wert? = evaluiereAusdruck(konstante.wert!!)
+
   override fun durchlaufeZurückgabe(zurückgabe: AST.Satz.Zurückgabe) {
-    if (zurückgabe.ausdruck != null) {
-      zurückgabe.ausdruck = falteKonstante(zurückgabe.ausdruck!!)
+    if (zurückgabe.wert != null) {
+      zurückgabe.wert = falteKonstante(zurückgabe.wert!!)
     }
   }
 
@@ -191,15 +192,15 @@ class KonstantenFalter(startDatei: File): ProgrammDurchlaufer<Wert?>(startDatei)
     val rechts = evaluiereAusdruck(ausdruck.rechts)
     val operator = ausdruck.operator.typ.operator
     return when {
-      links is Wert.Zeichenfolge && rechts is Wert.Zeichenfolge -> Interpretierer.zeichenFolgenOperation(operator, links, rechts)
-      links is Wert.Zahl && rechts is Wert.Zahl -> Interpretierer.zahlOperation(operator, links, rechts)
-      links is Wert.Boolean && rechts is Wert.Boolean -> Interpretierer.booleanOperation(operator, links, rechts)
+      links is Wert.Primitiv.Zeichenfolge && rechts is Wert.Primitiv.Zeichenfolge -> Interpretierer.zeichenFolgenOperation(operator, links, rechts)
+      links is Wert.Primitiv.Zahl && rechts is Wert.Primitiv.Zahl -> Interpretierer.zahlOperation(operator, links, rechts)
+      links is Wert.Primitiv.Boolean && rechts is Wert.Primitiv.Boolean -> Interpretierer.booleanOperation(operator, links, rechts)
       else -> null
     }
   }
 
   override fun evaluiereMinus(minus: AST.Ausdruck.Minus): Wert? {
-    val zahl = evaluiereAusdruck(minus.ausdruck) as Wert.Zahl?
+    val zahl = evaluiereAusdruck(minus.ausdruck) as Wert.Primitiv.Zahl?
     return if (zahl != null) {
       -zahl
     } else {
@@ -208,7 +209,7 @@ class KonstantenFalter(startDatei: File): ProgrammDurchlaufer<Wert?>(startDatei)
   }
 
   override fun evaluiereKonvertierung(konvertierung: AST.Ausdruck.Konvertierung): Wert? {
-    konvertierung.ausdruck = falteKonstante(konvertierung.ausdruck)
+    konvertierung.wert = falteKonstante(konvertierung.wert)
     return null
   }
 

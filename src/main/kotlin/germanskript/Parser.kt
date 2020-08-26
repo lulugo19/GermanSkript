@@ -34,6 +34,7 @@ enum class ASTKnotenID {
   CLOSURE,
   ALIAS,
   EIGENSCHAFTS_DEFINITION,
+  KONSTANTE
 }
 
 class Parser(startDatei: File): PipelineKomponente(startDatei) {
@@ -492,6 +493,13 @@ private sealed class SubParser<T: AST>() {
         is TokenTyp.EIGENSCHAFT -> subParse(Definition.Eigenschaft).also { eigenschaft ->
           container.eigenschaften += eigenschaft
         }
+        is TokenTyp.KONSTANTE -> subParse(Definition.Konstante).also { konstante ->
+          if (container.konstanten.containsKey(konstante.name.wert)) {
+            throw GermanSkriptFehler.DoppelteDefinition.Konstante(konstante.name.toUntyped(),
+              container.konstanten.getValue(konstante.name.wert))
+          }
+          container.konstanten[konstante.name.wert] = konstante
+        }
         is TokenTyp.BEZEICHNER_KLEIN -> {
           when (nextToken.wert) {
             "importiere" -> subParse(Definition.Import)
@@ -622,10 +630,12 @@ private sealed class SubParser<T: AST>() {
             AST.Ausdruck.Minus(parseEinzelnerAusdruck(false))
           }
         }
-        is TokenTyp.BEZEICHNER_GROSS -> if (mitArtikel)
-            throw GermanSkriptFehler.SyntaxFehler.ParseFehler(next(), "Artikel", "Vor einem Nomen muss ein Artikel stehen.")
-          else
-            AST.Ausdruck.Variable(parseNomenOhneVornomen(true))
+        is TokenTyp.BEZEICHNER_GROSS ->
+          if (mitArtikel) AST.Ausdruck.Konstante(parseModulPfad(), parseGroßenBezeichner(true))
+          else when (peekType(1)) {
+            is TokenTyp.DOPPEL_DOPPELPUNKT -> AST.Ausdruck.Konstante(parseModulPfad(), parseGroßenBezeichner(true))
+            else ->  AST.Ausdruck.Variable(parseNomenOhneVornomen(true))
+        }
         else -> throw GermanSkriptFehler.SyntaxFehler.ParseFehler(next())
       }
       return when (peekType()){
@@ -1187,6 +1197,21 @@ private sealed class SubParser<T: AST>() {
         val klasse = parseTypOhneArtikel(false)
         val definition = parseSätze()
         return AST.Definition.Eigenschaft(rückgabeTyp, name, klasse, definition)
+      }
+    }
+
+    object Konstante: Definition<AST.Definition.Konstante>() {
+      override val id = ASTKnotenID.KONSTANTE
+
+      override fun parseImpl(): AST.Definition.Konstante {
+        expect<TokenTyp.KONSTANTE>("'Konstante'")
+        val name = parseGroßenBezeichner(true)
+        val zuweisung = expect<TokenTyp.ZUWEISUNG>("'ist'")
+        if (zuweisung.typ.numerus != Numerus.SINGULAR) {
+          throw GermanSkriptFehler.SyntaxFehler.ParseFehler(zuweisung.toUntyped(), "'ist'")
+        }
+        val wert = subParse(Ausdruck(mitVornomen = false, optionalesIstNachVergleich = false))
+        return AST.Definition.Konstante(name, wert)
       }
     }
 

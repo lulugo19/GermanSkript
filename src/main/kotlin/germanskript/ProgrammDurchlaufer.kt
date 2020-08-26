@@ -56,7 +56,7 @@ abstract  class ProgrammDurchlaufer<T>(startDatei: File): PipelineKomponente(sta
       is AST.Ausdruck.ListenElement -> ausdruck.singular.vornomen!!.toUntyped()
       is AST.Ausdruck.BinärerAusdruck -> holeErstesTokenVonAusdruck(ausdruck.links)
       is AST.Ausdruck.Minus -> holeErstesTokenVonAusdruck(ausdruck.ausdruck)
-      is AST.Ausdruck.Konvertierung -> holeErstesTokenVonAusdruck(ausdruck.ausdruck)
+      is AST.Ausdruck.Konvertierung -> holeErstesTokenVonAusdruck(ausdruck.wert)
       is AST.Ausdruck.ObjektInstanziierung -> ausdruck.klasse.name.bezeichner.toUntyped()
       is AST.Ausdruck.EigenschaftsZugriff -> ausdruck.eigenschaftsName.bezeichner.toUntyped()
       is AST.Ausdruck.SelbstEigenschaftsZugriff -> ausdruck.eigenschaftsName.bezeichner.toUntyped()
@@ -64,6 +64,7 @@ abstract  class ProgrammDurchlaufer<T>(startDatei: File): PipelineKomponente(sta
       is AST.Ausdruck.SelbstReferenz -> ausdruck.ich.toUntyped()
       is AST.Ausdruck.MethodenBlockReferenz -> ausdruck.du.toUntyped()
       is AST.Ausdruck.Closure -> ausdruck.schnittstelle.name.bezeichner.toUntyped()
+      is AST.Ausdruck.Konstante -> ausdruck.name.toUntyped()
     }
   }
 
@@ -95,7 +96,7 @@ abstract  class ProgrammDurchlaufer<T>(startDatei: File): PipelineKomponente(sta
       is AST.Ausdruck.Zeichenfolge -> evaluiereZeichenfolge(ausdruck)
       is AST.Ausdruck.Zahl -> evaluiereZahl(ausdruck)
       is AST.Ausdruck.Boolean -> evaluiereBoolean(ausdruck)
-      is AST.Ausdruck.Variable -> evaluiereVariable(ausdruck.name)
+      is AST.Ausdruck.Variable -> evaluiereVariable(ausdruck)
       is AST.Ausdruck.Liste -> evaluiereListe(ausdruck)
       is AST.Ausdruck.ListenElement -> evaluiereListenElement(ausdruck)
       is AST.Ausdruck.FunktionsAufruf -> durchlaufeFunktionsAufruf(ausdruck.aufruf, true)!!
@@ -109,6 +110,15 @@ abstract  class ProgrammDurchlaufer<T>(startDatei: File): PipelineKomponente(sta
       is AST.Ausdruck.SelbstReferenz -> evaluiereSelbstReferenz()
       is AST.Ausdruck.MethodenBlockReferenz -> evaluiereMethodenBlockReferenz()
       is AST.Ausdruck.Closure -> evaluiereClosure(ausdruck)
+      is AST.Ausdruck.Konstante -> evaluiereKonstante(ausdruck)
+    }
+  }
+
+  protected open fun evaluiereVariable(variable: AST.Ausdruck.Variable): T {
+    return if (variable.konstante != null) {
+      evaluiereAusdruck(variable.konstante!!.wert!!)
+    } else {
+      return umgebung.leseVariable(variable.name).wert
     }
   }
 
@@ -138,4 +148,5 @@ abstract  class ProgrammDurchlaufer<T>(startDatei: File): PipelineKomponente(sta
   protected abstract fun evaluiereMethodenBlockEigenschaftsZugriff(eigenschaftsZugriff: AST.Ausdruck.MethodenBlockEigenschaftsZugriff): T
   protected abstract fun evaluiereSelbstReferenz(): T
   protected abstract fun evaluiereClosure(closure: AST.Ausdruck.Closure): T
+  protected abstract fun evaluiereKonstante(konstante: AST.Ausdruck.Konstante): T
 }

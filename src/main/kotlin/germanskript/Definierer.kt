@@ -90,12 +90,12 @@ class Definierer(startDatei: File): PipelineKomponente(startDatei) {
           }
           for (verwendetesModul in definitionen.verwendeteModule) {
             if (verwendetesModul.definierteTypen.containsKey(typName)) {
-              val gefundeneKlassenDefinition = verwendetesModul.definierteTypen.getValue(typName)
-              if (typDefinition != null && typDefinition != gefundeneKlassenDefinition) {
+              val gefundeneDefinition = verwendetesModul.definierteTypen.getValue(typName)
+              if (typDefinition != null && typDefinition != gefundeneDefinition) {
                 throw GermanSkriptFehler.Mehrdeutigkeit.Typ(typ.name.bezeichner.toUntyped(), typDefinition,
                 verwendetesModul.definierteTypen.getValue(typName))
               }
-              typDefinition = gefundeneKlassenDefinition
+              typDefinition = gefundeneDefinition
             }
           }
         }
@@ -111,6 +111,45 @@ class Definierer(startDatei: File): PipelineKomponente(startDatei) {
         }
       }
       throw GermanSkriptFehler.Undefiniert.Typ(typ.name.bezeichner.toUntyped(), typ)
+    }
+  }
+
+  fun holeKonstante(konstante: AST.Ausdruck.Konstante): AST.Definition.Konstante {
+    val konstName = konstante.name.wert
+    if (konstante.modulPfad.isEmpty()) {
+      var konstantenDef: AST.Definition.Konstante? = null
+      for (definitionen in durchlaufeDefinitionsContainer(konstante)) {
+        if (definitionen.konstanten.containsKey(konstName)) {
+          konstantenDef = definitionen.konstanten.getValue(konstName)
+        }
+        if (definitionen.verwendeteKonstanten.containsKey(konstName)) {
+          val gefundeneDefinition = definitionen.verwendeteKonstanten.getValue(konstName)
+          if (konstantenDef != null && konstantenDef != gefundeneDefinition) {
+            throw GermanSkriptFehler.Mehrdeutigkeit.Konstante(konstante.name.toUntyped(), konstantenDef,
+                gefundeneDefinition)
+          }
+          konstantenDef = gefundeneDefinition
+
+        for (verwendetesModul in definitionen.verwendeteModule) {
+          if (verwendetesModul.konstanten.containsKey(konstName)) {
+            val gefundeneDefinition = verwendetesModul.konstanten.getValue(konstName)
+            if (konstantenDef != null && konstantenDef != gefundeneDefinition) {
+              throw GermanSkriptFehler.Mehrdeutigkeit.Konstante(konstante.name.toUntyped(), konstantenDef,
+                  verwendetesModul.konstanten.getValue(konstName))
+            }
+            konstantenDef = gefundeneDefinition
+          }
+        }
+        }
+      }
+      return konstantenDef ?:
+      throw GermanSkriptFehler.Undefiniert.Konstante(konstante.name.toUntyped(), konstante)
+    } else {
+      val modul = modulAuflöser.löseModulPfadAuf(konstante, konstante.modulPfad)
+      if (modul.definitionen.konstanten.containsKey(konstName)) {
+        return modul.definitionen.konstanten.getValue(konstName)
+      }
+      throw GermanSkriptFehler.Undefiniert.Konstante(konstante.name.toUntyped(), konstante)
     }
   }
 
@@ -222,15 +261,27 @@ class Definierer(startDatei: File): PipelineKomponente(startDatei) {
    */
   val typDefinitionen get(): Sequence<AST.Definition.Typdefinition> = sequence {
     // Der Rückgabetyp der Funktionen muss explizit dranstehen. Ansonsten gibt es einen internen Fehler
-    fun holeKlassenDefinitionen(container: AST.DefinitionsContainer):
+    fun holeTypDefinition(container: AST.DefinitionsContainer):
         Sequence<AST.Definition.Typdefinition> = sequence {
       yieldAll(container.definierteTypen.values)
       for (modul in container.module.values) {
-        yieldAll(holeKlassenDefinitionen(modul.definitionen))
+        yieldAll(holeTypDefinition(modul.definitionen))
       }
     }
 
-    yieldAll(holeKlassenDefinitionen(ast.definitionen))
+    yieldAll(holeTypDefinition(ast.definitionen))
+  }
+
+  val konstanten get(): Sequence<AST.Definition.Konstante> = sequence {
+    fun holeKonstante(container: AST.DefinitionsContainer):
+      Sequence<AST.Definition.Konstante> = sequence {
+      yieldAll(container.konstanten.values)
+      for (modul in container.module.values) {
+        yieldAll(holeKonstante(modul.definitionen))
+      }
+    }
+
+    yieldAll(holeKonstante(ast.definitionen))
   }
 
   inline fun<reified T: AST.Definition.Typdefinition> holeDefinitionen() = typDefinitionen.filter { it is T }.map {it as T}

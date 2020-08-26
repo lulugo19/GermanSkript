@@ -4,6 +4,7 @@
 - Closures
 - Alias
 - berechnete Eigenschaften einer Klasse
+- Konstanten
 - Aufzählungen
 - Für-Jede-Schleife über Zahlen
 - (Adjektive als Teil von Bezeichnern)
@@ -55,6 +56,13 @@ Eigenschaft(Zeichenfolge) Name für Person:
 die Person ist eine Person mit dem VorNamen "Max", dem NachNamen "Mustermann"
 schreibe die Zeichenfolge (der Name der Person) // Max Mustermann
 ```
+
+## Definieren einer Konstante
+`Konstante BezeichnerF ist Literal`
+
+Konstanten sind unveränderbar und können nur einmal zugewiesen werden. Nur Zahlen-, Zeichenfolgen- oder Boolean-Literale können einer Konstante zugewiesen werden.
+
+Beispiel: `Konstante PI ist 3,14159265359`
 
 ## Aufzählungen
 Aufzählungen können beliebig viele Eigenschaften haben.

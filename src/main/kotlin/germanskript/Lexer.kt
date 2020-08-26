@@ -109,6 +109,7 @@ sealed class TokenTyp(val anzeigeName: String) {
     object ALIAS: TokenTyp("'Alias'")
     object MODUL: TokenTyp("'Modul'")
     object EIGENSCHAFT: TokenTyp("'Eigenschaft'")
+    object KONSTANTE: TokenTyp("'Konstante'")
     object AUFZÄHLUNG: TokenTyp("'Aufzählung'")
     object INTERN: TokenTyp("'intern'")
     object SUPER: TokenTyp("'Super'")
@@ -198,9 +199,9 @@ sealed class TokenTyp(val anzeigeName: String) {
     }
 
     // Literale
-    data class BOOLEAN(val boolean: Wert.Boolean): TokenTyp("'richtig' oder 'falsch'")
-    data class ZAHL(val zahl: Wert.Zahl): TokenTyp("Zahl")
-    data class ZEICHENFOLGE(val zeichenfolge: Wert.Zeichenfolge): TokenTyp("Zeichenfolge")
+    data class BOOLEAN(val boolean: Wert.Primitiv.Boolean): TokenTyp("'richtig' oder 'falsch'")
+    data class ZAHL(val zahl: Wert.Primitiv.Zahl): TokenTyp("Zahl")
+    data class ZEICHENFOLGE(val zeichenfolge: Wert.Primitiv.Zeichenfolge): TokenTyp("Zeichenfolge")
 
     object UNDEFINIERT: TokenTyp("undefiniert")
 }
@@ -249,6 +250,7 @@ private val WORT_MAPPING = mapOf<String, TokenTyp>(
     "Nomen" to TokenTyp.NOMEN,
     "Verb" to TokenTyp.VERB,
     "Eigenschaft" to TokenTyp.EIGENSCHAFT,
+    "Konstante" to TokenTyp.KONSTANTE,
     "intern" to TokenTyp.INTERN,
     "Adjektiv" to TokenTyp.ADJEKTIV,
     "Alias" to TokenTyp.ALIAS,
@@ -262,8 +264,8 @@ private val WORT_MAPPING = mapOf<String, TokenTyp>(
     "Modul" to TokenTyp.MODUL,
     "Super" to TokenTyp.SUPER,
     // Werte
-    "wahr" to TokenTyp.BOOLEAN(Wert.Boolean(true)),
-    "falsch" to TokenTyp.BOOLEAN(Wert.Boolean(false)),
+    "wahr" to TokenTyp.BOOLEAN(Wert.Primitiv.Boolean(true)),
+    "falsch" to TokenTyp.BOOLEAN(Wert.Primitiv.Boolean(false)),
 
     // Operatoren
     "ist" to TokenTyp.ZUWEISUNG(Numerus.SINGULAR),
@@ -511,7 +513,7 @@ class Lexer(startDatei: File): PipelineKomponente(startDatei) {
 
         val endPos = currentTokenPos
         try {
-            yield(Token(TokenTyp.ZAHL(Wert.Zahl(zahlenString)), zahlenString, currentFile, startPos, endPos))
+            yield(Token(TokenTyp.ZAHL(Wert.Primitiv.Zahl(zahlenString)), zahlenString, currentFile, startPos, endPos))
         } catch (error: Exception) {
             val fehlerToken = Token(TokenTyp.FEHLER, zahlenString, currentFile, startPos, endPos)
             throw GermanSkriptFehler.SyntaxFehler.LexerFehler(fehlerToken, null)
@@ -545,7 +547,7 @@ class Lexer(startDatei: File): PipelineKomponente(startDatei) {
         }
         next()
         val endPos = currentTokenPos
-        val token = Token(TokenTyp.ZEICHENFOLGE(Wert.Zeichenfolge(zeichenfolge)),
+        val token = Token(TokenTyp.ZEICHENFOLGE(Wert.Primitiv.Zeichenfolge(zeichenfolge)),
             '"' + zeichenfolge + '"', currentFile, startPos, endPos)
         yield(token)
     }
@@ -570,7 +572,7 @@ class Lexer(startDatei: File): PipelineKomponente(startDatei) {
     private fun starteStringInterpolation(zeichenfolge: String, startPosition: Token.Position) = sequence<Token> {
         // String Interpolation
         yield(Token(
-            TokenTyp.ZEICHENFOLGE(Wert.Zeichenfolge(zeichenfolge)),
+            TokenTyp.ZEICHENFOLGE(Wert.Primitiv.Zeichenfolge(zeichenfolge)),
             '"' + zeichenfolge + '"', currentFile, startPosition, currentTokenPos))
         next() // #
         next() // {
