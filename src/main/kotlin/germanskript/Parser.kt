@@ -915,21 +915,35 @@ private sealed class SubParser<T: AST>() {
           is TokenTyp.BEZEICHNER_GROSS -> parseNomenOhneVornomen(true)
           else -> singular
         }
-        val liste = when(peekType()) {
-          is TokenTyp.BEZEICHNER_KLEIN -> {
-            parseKleinesSchlüsselwort("in")
-            subParse(Ausdruck(mitVornomen = true, optionalesIstNachVergleich = false))
-          }
-          else -> {
-            if (singular.istSymbol) {
-              throw GermanSkriptFehler.SyntaxFehler.ParseFehler(singular.bezeichner.toUntyped(), "Bezeichner",
-                  "In der Für-Jede-Schleife ohne 'in' ist ein Singular, dass nur aus einem Symbol besteht nicht erlaubt.")
+        val nächstesToken = peek()
+        var liste: AST.Ausdruck? = null
+        var reichweite: AST.Satz.Reichweite? = null
+        if (nächstesToken.typ is TokenTyp.BEZEICHNER_KLEIN) {
+          when (nächstesToken.wert) {
+            "in" -> {
+              parseKleinesSchlüsselwort("in")
+              liste = subParse(Ausdruck(mitVornomen = true, optionalesIstNachVergleich = false))
             }
-            null
+            "von" -> {
+              parseKleinesSchlüsselwort("von")
+              val anfang = subParse(Ausdruck(mitVornomen = true, optionalesIstNachVergleich = false))
+              parseKleinesSchlüsselwort("bis")
+              val ende = if(peek().wert == "zu") {
+                parseKleinesSchlüsselwort("zu")
+                parseNomenAusdruck<TokenTyp.VORNOMEN>("'Vornomen'", false, false).third
+              } else {
+                subParse(Ausdruck(mitVornomen = false, optionalesIstNachVergleich = false))
+              }
+              reichweite = AST.Satz.Reichweite(anfang, ende)
+            }
+            else -> throw GermanSkriptFehler.SyntaxFehler.ParseFehler(nächstesToken, "'in' oder 'von ... bis'")
           }
+        } else if (singular.istSymbol) {
+          throw GermanSkriptFehler.SyntaxFehler.ParseFehler(singular.bezeichner.toUntyped(), "Bezeichner",
+              "In der Für-Jede-Schleife ohne 'in' oder 'von ... bis' ist ein Singular, dass nur aus einem Symbol besteht nicht erlaubt.")
         }
         val sätze = parseSätze()
-        return AST.Satz.FürJedeSchleife(jede, singular, binder, liste, sätze)
+        return AST.Satz.FürJedeSchleife(jede, singular, binder, liste, reichweite, sätze)
       }
     }
 

@@ -311,6 +311,12 @@ class GrammatikPrüfer(startDatei: File): PipelineKomponente(startDatei) {
     if (fürJedeSchleife.liste != null) {
       prüfeKontextbasiertenAusdruck(fürJedeSchleife.liste, null, EnumSet.of(Kasus.DATIV), true)
     }
+
+    if (fürJedeSchleife.reichweite != null) {
+      val (anfang, ende) = fürJedeSchleife.reichweite
+      prüfeKontextbasiertenAusdruck(anfang, null, EnumSet.of(Kasus.DATIV), false)
+      prüfeKontextbasiertenAusdruck(ende, null, EnumSet.of(Kasus.DATIV), false)
+    }
   }
 
 

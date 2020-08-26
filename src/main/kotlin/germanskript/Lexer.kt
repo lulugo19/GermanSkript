@@ -629,7 +629,6 @@ class Lexer(startDatei: File): PipelineKomponente(startDatei) {
                                 }
                             }))
                             val token = Token(tokenTyp, nächstesWort, currentFile, nextWordStartPos, nextWordEndPos)
-                            yield(token)
                             yieldAll(präpositionArtikelVerschmelzung(token))
                         }
                     }
@@ -641,7 +640,6 @@ class Lexer(startDatei: File): PipelineKomponente(startDatei) {
             }
             erstesWort.all { zeichen -> zeichen.isLowerCase() } -> {
                 val token = Token(TokenTyp.BEZEICHNER_KLEIN(erstesWort), erstesWort, currentFile, firstWordStartPos, firstWordEndPos)
-                yield(token)
                 yieldAll(präpositionArtikelVerschmelzung(token))
             }
 
@@ -703,8 +701,11 @@ class Lexer(startDatei: File): PipelineKomponente(startDatei) {
         if (präpositionArtikelVerschmelzungsMap.containsKey(präpToken.wert)) {
             val (präposition, artikel) = präpositionArtikelVerschmelzungsMap.getValue(präpToken.wert)
             präpToken.wert = präposition
+            yield(präpToken)
             val artikelToken = Token(TokenTyp.VORNOMEN.ARTIKEL.BESTIMMT, artikel, currentFile, präpToken.anfang, präpToken.ende)
             yield(artikelToken)
+        } else {
+            yield(präpToken)
         }
     }
 }

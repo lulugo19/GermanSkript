@@ -413,6 +413,7 @@ sealed class AST {
         val singular: Nomen,
         val binder: Nomen,
         val liste: Ausdruck?,
+        val reichweite: Reichweite?,
         val bereich: Bereich
     ): Satz() {
       override val children = sequence {
@@ -421,8 +422,15 @@ sealed class AST {
           if (liste != null) {
             yield(liste!!)
           }
+          if (reichweite != null) {
+            yield(reichweite!!)
+          }
           yield(bereich)
         }
+    }
+
+    data class Reichweite(val anfang: Ausdruck, val ende: Ausdruck) : AST() {
+      override val children = sequenceOf(anfang, ende)
     }
 
     data class FunktionsAufruf(val aufruf: Funktion): Satz() {

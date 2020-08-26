@@ -853,4 +853,64 @@ class GermanSkriptTest {
       führeGermanSkriptCodeAus(quellCode)
     }
   }
+
+  @Test
+  @DisplayName("Für-Jede-Schleife Reichweiten 1")
+  fun reichweiten1() {
+    val quellCode = """
+      für jede Zahl von 0 bis 3:
+        schreibe die Zahl
+      .
+      schreibe die Zeile ""
+      
+      für jede Zahl von 2 bis -2:
+        schreibe die Zahl
+      .
+      schreibe die Zeile ""
+      
+      für jede Zahl von 0,5 bis 3:
+        schreibe die Zahl
+      .
+    """.trimIndent()
+
+    val erwarteteAusgabe = """
+      0
+      1
+      2
+      
+      2
+      1
+      0
+      -1
+      
+      0,5
+      1,5
+      2,5
+      
+    """.trimIndent()
+
+    testeGermanSkriptCode(quellCode, erwarteteAusgabe)
+  }
+
+  @Test
+  @DisplayName("Für-Jede-Schleife Reichweiten 2")
+  fun reichweiten2() {
+    val quellCode = """
+      einige Zahlen sind einige Zahlen [2, 3, 5, 7, 11]
+      für jeden Index von 0 bis zur AnZahl der Zahlen:
+        schreibe die Zahl[Index]
+      .
+    """.trimIndent()
+
+    val erwarteteAusgabe = """
+      2
+      3
+      5
+      7
+      11
+      
+    """.trimIndent()
+
+    testeGermanSkriptCode(quellCode, erwarteteAusgabe)
+  }
 }

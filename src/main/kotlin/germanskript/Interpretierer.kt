@@ -205,22 +205,43 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
   }
 
   override fun durchlaufeFürJedeSchleife(schleife: AST.Satz.FürJedeSchleife) {
-    val liste = if (schleife.liste != null)  {
-      evaluiereAusdruck(schleife.liste) as Wert.Objekt.Liste
-    } else {
-      evaluiereVariable(schleife.singular.ganzesWort(Kasus.NOMINATIV, Numerus.PLURAL))!! as Wert.Objekt.Liste
-    }
-    umgebung.pushBereich()
-    for (element in liste.elemente) {
-      flags.remove(Flag.SCHLEIFE_FORTFAHREN)
-      umgebung.überschreibeVariable(schleife.binder, element)
-      durchlaufeBereich(schleife.bereich, true)
-      if (flags.contains(Flag.SCHLEIFE_ABBRECHEN)) {
-        flags.remove(Flag.SCHLEIFE_ABBRECHEN)
-        break
+    if (schleife.reichweite != null) {
+      val (anfang, ende) = schleife.reichweite
+      val anfangsWert = evaluiereAusdruck(anfang) as Wert.Primitiv.Zahl
+      val endWert = evaluiereAusdruck(ende) as Wert.Primitiv.Zahl
+      val schrittWeite = if (anfangsWert <= endWert) 1 else -1
+      var laufWert = anfangsWert
+      while (laufWert.compareTo(endWert) == -schrittWeite) {
+        if (!iteriereSchleife(schleife, laufWert)) {
+          break
+        }
+        laufWert += Wert.Primitiv.Zahl(schrittWeite.toDouble())
       }
+    } else {
+      val liste = if (schleife.liste != null) {
+        evaluiereAusdruck(schleife.liste) as Wert.Objekt.Liste
+      } else {
+        evaluiereVariable(schleife.singular.ganzesWort(Kasus.NOMINATIV, Numerus.PLURAL))!! as Wert.Objekt.Liste
+      }
+      umgebung.pushBereich()
+      for (element in liste.elemente) {
+        if (!iteriereSchleife(schleife, element)) {
+          break
+        }
+      }
+      umgebung.popBereich()
     }
-    umgebung.popBereich()
+  }
+
+  private fun iteriereSchleife(schleife: AST.Satz.FürJedeSchleife, element: Wert): Boolean {
+    flags.remove(Flag.SCHLEIFE_FORTFAHREN)
+    umgebung.überschreibeVariable(schleife.binder, element)
+    durchlaufeBereich(schleife.bereich, true)
+    if (flags.contains(Flag.SCHLEIFE_ABBRECHEN)) {
+      flags.remove(Flag.SCHLEIFE_ABBRECHEN)
+      return false
+    }
+    return true
   }
 
   override fun durchlaufeIntern() = interneFunktionen.getValue(aufrufStapel.top().aufruf.vollerName!!)()

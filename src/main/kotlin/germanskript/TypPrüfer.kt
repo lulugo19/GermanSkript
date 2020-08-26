@@ -381,14 +381,23 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
   }
 
   override fun durchlaufeFürJedeSchleife(schleife: AST.Satz.FürJedeSchleife) {
-    val elementTyp = if (schleife.liste != null) {
-      val liste = evaluiereAusdruck(schleife.liste)
-      if (liste !is Typ.KlassenTyp.Liste) {
-        throw GermanSkriptFehler.TypFehler.FalscherTyp(holeErstesTokenVonAusdruck(schleife.liste), liste, "Liste")
+    val elementTyp = when {
+      schleife.liste != null -> {
+        val liste = evaluiereAusdruck(schleife.liste)
+        if (liste !is Typ.KlassenTyp.Liste) {
+          throw GermanSkriptFehler.TypFehler.FalscherTyp(holeErstesTokenVonAusdruck(schleife.liste), liste, "Liste")
+        }
+        liste.elementTyp
       }
-      liste.elementTyp
-    } else {
-      evaluiereListenSingular(schleife.singular)
+      schleife.reichweite != null -> {
+        val (anfang, ende) = schleife.reichweite
+        ausdruckMussTypSein(anfang, Typ.Primitiv.Zahl)
+        ausdruckMussTypSein(ende, Typ.Primitiv.Zahl)
+        Typ.Primitiv.Zahl
+      }
+      else -> {
+        evaluiereListenSingular(schleife.singular)
+      }
     }
     umgebung.pushBereich()
     umgebung.schreibeVariable(schleife.binder, elementTyp, false)
