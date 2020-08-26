@@ -47,6 +47,9 @@ class KonstantenFalter(startDatei: File): ProgrammDurchlaufer<Wert?>(startDatei)
     klasse.konvertierungen.values.forEach {konvertierung ->
       durchlaufeAufruf(konvertierung.definition, Umgebung(), true)
     }
+    klasse.berechneteEigenschaften.values.forEach {eigenschaft ->
+      durchlaufeAufruf(eigenschaft.definition, Umgebung(), true)
+    }
   }
 
   private fun falteKonstante(originalerAusdruck: AST.Ausdruck): AST.Ausdruck {

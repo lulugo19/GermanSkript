@@ -118,7 +118,7 @@ abstract  class ProgrammDurchlaufer<T>(startDatei: File): PipelineKomponente(sta
     return if (variable.konstante != null) {
       evaluiereAusdruck(variable.konstante!!.wert!!)
     } else {
-      return umgebung.leseVariable(variable.name).wert
+      return this.evaluiereVariable(variable.name)
     }
   }
 
