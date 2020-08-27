@@ -667,7 +667,7 @@ Hinter einer Zahl kann ein Zahlendekorierer kommen, der der Zahl eine neue Bedeu
 ##### Zahlenname
 
 [Zahlennamen]([https://de.wikipedia.org/wiki/Zahlennamen]) stehen als Suffix hinter der Zahl und erhöhen die Zahl um eine bestimmte Zehnerpotenz.
-Die Regel ist das die Zahl kleiner als die Zehnerpotenz hoch 10 sein muss. Wir nehmen nicht alle Zahlennamen rein sondern starten bei `Hundert`
+Die Regel ist das die Zahl kleiner als die Zehnerpotenz sein muss. Wir nehmen nicht alle Zahlennamen rein sondern starten bei `Hundert`
 und enden bei `Dezilliarde` (10^63).
 
 ```
@@ -703,7 +703,8 @@ schreibe die Zahl als Prozent // spezielle Umwandlung in String
 `Einheit(BezeichnerF, Symbol, Operationen)`
 
 Eine Einheit gepaart mit einer Zahl bildet einen neuen Typen. 
-Nur die Rechenoperationen, die bei der Einheitsdefinition
+Nur die Rechenoperationen, die bei der Einheitsdefinition angegeben werden, können auf
+den Typen angewendet werden.
 
 z.B.
 

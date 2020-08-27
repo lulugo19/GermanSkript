@@ -128,8 +128,6 @@ class GermanSkriptTest {
   @DisplayName("Listenindex")
   fun listen() {
     val source = """
-      Deklination Maskulinum Singular(Index) Plural(Indizes)
-      
       die Zahlen sind einige Zahlen [1, 2, 3]
       schreibe die Zahl[0]
       ein Index ist 1
@@ -506,7 +504,7 @@ class GermanSkriptTest {
       
       Verb registriere das KlickbareX:
         wenn wahr:
-          KlickbareX: klick dich!
+          KlickbaresX: klick dich!
         .
       .
       

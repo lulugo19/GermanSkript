@@ -62,6 +62,7 @@ Konstanten sind unveränderbar und können nur einmal zugewiesen werden. Nur Zah
 
 Beispiel: `Konstante PI ist 3,14159265359`
 
+
 ## Für-Jede-Schleife über Zahlen
 
 Die untere Grenze ist inklusiv und die obere Grenze exklusiv.
