@@ -5,9 +5,7 @@
 - Alias
 - berechnete Eigenschaften einer Klasse
 - Konstanten
-- Aufzählungen
 - Für-Jede-Schleife über Zahlen
-- (Adjektive als Teil von Bezeichnern)
 
 ## Closures
 `etwas Bezeichner: Sätze.`
@@ -64,24 +62,6 @@ Konstanten sind unveränderbar und können nur einmal zugewiesen werden. Nur Zah
 
 Beispiel: `Konstante PI ist 3,14159265359`
 
-## Aufzählungen
-Aufzählungen können beliebig viele Eigenschaften haben.
-
-
-Beispiel:
-
-```
-Aufzählung Ereignis mit der Zeichenfolge Name:
-    Weihnachten mit dem Namen="Weihnachten"
-    Ostern mit dem Namen="Ostern"
-    Haloween mit dem Namen="Haloween"
-    Geburtstag mit dem Namen="Geburstag"
-.
-
-das Ereignis ist das Ereignis Weihnachten
-schreibe die Zeichenfolge (der Name des Ereignisses) // "Weihnachten"
-```
-
 ## Für-Jede-Schleife über Zahlen
 Beispiel:
 
@@ -89,28 +69,4 @@ Beispiel:
 für jede Zahl von 1 bis 12:
     schreibe die Zahl 
 .
-```
-
-## Adjektive als Teil von großen Bezeichnern (Nomen)
-
-Bisher ist es möglich für Nomen zusammengesetze Wörter, sowie Symbole am Ende des Wortes zu verwenden.
-z.B.
-```
-der VorName ist "Lukas"
-die ZahlX ist 4
-```
-Nun sollen Nomen um Adjektive ergänzt werden. Adjektive sind ähnlich wie zusammengesetze Wörter nur
-dass es für jedes Nomen höchstens ein Adjektiv geben kann, das als kleines Wort vor dem Nomen drangehängt wird.
-Das besondere an Adjektiven ist, dass diese vom Grammatik-Prüfer geprüft werden, damit diese die richtige Deklination
-haben.
-
-Beispiel:
-
-```
-Verb schreibe die Zeichenfolge Name:
-    schreibe die Zeile "Name: " plus den Namen
-.
-
-ein vollerName ist der VorNamen + den NachNamen
-schreibe den vollenNamen
 ```
