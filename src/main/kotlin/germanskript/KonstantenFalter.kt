@@ -68,7 +68,7 @@ class KonstantenFalter(startDatei: File): ProgrammDurchlaufer<Wert?>(startDatei)
   override fun sollSätzeAbbrechen(): Boolean = false
 
   override fun durchlaufeFunktionsAufruf(funktionsAufruf: AST.Funktion, istAusdruck: Boolean): Wert? {
-    funktionsAufruf.argumente.forEach {arg -> arg.wert = falteKonstante(arg.wert)}
+    funktionsAufruf.argumente.forEach {arg -> arg.ausdruck = falteKonstante(arg.ausdruck)}
     return  null
   }
 
@@ -120,8 +120,8 @@ class KonstantenFalter(startDatei: File): ProgrammDurchlaufer<Wert?>(startDatei)
   override fun evaluiereKonstante(konstante: AST.Ausdruck.Konstante): Wert? = evaluiereAusdruck(konstante.wert!!)
 
   override fun durchlaufeZurückgabe(zurückgabe: AST.Satz.Zurückgabe) {
-    if (zurückgabe.wert != null) {
-      zurückgabe.wert = falteKonstante(zurückgabe.wert!!)
+    if (zurückgabe.ausdruck != null) {
+      zurückgabe.ausdruck = falteKonstante(zurückgabe.ausdruck!!)
     }
   }
 
@@ -164,10 +164,28 @@ class KonstantenFalter(startDatei: File): ProgrammDurchlaufer<Wert?>(startDatei)
 
   override fun durchlaufeSolangeSchleife(schleife: AST.Satz.SolangeSchleife) {
     schleife.bedingung.bedingung = falteKonstante(schleife.bedingung.bedingung)
+    durchlaufeBereich(schleife.bedingung.bereich, true)
   }
 
   override fun durchlaufeFürJedeSchleife(schleife: AST.Satz.FürJedeSchleife) {
-    // hier muss nichts gemacht werden
+    umgebung.pushBereich()
+    umgebung.schreibeVariable(schleife.binder, null, true)
+    durchlaufeBereich(schleife.bereich, false)
+    umgebung.popBereich()
+  }
+
+  override fun durchlaufeVersucheFange(versucheFange: AST.Satz.VersucheFange) {
+    durchlaufeBereich(versucheFange.versuche, true)
+    for (fange in versucheFange.fange) {
+      umgebung.pushBereich()
+      umgebung.schreibeVariable(fange.binder, null ,true)
+      durchlaufeBereich(fange.bereich, false)
+      umgebung.popBereich()
+    }
+  }
+
+  override fun durchlaufeWerfe(werfe: AST.Satz.Werfe) {
+    werfe.ausdruck = falteKonstante(werfe.ausdruck)
   }
 
   override fun durchlaufeIntern() {
@@ -212,12 +230,12 @@ class KonstantenFalter(startDatei: File): ProgrammDurchlaufer<Wert?>(startDatei)
   }
 
   override fun evaluiereKonvertierung(konvertierung: AST.Ausdruck.Konvertierung): Wert? {
-    konvertierung.wert = falteKonstante(konvertierung.wert)
+    konvertierung.ausdruck = falteKonstante(konvertierung.ausdruck)
     return null
   }
 
   override fun evaluiereObjektInstanziierung(instanziierung: AST.Ausdruck.ObjektInstanziierung): Wert? {
-    instanziierung.eigenschaftsZuweisungen.forEach {zuweisung -> zuweisung.wert = falteKonstante(zuweisung.wert)}
+    instanziierung.eigenschaftsZuweisungen.forEach {zuweisung -> zuweisung.ausdruck = falteKonstante(zuweisung.ausdruck)}
     return null
   }
 

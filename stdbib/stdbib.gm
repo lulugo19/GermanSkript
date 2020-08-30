@@ -58,3 +58,14 @@ Nomen Liste:
 Verb(Boolean) für Liste beinhaltet den Typ: intern.
 Verb für Liste füge den Typ hinzu: intern.
 Verb für Liste entferne an der Zahl Index: intern.
+
+// Fehler
+Deklination Maskulinum Singular(Fehler, Fehlers, Fehler, Fehler) Plural(Fehler)
+Deklination Femininum Singular(Meldung) Plural(Meldungen)
+
+Nomen Fehler mit der Zeichenfolge FehlerMeldung:.
+Nomen KonvertierungsFehler als Fehler:.
+
+als Zeichenfolge für Fehler:
+    gebe meine FehlerMeldung zurück
+.

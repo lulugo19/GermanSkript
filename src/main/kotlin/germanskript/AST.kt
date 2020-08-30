@@ -429,6 +429,31 @@ sealed class AST {
         }
     }
 
+    data class VersucheFange(
+        val versuche: Bereich,
+        val fange: List<Fange>
+    ): Satz() {
+      override val children = sequence {
+        yield(versuche)
+        yieldAll(fange)
+      }
+    }
+
+    data class Fange(
+        val typ: TypKnoten,
+        val binder: Nomen,
+        val bereich: Bereich
+    ): Satz() {
+      override val children = sequenceOf(typ, binder, bereich)
+    }
+
+    data class Werfe(
+        val werfe: TypedToken<TokenTyp.BEZEICHNER_KLEIN>,
+        var ausdruck: Ausdruck
+    ): Satz() {
+      override val children = sequenceOf(ausdruck)
+    }
+
     data class Reichweite(val anfang: Ausdruck, val ende: Ausdruck) : AST() {
       override val children = sequenceOf(anfang, ende)
     }
@@ -445,10 +470,10 @@ sealed class AST {
       override val children = sequenceOf(bereich)
     }
 
-    data class Zurückgabe(val erstesToken: TypedToken<TokenTyp.BEZEICHNER_KLEIN>, var wert: Ausdruck?): Satz() {
+    data class Zurückgabe(val erstesToken: TypedToken<TokenTyp.BEZEICHNER_KLEIN>, var ausdruck: Ausdruck?): Satz() {
       override val children = sequence {
-        if (wert != null) {
-          yield(wert!!)
+        if (ausdruck != null) {
+          yield(ausdruck!!)
         }
       }
     }
@@ -459,14 +484,14 @@ sealed class AST {
   data class Argument(
       val adjektiv: Adjektiv?,
       val name: Nomen,
-      var wert: Ausdruck
+      var ausdruck: Ausdruck
   ): AST() {
     override val children = sequence {
       if (adjektiv != null) {
         yield(adjektiv!!)
       }
       yield(name)
-      yield(wert)
+      yield(ausdruck)
     }
   }
 
@@ -496,7 +521,7 @@ sealed class AST {
       var wert: Ausdruck? = null
     }
 
-    data class Liste(val pluralTyp: Nomen, var elemente: List<Ausdruck>): Ausdruck() {
+    data class Liste(val pluralTyp: TypKnoten, var elemente: List<Ausdruck>): Ausdruck() {
       override val children = sequence {
         yield(pluralTyp)
         yieldAll( elemente)
@@ -528,13 +553,13 @@ sealed class AST {
     }
 
     data class Konvertierung(
-        var wert: Ausdruck,
+        var ausdruck: Ausdruck,
         val typ: TypKnoten
     ): Ausdruck(), IAufruf {
       override val token = typ.name.bezeichner.toUntyped()
       override val vollerName = "als ${typ.name}"
 
-      override val children = sequenceOf(wert, typ)
+      override val children = sequenceOf(ausdruck, typ)
     }
 
     data class ObjektInstanziierung(

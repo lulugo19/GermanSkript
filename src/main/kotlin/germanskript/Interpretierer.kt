@@ -4,6 +4,7 @@ import java.io.File
 import java.text.ParseException
 import java.util.*
 import kotlin.NoSuchElementException
+import kotlin.collections.HashMap
 import kotlin.math.*
 import kotlin.random.Random
 
@@ -20,8 +21,11 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
 
   override val umgebung: Umgebung<Wert> get() = aufrufStapel.top().umgebung
 
+  private val klassenDefinitionen = HashMap<String, AST.Definition.Typdefinition.Klasse>()
+
   fun interpretiere() {
     typPrüfer.prüfe()
+    initKlassenDefinitionen()
     try {
       aufrufStapel.push(ast, Umgebung())
       durchlaufeBereich(ast.programm, true)
@@ -62,7 +66,7 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
           FunktionsAufrufTyp.FUNKTIONS_AUFRUF -> null
           FunktionsAufrufTyp.METHODEN_SELBST_AUFRUF -> top().objekt
           FunktionsAufrufTyp.METHODEN_BLOCK_AUFRUF -> top().umgebung.holeMethodenBlockObjekt()
-          FunktionsAufrufTyp.METHODEN_OBJEKT_AUFRUF -> evaluiereAusdruck(funktionsAufruf.objekt!!.wert)
+          FunktionsAufrufTyp.METHODEN_OBJEKT_AUFRUF -> evaluiereAusdruck(funktionsAufruf.objekt!!.ausdruck)
         }
         is AST.Ausdruck.ObjektInstanziierung,
         is AST.Ausdruck.Konvertierung,
@@ -100,8 +104,19 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
     }
   }
 
+  private fun initKlassenDefinitionen() {
+    for (klassenString in preloadedKlassenDefinitionen) {
+      val definition = typPrüfer.typisierer.definierer.holeTypDefinition(klassenString)
+          as AST.Definition.Typdefinition.Klasse
+
+      klassenDefinitionen[klassenString] = definition
+    }
+  }
+
   override fun sollSätzeAbbrechen(): Boolean {
-    return flags.contains(Flag.SCHLEIFE_FORTFAHREN) || flags.contains(Flag.SCHLEIFE_ABBRECHEN) || flags.contains(Flag.ZURÜCK)
+    return flags.contains(Flag.SCHLEIFE_FORTFAHREN) ||
+        flags.contains(Flag.SCHLEIFE_ABBRECHEN) ||
+        flags.contains(Flag.ZURÜCK)
   }
 
   // region Sätze
@@ -165,25 +180,26 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
         }
         is Wert.Closure -> {
           funktionsUmgebung = objekt.umgebung
-          objekt.signatur to objekt.körper
+          objekt.schnittstelle.definition.methodenSignaturen[0] to objekt.körper
         }
         else -> throw Exception("Dieser Fall sollte nie eintreten.")
       }
+
     }
     funktionsUmgebung.pushBereich()
     val parameter = signatur.parameter
     val j = if (funktionsAufruf.aufrufTyp == FunktionsAufrufTyp.METHODEN_OBJEKT_AUFRUF) 1 else 0
     val argumente = funktionsAufruf.argumente
     for (i in parameter.indices) {
-      funktionsUmgebung.schreibeVariable(parameter[i].name, evaluiereAusdruck(argumente[i+j].wert), false)
+      funktionsUmgebung.schreibeVariable(parameter[i].name, evaluiereAusdruck(argumente[i+j].ausdruck), false)
     }
 
     return durchlaufeAufruf(funktionsAufruf, körper, funktionsUmgebung, false, null)
   }
 
   override fun durchlaufeZurückgabe(zurückgabe: AST.Satz.Zurückgabe) {
-    if (zurückgabe.wert != null) {
-      rückgabeWert = evaluiereAusdruck(zurückgabe.wert!!)
+    if (zurückgabe.ausdruck != null) {
+      rückgabeWert = evaluiereAusdruck(zurückgabe.ausdruck!!)
     }
     flags.add(Flag.ZURÜCK)
   }
@@ -244,8 +260,33 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
     return true
   }
 
-  override fun durchlaufeIntern() = interneFunktionen.getValue(aufrufStapel.top().aufruf.vollerName!!)()
+  override fun durchlaufeVersucheFange(versucheFange: AST.Satz.VersucheFange) {
+    try {
+      durchlaufeBereich(versucheFange.versuche, true)
+    } catch (fehler: GermanSkriptFehler.UnbehandelterFehler) {
+      val fehlerObjekt = fehler.fehlerObjekt
+      val fehlerTyp = typeOf(fehler.fehlerObjekt)
+      val fange = versucheFange.fange.find { fange ->
+        typPrüfer.typIstTyp(fehlerTyp, fange.typ.typ!!)
+      }
+      if (fange != null) {
+        umgebung.pushBereich()
+        umgebung.schreibeVariable(fange.binder, fehlerObjekt, true)
+        durchlaufeBereich(fange.bereich, false)
+        umgebung.popBereich()
+      } else {
+        throw fehler
+      }
+    }
+  }
 
+  override fun durchlaufeWerfe(werfe: AST.Satz.Werfe) {
+    val wert = evaluiereAusdruck(werfe.ausdruck)
+    val fehlerMeldung = konvertiereZuZeichenfolge(wert).zeichenfolge
+    throw GermanSkriptFehler.UnbehandelterFehler(werfe.werfe.toUntyped(), aufrufStapel.toString(), fehlerMeldung, wert)
+  }
+
+  override fun durchlaufeIntern() = interneFunktionen.getValue(aufrufStapel.top().aufruf.vollerName!!)()
 
   override fun bevorDurchlaufeMethodenBlock(methodenBlock: AST.Satz.MethodenBlock, blockObjekt: Wert?) {
     // mache nichts hier, das ist eigentlich nur für den Typprüfer gedacht
@@ -276,13 +317,13 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
   override fun evaluiereKonstante(konstante: AST.Ausdruck.Konstante): Wert = evaluiereAusdruck(konstante.wert!!)
 
   override fun evaluiereListe(ausdruck: AST.Ausdruck.Liste): Wert {
-    return Wert.Objekt.Liste(listenKlassenDefinition, ausdruck.elemente.map(::evaluiereAusdruck).toMutableList())
+    return Wert.Objekt.Liste(listenKlassenDefinition, ausdruck.pluralTyp.typ!!, ausdruck.elemente.map(::evaluiereAusdruck).toMutableList())
   }
 
   override fun evaluiereObjektInstanziierung(instanziierung: AST.Ausdruck.ObjektInstanziierung): Wert {
     val eigenschaften = hashMapOf<String, Wert>()
     for (zuweisung in instanziierung.eigenschaftsZuweisungen) {
-      eigenschaften[zuweisung.name.nominativ] = evaluiereAusdruck(zuweisung.wert)
+      eigenschaften[zuweisung.name.nominativ] = evaluiereAusdruck(zuweisung.ausdruck)
     }
     val klassenDefinition = (instanziierung.klasse.typ!! as Typ.KlassenTyp.Klasse).klassenDefinition
     val objekt = Wert.Objekt.SkriptObjekt(klassenDefinition, eigenschaften)
@@ -353,6 +394,7 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
   }
 
   companion object {
+    val preloadedKlassenDefinitionen = arrayOf("Fehler", "KonvertierungsFehler")
 
     fun zeichenFolgenOperation(operator: Operator, links: Wert.Primitiv.Zeichenfolge, rechts: Wert.Primitiv.Zeichenfolge): Wert {
       return when (operator) {
@@ -430,8 +472,7 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
   }
 
   override fun evaluiereClosure(closure: AST.Ausdruck.Closure): Wert {
-    val signatur = (closure.schnittstelle.typ as Typ.Schnittstelle).definition.methodenSignaturen[0]
-    return Wert.Closure(signatur, closure.körper, umgebung)
+    return Wert.Closure((closure.schnittstelle.typ as Typ.Schnittstelle), closure.körper, umgebung)
   }
   // endregion
 
@@ -509,8 +550,8 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
       "trenne die Zeichenfolge zwischen dem Separator" to {
         val zeichenfolge = umgebung.leseVariable("Zeichenfolge")!!.wert as Wert.Primitiv.Zeichenfolge
         val separator = umgebung.leseVariable("Separator")!!.wert as Wert.Primitiv.Zeichenfolge
-        rückgabeWert = Wert.Objekt.Liste(listenKlassenDefinition, zeichenfolge.zeichenfolge.split(separator.zeichenfolge)
-            .map { Wert.Primitiv.Zeichenfolge(it) }.toMutableList())
+        rückgabeWert = Wert.Objekt.Liste(listenKlassenDefinition, Typ.Primitiv.Zeichenfolge,
+            zeichenfolge.zeichenfolge.split(separator.zeichenfolge).map { Wert.Primitiv.Zeichenfolge(it) }.toMutableList())
       },
 
       "für Liste: beinhaltet den Typ" to {
@@ -537,7 +578,7 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
   )
 
   override fun evaluiereKonvertierung(konvertierung: AST.Ausdruck.Konvertierung): Wert {
-    val wert = evaluiereAusdruck(konvertierung.wert)
+    val wert = evaluiereAusdruck(konvertierung.ausdruck)
     if (wert is Wert.Objekt && wert.klassenDefinition.konvertierungen.containsKey(konvertierung.typ.name.nominativ)) {
       val konvertierungsDefinition = wert.klassenDefinition.konvertierungen.getValue(konvertierung.typ.name.nominativ)
       return durchlaufeAufruf(konvertierung, konvertierungsDefinition.definition, Umgebung(), true, wert)!!
@@ -558,8 +599,12 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
           Wert.Primitiv.Zahl(wert.zeichenfolge)
         }
         catch (parseFehler: ParseException) {
-          throw GermanSkriptFehler.LaufzeitFehler(konvertierung.typ.name.bezeichner.toUntyped(), aufrufStapel.toString(),
-              "Die Zeichenfolge '${wert.zeichenfolge}' kann nicht in eine Zahl konvertiert werden.")
+          val fehlerMeldung = "Die Zeichenfolge '${wert.zeichenfolge}' kann nicht in eine Zahl konvertiert werden."
+          val fehlerObjekt = Wert.Objekt.SkriptObjekt(klassenDefinitionen.getValue("KonvertierungsFehler"),
+            mutableMapOf(
+                "FehlerMeldung" to Wert.Primitiv.Zeichenfolge(fehlerMeldung)
+            ))
+          throw GermanSkriptFehler.UnbehandelterFehler(konvertierung.token, aufrufStapel.toString(), fehlerMeldung, fehlerObjekt)
         }
       }
       is Wert.Primitiv.Boolean -> Wert.Primitiv.Zahl(if (wert.boolean) 1.0 else 0.0)
@@ -584,6 +629,17 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
     }
   }
   // endregion
+
+  private fun typeOf(wert: Wert): Typ {
+    return when (wert) {
+      is Wert.Primitiv.Zeichenfolge -> Typ.Primitiv.Zeichenfolge
+      is Wert.Primitiv.Zahl -> Typ.Primitiv.Zahl
+      is Wert.Primitiv.Boolean -> Typ.Primitiv.Boolean
+      is Wert.Objekt.SkriptObjekt -> Typ.KlassenTyp.Klasse(wert.klassenDefinition)
+      is Wert.Objekt.Liste -> wert.listenTyp
+      is Wert.Closure -> wert.schnittstelle
+    }
+  }
 }
 
 fun main() {

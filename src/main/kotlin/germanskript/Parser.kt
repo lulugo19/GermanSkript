@@ -34,7 +34,9 @@ enum class ASTKnotenID {
   CLOSURE,
   ALIAS,
   EIGENSCHAFTS_DEFINITION,
-  KONSTANTE
+  KONSTANTE,
+  VERSUCHE_FANGE,
+  WERFE
 }
 
 class Parser(startDatei: File): PipelineKomponente(startDatei) {
@@ -304,7 +306,10 @@ private sealed class SubParser<T: AST>() {
       }
       is TokenTyp.VORNOMEN.ARTIKEL.UNBESTIMMT ->  {
         when (nächstesToken.typ) {
-          is TokenTyp.OFFENE_ECKIGE_KLAMMER -> subParse(NomenAusdruck.Liste(nomen))
+          is TokenTyp.OFFENE_ECKIGE_KLAMMER -> {
+            val pluralTyp = AST.TypKnoten(nomen, modulPfad!!)
+            subParse(NomenAusdruck.Liste(pluralTyp))
+          }
           else -> {
             val klasse = AST.TypKnoten(nomen, modulPfad!!)
             subParse(NomenAusdruck.ObjektInstanziierung(klasse))
@@ -429,6 +434,8 @@ private sealed class SubParser<T: AST>() {
               peekType(1) is TokenTyp.BEZEICHNER_GROSS -> null
               else -> subParse(Satz.FunktionsAufruf)
             }
+            "versuche" -> subParse(Satz.VersucheFange)
+            "werfe" -> subParse(Satz.Werfe)
             else -> subParse(Satz.FunktionsAufruf)
           }
         is TokenTyp.BEZEICHNER_GROSS -> {
@@ -650,7 +657,8 @@ private sealed class SubParser<T: AST>() {
   }
 
   sealed class NomenAusdruck<T: AST.Ausdruck>(protected val nomen: AST.Nomen): SubParser<T>() {
-    class Liste(nomen: AST.Nomen): NomenAusdruck<AST.Ausdruck.Liste>(nomen) {
+
+    class Liste(protected val pluralTyp: AST.TypKnoten): NomenAusdruck<AST.Ausdruck.Liste>(pluralTyp.name) {
       override val id: ASTKnotenID
         get() = ASTKnotenID.LISTE
 
@@ -659,7 +667,7 @@ private sealed class SubParser<T: AST>() {
         val elemente = parseListeMitEnde<AST.Ausdruck, TokenTyp.KOMMA, TokenTyp.GESCHLOSSENE_ECKIGE_KLAMMER>(true)
           {subParse(Ausdruck(mitVornomen = true, optionalesIstNachVergleich = false))}
         expect<TokenTyp.GESCHLOSSENE_ECKIGE_KLAMMER>("']'")
-        return AST.Ausdruck.Liste(nomen, elemente)
+        return AST.Ausdruck.Liste(pluralTyp, elemente)
       }
     }
 
@@ -675,7 +683,7 @@ private sealed class SubParser<T: AST>() {
       }
     }
 
-    class ObjektInstanziierung(val klasse: AST.TypKnoten): NomenAusdruck<AST.Ausdruck.ObjektInstanziierung>(klasse.name) {
+    class ObjektInstanziierung(protected val klasse: AST.TypKnoten): NomenAusdruck<AST.Ausdruck.ObjektInstanziierung>(klasse.name) {
       override val id: ASTKnotenID
         get() = ASTKnotenID.OBJEKT_INSTANZIIERUNG
 
@@ -891,7 +899,7 @@ private sealed class SubParser<T: AST>() {
       }
     }
 
-    object SolangeSchleife: SubParser<AST.Satz.SolangeSchleife>() {
+    object SolangeSchleife: Satz<AST.Satz.SolangeSchleife>() {
       override val id: ASTKnotenID
         get() = ASTKnotenID.SCHLEIFE
 
@@ -903,7 +911,7 @@ private sealed class SubParser<T: AST>() {
       }
     }
 
-    object FürJedeSchleife: SubParser<AST.Satz.FürJedeSchleife>() {
+    object FürJedeSchleife: Satz<AST.Satz.FürJedeSchleife>() {
       override val id: ASTKnotenID
         get() = ASTKnotenID.FÜR_JEDE_SCHLEIFE
 
@@ -947,9 +955,8 @@ private sealed class SubParser<T: AST>() {
       }
     }
 
-    object SchleifenKontrolle: SubParser<AST.Satz.SchleifenKontrolle>() {
-      override val id: ASTKnotenID
-        get() = ASTKnotenID.SCHLEIFENKONTROLLE
+    object SchleifenKontrolle: Satz<AST.Satz.SchleifenKontrolle>() {
+      override val id: ASTKnotenID = ASTKnotenID.SCHLEIFENKONTROLLE
 
       override fun bewacheKnoten() {
         if (!hierarchyContainsAnyNode(ASTKnotenID.SCHLEIFE, ASTKnotenID.FÜR_JEDE_SCHLEIFE)) {
@@ -965,6 +972,43 @@ private sealed class SubParser<T: AST>() {
           else -> throw Exception("Entweder 'fortfahren' oder 'abbrechen'")
         }.also { next() }
       }
+    }
+
+    object VersucheFange: Satz<AST.Satz.VersucheFange>() {
+      override val id: ASTKnotenID = ASTKnotenID.VERSUCHE_FANGE
+
+      override fun parseImpl(): AST.Satz.VersucheFange {
+        parseKleinesSchlüsselwort("versuche")
+        val versuchBereich = parseSätze()
+        überspringeLeereZeilen()
+        val fange = mutableListOf<AST.Satz.Fange>()
+        while (peek().wert == "fange") {
+          fange += parseFange()
+          überspringeLeereZeilen()
+        }
+        return AST.Satz.VersucheFange(versuchBereich, fange)
+      }
+
+      private fun parseFange(): AST.Satz.Fange {
+        parseKleinesSchlüsselwort("fange")
+        val typ = parseTypMitArtikel<TokenTyp.VORNOMEN.ARTIKEL.BESTIMMT>("bestimmter Artikel", true)
+        val binder = parseOptional<AST.Nomen, TokenTyp.BEZEICHNER_GROSS>{parseNomenOhneVornomen(true)} ?: typ.name
+        val bereich = parseSätze()
+        return AST.Satz.Fange(typ, binder, bereich)
+      }
+    }
+
+    object Werfe: Satz<AST.Satz.Werfe>() {
+      override val id: ASTKnotenID = ASTKnotenID.WERFE
+
+      override fun parseImpl(): AST.Satz.Werfe {
+        val werfe = parseKleinesSchlüsselwort("werfe")
+        val (_, _, ausdruck) = parseNomenAusdruck<TokenTyp.VORNOMEN>(
+            "Vornomen", inBinärenAusdruck = false, adjektivErlaubt = false
+        )
+        return AST.Satz.Werfe(werfe, ausdruck)
+      }
+
     }
 
   }

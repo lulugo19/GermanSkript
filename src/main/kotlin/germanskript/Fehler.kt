@@ -329,8 +329,11 @@ sealed class GermanSkriptFehler(private val fehlerName: String, val token: Token
     override val nachricht = "Einer Konstanten können nur feste Werte (Zeichenfolge, Zahl, Bool) zugewiesen werden."
   }
 
-  class LaufzeitFehler(token: Token, val aufrufStapelString: String, val fehlerMeldung: String): GermanSkriptFehler("Laufzeitfehler", token) {
+  open class LaufzeitFehler(token: Token, val aufrufStapelString: String, val fehlerMeldung: String): GermanSkriptFehler("Laufzeitfehler", token) {
     override val nachricht: String
       get() = "$fehlerMeldung\n$aufrufStapelString"
   }
+
+  class UnbehandelterFehler(token: Token, aufrufStapelString: String, fehlerMeldung: String, val fehlerObjekt: Wert):
+      LaufzeitFehler(token, aufrufStapelString, "Unbehandelter Fehler. $fehlerMeldung")
 }

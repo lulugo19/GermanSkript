@@ -911,4 +911,55 @@ class GermanSkriptTest {
 
     testeGermanSkriptCode(quellCode, erwarteteAusgabe)
   }
+
+  @Test
+  @DisplayName("Versuche-Fange")
+  fun versucheFange() {
+    val quellCode = """
+      versuche:
+        die Zahl ist "Hallo" als Zahl
+      .
+      fange den KonvertierungsFehler:
+        schreibe die Zeile (die FehlerMeldung des KonvertierungsFehlers)
+      .
+    """.trimIndent()
+
+    val erwarteteAusgabe = "Die Zeichenfolge 'Hallo' kann nicht in eine Zahl konvertiert werden.\n"
+
+    testeGermanSkriptCode(quellCode, erwarteteAusgabe)
+  }
+
+  @Test
+  @DisplayName("Werfe Fehler")
+  fun werfeFehler() {
+    val quellCode = """
+      Verb(Zahl) fakultät von der Zahl:
+        wenn die Zahl kleiner 0 ist: 
+          werfe einen Fehler mit der FehlerMeldung "Die Fakultät von einer negativen Zahl ist undefiniert."
+        .
+        wenn die Zahl gleich 0 ist: gebe 1 zurück.
+        sonst: gebe die Zahl * (fakultät von der Zahl - 1) zurück.
+      .
+      
+      versuche:
+        schreibe die Zahl (fakultät von der Zahl 3)
+        schreibe die Zahl (fakultät von der Zahl -1)
+        schreibe die Zahl (fakultät von der Zahl 5)
+      .
+      fange die Zahl:
+        schreibe die Zeile "Die Zahl sollte nicht gefangen werden"
+      .
+      fange den Fehler:
+        schreibe die Zeile (die FehlerMeldung des Fehlers)
+      .
+    """.trimIndent()
+
+    val erwarteteAusgabe = """
+      6
+      Die Fakultät von einer negativen Zahl ist undefiniert.
+      
+    """.trimIndent()
+
+    testeGermanSkriptCode(quellCode, erwarteteAusgabe)
+  }
 }

@@ -35,35 +35,36 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
       // TODO: Wenn das Methodenblock-Objekt nicht existiert oder keine Liste (kein generischer Typ ist) müssen wir irgendetwas machen
       erwarteterTyp = (umgebung.holeMethodenBlockObjekt() as Typ.KlassenTyp.Liste).elementTyp
     }
-    else if (erwarteterTyp is Typ.Schnittstelle) {
-      when (ausdruckTyp) {
-        is Typ.KlassenTyp -> {
-          val methoden = ausdruckTyp.klassenDefinition.methoden
-          if (!erwarteterTyp.definition.methodenSignaturen.all { methoden.containsKey(it.vollerName!!) }) {
-            throw GermanSkriptFehler.UnimplementierteSchnittstelle(holeErstesTokenVonAusdruck(ausdruck),
-                ausdruckTyp.klassenDefinition, erwarteterTyp.definition)
-          }
-          return ausdruckTyp
-        }
-        // es muss ein Closure sein
-        else -> return erwarteterTyp
-      }
-    }
-    if (ausdruckTyp is Typ.KlassenTyp && erwarteterTyp is Typ.KlassenTyp) {
-      // eine Kindklasse ist ein gültiger Typ für eine Elternklasse
-      var typ: Typ.KlassenTyp? = ausdruckTyp
-      while (typ != null) {
-        if (typ == erwarteterTyp) {
-          return erwarteterTyp
-        }
-        typ = ausdruckTyp.klassenDefinition.elternKlasse?.typ as Typ.KlassenTyp?
-      }
-      throw GermanSkriptFehler.TypFehler.FalscherTyp(holeErstesTokenVonAusdruck(ausdruck), ausdruckTyp, erwarteterTyp.name)
-    }
-    else if (ausdruckTyp != erwarteterTyp) {
-      throw GermanSkriptFehler.TypFehler.FalscherTyp(holeErstesTokenVonAusdruck(ausdruck), ausdruckTyp, erwarteterTyp.name)
+
+    if (!typIstTyp(ausdruckTyp, erwarteterTyp)) {
+      throw GermanSkriptFehler.TypFehler.FalscherTyp(
+          holeErstesTokenVonAusdruck(ausdruck), ausdruckTyp, erwarteterTyp.name
+      )
     }
     return ausdruckTyp
+  }
+
+   fun typIstTyp(typ: Typ, sollTyp: Typ): Boolean {
+    fun überprüfeSchnittstelle(klasse: Typ.KlassenTyp, schnittstelle: Typ.Schnittstelle): Boolean =
+      schnittstelle.definition.methodenSignaturen.all { signatur ->
+        klasse.klassenDefinition.methoden.containsKey(signatur.vollerName!!) }
+
+    fun überprüfeKlassenHierarchie(klasse: Typ.KlassenTyp, elternKlasse: Typ.KlassenTyp): Boolean {
+      var typ: Typ.KlassenTyp? = klasse
+      while (typ != null) {
+        if (typ == elternKlasse) {
+          return true
+        }
+        typ = typ.klassenDefinition.elternKlasse?.typ as Typ.KlassenTyp?
+      }
+      return false
+    }
+
+    return when {
+      typ is Typ.KlassenTyp && sollTyp is Typ.Schnittstelle -> überprüfeSchnittstelle(typ, sollTyp)
+      typ is Typ.KlassenTyp && sollTyp is Typ.KlassenTyp -> überprüfeKlassenHierarchie(typ, sollTyp)
+      else -> typ == sollTyp
+    }
   }
 
   private fun prüfeKonstante(konstante: AST.Definition.Konstante) {
@@ -292,7 +293,7 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
 
     // stimmen die Argument Typen mit den Parameter Typen überein?
     for (i in parameter.indices) {
-      ausdruckMussTypSein(argumente[i+j].wert, parameter[i].typKnoten.typ!!)
+      ausdruckMussTypSein(argumente[i+j].ausdruck, parameter[i].typKnoten.typ!!)
     }
 
     return funktionsSignatur.rückgabeTyp?.typ
@@ -352,14 +353,14 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
   }
 
   override fun durchlaufeZurückgabe(zurückgabe: AST.Satz.Zurückgabe) {
-    if (rückgabeTyp == null && zurückgabe.wert != null) {
+    if (rückgabeTyp == null && zurückgabe.ausdruck != null) {
       throw GermanSkriptFehler.RückgabeFehler.UngültigeRückgabe(zurückgabe.erstesToken.toUntyped())
     }
     if (rückgabeTyp != null) {
-      if (zurückgabe.wert == null) {
+      if (zurückgabe.ausdruck == null) {
         throw GermanSkriptFehler.RückgabeFehler.RückgabeVergessen(zurückgabe.erstesToken.toUntyped(), rückgabeTyp!!)
       }
-      ausdruckMussTypSein(zurückgabe.wert!!, rückgabeTyp!!)
+      ausdruckMussTypSein(zurückgabe.ausdruck!!, rückgabeTyp!!)
     }
     // Die Rückgabe ist nur auf alle Fälle erreichbar, wenn sie an keine Bedingung und in keiner Schleife ist
     rückgabeErreicht = zurückgabe.findNodeInParents<AST.Satz.BedingungsTerm>() == null &&
@@ -403,6 +404,21 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
     umgebung.schreibeVariable(schleife.binder, elementTyp, false)
     durchlaufeBereich(schleife.bereich, true)
     umgebung.popBereich()
+  }
+
+  override fun durchlaufeVersucheFange(versucheFange: AST.Satz.VersucheFange) {
+    durchlaufeBereich(versucheFange.versuche, true)
+    for (fange in versucheFange.fange) {
+      umgebung.pushBereich()
+      val typ = typisierer.bestimmeTypen(fange.typ, true)!!
+      umgebung.schreibeVariable(fange.binder, typ, true)
+      durchlaufeBereich(fange.bereich, true)
+      umgebung.popBereich()
+    }
+  }
+
+  override fun durchlaufeWerfe(werfe: AST.Satz.Werfe) {
+    evaluiereAusdruck(werfe.ausdruck)
   }
 
   override fun durchlaufeIntern() {
@@ -472,7 +488,7 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
 
   override fun evaluiereListe(ausdruck: AST.Ausdruck.Liste): Typ {
     nichtErlaubtInKonstante(ausdruck)
-    val listenTyp = typisierer.bestimmeTypen(ausdruck.pluralTyp) as Typ.KlassenTyp.Liste
+    val listenTyp = typisierer.bestimmeTypen(ausdruck.pluralTyp, true) as Typ.KlassenTyp.Liste
     ausdruck.elemente.forEach {element -> ausdruckMussTypSein(element, listenTyp.elementTyp)}
     return listenTyp
   }
@@ -527,7 +543,7 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
       }
 
       // die Typen müssen übereinstimmen
-      ausdruckMussTypSein(zuweisung.wert, eigenschaft.typKnoten.typ!!)
+      ausdruckMussTypSein(zuweisung.ausdruck, eigenschaft.typKnoten.typ!!)
     }
 
     if (instanziierung.eigenschaftsZuweisungen.size > definition.eigenschaften.size) {
@@ -602,7 +618,7 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
 
   override fun evaluiereKonvertierung(konvertierung: AST.Ausdruck.Konvertierung): Typ{
     nichtErlaubtInKonstante(konvertierung)
-    val ausdruck = evaluiereAusdruck(konvertierung.wert)
+    val ausdruck = evaluiereAusdruck(konvertierung.ausdruck)
     val konvertierungsTyp = typisierer.bestimmeTypen(konvertierung.typ, true)!!
     if (!ausdruck.kannNachTypKonvertiertWerden(konvertierungsTyp)){
       throw GermanSkriptFehler.KonvertierungsFehler(konvertierung.typ.name.bezeichner.toUntyped(),

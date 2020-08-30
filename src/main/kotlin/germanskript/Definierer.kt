@@ -71,12 +71,12 @@ class Definierer(startDatei: File): PipelineKomponente(startDatei) {
 
   fun holeTypDefinition(typ: AST.TypKnoten): AST.Definition.Typdefinition {
     val teilWörter = typ.name.bezeichner.typ.teilWörter
+    val hauptWort = typ.name.hauptWort(Kasus.NOMINATIV, Numerus.SINGULAR)
     if (typ.modulPfad.isEmpty()) {
       var typDefinition: AST.Definition.Typdefinition? = null
       for (definitionen in durchlaufeDefinitionsContainer(typ)) {
-        val hauptWort = typ.name.hauptWort(Kasus.NOMINATIV, Numerus.SINGULAR)
         for (i in teilWörter.indices) {
-          val typName = teilWörter.dropLast(1).drop(teilWörter.size - i).joinToString("") + hauptWort
+          val typName = teilWörter.dropLast(1).drop(i).joinToString("") + hauptWort
           if (definitionen.definierteTypen.containsKey(typName)) {
             typDefinition = definitionen.definierteTypen.getValue(typName)
           }
@@ -98,6 +98,9 @@ class Definierer(startDatei: File): PipelineKomponente(startDatei) {
               typDefinition = gefundeneDefinition
             }
           }
+          if (typDefinition != null) {
+            break
+          }
         }
       }
       return typDefinition ?:
@@ -105,9 +108,9 @@ class Definierer(startDatei: File): PipelineKomponente(startDatei) {
     } else {
       val modul = modulAuflöser.löseModulPfadAuf(typ, typ.modulPfad)
       for (i in teilWörter.indices) {
-        val klassenName = teilWörter.drop(teilWörter.size - 1 - i).joinToString("")
-        if (modul.definitionen.definierteTypen.containsKey(klassenName)) {
-          return modul.definitionen.definierteTypen.getValue(klassenName)
+        val typName = teilWörter.dropLast(1).drop(i).joinToString("") + hauptWort
+        if (modul.definitionen.definierteTypen.containsKey(typName)) {
+          return modul.definitionen.definierteTypen.getValue(typName)
         }
       }
       throw GermanSkriptFehler.Undefiniert.Typ(typ.name.bezeichner.toUntyped(), typ)

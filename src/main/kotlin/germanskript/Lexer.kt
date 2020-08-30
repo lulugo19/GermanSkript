@@ -301,6 +301,7 @@ private val WORT_MAPPING = mapOf<String, TokenTyp>(
     "eine" to TokenTyp.VORNOMEN.ARTIKEL.UNBESTIMMT,
     "eines" to TokenTyp.VORNOMEN.ARTIKEL.UNBESTIMMT,
     "einer" to TokenTyp.VORNOMEN.ARTIKEL.UNBESTIMMT,
+    "einen" to TokenTyp.VORNOMEN.ARTIKEL.UNBESTIMMT,
     "einem" to TokenTyp.VORNOMEN.ARTIKEL.UNBESTIMMT,
     "einige" to TokenTyp.VORNOMEN.ARTIKEL.UNBESTIMMT,
     "einigen" to TokenTyp.VORNOMEN.ARTIKEL.UNBESTIMMT,

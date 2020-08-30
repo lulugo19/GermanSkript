@@ -78,7 +78,7 @@ sealed class Wert {
     abstract fun holeEigenschaft(eigenschaftsName: AST.Nomen): Wert
     abstract fun setzeEigenschaft(eigenschaftsName: AST.Nomen, wert: Wert)
 
-    class SkriptObjekt(klassenDefinition: AST.Definition.Typdefinition.Klasse, val eigenschaften: HashMap<String, Wert>)
+    class SkriptObjekt(klassenDefinition: AST.Definition.Typdefinition.Klasse, val eigenschaften: MutableMap<String, Wert>)
       : Objekt(klassenDefinition) {
       override fun holeEigenschaft(eigenschaftsName: AST.Nomen) = eigenschaften.getValue(eigenschaftsName.nominativ)
       override fun setzeEigenschaft(eigenschaftsName: AST.Nomen, wert: Wert) {
@@ -86,8 +86,8 @@ sealed class Wert {
       }
     }
 
-    class Liste(klassenDefinition: AST.Definition.Typdefinition.Klasse, val elemente: MutableList<Wert>): Objekt(klassenDefinition) {
-      operator fun plus(liste: Liste) = Liste(klassenDefinition, (this.elemente + liste.elemente).toMutableList())
+    class Liste(klassenDefinition: AST.Definition.Typdefinition.Klasse, val listenTyp: Typ, val elemente: MutableList<Wert>): Objekt(klassenDefinition) {
+      operator fun plus(liste: Liste) = Liste(klassenDefinition, listenTyp, (this.elemente + liste.elemente).toMutableList())
 
       override fun toString(): String {
         return "[${elemente.joinToString(", ")}]"
@@ -106,5 +106,5 @@ sealed class Wert {
     }
   }
 
-  class Closure(val signatur: AST.Definition.FunktionsSignatur, val körper: AST.Satz.Bereich, val umgebung: Umgebung<Wert>): Wert()
+  class Closure(val schnittstelle: Typ.Schnittstelle, val körper: AST.Satz.Bereich, val umgebung: Umgebung<Wert>): Wert()
 }
