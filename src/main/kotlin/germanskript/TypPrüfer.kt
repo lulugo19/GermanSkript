@@ -50,12 +50,12 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
         klasse.klassenDefinition.methoden.containsKey(signatur.vollerName!!) }
 
     fun überprüfeKlassenHierarchie(klasse: Typ.KlassenTyp, elternKlasse: Typ.KlassenTyp): Boolean {
-      var typ: Typ.KlassenTyp? = klasse
-      while (typ != null) {
-        if (typ == elternKlasse) {
+      var laufTyp: Typ.KlassenTyp? = klasse
+      while (laufTyp != null) {
+        if (laufTyp == elternKlasse) {
           return true
         }
-        typ = typ.klassenDefinition.elternKlasse?.typ as Typ.KlassenTyp?
+        laufTyp = laufTyp.klassenDefinition.elternKlasse?.typ as Typ.KlassenTyp?
       }
       return false
     }
@@ -204,7 +204,7 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
     val methodenBlockObjekt = umgebung.holeMethodenBlockObjekt()
 
     // ist Methodenaufruf von Block-Variable
-    if (methodenBlockObjekt is Typ.KlassenTyp) {
+    if (methodenBlockObjekt is Typ.KlassenTyp && funktionsAufruf.reflexivPronomen?.typ != TokenTyp.REFLEXIV_PRONOMEN.MICH) {
       funktionsSignatur = findeMethode(
           funktionsAufruf,
           methodenBlockObjekt,
@@ -215,7 +215,7 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
     }
 
     // Schnittstellen Aufruf
-    if (funktionsSignatur == null && methodenBlockObjekt is Typ.Schnittstelle) {
+    if (funktionsSignatur == null && methodenBlockObjekt is Typ.Schnittstelle && funktionsAufruf.reflexivPronomen?.typ != TokenTyp.REFLEXIV_PRONOMEN.MICH) {
       funktionsSignatur = methodenBlockObjekt.definition.methodenSignaturen.find { signatur -> signatur.vollerName!! == funktionsAufruf.vollerName!! }
       if (funktionsSignatur != null) {
         funktionsAufruf.vollerName = funktionsSignatur.vollerName
@@ -224,7 +224,7 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
     }
 
     // ist Methoden-Selbst-Aufruf
-    if (funktionsSignatur == null && zuÜberprüfendeKlasse != null) {
+    if (funktionsSignatur == null && zuÜberprüfendeKlasse != null && funktionsAufruf.reflexivPronomen?.typ != TokenTyp.REFLEXIV_PRONOMEN.DICH) {
       funktionsSignatur = findeMethode(
           funktionsAufruf,
           Typ.KlassenTyp.Klasse(zuÜberprüfendeKlasse!!),

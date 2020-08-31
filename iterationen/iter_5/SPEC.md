@@ -40,52 +40,43 @@ Verb fakultät von der Zahl:
 ```
 
 ## Generics
-Hier habe ich noch keine Entscheidung getroffen.
-Für Listen haben wir schon so etwas ähnliches wie Generics.
 
-```
-Nomen Liste: jene AnZahl ist 0.
+### Typparameter für Klassen und Schnittstellen
 
-Verb(Boolean) für Liste beinhaltet den Typ: intern.
-Verb für Liste füge den Typ hinzu: intern.
-```
+`Nomen<BezeichnerN> ...`
+`Adjektiv<BezeichnerN> ...`
 
-So ruft man die generischen Methoden dann auf:
-
-```
-die Zahlen sind einige Zahlen [1, 2, 3, 4, 5]
-Zahlen:
-    füge die Zahl 6 hinzu
-    wenn beinhaltet die Zahl 6:
-        füge die Zahl 7 hinzu
-    .
-!
-```
-
-Mit `Typ` ist der Typ der Liste gemeint und beim Methodenaufruf wird `Typ` mit dem Typen
-der Liste ersetzt. Die Klasse `Liste` hat also einen impliziten Typ-Parameter.
-
-Man könnte das Wort `Typ` benutzen um auf einen Typparameter hinzuweisen. 
-Falls etwas mehrere Typparameter hat, könnte man diese mittels Symbolen z.B. `TypA` und `TypB`
-unterscheiden. Beim Aufruf werden die Typparameter dann inferiert. 
-Typparameter bei Rückgabetypen können eventuell nicht inferiert werden, deshalb kann man dann, Klammern
-benutzen, um den Typen anzugeben.
+Wird ein Typparameter als Parametername verwendet, dann wird beim Aufruf der Funktion/Methode
+der Parametername mit dem Namen des eingesetzten Typs ersetzt.
 
 Beispiele:
 
 ```
-Adjektiv(Typ) vergleichbar:
+// Listendefinition
+Nomen Liste<Typ>:
+    jene AnZahl ist 0
+.
+
+Adjektiv<Typ> vergleichbar:
     Verb(Zahl) vergleiche den TypA mit dem TypB
 .
 
-Verb für Liste sortiere mich mit dem Vergleichbaren(Typ): intern.
+Verb(Boolean) für Liste beinhaltet den Typ: intern.
+Verb für Liste füge den Typ hinzu: intern.
+Verb für Liste sortiere mich mit dem Vegleichbarem<Typ>: intern.
 
-einige Zahlen sind einige Zahlen [0, 1, 2, 3, 4]
-
-// sortiere die Zahlen absteigend
-sortiere die Zahlen mit etwas Vergleichbarem:
-    gebe die ZahlB - die ZahlA zurück
-.
+// Listen-Methoden-Aufruf
+die Zahlen sind einige Zahlen[1, 2, 3, 4]
+Zahlen:
+    füge die Zahl 5 hinzu
+    wenn beinhaltet die Zahl 5:
+        füge die Zahl 6 hinzu
+    .
+    // sortiere absteigend
+    sortiere dich mit etwas Vergleichbarem:
+        gebe die ZahlB - die ZahlA zurück
+    .
+!
 ```
 
 ## Aufzählungen

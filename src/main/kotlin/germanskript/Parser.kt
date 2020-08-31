@@ -83,7 +83,6 @@ private sealed class SubParser<T: AST>() {
   protected fun hierarchyContainsNode(knotenId: ASTKnotenID) = stack!!.contains(knotenId)
   protected fun hierarchyContainsAnyNode(vararg knotenIds: ASTKnotenID) = stack!!.any {knotenIds.contains(it)}
 
-
   protected inline fun <reified T : TokenTyp>expect(erwartet: String): TypedToken<T> {
     val nextToken = next()
     if (nextToken.typ is T) {
@@ -740,6 +739,26 @@ private sealed class SubParser<T: AST>() {
       val verb = expect<TokenTyp.BEZEICHNER_KLEIN>("bezeichner")
       val objekt = parseOptional<AST.Argument, TokenTyp.VORNOMEN>(::parseArgument)
       val reflexivPronomen = if (objekt == null) parseOptional<TokenTyp.REFLEXIV_PRONOMEN>() else null
+      when (reflexivPronomen?.typ) {
+        is TokenTyp.REFLEXIV_PRONOMEN.MICH -> {
+          if (!hierarchyContainsAnyNode(
+                  ASTKnotenID.METHODEN_DEFINITION,
+                  ASTKnotenID.METHODEN_DEFINITION,
+                  ASTKnotenID.KONVERTIERUNGS_DEFINITION,
+                  ASTKnotenID.EIGENSCHAFTS_DEFINITION
+              )) {
+            throw GermanSkriptFehler.SyntaxFehler.UngültigerBereich(reflexivPronomen.toUntyped(),
+              "Das Reflexivpronomen 'mich' kann nur in einer Methoden, einem Konstruktor oder\n" +
+            "einer Konvertierungs-/Eigenschaftsdefinition verwendet werden.")
+          }
+        }
+        is TokenTyp.REFLEXIV_PRONOMEN.DICH -> {
+          if (!hierarchyContainsNode(ASTKnotenID.METHODEN_BLOCK)) {
+            throw GermanSkriptFehler.SyntaxFehler.UngültigerBereich(reflexivPronomen.toUntyped(),
+              "Das Reflexivpronomen 'dich' kann nur in einem Methodenblock verwendet werden.")
+          }
+        }
+      }
       val präpositionen = parsePräpositionsArgumente()
       val suffix = parseOptional<TokenTyp.BEZEICHNER_KLEIN>()
       return AST.Funktion(modulPfad, verb, objekt, reflexivPronomen, präpositionen, suffix)
@@ -827,7 +846,7 @@ private sealed class SubParser<T: AST>() {
       override val id: ASTKnotenID = ASTKnotenID.SUPER_BLOCK
 
       override fun bewacheKnoten() {
-        if (!hierarchyContainsAnyNode(ASTKnotenID.METHODEN_DEFINITION, ASTKnotenID.KLASSEN_DEFINITION, ASTKnotenID.KONVERTIERUNGS_DEFINITION)) {
+        if (!hierarchyContainsAnyNode(ASTKnotenID.METHODEN_DEFINITION, ASTKnotenID.KLASSEN_DEFINITION, ASTKnotenID.KONVERTIERUNGS_DEFINITION, ASTKnotenID.EIGENSCHAFTS_DEFINITION)) {
           throw GermanSkriptFehler.SyntaxFehler.UngültigerBereich(next(), "Ein Super-Block kann nur in einer Methode, im Konstruktor oder in einer" +
               "Konvertierungsdefinition verwendet werden.")
         }

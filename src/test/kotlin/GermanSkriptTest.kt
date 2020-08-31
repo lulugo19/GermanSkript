@@ -312,9 +312,9 @@ class GermanSkriptTest {
       erhöhe den Zähler um die Zahl 3
       setze den Zähler zurück
       Zähler:
-        erhöhe mich um die Zahl -5
-        erhöhe mich um die Zahl 10
-        setze mich zurück
+        erhöhe dich um die Zahl -5
+        erhöhe dich um die Zahl 10
+        setze dich zurück
       !
     """.trimIndent()
 
@@ -464,7 +464,7 @@ class GermanSkriptTest {
           Verb skaliere mich um die Zahl.
 
       Verb zeichne das Zeichenbare mit der Zeichenfolge Farbe: 
-          Zeichenbare: zeichne mich mit der Farbe!
+          Zeichenbare: zeichne dich mit der Farbe!
       .
 
       Nomen Dreieck:.
@@ -597,7 +597,7 @@ class GermanSkriptTest {
       .
 
       Verb registriere das Klickbare:
-          Klickbares: klick mich!
+          Klickbares: klick dich!
       .
 
       eine Zahl ist 0

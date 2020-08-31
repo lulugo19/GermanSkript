@@ -141,7 +141,7 @@ Adjektiv zeichenbar:
 
 // Funktion mit Schnittstelle als Parameter
 Verb zeichne das Zeichenbare mit der Zeichenfolge Farbe: 
-    Zeichenbare: zeichne mich mit der Farbe
+    Zeichenbare: zeichne dich mit der Farbe
 .
 
 Nomen Dreieck:.
