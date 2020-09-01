@@ -74,7 +74,7 @@ sealed class Wert {
 
   sealed class Objekt(val klassenDefinition: AST.Definition.Typdefinition.Klasse): Wert() {
     // TODO: String sollte eindeutigen Identifier zurückliefern
-    override fun toString() = klassenDefinition.typ.name.nominativ
+    override fun toString() = klassenDefinition.name.nominativ
     abstract fun holeEigenschaft(eigenschaftsName: AST.Nomen): Wert
     abstract fun setzeEigenschaft(eigenschaftsName: AST.Nomen, wert: Wert)
 

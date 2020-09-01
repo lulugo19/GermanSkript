@@ -28,7 +28,7 @@ class GrammatikPrüfer(startDatei: File): PipelineKomponente(startDatei) {
         is AST.Definition.Konvertierung -> prüfeKonvertierungsDefinition(knoten)
         is AST.Definition.Eigenschaft -> prüfeEigenschaftsDefinition(knoten)
         is AST.Definition.Typdefinition.Klasse -> prüfeKlassenDefinition(knoten)
-        is AST.Definition.Typdefinition.Schnittstelle -> knoten.methodenSignaturen.forEach(::prüfeFunktionsSignatur)
+        is AST.Definition.Typdefinition.Schnittstelle -> prüfeSchnittstelle(knoten)
         is AST.Definition.Typdefinition.Alias -> prüfeAlias(knoten)
         is AST.Satz.VariablenDeklaration -> prüfeVariablendeklaration(knoten)
         is AST.Satz.BedingungsTerm -> prüfeKontextbasiertenAusdruck(knoten.bedingung, null, EnumSet.of(Kasus.NOMINATIV), false)
@@ -168,6 +168,11 @@ class GrammatikPrüfer(startDatei: File): PipelineKomponente(startDatei) {
     adjektiv.normalisierung = deklinierer.holeDeklination(nomen).holeForm(name.fälle.first(), name.numerus!!)
   }
 
+  private fun prüfeTyp(typ: AST.TypKnoten, kasus: EnumSet<Kasus>, numerus: EnumSet<Numerus>) {
+    prüfeNomen(typ.name, kasus, numerus)
+    prüfeTypArgumente(typ.typArgumente)
+  }
+
   // region kontextbasierte Ausdrücke
   private fun prüfeKontextbasiertenAusdruck(ausdruck: AST.Ausdruck, kontextNomen: AST.Nomen?, fälle: EnumSet<Kasus>, pluralErwartet: Boolean) {
     when (ausdruck) {
@@ -261,7 +266,7 @@ class GrammatikPrüfer(startDatei: File): PipelineKomponente(startDatei) {
   }
 
   private fun prüfeKonvertierung(konvertierung: AST.Ausdruck.Konvertierung, kontextNomen: AST.Nomen?, fälle: EnumSet<Kasus>, pluralErwartet: Boolean) {
-    prüfeNomen(konvertierung.typ.name, EnumSet.of(Kasus.NOMINATIV), EnumSet.of(Numerus.SINGULAR))
+    prüfeTyp(konvertierung.typ, EnumSet.of(Kasus.NOMINATIV), EnumSet.of(Numerus.SINGULAR))
     prüfeKontextbasiertenAusdruck(konvertierung.ausdruck, null, fälle, pluralErwartet)
   }
 
@@ -322,7 +327,7 @@ class GrammatikPrüfer(startDatei: File): PipelineKomponente(startDatei) {
   }
 
   private fun prüfeFange(fange: AST.Satz.Fange) {
-    prüfeNomen(fange.typ.name, EnumSet.of(Kasus.AKKUSATIV), Numerus.BEIDE)
+    prüfeTyp(fange.typ, EnumSet.of(Kasus.AKKUSATIV), Numerus.BEIDE)
     prüfeNomen(fange.binder, EnumSet.of(Kasus.NOMINATIV), EnumSet.of(fange.typ.name.numerus))
   }
 
@@ -346,9 +351,22 @@ class GrammatikPrüfer(startDatei: File): PipelineKomponente(startDatei) {
     }
   }
 
+  private fun prüfeTypArgumente(typArgumente: List<AST.TypKnoten>) {
+    for (arg in typArgumente) {
+      prüfeNomen(arg.name, EnumSet.of(Kasus.NOMINATIV), Numerus.BEIDE)
+    }
+  }
+
+  private fun prüfeTypParameter(typParameter: TypParameter) {
+    for (param in typParameter) {
+      prüfeNomen(param, EnumSet.of(Kasus.NOMINATIV), Numerus.BEIDE)
+    }
+  }
+
   private fun prüfeFunktionsSignatur(signatur: AST.Definition.FunktionsSignatur) {
+    prüfeTypParameter(signatur.typParameter)
     if (signatur.rückgabeTyp != null) {
-      prüfeNomen(signatur.rückgabeTyp.name, EnumSet.of(Kasus.NOMINATIV), Numerus.BEIDE)
+      prüfeTyp(signatur.rückgabeTyp, EnumSet.of(Kasus.NOMINATIV), Numerus.BEIDE)
     }
     if (signatur.objekt != null) {
       prüfeParameter(signatur.objekt, EnumSet.of(Kasus.DATIV, Kasus.AKKUSATIV))
@@ -364,10 +382,10 @@ class GrammatikPrüfer(startDatei: File): PipelineKomponente(startDatei) {
   }
 
   private fun prüfeKlassenDefinition(klasse: AST.Definition.Typdefinition.Klasse) {
-    prüfeNomen(klasse.typ.name, EnumSet.of(Kasus.NOMINATIV), EnumSet.of(Numerus.SINGULAR))
-
+    prüfeNomen(klasse.name, EnumSet.of(Kasus.NOMINATIV), EnumSet.of(Numerus.SINGULAR))
+    prüfeTypParameter(klasse.typParameter)
     for (eigenschaft in klasse.eigenschaften) {
-      prüfeNomen(eigenschaft.typKnoten.name, EnumSet.of(Kasus.DATIV), Numerus.BEIDE)
+      prüfeTyp(eigenschaft.typKnoten, EnumSet.of(Kasus.DATIV), Numerus.BEIDE)
       prüfeNomen(eigenschaft.name, EnumSet.of(Kasus.NOMINATIV), Numerus.BEIDE)
     }
 
@@ -376,18 +394,23 @@ class GrammatikPrüfer(startDatei: File): PipelineKomponente(startDatei) {
     }
   }
 
+  private fun prüfeSchnittstelle(schnittstelle: AST.Definition.Typdefinition.Schnittstelle) {
+    prüfeTypParameter(schnittstelle.typParameter)
+    schnittstelle.methodenSignaturen.forEach(::prüfeFunktionsSignatur)
+  }
+
   private fun prüfeAlias(alias: AST.Definition.Typdefinition.Alias) {
-    prüfeNomen(alias.typ.name, EnumSet.of(Kasus.NOMINATIV), EnumSet.of(Numerus.SINGULAR))
+    prüfeTyp(alias.typ, EnumSet.of(Kasus.NOMINATIV), EnumSet.of(Numerus.SINGULAR))
     prüfeNomen(alias.name, EnumSet.of(Kasus.NOMINATIV), EnumSet.of(Numerus.SINGULAR))
   }
 
   private fun prüfeKonvertierungsDefinition(konvertierung: AST.Definition.Konvertierung) {
-    prüfeNomen(konvertierung.typ.name, EnumSet.of(Kasus.NOMINATIV), Numerus.BEIDE)
+    prüfeTyp(konvertierung.typ, EnumSet.of(Kasus.NOMINATIV), Numerus.BEIDE)
     prüfeNomen(konvertierung.klasse.name, EnumSet.of(Kasus.NOMINATIV), EnumSet.of(Numerus.SINGULAR))
   }
 
   private fun prüfeEigenschaftsDefinition(eigenschaft: AST.Definition.Eigenschaft) {
-    prüfeNomen(eigenschaft.rückgabeTyp.name, EnumSet.of(Kasus.NOMINATIV), Numerus.BEIDE)
+    prüfeTyp(eigenschaft.rückgabeTyp, EnumSet.of(Kasus.NOMINATIV), Numerus.BEIDE)
     prüfeNomen(eigenschaft.name, EnumSet.of(Kasus.NOMINATIV), Numerus.BEIDE)
     prüfeNomen(eigenschaft.klasse.name, EnumSet.of(Kasus.NOMINATIV), EnumSet.of(Numerus.SINGULAR))
   }

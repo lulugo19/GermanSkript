@@ -296,7 +296,7 @@ class Definierer(startDatei: File): PipelineKomponente(startDatei) {
 
   fun gebeKlassenDefinitionenAus() {
     for (klasse in holeDefinitionen<AST.Definition.Typdefinition.Klasse>())  {
-      println("${klasse.typ.name.bezeichner.wert}: $klasse")
+      println("${klasse.name.bezeichner.wert}: $klasse")
     }
   }
 

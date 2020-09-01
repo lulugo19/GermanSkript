@@ -78,7 +78,7 @@ sealed class Typ(val name: String) {
     abstract val klassenDefinition: AST.Definition.Typdefinition.Klasse
 
     data class Klasse(override val klassenDefinition: AST.Definition.Typdefinition.Klasse):
-        KlassenTyp(klassenDefinition.typ.name.hauptWort(Kasus.NOMINATIV, Numerus.SINGULAR)) {
+        KlassenTyp(klassenDefinition.name.hauptWort(Kasus.NOMINATIV, Numerus.SINGULAR)) {
         override val definierteOperatoren: Map<Operator, Typ> = mapOf(
             Operator.GLEICH to Primitiv.Boolean
         )
@@ -119,7 +119,7 @@ class Typisierer(startDatei: File): PipelineKomponente(startDatei) {
   }
 
   fun bestimmeTypen(nomen: AST.Nomen): Typ {
-    val typKnoten = AST.TypKnoten(nomen, emptyList())
+    val typKnoten = AST.TypKnoten(emptyList(), nomen, emptyList())
     // setze den Parent hier manuell vom Nomen
     typKnoten.setParentNode(nomen.parent!!)
     return bestimmeTypen(typKnoten, true)!!
@@ -167,7 +167,6 @@ class Typisierer(startDatei: File): PipelineKomponente(startDatei) {
   }
 
   fun typisiereKlasse(klasse: AST.Definition.Typdefinition.Klasse) {
-    bestimmeTypen(klasse.typ, true)
     for (eigenschaft in klasse.eigenschaften) {
       bestimmeTypen(eigenschaft.typKnoten, true)
     }

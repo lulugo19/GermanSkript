@@ -51,6 +51,8 @@ class Parser(startDatei: File): PipelineKomponente(startDatei) {
   }
 }
 
+typealias TypParameter = List<AST.Nomen>
+
 private sealed class SubParser<T: AST>() {
   private var stack: Stack<ASTKnotenID>? = null
   private var tokens: Peekable<Token>? = null
@@ -102,28 +104,29 @@ private sealed class SubParser<T: AST>() {
     }
   }
 
-  protected fun parseFunktionsAnfang(): AST.TypKnoten? {
+  protected fun parseFunktionsAnfang(): Pair<TypParameter, AST.TypKnoten?> {
     expect<TokenTyp.VERB>("Verb")
-    var rückgabetyp: AST.TypKnoten? = null
+    val typParameter = parseTypParameter()
+    var rückgabeTyp: AST.TypKnoten? = null
     if (peekType() is TokenTyp.OFFENE_KLAMMER){
       next()
-      rückgabetyp = parseTypOhneArtikel(false)
+      rückgabeTyp = parseTypOhneArtikel(false)
       expect<TokenTyp.GESCHLOSSENE_KLAMMER>(")")
     }
-    return rückgabetyp
+    return Pair(typParameter, rückgabeTyp)
   }
 
   protected fun parseFunktionOderMethode(): AST.Definition.FunktionOderMethode{
-    val rückgabetyp = parseFunktionsAnfang()
+    val (typParameter, rückgabeTyp) = parseFunktionsAnfang()
 
     val nächstesToken = peek()
     if (nächstesToken.wert == "für"){
       next()
       val klasse = parseTypOhneArtikel(false)
-      val definition =  subParse(Definition.Funktion(ASTKnotenID.METHODEN_DEFINITION, rückgabetyp, true))
+      val definition =  subParse(Definition.Funktion(ASTKnotenID.METHODEN_DEFINITION, typParameter, rückgabeTyp, true))
       return AST.Definition.FunktionOderMethode.Methode(definition, klasse)
     }
-    return subParse(Definition.Funktion(ASTKnotenID.FUNKTIONS_DEFINITION, rückgabetyp, false))
+    return subParse(Definition.Funktion(ASTKnotenID.FUNKTIONS_DEFINITION, typParameter, rückgabeTyp, false))
   }
 
   protected fun parseKleinesSchlüsselwort(schlüsselwort: String): TypedToken<TokenTyp.BEZEICHNER_KLEIN> {
@@ -185,17 +188,43 @@ private sealed class SubParser<T: AST>() {
     return modulPfad
   }
 
+  protected fun<T> parseTypParameterOderArgumente(parser: () -> T): List<T> {
+    var liste = emptyList<T>()
+    val kleinerZeichen = peek()
+    if (kleinerZeichen.wert == "<") {
+      next()
+      liste = parseListeMitEnde<T, TokenTyp.KOMMA, TokenTyp.OPERATOR>(
+          false
+      ) {
+        parser()
+      }
+      val größerZeichen = next()
+      if (größerZeichen.wert != ">") {
+        throw GermanSkriptFehler.SyntaxFehler.ParseFehler(größerZeichen, ">")
+      }
+    }
+    return liste
+  }
+
+  protected fun parseTypArgumente() =
+      parseTypParameterOderArgumente { parseTypOhneArtikel(false) }
+
+  protected fun parseTypParameter() =
+      parseTypParameterOderArgumente { parseNomenOhneVornomen(false) }
+
   protected fun parseTypOhneArtikel(symbolErlaubt: Boolean): AST.TypKnoten {
     val modulPfad = parseModulPfad()
     val nomen = AST.Nomen(null, parseGroßenBezeichner(symbolErlaubt))
-    return AST.TypKnoten(nomen, modulPfad)
+    val typArgumente = parseTypArgumente()
+    return AST.TypKnoten(modulPfad, nomen, typArgumente)
   }
 
   protected inline fun <reified T: TokenTyp.VORNOMEN.ARTIKEL> parseTypMitArtikel(erwarteterArtikel: String, symbolErlaubt: Boolean): AST.TypKnoten {
     val artikel = expect<T>(erwarteterArtikel)
     val modulPfad = parseModulPfad()
     val nomen = AST.Nomen(artikel, parseGroßenBezeichner(symbolErlaubt))
-    return AST.TypKnoten(nomen, modulPfad)
+    val typParameter = parseTypArgumente()
+    return AST.TypKnoten(modulPfad, nomen, typParameter)
   }
 
   protected inline fun <ElementT, reified TrennerT: TokenTyp, reified StartTokenT: TokenTyp> parseListeMitStart(canBeEmpty: Boolean, elementParser: () -> ElementT): List<ElementT> {
@@ -281,8 +310,10 @@ private sealed class SubParser<T: AST>() {
       if (it != null) AST.Adjektiv(it) else null
     }
     var modulPfad: List<TypedToken<TokenTyp.BEZEICHNER_GROSS>>? = null
+    var typParameter = emptyList<AST.TypKnoten>()
     if (vornomen.typ == TokenTyp.VORNOMEN.ARTIKEL.UNBESTIMMT || vornomen.typ == TokenTyp.VORNOMEN.ETWAS) {
       modulPfad = parseModulPfad()
+      typParameter = parseTypArgumente()
     }
     val bezeichner = parseGroßenBezeichner(modulPfad == null)
     val nomen = AST.Nomen(vornomen, bezeichner)
@@ -306,17 +337,17 @@ private sealed class SubParser<T: AST>() {
       is TokenTyp.VORNOMEN.ARTIKEL.UNBESTIMMT ->  {
         when (nächstesToken.typ) {
           is TokenTyp.OFFENE_ECKIGE_KLAMMER -> {
-            val pluralTyp = AST.TypKnoten(nomen, modulPfad!!)
+            val pluralTyp = AST.TypKnoten(modulPfad!!, nomen, typParameter)
             subParse(NomenAusdruck.Liste(pluralTyp))
           }
           else -> {
-            val klasse = AST.TypKnoten(nomen, modulPfad!!)
+            val klasse = AST.TypKnoten(modulPfad!!, nomen, typParameter)
             subParse(NomenAusdruck.ObjektInstanziierung(klasse))
           }
         }
       }
       is TokenTyp.VORNOMEN.ETWAS -> {
-        val schnittstelle = AST.TypKnoten(nomen, modulPfad!!)
+        val schnittstelle = AST.TypKnoten(modulPfad!!, nomen, typParameter)
         subParse(NomenAusdruck.Closure(schnittstelle))
       }
       TokenTyp.VORNOMEN.POSSESSIV_PRONOMEN.MEIN -> AST.Ausdruck.SelbstEigenschaftsZugriff(nomen)
@@ -737,6 +768,7 @@ private sealed class SubParser<T: AST>() {
     override fun parseImpl(): AST.Funktion {
       val modulPfad = parseModulPfad()
       val verb = expect<TokenTyp.BEZEICHNER_KLEIN>("bezeichner")
+      val typParameter = parseTypArgumente()
       val objekt = parseOptional<AST.Argument, TokenTyp.VORNOMEN>(::parseArgument)
       val reflexivPronomen = if (objekt == null) parseOptional<TokenTyp.REFLEXIV_PRONOMEN>() else null
       when (reflexivPronomen?.typ) {
@@ -761,7 +793,7 @@ private sealed class SubParser<T: AST>() {
       }
       val präpositionen = parsePräpositionsArgumente()
       val suffix = parseOptional<TokenTyp.BEZEICHNER_KLEIN>()
-      return AST.Funktion(modulPfad, verb, objekt, reflexivPronomen, präpositionen, suffix)
+      return AST.Funktion(typParameter, modulPfad, verb, objekt, reflexivPronomen, präpositionen, suffix)
     }
 
     fun parsePräpositionsArgumente(): List<AST.PräpositionsArgumente> {
@@ -1133,6 +1165,7 @@ private sealed class SubParser<T: AST>() {
 
     class FunktionsSignatur(
         override val id: ASTKnotenID,
+        private val typParameter: TypParameter,
         private val rückgabeTyp: AST.TypKnoten?,
         private val istMethode: Boolean
     ): Definition<AST.Definition.FunktionsSignatur>() {
@@ -1157,7 +1190,7 @@ private sealed class SubParser<T: AST>() {
         val präpositionsParameter = parsePräpositionsParameter()
         val suffix = parseOptional<TokenTyp.BEZEICHNER_KLEIN>()
 
-        return AST.Definition.FunktionsSignatur(rückgabeTyp, name, reflexivPronomen, objekt, präpositionsParameter, suffix)
+        return AST.Definition.FunktionsSignatur(typParameter, rückgabeTyp, name, reflexivPronomen, objekt, präpositionsParameter, suffix)
       }
 
       fun parsePräpositionsParameter(): List<AST.Definition.PräpositionsParameter> {
@@ -1174,12 +1207,13 @@ private sealed class SubParser<T: AST>() {
 
     class Funktion(
         override val id: ASTKnotenID,
+        private val typParameter: TypParameter,
         private val rückgabeTyp: AST.TypKnoten?,
         private val hatReflexivPronomen: Boolean
     ): Definition<AST.Definition.FunktionOderMethode.Funktion>() {
 
       override fun parseImpl(): AST.Definition.FunktionOderMethode.Funktion {
-        val signatur = subParse(FunktionsSignatur(id, rückgabeTyp, hatReflexivPronomen))
+        val signatur = subParse(FunktionsSignatur(id, typParameter, rückgabeTyp, hatReflexivPronomen))
         val sätze = parseSätze()
         return AST.Definition.FunktionOderMethode.Funktion(signatur, sätze)
       }
@@ -1191,7 +1225,8 @@ private sealed class SubParser<T: AST>() {
 
       override fun parseImpl(): AST.Definition.Typdefinition.Klasse {
         expect<TokenTyp.NOMEN>("'Nomen'")
-        val name = AST.TypKnoten(parseNomenOhneVornomen(false), emptyList())
+        val typParameter = parseTypParameter()
+        val name = parseNomenOhneVornomen(false)
 
         val elternKlasse = when (peekType()) {
           is TokenTyp.ALS -> next().let { parseTypOhneArtikel(false) }
@@ -1209,7 +1244,7 @@ private sealed class SubParser<T: AST>() {
         }
 
         val konstruktorSätze = parseSätze()
-        return AST.Definition.Typdefinition.Klasse(name, elternKlasse, eingenschaften.toMutableList(), konstruktorSätze)
+        return AST.Definition.Typdefinition.Klasse(typParameter, name, elternKlasse, eingenschaften.toMutableList(), konstruktorSätze)
       }
     }
 
@@ -1218,18 +1253,19 @@ private sealed class SubParser<T: AST>() {
 
       override fun parseImpl(): AST.Definition.Typdefinition.Schnittstelle {
         expect<TokenTyp.ADJEKTIV>("'Adjektiv'")
+        val typParameter = parseTypParameter()
         val name = expect<TokenTyp.BEZEICHNER_KLEIN>("bezeichner")
         val definitionen = parseBereich {
           überspringeLeereZeilen()
           val signaturen = mutableListOf<AST.Definition.FunktionsSignatur>()
           while (peekType() != TokenTyp.PUNKT) {
-            val rückgabeTyp = parseFunktionsAnfang()
-            signaturen += subParse(FunktionsSignatur(id, rückgabeTyp, true))
+            val (typParameter, rückgabeTyp) = parseFunktionsAnfang()
+            signaturen += subParse(FunktionsSignatur(id, typParameter, rückgabeTyp, true))
             überspringeLeereZeilen()
           }
           signaturen
         }
-        return AST.Definition.Typdefinition.Schnittstelle(name, definitionen)
+        return AST.Definition.Typdefinition.Schnittstelle(typParameter, name, definitionen)
       }
     }
 

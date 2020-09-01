@@ -97,9 +97,10 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
   }
 
   private fun prüfeKlasse(klasse: AST.Definition.Typdefinition.Klasse) {
-    if (klasse.typ.typ != null) {
+    if (klasse.geprüft) {
       return
     }
+    klasse.geprüft = true
     typisierer.typisiereKlasse(klasse)
     // Da die Kindklasse abhängig von der Elternklasse ist, muss zuerst die Elternklasse geprüft werden
     if (klasse.elternKlasse != null) {
@@ -111,7 +112,7 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
       klasse.eigenschaften.addAll(0, elternKlasse.klassenDefinition.eigenschaften)
     }
     zuÜberprüfendeKlasse = klasse
-    durchlaufeAufruf(klasse.typ.name.bezeichner.toUntyped(), klasse.konstruktor, Umgebung(), true,null)
+    durchlaufeAufruf(klasse.name.bezeichner.toUntyped(), klasse.konstruktor, Umgebung(), true,null)
     klasse.methoden.values.forEach {methode -> prüfeFunktion(methode.funktion)}
     klasse.konvertierungen.values.forEach {konvertierung ->
       durchlaufeAufruf(
@@ -164,9 +165,9 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
     else if (deklaration.istEigenschaft) {
       val klasse = zuÜberprüfendeKlasse!!
       val wert = evaluiereAusdruck(deklaration.wert)
-      val typ = AST.TypKnoten(deklaration.name, emptyList())
+      val typ = AST.TypKnoten(emptyList(), deklaration.name, emptyList())
       typ.typ = wert
-      if (klasse.eigenschaften.any {eigenschaft -> eigenschaft.name.nominativ == deklaration.name.nominativ}) {
+      if (klasse.eigenschaften.any { eigenschaft -> eigenschaft.name.nominativ == deklaration.name.nominativ}) {
         throw GermanSkriptFehler.DoppelteEigenschaft(deklaration.name.bezeichner.toUntyped(), klasse)
       }
       klasse.eigenschaften.add(AST.Definition.TypUndName(typ, deklaration.name))
@@ -258,16 +259,16 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
       }
       if (klasse is Typ.KlassenTyp) {
         val methoden = klasse.klassenDefinition.methoden
-        val klassenTyp = klasse.klassenDefinition.typ
+        val klassenTyp = klasse.klassenDefinition.name
         val reflexivPronomen = when (funktionsAufruf.objekt.name.fälle.first()) {
           Kasus.AKKUSATIV -> "mich"
           Kasus.DATIV -> "mir"
           else -> throw Exception("Dieser Fall sollte nie eintreten, da der Grammatikprüfer dies überprüfen sollte. "
-              + "${klassenTyp.name.bezeichner}")
+              + "${klassenTyp.bezeichner}")
         }
         val methodenName = definierer.holeVollenNamenVonFunktionsAufruf(funktionsAufruf, reflexivPronomen)
         if (methoden.containsKey(methodenName)) {
-          funktionsAufruf.vollerName = "für ${klassenTyp.name.bezeichner}: ${methodenName}"
+          funktionsAufruf.vollerName = "für ${klassenTyp.bezeichner}: ${methodenName}"
           funktionsAufruf.funktionsDefinition = methoden.getValue(methodenName).funktion
           funktionsAufruf.aufrufTyp = FunktionsAufrufTyp.METHODEN_OBJEKT_AUFRUF
           funktionsSignatur = funktionsAufruf.funktionsDefinition!!.signatur
@@ -325,7 +326,7 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
       // Bei einem Selbstaufruf wird die Methodendefinition festgelegt (kein dynamisches Binding)
       if (aufrufTyp == FunktionsAufrufTyp.METHODEN_SELBST_AUFRUF) {
         funktionsAufruf.funktionsDefinition = methodenDefinition
-        funktionsAufruf.vollerName = "für ${typ.klassenDefinition.typ.name.bezeichner.wert}: ${funktionsAufruf.vollerName}"
+        funktionsAufruf.vollerName = "für ${typ.klassenDefinition.name.bezeichner.wert}: ${funktionsAufruf.vollerName}"
       }
       funktionsAufruf.aufrufTyp = aufrufTyp
       return methodenDefinition.signatur
@@ -347,7 +348,7 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
         typ.klassenDefinition.elternKlasse == null) {
       throw GermanSkriptFehler.Undefiniert.Methode(funktionsAufruf.verb.toUntyped(),
           funktionsAufruf,
-          typ.klassenDefinition.typ.name.nominativ)
+          typ.klassenDefinition.name.nominativ)
     }
     return null
   }
@@ -584,7 +585,7 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
         return eigenschaft
       }
     }
-    throw GermanSkriptFehler.Undefiniert.Eigenschaft(eigenschaftsName.bezeichner.toUntyped(), klasse.typ.name.nominativ)
+    throw GermanSkriptFehler.Undefiniert.Eigenschaft(eigenschaftsName.bezeichner.toUntyped(), klasse.name.nominativ)
   }
 
   private fun holeEigenschaftAusKlasse(eigenschaftsZugriff: AST.Ausdruck.IEigenschaftsZugriff, klasse: AST.Definition.Typdefinition.Klasse): Typ {
@@ -627,7 +628,7 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
     return konvertierungsTyp
   }
 
-  override fun evaluiereSelbstReferenz() = zuÜberprüfendeKlasse!!.typ.typ!!
+  override fun evaluiereSelbstReferenz() = Typ.KlassenTyp.Klasse(zuÜberprüfendeKlasse!!)
 
   override fun evaluiereClosure(closure: AST.Ausdruck.Closure): Typ.Schnittstelle {
     nichtErlaubtInKonstante(closure)

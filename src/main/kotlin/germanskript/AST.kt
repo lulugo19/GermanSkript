@@ -91,8 +91,9 @@ sealed class AST {
 
 
   data class TypKnoten(
+      val modulPfad: List<TypedToken<TokenTyp.BEZEICHNER_GROSS>>,
       val name: Nomen,
-      val modulPfad: List<TypedToken<TokenTyp.BEZEICHNER_GROSS>>
+      val typArgumente: List<TypKnoten>
   ): AST() {
     var typ: Typ? = null
     override val children = sequenceOf(name)
@@ -146,6 +147,7 @@ sealed class AST {
   }
 
   data class Funktion(
+      val typArgumente: List<TypKnoten>,
       val modulPfad: List<TypedToken<TokenTyp.BEZEICHNER_GROSS>>,
       val verb: TypedToken<TokenTyp.BEZEICHNER_KLEIN>,
       val objekt: Argument?,
@@ -216,6 +218,7 @@ sealed class AST {
     }
 
     data class FunktionsSignatur(
+        val typParameter: List<Nomen>,
         val rückgabeTyp: TypKnoten?,
         val name: TypedToken<TokenTyp.BEZEICHNER_KLEIN>,
         val reflexivPronomen: TypedToken<TokenTyp.REFLEXIV_PRONOMEN>?,
@@ -272,7 +275,8 @@ sealed class AST {
       abstract val namensToken: Token
 
       data class Klasse(
-          val typ: TypKnoten,
+          val typParameter: List<Nomen>,
+          val name: Nomen,
           val elternKlasse: TypKnoten?,
           val eigenschaften: MutableList<TypUndName>,
           val konstruktor: Satz.Bereich
@@ -280,11 +284,12 @@ sealed class AST {
         val methoden: HashMap<String, FunktionOderMethode.Methode> = HashMap()
         val berechneteEigenschaften: HashMap<String, Eigenschaft> = HashMap()
         val konvertierungen: HashMap<String, Konvertierung> = HashMap()
+        var geprüft = false
 
-        override val namensToken = typ.name.bezeichner.toUntyped()
+        override val namensToken = name.bezeichner.toUntyped()
 
         override val children = sequence {
-          yield(typ)
+          yield(name)
           if (elternKlasse != null) {
             yield(elternKlasse!!)
           }
@@ -294,6 +299,7 @@ sealed class AST {
       }
 
       data class Schnittstelle(
+          val typParameter: List<Nomen>,
           val name: TypedToken<TokenTyp.BEZEICHNER_KLEIN>,
           val methodenSignaturen: List<FunktionsSignatur>
       ): Typdefinition() {

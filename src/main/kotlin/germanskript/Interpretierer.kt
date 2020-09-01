@@ -96,7 +96,7 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
       val aufruf = element.aufruf
       var zeichenfolge = "'${aufruf.vollerName}' in ${aufruf.token.position}"
       if (element.objekt is Wert.Objekt) {
-        val klassenName = element.objekt.klassenDefinition.typ.name.hauptWort
+        val klassenName = element.objekt.klassenDefinition.name.hauptWort
         zeichenfolge = "'für $klassenName: ${aufruf.vollerName}' in ${aufruf.token.position}"
       }
 
@@ -175,7 +175,7 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
       {
         is Wert.Objekt -> {
           val methode = objekt.klassenDefinition.methoden.getValue(funktionsAufruf.vollerName!!)
-          methode.funktion.signatur.vollerName = "für ${objekt.klassenDefinition.typ.name.nominativ}: ${methode.funktion.signatur.vollerName}"
+          methode.funktion.signatur.vollerName = "für ${objekt.klassenDefinition.name.nominativ}: ${methode.funktion.signatur.vollerName}"
           methode.funktion.signatur to methode.funktion.körper
         }
         is Wert.Closure -> {
