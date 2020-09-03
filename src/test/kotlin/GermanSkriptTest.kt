@@ -962,4 +962,40 @@ class GermanSkriptTest {
 
     testeGermanSkriptCode(quellCode, erwarteteAusgabe)
   }
+
+  @Test
+  @DisplayName("Liste (füge hinzu, enthält)")
+  fun liste() {
+    val quellCode = """
+      die Zahlen sind einige Zahlen[1, 2, 3, 4]
+      Zahlen:
+        füge die Zahl 5 hinzu
+        wenn enthält die Zahl 5:
+          schreibe die Zeile "Die Zahl 5 wurde hinzugefügt!"
+        .
+      !
+    """.trimIndent()
+
+    val erwarteteAusgabe = "Die Zahl 5 wurde hinzugefügt!\n"
+
+    testeGermanSkriptCode(quellCode, erwarteteAusgabe)
+  }
+
+  @Test
+  @DisplayName("Generics")
+  fun generics() {
+    val quellCode = """
+      Deklination Maskulinum Singular(Test, Tests, Test, Test) Plural(Tests)
+      Nomen<Typ> Test mit dem Typ:.
+      
+      der Test ist ein Test<Zahl> mit der Zahl 5
+      schreibe die Zahl des Tests
+    """.trimIndent()
+
+    val erwarteteAusgabe = "5\n"
+
+    testeGermanSkriptCode(quellCode, erwarteteAusgabe)
+  }
+
+
 }

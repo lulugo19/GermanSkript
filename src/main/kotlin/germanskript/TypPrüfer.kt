@@ -10,8 +10,9 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
   val logger = SimpleLogger()
   val ast: AST.Programm get() = typisierer.ast
 
-  private var zuÜberprüfendeKlasse: AST.Definition.Typdefinition.Klasse? = null
+  private var zuÜberprüfendeKlasse: Typ.Compound.KlassenTyp? = null
   private var rückgabeTyp: Typ? = null
+  private var funktionsTypParams: List<AST.Nomen>? = null
   private var rückgabeErreicht = false
   private var evaluiereKonstante = false
 
@@ -27,13 +28,20 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
     durchlaufeAufruf(ast.programmStart!!, ast.programm, Umgebung(), true,null)
   }
 
-  private fun ausdruckMussTypSein(ausdruck: AST.Ausdruck, erwarteterTyp: Typ): Typ {
+  private fun ausdruckMussTypSein(
+      ausdruck: AST.Ausdruck,
+      erwarteterTyp: Typ,
+      funktionsTypArgs: List<AST.TypKnoten>? = null,
+      typTypArgs: List<AST.TypKnoten>? = null
+  ): Typ {
     val ausdruckTyp = evaluiereAusdruck(ausdruck)
     @Suppress("NAME_SHADOWING")
     var erwarteterTyp = erwarteterTyp
     if (erwarteterTyp is Typ.Generic) {
-      // TODO: Wenn das Methodenblock-Objekt nicht existiert oder keine Liste (kein generischer Typ ist) müssen wir irgendetwas machen
-      erwarteterTyp = (umgebung.holeMethodenBlockObjekt() as Typ.KlassenTyp.Liste).elementTyp
+      erwarteterTyp = when (erwarteterTyp.kontext) {
+        TypParamKontext.Funktion -> funktionsTypArgs!![erwarteterTyp.index].typ!!
+        TypParamKontext.Typ -> typTypArgs!![erwarteterTyp.index].typ!!
+      }
     }
 
     if (!typIstTyp(ausdruckTyp, erwarteterTyp)) {
@@ -45,24 +53,24 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
   }
 
    fun typIstTyp(typ: Typ, sollTyp: Typ): Boolean {
-    fun überprüfeSchnittstelle(klasse: Typ.KlassenTyp, schnittstelle: Typ.Schnittstelle): Boolean =
+    fun überprüfeSchnittstelle(klasse: Typ.Compound.KlassenTyp, schnittstelle: Typ.Compound.Schnittstelle): Boolean =
       schnittstelle.definition.methodenSignaturen.all { signatur ->
-        klasse.klassenDefinition.methoden.containsKey(signatur.vollerName!!) }
+        klasse.definition.methoden.containsKey(signatur.vollerName!!) }
 
-    fun überprüfeKlassenHierarchie(klasse: Typ.KlassenTyp, elternKlasse: Typ.KlassenTyp): Boolean {
-      var laufTyp: Typ.KlassenTyp? = klasse
+    fun überprüfeKlassenHierarchie(klasse: Typ.Compound.KlassenTyp, elternKlasse: Typ.Compound.KlassenTyp): Boolean {
+      var laufTyp: Typ.Compound.KlassenTyp? = klasse
       while (laufTyp != null) {
         if (laufTyp == elternKlasse) {
           return true
         }
-        laufTyp = laufTyp.klassenDefinition.elternKlasse?.typ as Typ.KlassenTyp?
+        laufTyp = laufTyp.definition.elternKlasse?.typ as Typ.Compound.KlassenTyp?
       }
       return false
     }
 
     return when {
-      typ is Typ.KlassenTyp && sollTyp is Typ.Schnittstelle -> überprüfeSchnittstelle(typ, sollTyp)
-      typ is Typ.KlassenTyp && sollTyp is Typ.KlassenTyp -> überprüfeKlassenHierarchie(typ, sollTyp)
+      typ is Typ.Compound.KlassenTyp && sollTyp is Typ.Compound.Schnittstelle -> überprüfeSchnittstelle(typ, sollTyp)
+      typ is Typ.Compound.KlassenTyp && sollTyp is Typ.Compound.KlassenTyp -> überprüfeKlassenHierarchie(typ, sollTyp)
       else -> typ == sollTyp
     }
   }
@@ -93,7 +101,9 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
       funktionsUmgebung.schreibeVariable(parameter.name, parameter.typKnoten.typ!!, false)
     }
     val signatur = funktion.signatur
+    funktionsTypParams = signatur.typParameter
     durchlaufeAufruf(signatur.name.toUntyped(), funktion.körper, funktionsUmgebung, false, signatur.rückgabeTyp?.typ)
+    funktionsTypParams = null
   }
 
   private fun prüfeKlasse(klasse: AST.Definition.Typdefinition.Klasse) {
@@ -105,13 +115,17 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
     // Da die Kindklasse abhängig von der Elternklasse ist, muss zuerst die Elternklasse geprüft werden
     if (klasse.elternKlasse != null) {
       if (klasse.elternKlasse.typ == null) {
-        typisierer.bestimmeTypen(klasse.elternKlasse, true)
+        typisierer.bestimmeTypen(klasse.elternKlasse, null, null, true)
       }
-      val elternKlasse = klasse.elternKlasse.typ as Typ.KlassenTyp
-      prüfeKlasse(elternKlasse.klassenDefinition)
-      klasse.eigenschaften.addAll(0, elternKlasse.klassenDefinition.eigenschaften)
+      val elternKlasse = klasse.elternKlasse.typ as Typ.Compound.KlassenTyp
+      prüfeKlasse(elternKlasse.definition)
+      klasse.eigenschaften.addAll(0, elternKlasse.definition.eigenschaften)
     }
-    zuÜberprüfendeKlasse = klasse
+    zuÜberprüfendeKlasse = Typ.Compound.KlassenTyp.Klasse(klasse, klasse.typParameter.mapIndexed { index, param ->
+      val typKnoten = AST.TypKnoten(emptyList(), param, emptyList())
+      typKnoten.typ = Typ.Generic(index, TypParamKontext.Typ)
+      typKnoten
+    })
     durchlaufeAufruf(klasse.name.bezeichner.toUntyped(), klasse.konstruktor, Umgebung(), true,null)
     klasse.methoden.values.forEach {methode -> prüfeFunktion(methode.funktion)}
     klasse.konvertierungen.values.forEach {konvertierung ->
@@ -133,12 +147,12 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
         klasse.konvertierungen.putIfAbsent(konvertierungsTyp, konvertierung)
       }
       if (elternKlasse.elternKlasse != null) {
-        fügeElternKlassenMethodenHinzu((elternKlasse.elternKlasse.typ as Typ.KlassenTyp).klassenDefinition)
+        fügeElternKlassenMethodenHinzu((elternKlasse.elternKlasse.typ as Typ.Compound.KlassenTyp).definition)
       }
     }
 
     if (klasse.elternKlasse != null) {
-      fügeElternKlassenMethodenHinzu((klasse.elternKlasse.typ as Typ.KlassenTyp).klassenDefinition)
+      fügeElternKlassenMethodenHinzu((klasse.elternKlasse.typ as Typ.Compound.KlassenTyp).definition)
     }
   }
 
@@ -154,8 +168,7 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
 
   override fun durchlaufeVariablenDeklaration(deklaration: AST.Satz.VariablenDeklaration) {
     if (deklaration.istEigenschaftsNeuZuweisung) {
-      val klasse = zuÜberprüfendeKlasse!!
-      val eigenschaft = holeNormaleEigenschaftAusKlasse(deklaration.name, klasse)
+      val eigenschaft = holeNormaleEigenschaftAusKlasse(deklaration.name, zuÜberprüfendeKlasse!!)
       if (eigenschaft.typKnoten.name.unveränderlich) {
         throw GermanSkriptFehler.EigenschaftsFehler.EigenschaftUnveränderlich(deklaration.name.bezeichner.toUntyped())
       }
@@ -163,7 +176,7 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
       ausdruckMussTypSein(deklaration.wert, eigenschaftTyp)
     }
     else if (deklaration.istEigenschaft) {
-      val klasse = zuÜberprüfendeKlasse!!
+      val klasse = zuÜberprüfendeKlasse!!.definition
       val wert = evaluiereAusdruck(deklaration.wert)
       val typ = AST.TypKnoten(emptyList(), deklaration.name, emptyList())
       typ.typ = wert
@@ -194,8 +207,6 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
     }
   }
 
-  private val typDeklination = Deklination(Genus.MASKULINUM, arrayOf("Typ", "Typs", "Typ", "Typ"), arrayOf("Typen", "Typen", "Typen", "Typen"))
-
   override fun durchlaufeFunktionsAufruf(funktionsAufruf: AST.Funktion, istAusdruck: Boolean): Typ? {
     if (funktionsAufruf.vollerName == null) {
       funktionsAufruf.vollerName = definierer.holeVollenNamenVonFunktionsAufruf(funktionsAufruf, null)
@@ -205,7 +216,7 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
     val methodenBlockObjekt = umgebung.holeMethodenBlockObjekt()
 
     // ist Methodenaufruf von Block-Variable
-    if (methodenBlockObjekt is Typ.KlassenTyp && funktionsAufruf.reflexivPronomen?.typ != TokenTyp.REFLEXIV_PRONOMEN.MICH) {
+    if (methodenBlockObjekt is Typ.Compound.KlassenTyp && funktionsAufruf.reflexivPronomen?.typ != TokenTyp.REFLEXIV_PRONOMEN.MICH) {
       funktionsSignatur = findeMethode(
           funktionsAufruf,
           methodenBlockObjekt,
@@ -216,7 +227,7 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
     }
 
     // Schnittstellen Aufruf
-    if (funktionsSignatur == null && methodenBlockObjekt is Typ.Schnittstelle && funktionsAufruf.reflexivPronomen?.typ != TokenTyp.REFLEXIV_PRONOMEN.MICH) {
+    if (funktionsSignatur == null && methodenBlockObjekt is Typ.Compound.Schnittstelle && funktionsAufruf.reflexivPronomen?.typ != TokenTyp.REFLEXIV_PRONOMEN.MICH) {
       funktionsSignatur = methodenBlockObjekt.definition.methodenSignaturen.find { signatur -> signatur.vollerName!! == funktionsAufruf.vollerName!! }
       if (funktionsSignatur != null) {
         funktionsAufruf.vollerName = funktionsSignatur.vollerName
@@ -228,7 +239,7 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
     if (funktionsSignatur == null && zuÜberprüfendeKlasse != null && funktionsAufruf.reflexivPronomen?.typ != TokenTyp.REFLEXIV_PRONOMEN.DICH) {
       funktionsSignatur = findeMethode(
           funktionsAufruf,
-          Typ.KlassenTyp.Klasse(zuÜberprüfendeKlasse!!),
+          zuÜberprüfendeKlasse!!,
           FunktionsAufrufTyp.METHODEN_SELBST_AUFRUF,
           TokenTyp.REFLEXIV_PRONOMEN.MICH,
           true
@@ -250,6 +261,7 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
 
     // ist Methoden-Objekt-Aufruf als letzte Möglichkeit
     // das bedeutet Funktionsnamen gehen vor Methoden-Objekt-Aufrufen
+    // TODO: kombiniere dies mit der Ersetzung von Parameternamen mit generische Parameter
     if (funktionsSignatur == null && funktionsAufruf.objekt != null) {
       val klasse = try {
         typisierer.bestimmeTypen(funktionsAufruf.objekt.name)
@@ -257,9 +269,9 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
       catch (fehler: GermanSkriptFehler.Undefiniert.Typ) {
         null
       }
-      if (klasse is Typ.KlassenTyp) {
-        val methoden = klasse.klassenDefinition.methoden
-        val klassenTyp = klasse.klassenDefinition.name
+      if (klasse is Typ.Compound.KlassenTyp) {
+        val methoden = klasse.definition.methoden
+        val klassenTyp = klasse.definition.name
         val reflexivPronomen = when (funktionsAufruf.objekt.name.fälle.first()) {
           Kasus.AKKUSATIV -> "mich"
           Kasus.DATIV -> "mir"
@@ -294,7 +306,11 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
 
     // stimmen die Argument Typen mit den Parameter Typen überein?
     for (i in parameter.indices) {
-      ausdruckMussTypSein(argumente[i+j].ausdruck, parameter[i].typKnoten.typ!!)
+      val typKontext =
+        if (funktionsAufruf.aufrufTyp == FunktionsAufrufTyp.METHODEN_BLOCK_AUFRUF)
+          (umgebung.holeMethodenBlockObjekt()!! as Typ.Compound).typArgumente
+        else null
+      ausdruckMussTypSein(argumente[i+j].ausdruck, parameter[i].typKnoten.typ!!, funktionsAufruf.typArgumente, typKontext)
     }
 
     return funktionsSignatur.rückgabeTyp?.typ
@@ -302,7 +318,7 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
 
   private fun findeMethode(
       funktionsAufruf: AST.Funktion,
-      typ: Typ.KlassenTyp,
+      typ: Typ.Compound.KlassenTyp,
       aufrufTyp: FunktionsAufrufTyp,
       reflexivPronomen: TokenTyp.REFLEXIV_PRONOMEN,
       erlaubeHoleElternDefinition: Boolean
@@ -310,9 +326,9 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
 
     // versuche Methode in der Elternklasse zu finden
     if (aufrufTyp == FunktionsAufrufTyp.METHODEN_SELBST_AUFRUF &&
-        erlaubeHoleElternDefinition && inSuperBlock && typ.klassenDefinition.elternKlasse != null) {
+        erlaubeHoleElternDefinition && inSuperBlock && typ.definition.elternKlasse != null) {
       val signatur = findeMethode(
-          funktionsAufruf, typ.klassenDefinition.elternKlasse!!.typ!! as Typ.KlassenTyp,
+          funktionsAufruf, typ.definition.elternKlasse!!.typ!! as Typ.Compound.KlassenTyp,
           aufrufTyp, reflexivPronomen, false
       )
       if (signatur != null) {
@@ -321,34 +337,40 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
     }
 
     // ist Methodenaufruf von Block-Variable
-    if (typ.klassenDefinition.methoden.containsKey(funktionsAufruf.vollerName!!)) {
-      val methodenDefinition = typ.klassenDefinition.methoden.getValue(funktionsAufruf.vollerName!!).funktion
+    if (typ.definition.methoden.containsKey(funktionsAufruf.vollerName!!)) {
+      val methodenDefinition = typ.definition.methoden.getValue(funktionsAufruf.vollerName!!).funktion
       // Bei einem Selbstaufruf wird die Methodendefinition festgelegt (kein dynamisches Binding)
       if (aufrufTyp == FunktionsAufrufTyp.METHODEN_SELBST_AUFRUF) {
         funktionsAufruf.funktionsDefinition = methodenDefinition
-        funktionsAufruf.vollerName = "für ${typ.klassenDefinition.name.bezeichner.wert}: ${funktionsAufruf.vollerName}"
+        funktionsAufruf.vollerName = "für ${typ}: ${funktionsAufruf.vollerName}"
       }
       funktionsAufruf.aufrufTyp = aufrufTyp
       return methodenDefinition.signatur
     }
-    else if (typ is Typ.KlassenTyp.Liste && funktionsAufruf.objekt != null) {
-      val objektName = funktionsAufruf.objekt.name
-      val artikel = GrammatikPrüfer.holeVornomen(TokenTyp.VORNOMEN.ARTIKEL.BESTIMMT, objektName.fälle.first(), typDeklination.genus, objektName.numerus!!)
-      val typWort = typDeklination.holeForm(funktionsAufruf.objekt.name.fälle.first(), funktionsAufruf.objekt.name.numerus!!)
-      val methodenName = definierer.holeVollenNamenVonFunktionsAufruf(funktionsAufruf, "$artikel $typWort")
-      if (typ.klassenDefinition.methoden.containsKey(methodenName)) {
-        funktionsAufruf.vollerName = "für Liste: $methodenName"
-        funktionsAufruf.funktionsDefinition = typ.klassenDefinition.methoden.getValue(methodenName).funktion
+
+    if (typ.definition.typParameter.isNotEmpty()) {
+      // TODO: hier müssen nicht nur TypTypParameter sondern auch die FunktionTypParameter berücksichtigt werden
+      val ersetzeTypArgsName = definierer.ersetzeTypArgumentMitTypParameter(
+          funktionsAufruf, typ.definition.typParameter, typ.typArgumente)
+      if (typ.definition.methoden.containsKey(ersetzeTypArgsName)) {
+        // TODO: Die Typparameternamen müssen für den Interpreter später hier ersetzt werden
+        val methodenDefinition = typ.definition.methoden.getValue(ersetzeTypArgsName).funktion
+        funktionsAufruf.vollerName = ersetzeTypArgsName
+        if (aufrufTyp == FunktionsAufrufTyp.METHODEN_SELBST_AUFRUF) {
+          funktionsAufruf.funktionsDefinition = methodenDefinition
+          funktionsAufruf.vollerName = "für ${typ}: ${funktionsAufruf.vollerName}"
+        }
         funktionsAufruf.aufrufTyp = aufrufTyp
-        return funktionsAufruf.funktionsDefinition!!.signatur
+        return methodenDefinition.signatur
       }
     }
-    else if (funktionsAufruf.reflexivPronomen != null &&
+
+    if (funktionsAufruf.reflexivPronomen != null &&
         funktionsAufruf.reflexivPronomen.typ == reflexivPronomen &&
-        typ.klassenDefinition.elternKlasse == null) {
+        typ.definition.elternKlasse == null) {
       throw GermanSkriptFehler.Undefiniert.Methode(funktionsAufruf.verb.toUntyped(),
           funktionsAufruf,
-          typ.klassenDefinition.name.nominativ)
+          typ.definition.name.nominativ)
     }
     return null
   }
@@ -386,10 +408,10 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
     val elementTyp = when {
       schleife.liste != null -> {
         val liste = evaluiereAusdruck(schleife.liste)
-        if (liste !is Typ.KlassenTyp.Liste) {
+        if (liste !is Typ.Compound.KlassenTyp.Liste) {
           throw GermanSkriptFehler.TypFehler.FalscherTyp(holeErstesTokenVonAusdruck(schleife.liste), liste, "Liste")
         }
-        liste.elementTyp
+        liste.typArgumente[0].typ!!
       }
       schleife.reichweite != null -> {
         val (anfang, ende) = schleife.reichweite
@@ -411,7 +433,8 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
     durchlaufeBereich(versucheFange.versuche, true)
     for (fange in versucheFange.fange) {
       umgebung.pushBereich()
-      val typ = typisierer.bestimmeTypen(fange.typ, true)!!
+      // TODO: hole aus dem Kontext die Typparameter
+      val typ = typisierer.bestimmeTypen(fange.typ, null, null, true)!!
       umgebung.schreibeVariable(fange.binder, typ, true)
       durchlaufeBereich(fange.bereich, true)
       umgebung.popBereich()
@@ -429,7 +452,7 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
   }
 
   override fun bevorDurchlaufeMethodenBlock(methodenBlock: AST.Satz.MethodenBlock, blockObjekt: Typ?) {
-    if (blockObjekt !is Typ.KlassenTyp && blockObjekt !is Typ.Schnittstelle) {
+    if (blockObjekt !is Typ.Compound && blockObjekt !is Typ.Compound.Schnittstelle) {
       throw GermanSkriptFehler.TypFehler.ObjektErwartet(methodenBlock.name.bezeichner.toUntyped())
     }
   }
@@ -489,8 +512,13 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
 
   override fun evaluiereListe(ausdruck: AST.Ausdruck.Liste): Typ {
     nichtErlaubtInKonstante(ausdruck)
-    val listenTyp = typisierer.bestimmeTypen(ausdruck.pluralTyp, true) as Typ.KlassenTyp.Liste
-    ausdruck.elemente.forEach {element -> ausdruckMussTypSein(element, listenTyp.elementTyp)}
+    val listenTyp = typisierer.bestimmeTypen(
+        ausdruck.pluralTyp,
+        funktionsTypParams,
+        zuÜberprüfendeKlasse?.definition?.typParameter,
+        true
+    ) as Typ.Compound.KlassenTyp.Liste
+    ausdruck.elemente.forEach {element -> ausdruckMussTypSein(element, listenTyp.typArgumente[0].typ!!)}
     return listenTyp
   }
 
@@ -514,17 +542,22 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
     val liste = evaluiereVariable(plural)?:
     throw GermanSkriptFehler.Undefiniert.Variable(singular.bezeichner.toUntyped(), plural)
 
-    return (liste as Typ.KlassenTyp.Liste).elementTyp
+    return (liste as Typ.Compound.KlassenTyp.Liste).typArgumente[0].typ!!
   }
 
   override fun evaluiereObjektInstanziierung(instanziierung: AST.Ausdruck.ObjektInstanziierung): Typ {
     nichtErlaubtInKonstante(instanziierung)
-    val klasse = typisierer.bestimmeTypen(instanziierung.klasse, true)!!
-    if (klasse !is Typ.KlassenTyp) {
+    val klasse = typisierer.bestimmeTypen(
+        instanziierung.klasse,
+        funktionsTypParams,
+        zuÜberprüfendeKlasse?.definition?.typParameter,
+        true
+    )!!
+    if (klasse !is Typ.Compound.KlassenTyp) {
       throw GermanSkriptFehler.TypFehler.ObjektErwartet(instanziierung.klasse.name.bezeichner.toUntyped())
     }
 
-    val definition = klasse.klassenDefinition
+    val definition = klasse.definition
 
     // die Eigenschaftszuweisungen müssen mit der Instanzzierung übereinstimmen, Außerdem müssen die Namen übereinstimmen
     var j = 0
@@ -539,12 +572,19 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
       }
       val zuweisung = instanziierung.eigenschaftsZuweisungen[i-j]
 
-      if (eigenschaft.name.nominativ != zuweisung.name.nominativ) {
+      // Wenn es es sich um eine generische Eigenschaft handelt, verwende den Namen des Typarguments
+      val eigenschaftsName = if (eigenschaft.typKnoten.typ is Typ.Generic &&
+          eigenschaft.typKnoten.name.bezeichner == eigenschaft.name.bezeichner) {
+        instanziierung.klasse.typArgumente[(eigenschaft.typKnoten.typ as Typ.Generic).index].name
+      } else {
+        eigenschaft.name
+      }
+      if (eigenschaftsName.nominativ != zuweisung.name.nominativ) {
         GermanSkriptFehler.EigenschaftsFehler.UnerwarteterEigenschaftsName(zuweisung.name.bezeichner.toUntyped(), eigenschaft.name.nominativ)
       }
 
       // die Typen müssen übereinstimmen
-      ausdruckMussTypSein(zuweisung.ausdruck, eigenschaft.typKnoten.typ!!)
+      ausdruckMussTypSein(zuweisung.ausdruck, eigenschaft.typKnoten.typ!!, null, instanziierung.klasse.typArgumente)
     }
 
     if (instanziierung.eigenschaftsZuweisungen.size > definition.eigenschaften.size) {
@@ -557,8 +597,8 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
   override fun evaluiereEigenschaftsZugriff(eigenschaftsZugriff: AST.Ausdruck.EigenschaftsZugriff): Typ {
     nichtErlaubtInKonstante(eigenschaftsZugriff)
     val klasse = evaluiereAusdruck(eigenschaftsZugriff.objekt)
-    return if (klasse is Typ.KlassenTyp) {
-      holeEigenschaftAusKlasse(eigenschaftsZugriff, klasse.klassenDefinition)
+    return if (klasse is Typ.Compound.KlassenTyp) {
+      holeEigenschaftAusKlasse(eigenschaftsZugriff, klasse)
     } else if (klasse is Typ.Primitiv.Zeichenfolge && eigenschaftsZugriff.eigenschaftsName.nominativ == "Länge") {
       Typ.Primitiv.Zahl
     }
@@ -575,31 +615,38 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
 
   override fun evaluiereMethodenBlockEigenschaftsZugriff(eigenschaftsZugriff: AST.Ausdruck.MethodenBlockEigenschaftsZugriff): Typ {
     nichtErlaubtInKonstante(eigenschaftsZugriff)
-    val methodenBlockObjekt = umgebung.holeMethodenBlockObjekt() as Typ.KlassenTyp
-    return holeEigenschaftAusKlasse(eigenschaftsZugriff, methodenBlockObjekt.klassenDefinition)
+    val methodenBlockObjekt = umgebung.holeMethodenBlockObjekt() as Typ.Compound.KlassenTyp
+    return holeEigenschaftAusKlasse(eigenschaftsZugriff, methodenBlockObjekt)
   }
 
-  private fun holeNormaleEigenschaftAusKlasse(eigenschaftsName: AST.Nomen, klasse: AST.Definition.Typdefinition.Klasse): AST.Definition.TypUndName {
-    for (eigenschaft in klasse.eigenschaften) {
-      if (eigenschaftsName.nominativ == eigenschaft.name.nominativ) {
+  private fun holeNormaleEigenschaftAusKlasse(eigenschaftsName: AST.Nomen, klasse: Typ.Compound.KlassenTyp): AST.Definition.TypUndName {
+    for (eigenschaft in klasse.definition.eigenschaften) {
+      val name = if (eigenschaft.typKnoten.typ!! is Typ.Generic && eigenschaft.typKnoten.name.bezeichner == eigenschaft.name.bezeichner) {
+        klasse.typArgumente[(eigenschaft.typKnoten.typ!! as Typ.Generic).index].name
+      } else {
+        eigenschaft.name
+      }
+      if (eigenschaftsName.nominativ == name.nominativ) {
         return eigenschaft
       }
     }
-    throw GermanSkriptFehler.Undefiniert.Eigenschaft(eigenschaftsName.bezeichner.toUntyped(), klasse.name.nominativ)
+    throw GermanSkriptFehler.Undefiniert.Eigenschaft(eigenschaftsName.bezeichner.toUntyped(), klasse.definition.name.nominativ)
   }
 
-  private fun holeEigenschaftAusKlasse(eigenschaftsZugriff: AST.Ausdruck.IEigenschaftsZugriff, klasse: AST.Definition.Typdefinition.Klasse): Typ {
+  private fun holeEigenschaftAusKlasse(eigenschaftsZugriff: AST.Ausdruck.IEigenschaftsZugriff, klasse: Typ.Compound.KlassenTyp): Typ {
     val eigenschaftsName = eigenschaftsZugriff.eigenschaftsName
-    return try {
+    val klassenDefinition = klasse.definition
+    val typ = try {
       holeNormaleEigenschaftAusKlasse(eigenschaftsName, klasse).typKnoten.typ!!
     } catch (fehler: GermanSkriptFehler.Undefiniert.Eigenschaft) {
-      if (!klasse.berechneteEigenschaften.containsKey(eigenschaftsName.nominativ)) {
+      if (!klassenDefinition.berechneteEigenschaften.containsKey(eigenschaftsName.nominativ)) {
         throw fehler
       } else {
-        eigenschaftsZugriff.aufrufName = "${eigenschaftsName.nominativ} von ${klasse.namensToken.wert}"
-        klasse.berechneteEigenschaften.getValue(eigenschaftsName.nominativ).rückgabeTyp.typ!!
+        eigenschaftsZugriff.aufrufName = "${eigenschaftsName.nominativ} von ${klassenDefinition.namensToken.wert}"
+        klassenDefinition.berechneteEigenschaften.getValue(eigenschaftsName.nominativ).rückgabeTyp.typ!!
       }
     }
+    return if (typ is Typ.Generic) klasse.typArgumente[typ.index].typ!! else typ
   }
 
   override fun evaluiereBinärenAusdruck(ausdruck: AST.Ausdruck.BinärerAusdruck): Typ {
@@ -620,7 +667,7 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
   override fun evaluiereKonvertierung(konvertierung: AST.Ausdruck.Konvertierung): Typ{
     nichtErlaubtInKonstante(konvertierung)
     val ausdruck = evaluiereAusdruck(konvertierung.ausdruck)
-    val konvertierungsTyp = typisierer.bestimmeTypen(konvertierung.typ, true)!!
+    val konvertierungsTyp = typisierer.bestimmeTypen(konvertierung.typ, null, null, true)!!
     if (!ausdruck.kannNachTypKonvertiertWerden(konvertierungsTyp)){
       throw GermanSkriptFehler.KonvertierungsFehler(konvertierung.typ.name.bezeichner.toUntyped(),
           ausdruck, konvertierungsTyp)
@@ -628,12 +675,17 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
     return konvertierungsTyp
   }
 
-  override fun evaluiereSelbstReferenz() = Typ.KlassenTyp.Klasse(zuÜberprüfendeKlasse!!)
+  override fun evaluiereSelbstReferenz() = zuÜberprüfendeKlasse!!
 
-  override fun evaluiereClosure(closure: AST.Ausdruck.Closure): Typ.Schnittstelle {
+  override fun evaluiereClosure(closure: AST.Ausdruck.Closure): Typ.Compound.Schnittstelle {
     nichtErlaubtInKonstante(closure)
-    val schnittstelle = typisierer.bestimmeTypen(closure.schnittstelle, true)
-    if (schnittstelle !is Typ.Schnittstelle) {
+    val schnittstelle = typisierer.bestimmeTypen(
+        closure.schnittstelle,
+        funktionsTypParams,
+        zuÜberprüfendeKlasse?.definition?.typParameter,
+        true
+    )
+    if (schnittstelle !is Typ.Compound.Schnittstelle) {
       throw GermanSkriptFehler.SchnittstelleErwartet(closure.schnittstelle.name.bezeichner.toUntyped())
     }
     if (schnittstelle.definition.methodenSignaturen.size != 1) {

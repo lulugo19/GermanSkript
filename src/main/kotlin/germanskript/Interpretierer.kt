@@ -96,7 +96,7 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
       val aufruf = element.aufruf
       var zeichenfolge = "'${aufruf.vollerName}' in ${aufruf.token.position}"
       if (element.objekt is Wert.Objekt) {
-        val klassenName = element.objekt.klassenDefinition.name.hauptWort
+        val klassenName = element.objekt.typ.definition.name.hauptWort
         zeichenfolge = "'für $klassenName: ${aufruf.vollerName}' in ${aufruf.token.position}"
       }
 
@@ -174,8 +174,8 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
       when (objekt)
       {
         is Wert.Objekt -> {
-          val methode = objekt.klassenDefinition.methoden.getValue(funktionsAufruf.vollerName!!)
-          methode.funktion.signatur.vollerName = "für ${objekt.klassenDefinition.name.nominativ}: ${methode.funktion.signatur.vollerName}"
+          val methode = objekt.typ.definition.methoden.getValue(funktionsAufruf.vollerName!!)
+          funktionsAufruf.vollerName = "für ${objekt.typ.definition.name.nominativ}: ${methode.funktion.signatur.vollerName}"
           methode.funktion.signatur to methode.funktion.körper
         }
         is Wert.Closure -> {
@@ -317,7 +317,10 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
   override fun evaluiereKonstante(konstante: AST.Ausdruck.Konstante): Wert = evaluiereAusdruck(konstante.wert!!)
 
   override fun evaluiereListe(ausdruck: AST.Ausdruck.Liste): Wert {
-    return Wert.Objekt.Liste(listenKlassenDefinition, ausdruck.pluralTyp.typ!!, ausdruck.elemente.map(::evaluiereAusdruck).toMutableList())
+    return Wert.Objekt.Liste(
+        Typ.Compound.KlassenTyp.Liste(listenKlassenDefinition, listOf(ausdruck.pluralTyp)),
+        ausdruck.elemente.map(::evaluiereAusdruck).toMutableList()
+    )
   }
 
   override fun evaluiereObjektInstanziierung(instanziierung: AST.Ausdruck.ObjektInstanziierung): Wert {
@@ -325,18 +328,18 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
     for (zuweisung in instanziierung.eigenschaftsZuweisungen) {
       eigenschaften[zuweisung.name.nominativ] = evaluiereAusdruck(zuweisung.ausdruck)
     }
-    val klassenDefinition = (instanziierung.klasse.typ!! as Typ.KlassenTyp.Klasse).klassenDefinition
-    val objekt = Wert.Objekt.SkriptObjekt(klassenDefinition, eigenschaften)
+    val klassenTyp = (instanziierung.klasse.typ!! as Typ.Compound.KlassenTyp)
+    val objekt = Wert.Objekt.SkriptObjekt(klassenTyp, eigenschaften)
 
     fun führeKonstruktorAus(definition: AST.Definition.Typdefinition.Klasse) {
       // Führe zuerst den Konstruktor der Elternklasse aus
       if (definition.elternKlasse != null) {
-        führeKonstruktorAus((definition.elternKlasse.typ!! as Typ.KlassenTyp).klassenDefinition)
+        führeKonstruktorAus((definition.elternKlasse.typ!! as Typ.Compound.KlassenTyp).definition)
       }
       durchlaufeAufruf(instanziierung, definition.konstruktor, Umgebung(), true, objekt)
     }
 
-    führeKonstruktorAus(klassenDefinition)
+    führeKonstruktorAus(klassenTyp.definition)
     return objekt
   }
 
@@ -344,7 +347,7 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
     return try {
       objekt.holeEigenschaft(zugriff.eigenschaftsName)
     } catch (nichtGefunden: NoSuchElementException) {
-      val berechneteEigenschaft = objekt.klassenDefinition.berechneteEigenschaften.getValue(zugriff.eigenschaftsName.nominativ)
+      val berechneteEigenschaft = objekt.typ.definition.berechneteEigenschaften.getValue(zugriff.eigenschaftsName.nominativ)
       durchlaufeAufruf(zugriff, berechneteEigenschaft.definition, Umgebung(), true, objekt)!!
     }
   }
@@ -472,7 +475,7 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
   }
 
   override fun evaluiereClosure(closure: AST.Ausdruck.Closure): Wert {
-    return Wert.Closure((closure.schnittstelle.typ as Typ.Schnittstelle), closure.körper, umgebung)
+    return Wert.Closure((closure.schnittstelle.typ as Typ.Compound.Schnittstelle), closure.körper, umgebung)
   }
   // endregion
 
@@ -550,11 +553,17 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
       "trenne die Zeichenfolge zwischen dem Separator" to {
         val zeichenfolge = umgebung.leseVariable("Zeichenfolge")!!.wert as Wert.Primitiv.Zeichenfolge
         val separator = umgebung.leseVariable("Separator")!!.wert as Wert.Primitiv.Zeichenfolge
-        rückgabeWert = Wert.Objekt.Liste(listenKlassenDefinition, Typ.Primitiv.Zeichenfolge,
+        // TODO: Das hier ist sehr unschön. Dass ich hier einen TypKnoten erstellen muss. Könnte man da vielleicht etwas dran ändern?
+        val zeichenfolgeTypParameter = AST.TypKnoten(emptyList(), AST.Nomen(null,
+            TypedToken(TokenTyp.BEZEICHNER_GROSS(arrayOf("Zeichenfolge"), ""), "Zeichenfolge", "", Token.Position.Ende, Token.Position.Ende)),
+            emptyList()
+        )
+        zeichenfolgeTypParameter.typ = Typ.Primitiv.Zeichenfolge
+        rückgabeWert = Wert.Objekt.Liste(Typ.Compound.KlassenTyp.Liste(listenKlassenDefinition, listOf(zeichenfolgeTypParameter)),
             zeichenfolge.zeichenfolge.split(separator.zeichenfolge).map { Wert.Primitiv.Zeichenfolge(it) }.toMutableList())
       },
 
-      "für Liste: beinhaltet den Typ" to {
+      "für Liste: enthält den Typ" to {
         val objekt = aufrufStapel.top().objekt!! as Wert.Objekt.Liste
         val element = umgebung.leseVariable("Typ")!!.wert
         rückgabeWert = Wert.Primitiv.Boolean(objekt.elemente.contains(element))
@@ -579,8 +588,8 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
 
   override fun evaluiereKonvertierung(konvertierung: AST.Ausdruck.Konvertierung): Wert {
     val wert = evaluiereAusdruck(konvertierung.ausdruck)
-    if (wert is Wert.Objekt && wert.klassenDefinition.konvertierungen.containsKey(konvertierung.typ.name.nominativ)) {
-      val konvertierungsDefinition = wert.klassenDefinition.konvertierungen.getValue(konvertierung.typ.name.nominativ)
+    if (wert is Wert.Objekt && wert.typ.definition.konvertierungen.containsKey(konvertierung.typ.name.nominativ)) {
+      val konvertierungsDefinition = wert.typ.definition.konvertierungen.getValue(konvertierung.typ.name.nominativ)
       return durchlaufeAufruf(konvertierung, konvertierungsDefinition.definition, Umgebung(), true, wert)!!
     }
     return when (konvertierung.typ.typ!!) {
@@ -600,7 +609,7 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
         }
         catch (parseFehler: ParseException) {
           val fehlerMeldung = "Die Zeichenfolge '${wert.zeichenfolge}' kann nicht in eine Zahl konvertiert werden."
-          val fehlerObjekt = Wert.Objekt.SkriptObjekt(klassenDefinitionen.getValue("KonvertierungsFehler"),
+          val fehlerObjekt = Wert.Objekt.SkriptObjekt(Typ.Compound.KlassenTyp.Klasse(klassenDefinitionen.getValue("KonvertierungsFehler"), emptyList()),
             mutableMapOf(
                 "FehlerMeldung" to Wert.Primitiv.Zeichenfolge(fehlerMeldung)
             ))
@@ -635,8 +644,7 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
       is Wert.Primitiv.Zeichenfolge -> Typ.Primitiv.Zeichenfolge
       is Wert.Primitiv.Zahl -> Typ.Primitiv.Zahl
       is Wert.Primitiv.Boolean -> Typ.Primitiv.Boolean
-      is Wert.Objekt.SkriptObjekt -> Typ.KlassenTyp.Klasse(wert.klassenDefinition)
-      is Wert.Objekt.Liste -> wert.listenTyp
+      is Wert.Objekt -> wert.typ
       is Wert.Closure -> wert.schnittstelle
     }
   }

@@ -51,13 +51,18 @@ Verb(Zeichenfolgen) trenne die Zeichenfolge zwischen der Zeichenfolge Separator:
 
 
 // Listen Definition und Methoden
-Nomen Liste:
+Nomen<Typ> Liste:
     jene AnZahl ist 0
 .
 
-Verb(Boolean) für Liste beinhaltet den Typ: intern.
+Verb(Boolean) für Liste enthält den Typ: intern.
 Verb für Liste füge den Typ hinzu: intern.
 Verb für Liste entferne an der Zahl Index: intern.
+Verb für Liste sortiere mich mit dem Vergleichbaren<Typ>: intern.
+
+Adjektiv<Typ> vergleichbar:
+    Verb(Zahl) vergleiche den TypA mit dem TypB
+.
 
 // Fehler
 Deklination Maskulinum Singular(Fehler, Fehlers, Fehler, Fehler) Plural(Fehler)

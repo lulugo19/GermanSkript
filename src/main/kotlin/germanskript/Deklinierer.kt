@@ -173,7 +173,6 @@ class Deklinierer(startDatei: File): PipelineKomponente(startDatei) {
       val modul = modulAuflöser.findeModul(container!!, modulPfad)
       holeDeklination(nomen, modul.definitionen)?.let { return it }
     }
-
     holeDeklination(nomen, container!!)?.let { return it }
 
     for (verwendetesModul in container.verwendeteModule) {

@@ -104,7 +104,7 @@ Da GermanSkript keine Nullreferenz hat und diese auch nicht vorgesehen ist (Bill
 man dann einen Option-Typen machen.
 
 ```
-Aufzählung(Typ) Option:
+Aufzählung<Typ> Option:
     Nomen Nichts:.
     Nomen Etwas mit dem Typ:.
 .

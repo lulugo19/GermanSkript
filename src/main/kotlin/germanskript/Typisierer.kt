@@ -1,12 +1,10 @@
 package germanskript
-
-import germanskript.util.SimpleLogger
 import java.io.File
+import java.util.*
 
 
 sealed class Typ(val name: String) {
   override fun toString(): String = name
-  val logger = SimpleLogger()
 
   abstract val definierteOperatoren: Map<Operator, Typ>
   abstract fun kannNachTypKonvertiertWerden(typ: Typ): Boolean
@@ -57,46 +55,64 @@ sealed class Typ(val name: String) {
 
   }
 
-  object Generic : Typ("Generic") {
+  data class Generic(val index: Int, val kontext: TypParamKontext) : Typ("Generic") {
     override val definierteOperatoren: Map<Operator, Typ>
       get() = mapOf()
 
     override fun kannNachTypKonvertiertWerden(typ: Typ): Boolean = false
   }
 
-  data class Schnittstelle(val definition: AST.Definition.Typdefinition.Schnittstelle): Typ(definition.name.wert.capitalize()) {
-    override val definierteOperatoren: Map<Operator, Typ> = mapOf(
-        Operator.GLEICH to Primitiv.Boolean
-    )
+  sealed class Compound(name: String): Typ(name) {
+    abstract val definition: AST.Definition.Typdefinition
+    abstract val typArgumente: List<AST.TypKnoten>
 
-    override fun kannNachTypKonvertiertWerden(typ: Typ): Boolean {
-      return typ.name == this.name || typ == Primitiv.Zeichenfolge
-    }
-  }
+    sealed class KlassenTyp(name: String): Compound(name) {
+      abstract override val definition: AST.Definition.Typdefinition.Klasse
 
-  sealed class KlassenTyp(name: String): Typ(name) {
-    abstract val klassenDefinition: AST.Definition.Typdefinition.Klasse
-
-    data class Klasse(override val klassenDefinition: AST.Definition.Typdefinition.Klasse):
-        KlassenTyp(klassenDefinition.name.hauptWort(Kasus.NOMINATIV, Numerus.SINGULAR)) {
+      data class Klasse(
+          override val definition: AST.Definition.Typdefinition.Klasse,
+          override val typArgumente: List<AST.TypKnoten>
+      ): KlassenTyp(definition.name.hauptWort(Kasus.NOMINATIV, Numerus.SINGULAR) + "<${typArgumente.joinToString(", ")}>") {
         override val definierteOperatoren: Map<Operator, Typ> = mapOf(
             Operator.GLEICH to Primitiv.Boolean
         )
 
         override fun kannNachTypKonvertiertWerden(typ: Typ): Boolean {
-          return typ.name == this.name || typ == Primitiv.Zeichenfolge || klassenDefinition.konvertierungen.containsKey(typ.name)
+          return typ.name == this.name || typ == Primitiv.Zeichenfolge || definition.konvertierungen.containsKey(typ.name)
         }
+      }
+
+      data class Liste(
+          override val definition: AST.Definition.Typdefinition.Klasse,
+          override val typArgumente: List<AST.TypKnoten>
+      ) : KlassenTyp("Liste<${typArgumente[0]}>") {
+        // Das hier muss umbedingt ein Getter sein, sonst gibt es Probleme mit StackOverflow
+        override val definierteOperatoren: Map<Operator, Typ> get() = mapOf(
+            Operator.PLUS to Liste(definition, typArgumente),
+            Operator.GLEICH to Primitiv.Boolean
+        )
+        override fun kannNachTypKonvertiertWerden(typ: Typ) = typ.name == this.name || typ == Primitiv.Zeichenfolge
+      }
     }
 
-    data class Liste(override val klassenDefinition: AST.Definition.Typdefinition.Klasse, val elementTyp: Typ) : KlassenTyp("Liste($elementTyp)") {
-      // Das hier muss umbedingt ein Getter sein, sonst gibt es Probleme mit StackOverflow
-      override val definierteOperatoren: Map<Operator, Typ> get() = mapOf(
-          Operator.PLUS to Liste(klassenDefinition, elementTyp),
+    data class Schnittstelle(
+        override val definition: AST.Definition.Typdefinition.Schnittstelle,
+        override val typArgumente: List<AST.TypKnoten>
+    ): Compound(definition.name.wert.capitalize() + "<${typArgumente.joinToString(", ")}>") {
+      override val definierteOperatoren: Map<Operator, Typ> = mapOf(
           Operator.GLEICH to Primitiv.Boolean
       )
-      override fun kannNachTypKonvertiertWerden(typ: Typ) = typ.name == this.name || typ == Primitiv.Zeichenfolge
+
+      override fun kannNachTypKonvertiertWerden(typ: Typ): Boolean {
+        return typ.name == this.name || typ == Primitiv.Zeichenfolge
+      }
     }
   }
+}
+
+enum class TypParamKontext {
+  Typ,
+  Funktion,
 }
 
 class Typisierer(startDatei: File): PipelineKomponente(startDatei) {
@@ -108,12 +124,12 @@ class Typisierer(startDatei: File): PipelineKomponente(startDatei) {
   fun typisiere() {
     definierer.definiere()
     _listenKlassenDefinition = definierer.holeTypDefinition("Liste") as AST.Definition.Typdefinition.Klasse
-    definierer.funktionsDefinitionen.forEach { typisiereFunktionsSignatur(it.signatur)}
+    definierer.funktionsDefinitionen.forEach { typisiereFunktionsSignatur(it.signatur, null)}
     definierer.typDefinitionen.forEach {typDefinition ->
+      // Klassen werden von Typprüfer typisiert, da die Reihenfolge und die Konstruktoren eine wichtige Rolle spielen
       when (typDefinition) {
-        is AST.Definition.Typdefinition.Schnittstelle ->
-          typDefinition.methodenSignaturen.forEach(::typisiereFunktionsSignatur)
-        is AST.Definition.Typdefinition.Alias -> bestimmeTypen(typDefinition.typ, false)
+        is AST.Definition.Typdefinition.Schnittstelle -> typisiereSchnittstelle(typDefinition)
+        is AST.Definition.Typdefinition.Alias -> bestimmeTypen(typDefinition.typ, null, null, false)
       }
     }
   }
@@ -122,63 +138,113 @@ class Typisierer(startDatei: File): PipelineKomponente(startDatei) {
     val typKnoten = AST.TypKnoten(emptyList(), nomen, emptyList())
     // setze den Parent hier manuell vom Nomen
     typKnoten.setParentNode(nomen.parent!!)
-    return bestimmeTypen(typKnoten, true)!!
+    return bestimmeTypen(typKnoten, null, null, true)!!
   }
 
-  private fun holeTypDefinition(typKnoten: AST.TypKnoten, aliasErlaubt: Boolean): Typ =
-    when(typKnoten.name.hauptWort(Kasus.NOMINATIV, Numerus.SINGULAR)) {
-      "Zahl" -> Typ.Primitiv.Zahl
-      "Zeichenfolge" -> Typ.Primitiv.Zeichenfolge
-      "Boolean" -> Typ.Primitiv.Boolean
-      "Typ" -> Typ.Generic
-      "Liste" -> Typ.KlassenTyp.Liste(listenKlassenDefinition, Typ.Generic)
-      else -> when (val typDef = definierer.holeTypDefinition(typKnoten)) {
-        is AST.Definition.Typdefinition.Klasse -> Typ.KlassenTyp.Klasse(typDef)
-        is AST.Definition.Typdefinition.Schnittstelle -> Typ.Schnittstelle(typDef)
-        is AST.Definition.Typdefinition.Alias -> {
-          if (!aliasErlaubt) {
-            throw GermanSkriptFehler.AliasFehler(typKnoten.name.bezeichner.toUntyped(), typDef)
-          }
-          holeTypDefinition(typDef.typ, false)
-        }
+  private fun holeTypDefinition(typKnoten: AST.TypKnoten, funktionsTypParams: TypParameter?, typTypParams: TypParameter?, aliasErlaubt: Boolean): Typ {
+    val typArgumente = typKnoten.typArgumente
+    val typName = typKnoten.name.hauptWort(Kasus.NOMINATIV, Numerus.SINGULAR)
+
+    var typ: Typ? = null
+    if (funktionsTypParams != null ) {
+      val funktionTypParamIndex = funktionsTypParams.indexOfFirst { param -> param.hauptWort(Kasus.NOMINATIV, Numerus.SINGULAR) == typName }
+      if (funktionTypParamIndex != -1) {
+        typ = Typ.Generic(funktionTypParamIndex, TypParamKontext.Funktion)
+      }
+    }
+    if (typ == null && typTypParams != null) {
+      val typParamIndex = typTypParams.indexOfFirst { param -> param.hauptWort(Kasus.NOMINATIV, Numerus.SINGULAR) == typName }
+      if (typParamIndex != -1) {
+        typ = Typ.Generic(typParamIndex, TypParamKontext.Typ)
       }
     }
 
+    if (typ == null) {
+      typ = when (typName) {
+        "Zahl" -> Typ.Primitiv.Zahl
+        "Zeichenfolge" -> Typ.Primitiv.Zeichenfolge
+        "Boolean" -> Typ.Primitiv.Boolean
+        else -> when (val typDef = definierer.holeTypDefinition(typKnoten)) {
+          is AST.Definition.Typdefinition.Klasse -> Typ.Compound.KlassenTyp.Klasse(typDef, typArgumente)
+          is AST.Definition.Typdefinition.Schnittstelle -> Typ.Compound.Schnittstelle(typDef, typArgumente)
+          is AST.Definition.Typdefinition.Alias -> {
+            if (!aliasErlaubt) {
+              throw GermanSkriptFehler.AliasFehler(typKnoten.name.bezeichner.toUntyped(), typDef)
+            }
+            holeTypDefinition(typDef.typ, null, null, false)
+          }
+        }
+      }
+    }
+    // Überprüfe hier die Anzahl der Typargumente
+    when (typ) {
+      is Typ.Primitiv, is Typ.Generic -> if (typArgumente.isNotEmpty())
+        throw GermanSkriptFehler.TypArgumentFehler(typKnoten.name.bezeichner.toUntyped(), typArgumente.size, 0)
+      is Typ.Compound.KlassenTyp -> if (typArgumente.size != typ.definition.typParameter.size)
+        throw GermanSkriptFehler.TypArgumentFehler(
+            typKnoten.name.bezeichner.toUntyped(),
+            typArgumente.size,
+            typ.definition.typParameter.size
+        )
+      is Typ.Compound.Schnittstelle -> if (typArgumente.size != typ.definition.typParameter.size)
+        throw GermanSkriptFehler.TypArgumentFehler(
+            typKnoten.name.bezeichner.toUntyped(),
+            typArgumente.size,
+            typ.definition.typParameter.size
+        )
+    }
+    return typ
+  }
 
-  fun bestimmeTypen(typKnoten: AST.TypKnoten?, istAliasErlaubt: Boolean): Typ? {
+
+  fun bestimmeTypen(typKnoten: AST.TypKnoten?, funktionsTypParameter: TypParameter?, typTypParameter: TypParameter?, istAliasErlaubt: Boolean): Typ? {
     if (typKnoten == null) {
       return null
     }
-    val singularTyp = holeTypDefinition(typKnoten, istAliasErlaubt)
+    typKnoten.typArgumente.forEach {typKnoten -> bestimmeTypen(typKnoten, funktionsTypParameter, typTypParameter, true)}
+    val singularTyp = holeTypDefinition(typKnoten, funktionsTypParameter, typTypParameter, istAliasErlaubt)
     typKnoten.typ = if (typKnoten.name.numerus == Numerus.SINGULAR) {
       singularTyp
     } else {
-      Typ.KlassenTyp.Liste(listenKlassenDefinition, singularTyp)
+      val nomen = typKnoten.name.copy()
+      nomen.numerus = Numerus.SINGULAR
+      nomen.deklination = typKnoten.name.deklination
+      nomen.fälle = EnumSet.of(Kasus.NOMINATIV)
+      val singularTypKnoten = AST.TypKnoten(typKnoten.modulPfad, nomen, emptyList())
+      singularTypKnoten.typ = singularTyp
+      Typ.Compound.KlassenTyp.Liste(listenKlassenDefinition, listOf(singularTypKnoten))
     }
     return typKnoten.typ
    }
 
-  private fun typisiereFunktionsSignatur(signatur: AST.Definition.FunktionsSignatur) {
-    bestimmeTypen(signatur.rückgabeTyp, true)
-    bestimmeTypen(signatur.objekt?.typKnoten, true)
+  private fun typisiereFunktionsSignatur(signatur: AST.Definition.FunktionsSignatur, typTypParameter: TypParameter?) {
+    // kombiniere die Typparameter
+    bestimmeTypen(signatur.rückgabeTyp, signatur.typParameter, typTypParameter, true)
+    bestimmeTypen(signatur.objekt?.typKnoten, signatur.typParameter, typTypParameter, true)
     for (parameter in signatur.parameter) {
-      bestimmeTypen(parameter.typKnoten, true)
+      bestimmeTypen(parameter.typKnoten, signatur.typParameter, typTypParameter, true)
     }
   }
 
   fun typisiereKlasse(klasse: AST.Definition.Typdefinition.Klasse) {
     for (eigenschaft in klasse.eigenschaften) {
-      bestimmeTypen(eigenschaft.typKnoten, true)
+      bestimmeTypen(eigenschaft.typKnoten, null, klasse.typParameter, true)
     }
     klasse.methoden.values.forEach { methode ->
-      methode.klasse.typ = Typ.KlassenTyp.Klasse(klasse)
-      typisiereFunktionsSignatur(methode.funktion.signatur)
+      //methode.klasse.typ = Typ.KlassenTyp.Klasse(klasse)
+      typisiereFunktionsSignatur(methode.funktion.signatur, klasse.typParameter)
     }
     klasse.konvertierungen.values.forEach { konvertierung ->
-      bestimmeTypen(konvertierung.typ, true)
+      bestimmeTypen(konvertierung.typ, null, null, true)
     }
     klasse.berechneteEigenschaften.values.forEach {eigenschaft ->
-      bestimmeTypen(eigenschaft.rückgabeTyp, true)
+      bestimmeTypen(eigenschaft.rückgabeTyp, klasse.typParameter, null, true)
+    }
+  }
+
+  fun typisiereSchnittstelle(schnittstelle: AST.Definition.Typdefinition.Schnittstelle) {
+    schnittstelle.methodenSignaturen.forEach { signatur ->
+      typisiereFunktionsSignatur(signatur, schnittstelle.typParameter)
     }
   }
 }

@@ -240,7 +240,7 @@ class KonstantenFalter(startDatei: File): ProgrammDurchlaufer<Wert?>(startDatei)
   }
 
   override fun evaluiereClosure(closure: AST.Ausdruck.Closure): Wert? {
-    val signatur = (closure.schnittstelle.typ as Typ.Schnittstelle).definition.methodenSignaturen[0]
+    val signatur = (closure.schnittstelle.typ as Typ.Compound.Schnittstelle).definition.methodenSignaturen[0]
     umgebung.pushBereich()
     for (param in signatur.parameter) {
       umgebung.schreibeVariable(param.name, null, true)

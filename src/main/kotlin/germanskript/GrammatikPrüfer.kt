@@ -212,7 +212,7 @@ class GrammatikPrüfer(startDatei: File): PipelineKomponente(startDatei) {
     if (pluralErwartet) {
       throw GermanSkriptFehler.GrammatikFehler.PluralErwartet(instanziierung.klasse.name.bezeichner.toUntyped())
     }
-    prüfeNomen(instanziierung.klasse.name, fälle, EnumSet.of(Numerus.SINGULAR))
+    prüfeTyp(instanziierung.klasse, fälle, EnumSet.of(Numerus.SINGULAR))
     if (kontextNomen != null) {
       prüfeNumerus(kontextNomen, Numerus.SINGULAR)
     }
@@ -336,12 +336,11 @@ class GrammatikPrüfer(startDatei: File): PipelineKomponente(startDatei) {
   }
 
   private fun prüfeParameter(parameter: AST.Definition.TypUndName, fälle: EnumSet<Kasus>) {
-    val nomen = parameter.typKnoten.name
-    prüfeNomen(nomen, fälle, Numerus.BEIDE)
+    prüfeTyp(parameter.typKnoten, fälle, Numerus.BEIDE)
     prüfeNomen(parameter.name, EnumSet.of(Kasus.NOMINATIV), Numerus.BEIDE)
     if (parameter.name.vornomenString == null) {
       val paramName = parameter.name
-      paramName.vornomenString = holeVornomen(TokenTyp.VORNOMEN.ARTIKEL.BESTIMMT, nomen.fälle.first(), paramName.genus, paramName.numerus!!)
+      paramName.vornomenString = holeVornomen(TokenTyp.VORNOMEN.ARTIKEL.BESTIMMT, parameter.typKnoten.name.fälle.first(), paramName.genus, paramName.numerus!!)
     }
   }
 
@@ -359,7 +358,7 @@ class GrammatikPrüfer(startDatei: File): PipelineKomponente(startDatei) {
 
   private fun prüfeTypParameter(typParameter: TypParameter) {
     for (param in typParameter) {
-      prüfeNomen(param, EnumSet.of(Kasus.NOMINATIV), Numerus.BEIDE)
+      prüfeNomen(param, EnumSet.of(Kasus.NOMINATIV), EnumSet.of(Numerus.SINGULAR))
     }
   }
 

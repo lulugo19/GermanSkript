@@ -186,7 +186,6 @@ class Definierer(startDatei: File): PipelineKomponente(startDatei) {
   }
 
   fun holeVollenNamenVonFunktionsAufruf(funktionsAufruf: AST.Funktion, ersetzeObjekt: String?): String {
-    // erkläre die Zeichenfolge mit der Zahl über die Zeile der Mond nach die Welt
     var vollerName = funktionsAufruf.verb.wert
     if (funktionsAufruf.objekt != null) {
       val objekt = funktionsAufruf.objekt
@@ -224,7 +223,59 @@ class Definierer(startDatei: File): PipelineKomponente(startDatei) {
     return vollerName
   }
 
-  private fun holeArgumentString(argument: AST.Argument): String {
+  fun ersetzeTypArgumentMitTypParameter(
+      funktionsAufruf: AST.Funktion,
+      typTypParams: List<AST.Nomen>,
+      typTypArgs: List<AST.TypKnoten>
+  ): String {
+    var vollerName = funktionsAufruf.verb.wert
+    if (funktionsAufruf.objekt != null) {
+      val objekt = funktionsAufruf.objekt
+      val argName = holeArgName(objekt, typTypParams, typTypArgs)
+      vollerName += holeArgumentString(objekt, argName)
+    } else if (funktionsAufruf.reflexivPronomen != null) {
+      val reflexivPronomen = funktionsAufruf.reflexivPronomen
+      val pronomen = if(reflexivPronomen.typ == TokenTyp.REFLEXIV_PRONOMEN.MICH) {
+        reflexivPronomen.wert
+      } else {
+        when (reflexivPronomen.wert) {
+          "dich" -> "mich"
+          "dir" -> "mir"
+          else -> throw Exception("Dieser Fall sollte nie auftreten.")
+        }
+      }
+      vollerName += " $pronomen"
+    }
+    for (präposition in funktionsAufruf.präpositionsArgumente) {
+      vollerName += " " + präposition.präposition.präposition.wert
+      for (argumentIndex in präposition.argumente.indices) {
+        val argument = präposition.argumente[argumentIndex]
+        val argName = holeArgName(argument, typTypParams, typTypArgs)
+        vollerName += holeArgumentString(argument, argName)
+        if (argumentIndex != präposition.argumente.size-1) {
+          vollerName += ","
+        }
+      }
+    }
+    if (funktionsAufruf.suffix != null) {
+      vollerName += " " + funktionsAufruf.suffix.wert
+    }
+    return vollerName
+  }
+
+  private fun holeArgName(
+      argument: AST.Argument,
+      typTypParams: List<AST.Nomen>,
+      typTypArgs: List<AST.TypKnoten>
+  ): AST.Nomen {
+    val ersetzeArgIndex = typTypArgs.indexOfFirst { arg -> arg.name.nominativ == argument.name.nominativ }
+    if (ersetzeArgIndex != -1) {
+      return typTypParams[ersetzeArgIndex]
+    }
+    return argument.name
+  }
+
+  private fun holeArgumentString(argument: AST.Argument, argName: AST.Nomen = argument.name): String {
     return if (argument.adjektiv != null) {
       val artikel = GrammatikPrüfer.holeVornomen(
           TokenTyp.VORNOMEN.ARTIKEL.BESTIMMT, argument.name.fälle.first(), Genus.NEUTRUM, argument.name.numerus!!)
@@ -233,11 +284,11 @@ class Definierer(startDatei: File): PipelineKomponente(startDatei) {
       val artikel = GrammatikPrüfer.holeVornomen(
           TokenTyp.VORNOMEN.ARTIKEL.BESTIMMT,
           argument.name.fälle.first(),
-          argument.name.genus,
+          argName.genus,
           argument.name.numerus!!
       )
 
-      " " + artikel + " " + argument.name.hauptWort(argument.name.fälle.first(), argument.name.numerus!!)
+      " " + artikel + " " + argName.hauptWort(argument.name.fälle.first(), argument.name.numerus!!)
     }
   }
 

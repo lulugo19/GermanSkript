@@ -96,7 +96,10 @@ sealed class AST {
       val typArgumente: List<TypKnoten>
   ): AST() {
     var typ: Typ? = null
-    override val children = sequenceOf(name)
+    override val children = sequence {
+      yieldAll(typArgumente)
+      yield(name)
+    }
     val vollständigerName: String = modulPfad.joinToString("::") { it.wert } +
         (if (modulPfad.isEmpty()) "" else "::")  + name.bezeichner.wert
   }
@@ -175,6 +178,7 @@ sealed class AST {
     }
 
     override val children = sequence {
+      yieldAll(typArgumente)
       if (objekt != null) {
         yield(objekt!!)
       }
@@ -240,6 +244,7 @@ sealed class AST {
       }
 
       override val children = sequence {
+        yieldAll(typParameter)
         if (rückgabeTyp != null) {
           yield(rückgabeTyp!!)
         }
@@ -289,6 +294,7 @@ sealed class AST {
         override val namensToken = name.bezeichner.toUntyped()
 
         override val children = sequence {
+          yieldAll(typParameter)
           yield(name)
           if (elternKlasse != null) {
             yield(elternKlasse!!)
@@ -307,6 +313,7 @@ sealed class AST {
         override val namensToken = name.toUntyped()
 
         override val children = sequence {
+          yieldAll(typParameter)
           yieldAll(methodenSignaturen)
         }
       }
@@ -492,6 +499,7 @@ sealed class AST {
       val name: Nomen,
       var ausdruck: Ausdruck
   ): AST() {
+
     override val children = sequence {
       if (adjektiv != null) {
         yield(adjektiv!!)

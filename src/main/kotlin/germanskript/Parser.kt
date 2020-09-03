@@ -310,12 +310,14 @@ private sealed class SubParser<T: AST>() {
       if (it != null) AST.Adjektiv(it) else null
     }
     var modulPfad: List<TypedToken<TokenTyp.BEZEICHNER_GROSS>>? = null
-    var typParameter = emptyList<AST.TypKnoten>()
     if (vornomen.typ == TokenTyp.VORNOMEN.ARTIKEL.UNBESTIMMT || vornomen.typ == TokenTyp.VORNOMEN.ETWAS) {
       modulPfad = parseModulPfad()
-      typParameter = parseTypArgumente()
     }
     val bezeichner = parseGroßenBezeichner(modulPfad == null)
+    var typArgumente = emptyList<AST.TypKnoten>()
+    if (vornomen.typ == TokenTyp.VORNOMEN.ARTIKEL.UNBESTIMMT || vornomen.typ == TokenTyp.VORNOMEN.ETWAS) {
+      typArgumente = parseTypArgumente()
+    }
     val nomen = AST.Nomen(vornomen, bezeichner)
     val nächstesToken = peek()
     val ausdruck = when (vornomen.typ) {
@@ -337,17 +339,17 @@ private sealed class SubParser<T: AST>() {
       is TokenTyp.VORNOMEN.ARTIKEL.UNBESTIMMT ->  {
         when (nächstesToken.typ) {
           is TokenTyp.OFFENE_ECKIGE_KLAMMER -> {
-            val pluralTyp = AST.TypKnoten(modulPfad!!, nomen, typParameter)
+            val pluralTyp = AST.TypKnoten(modulPfad!!, nomen, typArgumente)
             subParse(NomenAusdruck.Liste(pluralTyp))
           }
           else -> {
-            val klasse = AST.TypKnoten(modulPfad!!, nomen, typParameter)
+            val klasse = AST.TypKnoten(modulPfad!!, nomen, typArgumente)
             subParse(NomenAusdruck.ObjektInstanziierung(klasse))
           }
         }
       }
       is TokenTyp.VORNOMEN.ETWAS -> {
-        val schnittstelle = AST.TypKnoten(modulPfad!!, nomen, typParameter)
+        val schnittstelle = AST.TypKnoten(modulPfad!!, nomen, typArgumente)
         subParse(NomenAusdruck.Closure(schnittstelle))
       }
       TokenTyp.VORNOMEN.POSSESSIV_PRONOMEN.MEIN -> AST.Ausdruck.SelbstEigenschaftsZugriff(nomen)

@@ -121,6 +121,10 @@ sealed class GermanSkriptFehler(private val fehlerName: String, val token: Token
     }
   }
 
+  class TypArgumentFehler(token: Token, argAnzahl: Int, erwarteteAnzahl: Int): GermanSkriptFehler("Typargumentfehler", token) {
+    override val nachricht = "Es wurden $argAnzahl Typargumente angegeben. Erwartet werden jedoch $erwarteteAnzahl Typargument(e)."
+  }
+
   sealed class GrammatikFehler(token: Token): GermanSkriptFehler("Grammatikfehler",token) {
 
     sealed class FormFehler(token: Token, protected val kasus: Kasus, protected val nomen: AST.Nomen): GrammatikFehler(token) {

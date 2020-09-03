@@ -72,22 +72,24 @@ sealed class Wert {
 
   }
 
-  sealed class Objekt(val klassenDefinition: AST.Definition.Typdefinition.Klasse): Wert() {
+  sealed class Objekt(internal val typ: Typ.Compound.KlassenTyp): Wert() {
     // TODO: String sollte eindeutigen Identifier zurückliefern
-    override fun toString() = klassenDefinition.name.nominativ
+    override fun toString() = typ.definition.name.nominativ
     abstract fun holeEigenschaft(eigenschaftsName: AST.Nomen): Wert
     abstract fun setzeEigenschaft(eigenschaftsName: AST.Nomen, wert: Wert)
 
-    class SkriptObjekt(klassenDefinition: AST.Definition.Typdefinition.Klasse, val eigenschaften: MutableMap<String, Wert>)
-      : Objekt(klassenDefinition) {
+    class SkriptObjekt(
+        typ: Typ.Compound.KlassenTyp,
+        val eigenschaften: MutableMap<String, Wert>
+    ) : Objekt(typ) {
       override fun holeEigenschaft(eigenschaftsName: AST.Nomen) = eigenschaften.getValue(eigenschaftsName.nominativ)
       override fun setzeEigenschaft(eigenschaftsName: AST.Nomen, wert: Wert) {
         eigenschaften[eigenschaftsName.nominativ] = wert
       }
     }
 
-    class Liste(klassenDefinition: AST.Definition.Typdefinition.Klasse, val listenTyp: Typ, val elemente: MutableList<Wert>): Objekt(klassenDefinition) {
-      operator fun plus(liste: Liste) = Liste(klassenDefinition, listenTyp, (this.elemente + liste.elemente).toMutableList())
+    class Liste(typ: Typ.Compound.KlassenTyp, val elemente: MutableList<Wert>): Objekt(typ) {
+      operator fun plus(liste: Liste) = Liste(typ, (this.elemente + liste.elemente).toMutableList())
 
       override fun toString(): String {
         return "[${elemente.joinToString(", ")}]"
@@ -106,5 +108,5 @@ sealed class Wert {
     }
   }
 
-  class Closure(val schnittstelle: Typ.Schnittstelle, val körper: AST.Satz.Bereich, val umgebung: Umgebung<Wert>): Wert()
+  class Closure(val schnittstelle: Typ.Compound.Schnittstelle, val körper: AST.Satz.Bereich, val umgebung: Umgebung<Wert>): Wert()
 }
