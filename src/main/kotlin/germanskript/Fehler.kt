@@ -164,15 +164,15 @@ sealed class GermanSkriptFehler(private val fehlerName: String, val token: Token
   }
 
   sealed class DoppelteDefinition(token: Token): GermanSkriptFehler("Definitionsfehler", token) {
-    class Funktion(token: Token, private val definition: AST.Definition.FunktionOderMethode.Funktion): DoppelteDefinition(token) {
+    class Funktion(token: Token, private val definition: AST.Definition.Funktion): DoppelteDefinition(token) {
       override val nachricht: String
         get() = "Die Funktion '${definition.signatur.vollerName}' ist schon in ${definition.signatur.name.position} definiert."
     }
 
-    class Methode(token: Token, private val definition: AST.Definition.FunktionOderMethode.Methode): DoppelteDefinition(token) {
-      override val nachricht: String
-        get() = "Die Methode '${definition.funktion.signatur.vollerName}' für die Klasse '${definition.klasse.name.nominativ}' " +
-            "ist schon in ${definition.funktion.signatur.name.position} definiert."
+    class Methode(token: Token, methode: AST.Definition.Funktion, klasse: AST.Definition.Typdefinition.Klasse): DoppelteDefinition(token) {
+      override val nachricht =
+        "Die Methode '${methode.signatur.vollerName}' für die Klasse '${klasse.name.nominativ}' " +
+            "ist schon in ${methode.signatur.name.position} definiert."
     }
 
     class Typ(token: Token, private val vorhandeneDefinition: Token): DoppelteDefinition(token) {
@@ -182,8 +182,8 @@ sealed class GermanSkriptFehler(private val fehlerName: String, val token: Token
 
     class Konvertierung(token: Token, private val konvertierung: AST.Definition.Konvertierung): DoppelteDefinition(token) {
       override val nachricht: String
-        get() = "Die Konvertierung von '${konvertierung.klasse.name.nominativ}' zu '${konvertierung.typ.name.nominativ}'\n" +
-            "ist schon in ${konvertierung.klasse.name.bezeichner.position} definiert."
+        get() = "Die Konvertierung von '${konvertierung.typ.name.nominativ}' zu '${konvertierung.typ.name.nominativ}'\n" +
+            "ist schon in ${konvertierung.typ.name.bezeichner.position} definiert."
     }
 
     class Eigenschaft(token: Token, eigenschaft: AST.Definition.Eigenschaft): DoppelteDefinition(token) {
@@ -268,8 +268,8 @@ sealed class GermanSkriptFehler(private val fehlerName: String, val token: Token
 
     class Funktion(
         token: Token,
-        funktionA: AST.Definition.FunktionOderMethode.Funktion,
-        funktionB: AST.Definition.FunktionOderMethode.Funktion): Mehrdeutigkeit(token) {
+        funktionA: AST.Definition.Funktion,
+        funktionB: AST.Definition.Funktion): Mehrdeutigkeit(token) {
 
       override val nachricht: String = "Es ist unklar welche Funktion gemeint ist.\n" +
             "Entweder die Funktion in ${funktionA.signatur.name.position} oder die Funktion in " +

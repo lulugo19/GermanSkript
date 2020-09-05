@@ -13,20 +13,16 @@ class Definierer(startDatei: File): PipelineKomponente(startDatei) {
   }
 
   private fun definiere(definitionen: AST.DefinitionsContainer) {
-    definitionen.funktionenOderMethoden.forEach { knoten ->
-      when (knoten) {
-        is AST.Definition.FunktionOderMethode.Funktion -> definiereFunktion(knoten)
-        is AST.Definition.FunktionOderMethode.Methode -> definiereMethode(knoten)
-      }
-    }
-    definitionen.konvertierungen.forEach(::definiereKonvertierung)
-    definitionen.eigenschaften.forEach(::definiereEigenschaft)
-    definitionen.module.values.forEach {modul -> definiere(modul.definitionen)}
+    // Benenne die Methodensignaturen der Schnittstellen
     definitionen.definierteTypen.values.forEach { schnittstelle ->
       if (schnittstelle is AST.Definition.Typdefinition.Schnittstelle) {
         schnittstelle.methodenSignaturen.forEach { holeVollenNameVonFunktionsSignatur(it) }
       }
     }
+
+    definitionen.funktionsListe.forEach(::definiereFunktion)
+    definitionen.implementierungen.forEach(::definiereImplementierung)
+    definitionen.module.values.forEach {modul -> definiere(modul.definitionen)}
   }
 
   private fun durchlaufeDefinitionsContainer(knoten: AST): Sequence<AST.DefinitionsContainer> = sequence {
@@ -38,12 +34,12 @@ class Definierer(startDatei: File): PipelineKomponente(startDatei) {
     }
   }
 
-  fun holeFunktionsDefinition(funktionsAufruf: AST.Funktion): AST.Definition.FunktionOderMethode.Funktion {
+  fun holeFunktionsDefinition(funktionsAufruf: AST.Funktion): AST.Definition.Funktion {
     if (funktionsAufruf.vollerName == null) {
       funktionsAufruf.vollerName = holeVollenNamenVonFunktionsAufruf(funktionsAufruf, null)
     }
     if (funktionsAufruf.modulPfad.isEmpty()) {
-      var funktionsDefinition: AST.Definition.FunktionOderMethode.Funktion? = null
+      var funktionsDefinition: AST.Definition.Funktion? = null
       for (definitionen in durchlaufeDefinitionsContainer(funktionsAufruf)) {
         if (definitionen.funktionen.containsKey(funktionsAufruf.vollerName!!)) {
           funktionsDefinition = definitionen.funktionen.getValue(funktionsAufruf.vollerName!!)
@@ -295,10 +291,10 @@ class Definierer(startDatei: File): PipelineKomponente(startDatei) {
   /**
    * Gibt alle Funktionsdefinitionen zurück.
    */
-  val funktionsDefinitionen get(): Sequence<AST.Definition.FunktionOderMethode.Funktion> = sequence {
+  val funktionsDefinitionen get(): Sequence<AST.Definition.Funktion> = sequence {
     // Der Rückgabetyp der Funktionen muss explizit dranstehen. Ansonsten gibt es einen internen Fehler
     fun holeFunktionsDefinitionen(container: AST.DefinitionsContainer):
-        Sequence<AST.Definition.FunktionOderMethode.Funktion> = sequence {
+        Sequence<AST.Definition.Funktion> = sequence {
       for (funktion in container.funktionen.values) {
         yield(funktion)
       }
@@ -357,7 +353,7 @@ class Definierer(startDatei: File): PipelineKomponente(startDatei) {
     }
   }
 
-  private fun definiereFunktion(funktionsDefinition: AST.Definition.FunktionOderMethode.Funktion) {
+  private fun definiereFunktion(funktionsDefinition: AST.Definition.Funktion) {
     val vollerName = holeVollenNameVonFunktionsSignatur(funktionsDefinition.signatur)
     val definitionsContainer = funktionsDefinition.findNodeInParents<AST.DefinitionsContainer>()!!
     if (definitionsContainer.funktionen.containsKey(vollerName)) {
@@ -369,41 +365,41 @@ class Definierer(startDatei: File): PipelineKomponente(startDatei) {
     definitionsContainer.funktionen[vollerName] = funktionsDefinition
   }
 
-  private fun definiereMethode(methodenDefinition: AST.Definition.FunktionOderMethode.Methode) {
-    val vollerName = holeVollenNameVonFunktionsSignatur(methodenDefinition.funktion.signatur)
-    val klasse = holeTypDefinition(methodenDefinition.klasse)
+  private fun definiereImplementierung(implementierung: AST.Definition.Implementierung) {
+    val klasse = holeTypDefinition(implementierung.klasse)
     if (klasse !is AST.Definition.Typdefinition.Klasse) {
-      throw GermanSkriptFehler.KlasseErwartet(methodenDefinition.klasse.name.bezeichner.toUntyped())
+      throw GermanSkriptFehler.KlasseErwartet(implementierung.klasse.name.bezeichner.toUntyped())
     }
-    if (klasse.methoden.containsKey(vollerName)) {
-      throw GermanSkriptFehler.DoppelteDefinition.Methode(
-          methodenDefinition.funktion.signatur.name.toUntyped(),
-          klasse.methoden.getValue(vollerName)
-      )
-    }
-    klasse.methoden[vollerName] = methodenDefinition
+    klasse.implementierungen += implementierung
+    implementierung.methoden.forEach { methode -> definiereMethode(methode, klasse) }
+    implementierung.eigenschaften.forEach { eigenschaft -> definiereEigenschaft(eigenschaft, klasse) }
+    implementierung.konvertierungen.forEach { konvertierung -> definiereKonvertierung(konvertierung, klasse) }
   }
 
-  private fun definiereKonvertierung(konvertierung: AST.Definition.Konvertierung) {
-    val klasse = holeTypDefinition(konvertierung.klasse)
-    if (klasse !is AST.Definition.Typdefinition.Klasse) {
-      throw GermanSkriptFehler.KlasseErwartet(konvertierung.klasse.name.bezeichner.toUntyped())
-    }
+  private fun definiereKonvertierung(konvertierung: AST.Definition.Konvertierung, klasse: AST.Definition.Typdefinition.Klasse) {
     val typName = konvertierung.typ.name.nominativ
     if (klasse.konvertierungen.containsKey(typName)) {
       throw GermanSkriptFehler.DoppelteDefinition.Konvertierung(
-          konvertierung.klasse.name.bezeichner.toUntyped(),
+          konvertierung.typ.name.bezeichner.toUntyped(),
           klasse.konvertierungen.getValue(typName)
       )
     }
     klasse.konvertierungen[typName] = konvertierung
   }
 
-  private fun definiereEigenschaft(eigenschaft: AST.Definition.Eigenschaft) {
-    val klasse = holeTypDefinition(eigenschaft.klasse)
-    if (klasse !is AST.Definition.Typdefinition.Klasse) {
-      throw GermanSkriptFehler.KlasseErwartet(eigenschaft.klasse.name.bezeichner.toUntyped())
+  private fun definiereMethode(methode: AST.Definition.Funktion, klasse: AST.Definition.Typdefinition.Klasse) {
+    val vollerName = holeVollenNameVonFunktionsSignatur(methode.signatur)
+    if (klasse.methoden.containsKey(vollerName)) {
+      throw GermanSkriptFehler.DoppelteDefinition.Methode(
+          methode.signatur.name.toUntyped(),
+          klasse.methoden.getValue(vollerName),
+          klasse
+      )
     }
+    klasse.methoden[vollerName] = methode
+  }
+
+  private fun definiereEigenschaft(eigenschaft: AST.Definition.Eigenschaft, klasse: AST.Definition.Typdefinition.Klasse) {
     val eigenschaftsName = eigenschaft.name.nominativ
     if (klasse.berechneteEigenschaften.containsKey(eigenschaftsName)) {
       throw GermanSkriptFehler.DoppelteDefinition.Eigenschaft(

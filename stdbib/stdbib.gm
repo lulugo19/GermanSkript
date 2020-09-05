@@ -55,10 +55,12 @@ Nomen<Typ> Liste:
     jene AnZahl ist 0
 .
 
-Verb(Boolean) für Liste enthält den Typ: intern.
-Verb für Liste füge den Typ hinzu: intern.
-Verb für Liste entferne an der Zahl Index: intern.
-Verb für Liste sortiere mich mit dem Vergleichbaren<Typ>: intern.
+implementiere die Liste:
+    Verb(Boolean) enthält den Typ: intern.
+    Verb füge den Typ hinzu: intern.
+    Verb entferne an der Zahl Index: intern.
+    Verb sortiere mich mit dem Vergleichbaren<Typ>: intern.
+.
 
 Adjektiv<Typ> vergleichbar:
     Verb(Zahl) vergleiche den TypA mit dem TypB
@@ -71,6 +73,6 @@ Deklination Femininum Singular(Meldung) Plural(Meldungen)
 Nomen Fehler mit der Zeichenfolge FehlerMeldung:.
 Nomen KonvertierungsFehler als Fehler:.
 
-als Zeichenfolge für Fehler:
-    gebe meine FehlerMeldung zurück
+implementiere den Fehler:
+    als Zeichenfolge: gebe meine FehlerMeldung zurück.
 .

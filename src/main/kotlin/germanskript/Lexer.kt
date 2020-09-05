@@ -110,6 +110,7 @@ sealed class TokenTyp(val anzeigeName: String) {
     object MODUL: TokenTyp("'Modul'")
     object EIGENSCHAFT: TokenTyp("'Eigenschaft'")
     object KONSTANTE: TokenTyp("'Konstante'")
+    object IMPLEMENTIERE : TokenTyp("'implementiere'")
     object AUFZÄHLUNG: TokenTyp("'Aufzählung'")
     object INTERN: TokenTyp("'intern'")
     object SUPER: TokenTyp("'Super'")
@@ -251,6 +252,7 @@ private val WORT_MAPPING = mapOf<String, TokenTyp>(
     "Verb" to TokenTyp.VERB,
     "Eigenschaft" to TokenTyp.EIGENSCHAFT,
     "Konstante" to TokenTyp.KONSTANTE,
+    "implementiere" to TokenTyp.IMPLEMENTIERE,
     "intern" to TokenTyp.INTERN,
     "Adjektiv" to TokenTyp.ADJEKTIV,
     "Alias" to TokenTyp.ALIAS,

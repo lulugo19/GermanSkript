@@ -60,8 +60,7 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
 
    fun typIstTyp(typ: Typ, sollTyp: Typ): Boolean {
     fun überprüfeSchnittstelle(klasse: Typ.Compound.KlassenTyp, schnittstelle: Typ.Compound.Schnittstelle): Boolean =
-      schnittstelle.definition.methodenSignaturen.all { signatur ->
-        klasse.definition.methoden.containsKey(signatur.vollerName!!) }
+      klasse.definition.implementierteSchnittstellen.contains(schnittstelle)
 
     fun überprüfeKlassenHierarchie(klasse: Typ.Compound.KlassenTyp, elternKlasse: Typ.Compound.KlassenTyp): Boolean {
       var laufTyp: Typ.Compound.KlassenTyp? = klasse
@@ -138,7 +137,7 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
   // breche niemals Sätze ab
   override fun sollSätzeAbbrechen(): Boolean = false
 
-  private fun prüfeFunktion(funktion: AST.Definition.FunktionOderMethode.Funktion) {
+  private fun prüfeFunktion(funktion: AST.Definition.Funktion) {
     val funktionsUmgebung = Umgebung<Typ>()
     funktionsUmgebung.pushBereich()
     for (parameter in funktion.signatur.parameter) {
@@ -171,10 +170,10 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
       typKnoten
     })
     durchlaufeAufruf(klasse.name.bezeichner.toUntyped(), klasse.konstruktor, Umgebung(), true,null)
-    klasse.methoden.values.forEach {methode -> prüfeFunktion(methode.funktion)}
+    klasse.methoden.values.forEach(::prüfeFunktion)
     klasse.konvertierungen.values.forEach {konvertierung ->
       durchlaufeAufruf(
-          konvertierung.klasse.name.bezeichner.toUntyped(),
+          konvertierung.typ.name.bezeichner.toUntyped(),
           konvertierung.definition, Umgebung(), true, konvertierung.typ.typ!!)
     }
     klasse.berechneteEigenschaften.values.forEach {eigenschaft ->
@@ -325,7 +324,7 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
         val methodenName = definierer.holeVollenNamenVonFunktionsAufruf(funktionsAufruf, reflexivPronomen)
         if (methoden.containsKey(methodenName)) {
           funktionsAufruf.vollerName = "für ${klassenTyp.bezeichner}: ${methodenName}"
-          funktionsAufruf.funktionsDefinition = methoden.getValue(methodenName).funktion
+          funktionsAufruf.funktionsDefinition = methoden.getValue(methodenName)
           funktionsAufruf.aufrufTyp = FunktionsAufrufTyp.METHODEN_OBJEKT_AUFRUF
           funktionsSignatur = funktionsAufruf.funktionsDefinition!!.signatur
         }
@@ -384,7 +383,7 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
 
     // ist Methodenaufruf von Block-Variable
     if (typ.definition.methoden.containsKey(funktionsAufruf.vollerName!!)) {
-      val methodenDefinition = typ.definition.methoden.getValue(funktionsAufruf.vollerName!!).funktion
+      val methodenDefinition = typ.definition.methoden.getValue(funktionsAufruf.vollerName!!)
       // Bei einem Selbstaufruf wird die Methodendefinition festgelegt (kein dynamisches Binding)
       if (aufrufTyp == FunktionsAufrufTyp.METHODEN_SELBST_AUFRUF) {
         funktionsAufruf.funktionsDefinition = methodenDefinition
@@ -400,7 +399,7 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
           funktionsAufruf, typ.definition.typParameter, typ.typArgumente)
       if (typ.definition.methoden.containsKey(ersetzeTypArgsName)) {
         // TODO: Die Typparameternamen müssen für den Interpreter später hier ersetzt werden
-        val methodenDefinition = typ.definition.methoden.getValue(ersetzeTypArgsName).funktion
+        val methodenDefinition = typ.definition.methoden.getValue(ersetzeTypArgsName)
         funktionsAufruf.vollerName = ersetzeTypArgsName
         if (aufrufTyp == FunktionsAufrufTyp.METHODEN_SELBST_AUFRUF) {
           funktionsAufruf.funktionsDefinition = methodenDefinition

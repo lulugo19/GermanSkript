@@ -53,7 +53,12 @@ sealed class Typ() {
 
       override fun kannNachTypKonvertiertWerden(typ: Typ) = typ == Boolean || typ == Zeichenfolge || typ == Zahl
     }
+  }
 
+  object Nichts: Typ() {
+    override val name = "Nichts"
+    override val definierteOperatoren: Map<Operator, Typ> = mapOf()
+    override fun kannNachTypKonvertiertWerden(typ: Typ) = false
   }
 
   data class Generic(val index: Int, val kontext: TypParamKontext) : Typ() {
@@ -241,7 +246,7 @@ class Typisierer(startDatei: File): PipelineKomponente(startDatei) {
     }
     klasse.methoden.values.forEach { methode ->
       //methode.klasse.typ = Typ.KlassenTyp.Klasse(klasse)
-      typisiereFunktionsSignatur(methode.funktion.signatur, klasse.typParameter)
+      typisiereFunktionsSignatur(methode.signatur, klasse.typParameter)
     }
     klasse.konvertierungen.values.forEach { konvertierung ->
       bestimmeTypen(konvertierung.typ, null, null, true)
@@ -249,9 +254,74 @@ class Typisierer(startDatei: File): PipelineKomponente(startDatei) {
     klasse.berechneteEigenschaften.values.forEach {eigenschaft ->
       bestimmeTypen(eigenschaft.rückgabeTyp, klasse.typParameter, null, true)
     }
+    klasse.implementierungen.forEach { implementierung ->
+      implementierung.adjektive.forEach { adjektiv ->
+        prüfeImplementiertSchnittstelle(klasse, adjektiv)
+      }
+    }
   }
 
-  fun typisiereSchnittstelle(schnittstelle: AST.Definition.Typdefinition.Schnittstelle) {
+  private fun prüfeImplementiertSchnittstelle(
+      klasse: AST.Definition.Typdefinition.Klasse,
+      adjektiv: AST.Adjektiv) {
+
+    val schnittstelle = holeTypDefinition(adjektiv.inTypKnoten(), null, klasse.typParameter, true)
+    if (schnittstelle !is Typ.Compound.Schnittstelle) {
+      throw GermanSkriptFehler.SchnittstelleErwartet(adjektiv.bezeichner.toUntyped())
+    }
+
+    fun holeErwartetenTypen(schnittstellenParam: AST.Definition.TypUndName): Typ {
+      return when (val typ = schnittstellenParam.typKnoten.typ!!) {
+        is Typ.Generic -> when (typ.kontext) {
+          TypParamKontext.Typ -> schnittstelle.typArgumente[typ.index].typ!!
+          TypParamKontext.Funktion -> typ
+        }
+        else -> typ
+      }
+    }
+
+    for (signatur in schnittstelle.definition.methodenSignaturen) {
+      val methode = klasse.methoden.getOrElse(signatur.vollerName!!, {
+        throw GermanSkriptFehler.UnimplementierteSchnittstelle(
+            adjektiv.bezeichner.toUntyped(),
+            klasse,
+            schnittstelle.definition
+        )
+      })
+      // überprüfe Rückgabetypen
+      if (signatur.rückgabeTyp == null && methode.signatur.rückgabeTyp != null) {
+        throw GermanSkriptFehler.TypFehler.FalscherTyp(
+            methode.signatur.rückgabeTyp.name.bezeichner.toUntyped(),
+            methode.signatur.rückgabeTyp.typ!!,
+            "kein Rückgabetyp"
+        )
+      }
+
+      if (signatur.rückgabeTyp != null && methode.signatur.rückgabeTyp == null) {
+        throw GermanSkriptFehler.TypFehler.FalscherTyp(
+            methode.signatur.name.toUntyped(), Typ.Nichts, signatur.rückgabeTyp.toString()
+        )
+      }
+
+      // überprüfe Parameter
+      val schnittstellenParameter = signatur.parameter
+      val methodenParameter = methode.signatur.parameter
+      for (pIndex in methodenParameter.indices) {
+        val erwarteterTyp = holeErwartetenTypen(schnittstellenParameter[pIndex])
+        if (methodenParameter[pIndex].typKnoten.typ != erwarteterTyp) {
+          throw GermanSkriptFehler.TypFehler.FalscherTyp(
+              methodenParameter[pIndex].typKnoten.name.bezeichner.toUntyped(),
+              methodenParameter[pIndex].typKnoten.typ!!,
+              erwarteterTyp.toString()
+          )
+        }
+      }
+      // füge die Schnittstelle als implementierte Schnittstelle für die Klasse hinzu
+      klasse.implementierteSchnittstellen += schnittstelle
+    }
+  }
+
+  private fun typisiereSchnittstelle(schnittstelle: AST.Definition.Typdefinition.Schnittstelle) {
     schnittstelle.methodenSignaturen.forEach { signatur ->
       typisiereFunktionsSignatur(signatur, schnittstelle.typParameter)
     }
