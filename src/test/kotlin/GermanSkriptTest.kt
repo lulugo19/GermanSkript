@@ -997,5 +997,21 @@ class GermanSkriptTest {
     testeGermanSkriptCode(quellCode, erwarteteAusgabe)
   }
 
+  @Test
+  @DisplayName("Liste sortieren")
+  fun listeSortieren() {
+    val quellCode = """
+      die Zahlen sind einige Zahlen[1, 2, 3]
+      Zahlen:
+        sortiere dich mit etwas Vergleichbarem: gebe die ZahlB - die ZahlA zurück.
+      !
+      schreibe die Zeichenfolge (die Zahlen als Zeichenfolge)
+    """.trimIndent()
+
+    val erwarteteAusgabe = "[3, 2, 1]"
+
+    testeGermanSkriptCode(quellCode, erwarteteAusgabe)
+  }
+
 
 }

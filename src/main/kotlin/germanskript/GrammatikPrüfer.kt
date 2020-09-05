@@ -259,7 +259,7 @@ class GrammatikPrüfer(startDatei: File): PipelineKomponente(startDatei) {
     if (pluralErwartet) {
       throw GermanSkriptFehler.GrammatikFehler.PluralErwartet(closure.schnittstelle.name.bezeichner.toUntyped())
     }
-    prüfeNomen(closure.schnittstelle.name, fälle, EnumSet.of(Numerus.SINGULAR))
+    prüfeTyp(closure.schnittstelle, fälle, EnumSet.of(Numerus.SINGULAR))
     if (kontextNomen != null) {
       prüfeNumerus(kontextNomen, Numerus.SINGULAR)
     }

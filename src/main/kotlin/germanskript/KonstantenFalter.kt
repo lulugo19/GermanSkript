@@ -188,7 +188,7 @@ class KonstantenFalter(startDatei: File): ProgrammDurchlaufer<Wert?>(startDatei)
     werfe.ausdruck = falteKonstante(werfe.ausdruck)
   }
 
-  override fun durchlaufeIntern() {
+  override fun durchlaufeIntern(intern: AST.Satz.Intern) {
     // hier muss nichts gemacht werden
   }
 

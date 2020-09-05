@@ -10,11 +10,14 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
   val logger = SimpleLogger()
   val ast: AST.Programm get() = typisierer.ast
 
+  // ganz viele veränderliche Variablen :(
   private var zuÜberprüfendeKlasse: Typ.Compound.KlassenTyp? = null
   private var rückgabeTyp: Typ? = null
   private var funktionsTypParams: List<AST.Nomen>? = null
+  private var letzterFunktionsAufruf: AST.Funktion? = null
   private var rückgabeErreicht = false
   private var evaluiereKonstante = false
+  private var erwarteterTyp: Typ? = null
 
   fun prüfe() {
     typisierer.typisiere()
@@ -34,7 +37,10 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
       funktionsTypArgs: List<AST.TypKnoten>? = null,
       typTypArgs: List<AST.TypKnoten>? = null
   ): Typ {
+    // verwende den erwarteten Typen um für Objektinitialisierung und Closures Typargumente zu inferieren
+    this.erwarteterTyp = erwarteterTyp
     val ausdruckTyp = evaluiereAusdruck(ausdruck)
+    this.erwarteterTyp = null
     @Suppress("NAME_SHADOWING")
     var erwarteterTyp = erwarteterTyp
     if (erwarteterTyp is Typ.Generic) {
@@ -73,6 +79,44 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
       typ is Typ.Compound.KlassenTyp && sollTyp is Typ.Compound.KlassenTyp -> überprüfeKlassenHierarchie(typ, sollTyp)
       else -> typ == sollTyp
     }
+  }
+
+  /**
+   * inferiert Typargumente basierend auf den erwarteten Typen
+   */
+  private fun inferiereTypArgumente(typ: Typ.Compound) {
+    if (erwarteterTyp is Typ.Compound &&
+        typ.typArgumente.isEmpty() &&
+        typ.definition === (erwarteterTyp as Typ.Compound).definition) {
+      typ.typArgumente = (erwarteterTyp as Typ.Compound).typArgumente.map {arg ->
+        when (val argTyp = arg.typ) {
+          // TODO: Gucke dir das nochmal genauer an. Braucht man diese Ersetzung wirklich? Welche Probleme können enstehen?
+          is Typ.Generic -> when (argTyp.kontext) {
+            TypParamKontext.Typ -> (umgebung.holeMethodenBlockObjekt()!! as Typ.Compound).typArgumente[argTyp.index]
+            TypParamKontext.Funktion -> letzterFunktionsAufruf!!.typArgumente[argTyp.index]
+          }
+          else -> arg
+        }
+      }
+    }
+  }
+
+  private fun holeParamName(param: AST.Definition.TypUndName, typArgumente: List<AST.TypKnoten>): AST.Nomen {
+    return if (param.typKnoten.typ is Typ.Generic && param.typIstName) {
+      param.name.tauscheHauptWortAus(typArgumente[(param.typKnoten.typ as Typ.Generic).index].name.deklination!!)
+    } else {
+      return param.name
+    }
+  }
+
+  private fun holeParamTyp(param: AST.Definition.TypUndName, typArgumente: List<AST.TypKnoten>): Typ {
+    return if (param.typKnoten.typ is Typ.Generic) {
+      val generic = param.typKnoten.typ as Typ.Generic
+      when (generic.kontext) {
+        TypParamKontext.Typ -> typArgumente[generic.index].typ!!
+        TypParamKontext.Funktion -> letzterFunktionsAufruf!!.typArgumente[generic.index].typ!!
+      }
+    } else param.typKnoten.typ!!
   }
 
   private fun prüfeKonstante(konstante: AST.Definition.Konstante) {
@@ -305,6 +349,7 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
     }
 
     // stimmen die Argument Typen mit den Parameter Typen überein?
+    letzterFunktionsAufruf = funktionsAufruf
     for (i in parameter.indices) {
       val typKontext =
         if (funktionsAufruf.aufrufTyp == FunktionsAufrufTyp.METHODEN_BLOCK_AUFRUF)
@@ -312,6 +357,7 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
         else null
       ausdruckMussTypSein(argumente[i+j].ausdruck, parameter[i].typKnoten.typ!!, funktionsAufruf.typArgumente, typKontext)
     }
+    letzterFunktionsAufruf = null
 
     return funktionsSignatur.rückgabeTyp?.typ
   }
@@ -445,7 +491,7 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
     evaluiereAusdruck(werfe.ausdruck)
   }
 
-  override fun durchlaufeIntern() {
+  override fun durchlaufeIntern(intern: AST.Satz.Intern) {
     // Hier muss nicht viel gemacht werden
     // die internen Sachen sind schon von kotlin Typ-gecheckt :)
     rückgabeErreicht = true
@@ -556,6 +602,7 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
     if (klasse !is Typ.Compound.KlassenTyp) {
       throw GermanSkriptFehler.TypFehler.ObjektErwartet(instanziierung.klasse.name.bezeichner.toUntyped())
     }
+    inferiereTypArgumente(klasse)
 
     val definition = klasse.definition
 
@@ -573,12 +620,7 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
       val zuweisung = instanziierung.eigenschaftsZuweisungen[i-j]
 
       // Wenn es es sich um eine generische Eigenschaft handelt, verwende den Namen des Typarguments
-      val eigenschaftsName = if (eigenschaft.typKnoten.typ is Typ.Generic &&
-          eigenschaft.typKnoten.name.bezeichner == eigenschaft.name.bezeichner) {
-        instanziierung.klasse.typArgumente[(eigenschaft.typKnoten.typ as Typ.Generic).index].name
-      } else {
-        eigenschaft.name
-      }
+      val eigenschaftsName = holeParamName(eigenschaft, instanziierung.klasse.typArgumente)
       if (eigenschaftsName.nominativ != zuweisung.name.nominativ) {
         GermanSkriptFehler.EigenschaftsFehler.UnerwarteterEigenschaftsName(zuweisung.name.bezeichner.toUntyped(), eigenschaft.name.nominativ)
       }
@@ -621,11 +663,7 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
 
   private fun holeNormaleEigenschaftAusKlasse(eigenschaftsName: AST.Nomen, klasse: Typ.Compound.KlassenTyp): AST.Definition.TypUndName {
     for (eigenschaft in klasse.definition.eigenschaften) {
-      val name = if (eigenschaft.typKnoten.typ!! is Typ.Generic && eigenschaft.typKnoten.name.bezeichner == eigenschaft.name.bezeichner) {
-        klasse.typArgumente[(eigenschaft.typKnoten.typ!! as Typ.Generic).index].name
-      } else {
-        eigenschaft.name
-      }
+      val name = holeParamName(eigenschaft ,klasse.typArgumente)
       if (eigenschaftsName.nominativ == name.nominativ) {
         return eigenschaft
       }
@@ -688,6 +726,7 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
     if (schnittstelle !is Typ.Compound.Schnittstelle) {
       throw GermanSkriptFehler.SchnittstelleErwartet(closure.schnittstelle.name.bezeichner.toUntyped())
     }
+    inferiereTypArgumente(schnittstelle)
     if (schnittstelle.definition.methodenSignaturen.size != 1) {
       throw GermanSkriptFehler.UngültigeClosureSchnittstelle(closure.schnittstelle.name.bezeichner.toUntyped(), schnittstelle.definition)
     }
@@ -695,8 +734,10 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
     val prevRückgabeErreicht = rückgabeErreicht
     val signatur = schnittstelle.definition.methodenSignaturen[0]
     umgebung.pushBereich()
-    for (parameter in signatur.parameter) {
-      umgebung.schreibeVariable(parameter.name, parameter.typKnoten.typ!!, false)
+    for (param in signatur.parameter) {
+      val paramName = holeParamName(param, schnittstelle.typArgumente)
+      val paramTyp = holeParamTyp(param, schnittstelle.typArgumente)
+      umgebung.schreibeVariable(paramName, paramTyp, false)
     }
     durchlaufeAufruf(
         closure.schnittstelle.name.bezeichner.toUntyped(),

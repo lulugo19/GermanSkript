@@ -826,11 +826,11 @@ private sealed class SubParser<T: AST>() {
       }
 
       override fun parseImpl(): AST.Satz.Intern {
-        expect<TokenTyp.INTERN>("intern")
+        val token = expect<TokenTyp.INTERN>("intern")
         if (peekType() !is TokenTyp.PUNKT) {
           throw GermanSkriptFehler.SyntaxFehler.ParseFehler(next(), ".")
         }
-        return AST.Satz.Intern
+        return AST.Satz.Intern(token)
       }
     }
 

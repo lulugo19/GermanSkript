@@ -3,13 +3,14 @@ import java.io.File
 import java.util.*
 
 
-sealed class Typ(val name: String) {
+sealed class Typ() {
+  abstract val name: String
   override fun toString(): String = name
 
   abstract val definierteOperatoren: Map<Operator, Typ>
   abstract fun kannNachTypKonvertiertWerden(typ: Typ): Boolean
 
-  sealed class Primitiv(name: String): Typ(name) {
+  sealed class Primitiv(override val name: String): Typ() {
     object Zahl : Primitiv("Zahl") {
       override val definierteOperatoren: Map<Operator, Typ> = mapOf(
             Operator.PLUS to Zahl,
@@ -55,24 +56,37 @@ sealed class Typ(val name: String) {
 
   }
 
-  data class Generic(val index: Int, val kontext: TypParamKontext) : Typ("Generic") {
+  data class Generic(val index: Int, val kontext: TypParamKontext) : Typ() {
+    override val name = "Generic"
     override val definierteOperatoren: Map<Operator, Typ>
       get() = mapOf()
 
     override fun kannNachTypKonvertiertWerden(typ: Typ): Boolean = false
   }
 
-  sealed class Compound(name: String): Typ(name) {
+  sealed class Compound(private val typName: String): Typ() {
     abstract val definition: AST.Definition.Typdefinition
-    abstract val typArgumente: List<AST.TypKnoten>
+    abstract var typArgumente: List<AST.TypKnoten>
+    override val name get() = typName + if (typArgumente.isEmpty()) "" else "<${typArgumente.joinToString(", ") {it.name.nominativ}}>"
+
+    override fun equals(other: Any?): Boolean {
+      if (this === other) return true
+      if (other !is Compound) return false
+      return this.definition == other.definition && this.typArgumente.size == other.typArgumente.size
+          && this.typArgumente.zip(other.typArgumente).all { (a, b) ->
+        a.typ is Generic && b.typ !is Generic ||
+        a.typ !is Generic && b.typ is Generic ||
+            a == b
+      }
+    }
 
     sealed class KlassenTyp(name: String): Compound(name) {
       abstract override val definition: AST.Definition.Typdefinition.Klasse
 
-      data class Klasse(
+      class Klasse(
           override val definition: AST.Definition.Typdefinition.Klasse,
-          override val typArgumente: List<AST.TypKnoten>
-      ): KlassenTyp(definition.name.hauptWort(Kasus.NOMINATIV, Numerus.SINGULAR) + "<${typArgumente.joinToString(", ")}>") {
+          override var typArgumente: List<AST.TypKnoten>
+      ): KlassenTyp(definition.name.hauptWort(Kasus.NOMINATIV, Numerus.SINGULAR)) {
         override val definierteOperatoren: Map<Operator, Typ> = mapOf(
             Operator.GLEICH to Primitiv.Boolean
         )
@@ -82,10 +96,10 @@ sealed class Typ(val name: String) {
         }
       }
 
-      data class Liste(
+      class Liste(
           override val definition: AST.Definition.Typdefinition.Klasse,
-          override val typArgumente: List<AST.TypKnoten>
-      ) : KlassenTyp("Liste<${typArgumente[0]}>") {
+          override var typArgumente: List<AST.TypKnoten>
+      ) : KlassenTyp("Liste") {
         // Das hier muss umbedingt ein Getter sein, sonst gibt es Probleme mit StackOverflow
         override val definierteOperatoren: Map<Operator, Typ> get() = mapOf(
             Operator.PLUS to Liste(definition, typArgumente),
@@ -95,10 +109,10 @@ sealed class Typ(val name: String) {
       }
     }
 
-    data class Schnittstelle(
+    class Schnittstelle(
         override val definition: AST.Definition.Typdefinition.Schnittstelle,
-        override val typArgumente: List<AST.TypKnoten>
-    ): Compound(definition.name.wert.capitalize() + "<${typArgumente.joinToString(", ")}>") {
+        override var typArgumente: List<AST.TypKnoten>
+    ): Compound(definition.name.wert.capitalize()) {
       override val definierteOperatoren: Map<Operator, Typ> = mapOf(
           Operator.GLEICH to Primitiv.Boolean
       )
@@ -180,13 +194,7 @@ class Typisierer(startDatei: File): PipelineKomponente(startDatei) {
     when (typ) {
       is Typ.Primitiv, is Typ.Generic -> if (typArgumente.isNotEmpty())
         throw GermanSkriptFehler.TypArgumentFehler(typKnoten.name.bezeichner.toUntyped(), typArgumente.size, 0)
-      is Typ.Compound.KlassenTyp -> if (typArgumente.size != typ.definition.typParameter.size)
-        throw GermanSkriptFehler.TypArgumentFehler(
-            typKnoten.name.bezeichner.toUntyped(),
-            typArgumente.size,
-            typ.definition.typParameter.size
-        )
-      is Typ.Compound.Schnittstelle -> if (typArgumente.size != typ.definition.typParameter.size)
+      is Typ.Compound -> if (typArgumente.isNotEmpty() && typArgumente.size != typ.definition.typParameter.size)
         throw GermanSkriptFehler.TypArgumentFehler(
             typKnoten.name.bezeichner.toUntyped(),
             typArgumente.size,
@@ -206,6 +214,7 @@ class Typisierer(startDatei: File): PipelineKomponente(startDatei) {
     typKnoten.typ = if (typKnoten.name.numerus == Numerus.SINGULAR) {
       singularTyp
     } else {
+      // für das Typargument der Liste brauchen wir einen Typknoten, der der Singular von der Liste ist
       val nomen = typKnoten.name.copy()
       nomen.numerus = Numerus.SINGULAR
       nomen.deklination = typKnoten.name.deklination

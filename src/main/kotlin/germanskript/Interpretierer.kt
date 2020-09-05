@@ -94,11 +94,13 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
 
     private fun aufrufStapelElementToString(element: AufrufStapelElement): String {
       val aufruf = element.aufruf
-      var zeichenfolge = "'${aufruf.vollerName}' in ${aufruf.token.position}"
+      val zeichenfolge = "'${aufruf.vollerName}' in ${aufruf.token.position}"
+      /*
       if (element.objekt is Wert.Objekt) {
         val klassenName = element.objekt.typ.definition.name.hauptWort
         zeichenfolge = "'für $klassenName: ${aufruf.vollerName}' in ${aufruf.token.position}"
       }
+       */
 
       return zeichenfolge
     }
@@ -162,12 +164,27 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
     return rückgabeWert
   }
 
+  /**
+   * Bei Closures werden die Parameternamen bei generischen Parametern mit dem Namen des eingesetzen Typen ersetzt.
+   */
+  private fun holeParameterNamenFürClosure(objekt: Wert.Closure): List<AST.Nomen> {
+    val typArgumente = objekt.schnittstelle.typArgumente
+    val signatur = objekt.schnittstelle.definition.methodenSignaturen[0]
+    return signatur.parameter.map { param ->
+      when (val typ = param.typKnoten.typ!!) {
+        is Typ.Generic ->
+          if (param.typIstName) param.name.tauscheHauptWortAus(typArgumente[typ.index].name.deklination!!) else param.name
+        else -> param.name
+      }
+    }
+  }
+
   override fun durchlaufeFunktionsAufruf(funktionsAufruf: AST.Funktion, istAusdruck: Boolean): Wert? {
     rückgabeWert = null
     var funktionsUmgebung = Umgebung<Wert>()
-    val (signatur, körper) = if (funktionsAufruf.funktionsDefinition != null) {
+    val (körper, parameterNamen) = if (funktionsAufruf.funktionsDefinition != null) {
       val definition = funktionsAufruf.funktionsDefinition!!
-      definition.signatur to definition.körper
+      Pair(definition.körper, definition.signatur.parameter.map{it.name})
     } else {
       // dynamisches Binden von Methoden
       val objekt = umgebung.holeMethodenBlockObjekt()
@@ -176,22 +193,21 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
         is Wert.Objekt -> {
           val methode = objekt.typ.definition.methoden.getValue(funktionsAufruf.vollerName!!)
           funktionsAufruf.vollerName = "für ${objekt.typ.definition.name.nominativ}: ${methode.funktion.signatur.vollerName}"
-          methode.funktion.signatur to methode.funktion.körper
+          val signatur = methode.funktion.signatur
+          Pair(methode.funktion.körper, signatur.parameter.map {it.name})
         }
         is Wert.Closure -> {
           funktionsUmgebung = objekt.umgebung
-          objekt.schnittstelle.definition.methodenSignaturen[0] to objekt.körper
+          Pair(objekt.körper, holeParameterNamenFürClosure(objekt))
         }
         else -> throw Exception("Dieser Fall sollte nie eintreten.")
       }
-
     }
     funktionsUmgebung.pushBereich()
-    val parameter = signatur.parameter
     val j = if (funktionsAufruf.aufrufTyp == FunktionsAufrufTyp.METHODEN_OBJEKT_AUFRUF) 1 else 0
     val argumente = funktionsAufruf.argumente
-    for (i in parameter.indices) {
-      funktionsUmgebung.schreibeVariable(parameter[i].name, evaluiereAusdruck(argumente[i+j].ausdruck), false)
+    for (i in parameterNamen.indices) {
+      funktionsUmgebung.schreibeVariable(parameterNamen[i], evaluiereAusdruck(argumente[i+j].ausdruck), false)
     }
 
     return durchlaufeAufruf(funktionsAufruf, körper, funktionsUmgebung, false, null)
@@ -286,7 +302,8 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
     throw GermanSkriptFehler.UnbehandelterFehler(werfe.werfe.toUntyped(), aufrufStapel.toString(), fehlerMeldung, wert)
   }
 
-  override fun durchlaufeIntern() = interneFunktionen.getValue(aufrufStapel.top().aufruf.vollerName!!)()
+  override fun durchlaufeIntern(intern: AST.Satz.Intern) = interneFunktionen.getValue(aufrufStapel.top().aufruf.vollerName!!)()
+
 
   override fun bevorDurchlaufeMethodenBlock(methodenBlock: AST.Satz.MethodenBlock, blockObjekt: Wert?) {
     // mache nichts hier, das ist eigentlich nur für den Typprüfer gedacht
@@ -479,6 +496,24 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
   }
   // endregion
 
+
+  private fun durchlaufeInternenSchnittstellenAufruf(wert: Wert, name: String, vararg argumente: Wert): Wert? {
+    val (funktionsUmgebung, körper, parameterNamen) = when (wert) {
+      is Wert.Objekt -> {
+        val methode = wert.typ.definition.methoden.getValue(name)
+        Triple(Umgebung<Wert>(), methode.funktion.körper, methode.funktion.signatur.parameter.map { it.name })
+      }
+      is Wert.Closure -> Triple(wert.umgebung, wert.körper, holeParameterNamenFürClosure(wert))
+      else -> throw Exception("Dieser Fall sollte nie auftreten!")
+    }
+
+    funktionsUmgebung.pushBereich()
+    for (i in parameterNamen.indices) {
+      funktionsUmgebung.schreibeVariable(parameterNamen[i], argumente[i], false)
+    }
+    return durchlaufeAufruf(aufrufStapel.top().aufruf, körper, funktionsUmgebung, false, if (wert is Wert.Objekt) wert else null)
+  }
+
   // region interne Funktionen
   private val interneFunktionen = mapOf<String, () -> (Unit)>(
       "schreibe die Zeichenfolge" to {
@@ -496,7 +531,7 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
         println(zahl)
       },
 
-      "lese" to{
+      "lese" to {
         rückgabeWert = Wert.Primitiv.Zeichenfolge(readLine()!!)
       },
 
@@ -563,26 +598,36 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
             zeichenfolge.zeichenfolge.split(separator.zeichenfolge).map { Wert.Primitiv.Zeichenfolge(it) }.toMutableList())
       },
 
-      "für Liste: enthält den Typ" to {
-        val objekt = aufrufStapel.top().objekt!! as Wert.Objekt.Liste
+      "für Liste: enthält den Typ" to  {
+        val liste = aufrufStapel.top().objekt!! as Wert.Objekt.Liste
         val element = umgebung.leseVariable("Typ")!!.wert
-        rückgabeWert = Wert.Primitiv.Boolean(objekt.elemente.contains(element))
+        rückgabeWert = Wert.Primitiv.Boolean(liste.elemente.contains(element))
       },
 
       "für Liste: füge den Typ hinzu" to {
-        val objekt = aufrufStapel.top().objekt!! as Wert.Objekt.Liste
+        val liste = aufrufStapel.top().objekt!! as Wert.Objekt.Liste
         val element = umgebung.leseVariable("Typ")!!.wert
-        objekt.elemente.add(element)
+        liste.elemente.add(element)
         // Unit weil sonst gemeckert wird, dass keine Unit zurückgegeben wird
         Unit
       },
 
       "für Liste: entferne an dem Index" to {
-        val objekt = aufrufStapel.top().objekt!! as Wert.Objekt.Liste
+        val liste = aufrufStapel.top().objekt!! as Wert.Objekt.Liste
         val index = umgebung.leseVariable("Index")!!.wert as Wert.Primitiv.Zahl
-        objekt.elemente.removeAt(index.toInt())
+        liste.elemente.removeAt(index.toInt())
         // Unit weil sonst gemeckert wird, dass keine Unit zurückgegeben wird
         Unit
+      },
+
+      "für Liste: sortiere mich mit dem Vergleichbaren" to {
+        val liste = aufrufStapel.top().objekt!! as Wert.Objekt.Liste
+        val typArg = liste.typ.typArgumente[0].name.nominativ
+        val vergleichbar = umgebung.leseVariable("Vergleichbare")!!.wert
+        liste.elemente.sortWith(kotlin.Comparator { a, b ->
+          (durchlaufeInternenSchnittstellenAufruf(vergleichbar, "vergleiche den ${typArg}A mit dem ${typArg}B", a, b)
+              as Wert.Primitiv.Zahl).zahl.toInt()
+        })
       }
   )
 

@@ -38,7 +38,7 @@ abstract  class ProgrammDurchlaufer<T>(startDatei: File): PipelineKomponente(sta
         is AST.Satz.Werfe -> durchlaufeWerfe(satz)
         is AST.Satz.SchleifenKontrolle.Abbrechen -> durchlaufeAbbrechen()
         is AST.Satz.SchleifenKontrolle.Fortfahren -> durchlaufeFortfahren()
-        is AST.Satz.Intern -> durchlaufeIntern()
+        is AST.Satz.Intern -> durchlaufeIntern(satz)
       }
     }
     beendeBereich(bereich)
@@ -90,7 +90,7 @@ abstract  class ProgrammDurchlaufer<T>(startDatei: File): PipelineKomponente(sta
   protected abstract fun durchlaufeFürJedeSchleife(schleife: AST.Satz.FürJedeSchleife)
   protected abstract fun durchlaufeVersucheFange(versucheFange: AST.Satz.VersucheFange)
   abstract fun durchlaufeWerfe(werfe: AST.Satz.Werfe)
-  protected abstract fun durchlaufeIntern()
+  protected abstract fun durchlaufeIntern(intern: AST.Satz.Intern)
   protected abstract fun starteBereich(bereich: AST.Satz.Bereich)
   protected abstract fun beendeBereich(bereich: AST.Satz.Bereich)
 

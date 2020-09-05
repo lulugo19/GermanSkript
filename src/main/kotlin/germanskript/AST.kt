@@ -87,8 +87,17 @@ sealed class AST {
       }
       return bezeichner.typ.ersetzeHauptWort(deklination!!.holeForm(kasus, numerus))
     }
-  }
 
+    /**
+     * Gibt ein neues Nomen basierend auf dem alten Nomen zurück, bei dem das Hauptwort ausgetauscht wurde.
+     */
+    fun tauscheHauptWortAus(deklination: Deklination): Nomen {
+      val neuesNomen = this.copy()
+      neuesNomen.numerus = this.numerus
+      neuesNomen.deklination = deklination
+      return neuesNomen
+    }
+  }
 
   data class TypKnoten(
       val modulPfad: List<TypedToken<TokenTyp.BEZEICHNER_GROSS>>,
@@ -200,6 +209,7 @@ sealed class AST {
         val name: Nomen
     ): AST() {
       val istPrivat get() = typKnoten.name.vornomen!!.typ is TokenTyp.VORNOMEN.DEMONSTRATIV_PRONOMEN
+      val typIstName get() = typKnoten.name === name
       override val children = sequenceOf(typKnoten, name)
     }
 
@@ -278,9 +288,10 @@ sealed class AST {
     sealed class Typdefinition: Definition() {
 
       abstract val namensToken: Token
+      abstract val typParameter: List<Nomen>
 
       data class Klasse(
-          val typParameter: List<Nomen>,
+          override val typParameter: List<Nomen>,
           val name: Nomen,
           val elternKlasse: TypKnoten?,
           val eigenschaften: MutableList<TypUndName>,
@@ -305,7 +316,7 @@ sealed class AST {
       }
 
       data class Schnittstelle(
-          val typParameter: List<Nomen>,
+          override val typParameter: List<Nomen>,
           val name: TypedToken<TokenTyp.BEZEICHNER_KLEIN>,
           val methodenSignaturen: List<FunktionsSignatur>
       ): Typdefinition() {
@@ -320,7 +331,7 @@ sealed class AST {
 
       data class Alias(val name: Nomen, val typ: TypKnoten): Typdefinition() {
         override val namensToken = name.bezeichner.toUntyped()
-
+        override val typParameter = emptyList<Nomen>()
         override val children = sequenceOf(name, typ)
       }
     }
@@ -364,7 +375,10 @@ sealed class AST {
 
 
   sealed class Satz : AST() {
-    object Intern: Satz()
+    data class Intern(val intern: TypedToken<TokenTyp.INTERN>) :Satz(), IAufruf {
+      override val token = intern.toUntyped()
+      override val vollerName = "intern"
+    }
 
     sealed class SchleifenKontrolle: Satz() {
       object Fortfahren: SchleifenKontrolle()
@@ -597,6 +611,10 @@ sealed class AST {
       }
     }
 
+    data class Closure(val schnittstelle: TypKnoten, val körper: Satz.Bereich): Ausdruck() {
+      override val children = sequenceOf(schnittstelle, körper)
+    }
+
     interface IEigenschaftsZugriff: IAufruf {
       val eigenschaftsName: Nomen
       var aufrufName: String?
@@ -632,9 +650,5 @@ sealed class AST {
 
     data class SelbstReferenz(val ich: TypedToken<TokenTyp.REFERENZ.ICH>): Ausdruck()
     data class MethodenBlockReferenz(val du: TypedToken<TokenTyp.REFERENZ.DU>): Ausdruck()
-
-    data class Closure(val schnittstelle: TypKnoten, val körper: Satz.Bereich): Ausdruck() {
-      override val children = sequenceOf(schnittstelle, körper)
-    }
   }
 }
