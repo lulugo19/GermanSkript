@@ -100,7 +100,7 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
     }
   }
 
-  private fun holeParamName(param: AST.Definition.TypUndName, typArgumente: List<AST.TypKnoten>): AST.Nomen {
+  private fun holeParamName(param: AST.Definition.Parameter, typArgumente: List<AST.TypKnoten>): AST.Nomen {
     return if (param.typKnoten.typ is Typ.Generic && param.typIstName) {
       param.name.tauscheHauptWortAus(typArgumente[(param.typKnoten.typ as Typ.Generic).index].name.deklination!!)
     } else {
@@ -108,7 +108,7 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
     }
   }
 
-  private fun holeParamTyp(param: AST.Definition.TypUndName, typArgumente: List<AST.TypKnoten>): Typ {
+  private fun holeParamTyp(param: AST.Definition.Parameter, typArgumente: List<AST.TypKnoten>): Typ {
     return if (param.typKnoten.typ is Typ.Generic) {
       val generic = param.typKnoten.typ as Typ.Generic
       when (generic.kontext) {
@@ -158,7 +158,7 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
     // Da die Kindklasse abhängig von der Elternklasse ist, muss zuerst die Elternklasse geprüft werden
     if (klasse.elternKlasse != null) {
       if (klasse.elternKlasse.typ == null) {
-        typisierer.bestimmeTypen(klasse.elternKlasse, null, null, true)
+        typisierer.bestimmeTyp(klasse.elternKlasse, null, null, true)
       }
       val elternKlasse = klasse.elternKlasse.typ as Typ.Compound.KlassenTyp
       prüfeKlasse(elternKlasse.definition)
@@ -226,7 +226,7 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
       if (klasse.eigenschaften.any { eigenschaft -> eigenschaft.name.nominativ == deklaration.name.nominativ}) {
         throw GermanSkriptFehler.DoppelteEigenschaft(deklaration.name.bezeichner.toUntyped(), klasse)
       }
-      klasse.eigenschaften.add(AST.Definition.TypUndName(typ, deklaration.name))
+      klasse.eigenschaften.add(AST.Definition.Parameter(typ, deklaration.name))
     }
     else {
       if (deklaration.name.unveränderlich || deklaration.neu != null) {
@@ -307,7 +307,7 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
     // TODO: kombiniere dies mit der Ersetzung von Parameternamen mit generische Parameter
     if (funktionsSignatur == null && funktionsAufruf.objekt != null) {
       val klasse = try {
-        typisierer.bestimmeTypen(funktionsAufruf.objekt.name)
+        typisierer.bestimmeTyp(funktionsAufruf.objekt.name)
       }
       catch (fehler: GermanSkriptFehler.Undefiniert.Typ) {
         null
@@ -395,7 +395,7 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
 
     if (typ.definition.typParameter.isNotEmpty()) {
       // TODO: hier müssen nicht nur TypTypParameter sondern auch die FunktionTypParameter berücksichtigt werden
-      val ersetzeTypArgsName = definierer.ersetzeTypArgumentMitTypParameter(
+      val ersetzeTypArgsName = definierer.holeVollenNamenVonFunktionsAufruf(
           funktionsAufruf, typ.definition.typParameter, typ.typArgumente)
       if (typ.definition.methoden.containsKey(ersetzeTypArgsName)) {
         // TODO: Die Typparameternamen müssen für den Interpreter später hier ersetzt werden
@@ -479,7 +479,7 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
     for (fange in versucheFange.fange) {
       umgebung.pushBereich()
       // TODO: hole aus dem Kontext die Typparameter
-      val typ = typisierer.bestimmeTypen(fange.typ, null, null, true)!!
+      val typ = typisierer.bestimmeTyp(fange.typ, null, null, true)!!
       umgebung.schreibeVariable(fange.binder, typ, true)
       durchlaufeBereich(fange.bereich, true)
       umgebung.popBereich()
@@ -557,7 +557,7 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
 
   override fun evaluiereListe(ausdruck: AST.Ausdruck.Liste): Typ {
     nichtErlaubtInKonstante(ausdruck)
-    val listenTyp = typisierer.bestimmeTypen(
+    val listenTyp = typisierer.bestimmeTyp(
         ausdruck.pluralTyp,
         funktionsTypParams,
         zuÜberprüfendeKlasse?.definition?.typParameter,
@@ -592,7 +592,7 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
 
   override fun evaluiereObjektInstanziierung(instanziierung: AST.Ausdruck.ObjektInstanziierung): Typ {
     nichtErlaubtInKonstante(instanziierung)
-    val klasse = typisierer.bestimmeTypen(
+    val klasse = typisierer.bestimmeTyp(
         instanziierung.klasse,
         funktionsTypParams,
         zuÜberprüfendeKlasse?.definition?.typParameter,
@@ -660,7 +660,7 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
     return holeEigenschaftAusKlasse(eigenschaftsZugriff, methodenBlockObjekt)
   }
 
-  private fun holeNormaleEigenschaftAusKlasse(eigenschaftsName: AST.Nomen, klasse: Typ.Compound.KlassenTyp): AST.Definition.TypUndName {
+  private fun holeNormaleEigenschaftAusKlasse(eigenschaftsName: AST.Nomen, klasse: Typ.Compound.KlassenTyp): AST.Definition.Parameter {
     for (eigenschaft in klasse.definition.eigenschaften) {
       val name = holeParamName(eigenschaft ,klasse.typArgumente)
       if (eigenschaftsName.nominativ == name.nominativ) {
@@ -704,7 +704,7 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
   override fun evaluiereKonvertierung(konvertierung: AST.Ausdruck.Konvertierung): Typ{
     nichtErlaubtInKonstante(konvertierung)
     val ausdruck = evaluiereAusdruck(konvertierung.ausdruck)
-    val konvertierungsTyp = typisierer.bestimmeTypen(konvertierung.typ, null, null, true)!!
+    val konvertierungsTyp = typisierer.bestimmeTyp(konvertierung.typ, null, null, true)!!
     if (!ausdruck.kannNachTypKonvertiertWerden(konvertierungsTyp)){
       throw GermanSkriptFehler.KonvertierungsFehler(konvertierung.typ.name.bezeichner.toUntyped(),
           ausdruck, konvertierungsTyp)
@@ -716,7 +716,7 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
 
   override fun evaluiereClosure(closure: AST.Ausdruck.Closure): Typ.Compound.Schnittstelle {
     nichtErlaubtInKonstante(closure)
-    val schnittstelle = typisierer.bestimmeTypen(
+    val schnittstelle = typisierer.bestimmeTyp(
         closure.schnittstelle,
         funktionsTypParams,
         zuÜberprüfendeKlasse?.definition?.typParameter,

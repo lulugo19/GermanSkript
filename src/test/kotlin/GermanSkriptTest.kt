@@ -5,6 +5,7 @@ import org.assertj.core.api.Assertions.assertThatExceptionOfType
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
 import java.io.*
+import java.lang.Exception
 
 class GermanSkriptTest {
 
@@ -1028,6 +1029,31 @@ class GermanSkriptTest {
     val erwarteteAusgabe = "[3, 2, 1]"
 
     testeGermanSkriptCode(quellCode, erwarteteAusgabe)
+  }
+
+  @Test
+  @DisplayName("implementiere Adjektiv mit Typparameter")
+  fun implementiereAdjektivMitTypparameter() {
+    val quellCode = """
+      Deklination Maskulinum Singular(Test, Tests, Test, Test) Plural(Tests)
+      
+      Adjektiv<Typ> testbar:
+        Verb teste den Typ
+      .
+      
+      Nomen Test:.
+      
+      implementiere den testbaren<Zeichenfolge> Test:
+        Verb teste die Zeichenfolge:
+          schreibe die Zeichenfolge
+        .
+      .
+      
+      der Test ist ein Test
+      Test: teste die Zeichenfolge "Hallo Welt!"!
+    """.trimIndent()
+
+    testeGermanSkriptCode(quellCode, "Hallo Welt!")
   }
 
 

@@ -148,16 +148,16 @@ class Typisierer(startDatei: File): PipelineKomponente(startDatei) {
       // Klassen werden von Typprüfer typisiert, da die Reihenfolge und die Konstruktoren eine wichtige Rolle spielen
       when (typDefinition) {
         is AST.Definition.Typdefinition.Schnittstelle -> typisiereSchnittstelle(typDefinition)
-        is AST.Definition.Typdefinition.Alias -> bestimmeTypen(typDefinition.typ, null, null, false)
+        is AST.Definition.Typdefinition.Alias -> bestimmeTyp(typDefinition.typ, null, null, false)
       }
     }
   }
 
-  fun bestimmeTypen(nomen: AST.Nomen): Typ {
+  fun bestimmeTyp(nomen: AST.Nomen): Typ {
     val typKnoten = AST.TypKnoten(emptyList(), nomen, emptyList())
     // setze den Parent hier manuell vom Nomen
     typKnoten.setParentNode(nomen.parent!!)
-    return bestimmeTypen(typKnoten, null, null, true)!!
+    return bestimmeTyp(typKnoten, null, null, true)!!
   }
 
   private fun holeTypDefinition(typKnoten: AST.TypKnoten, funktionsTypParams: TypParameter?, typTypParams: TypParameter?, aliasErlaubt: Boolean): Typ {
@@ -210,11 +210,11 @@ class Typisierer(startDatei: File): PipelineKomponente(startDatei) {
   }
 
 
-  fun bestimmeTypen(typKnoten: AST.TypKnoten?, funktionsTypParameter: TypParameter?, typTypParameter: TypParameter?, istAliasErlaubt: Boolean): Typ? {
+  fun bestimmeTyp(typKnoten: AST.TypKnoten?, funktionsTypParameter: TypParameter?, typTypParameter: TypParameter?, istAliasErlaubt: Boolean): Typ? {
     if (typKnoten == null) {
       return null
     }
-    typKnoten.typArgumente.forEach {typKnoten -> bestimmeTypen(typKnoten, funktionsTypParameter, typTypParameter, true)}
+    typKnoten.typArgumente.forEach {typKnoten -> bestimmeTyp(typKnoten, funktionsTypParameter, typTypParameter, true)}
     val singularTyp = holeTypDefinition(typKnoten, funktionsTypParameter, typTypParameter, istAliasErlaubt)
     typKnoten.typ = if (typKnoten.name.numerus == Numerus.SINGULAR) {
       singularTyp
@@ -233,29 +233,30 @@ class Typisierer(startDatei: File): PipelineKomponente(startDatei) {
 
   private fun typisiereFunktionsSignatur(signatur: AST.Definition.FunktionsSignatur, typTypParameter: TypParameter?) {
     // kombiniere die Typparameter
-    bestimmeTypen(signatur.rückgabeTyp, signatur.typParameter, typTypParameter, true)
-    bestimmeTypen(signatur.objekt?.typKnoten, signatur.typParameter, typTypParameter, true)
+    bestimmeTyp(signatur.rückgabeTyp, signatur.typParameter, typTypParameter, true)
+    bestimmeTyp(signatur.objekt?.typKnoten, signatur.typParameter, typTypParameter, true)
     for (parameter in signatur.parameter) {
-      bestimmeTypen(parameter.typKnoten, signatur.typParameter, typTypParameter, true)
+      bestimmeTyp(parameter.typKnoten, signatur.typParameter, typTypParameter, true)
     }
   }
 
   fun typisiereKlasse(klasse: AST.Definition.Typdefinition.Klasse) {
     for (eigenschaft in klasse.eigenschaften) {
-      bestimmeTypen(eigenschaft.typKnoten, null, klasse.typParameter, true)
+      bestimmeTyp(eigenschaft.typKnoten, null, klasse.typParameter, true)
     }
     klasse.methoden.values.forEach { methode ->
       //methode.klasse.typ = Typ.KlassenTyp.Klasse(klasse)
       typisiereFunktionsSignatur(methode.signatur, klasse.typParameter)
     }
     klasse.konvertierungen.values.forEach { konvertierung ->
-      bestimmeTypen(konvertierung.typ, null, null, true)
+      bestimmeTyp(konvertierung.typ, null, null, true)
     }
     klasse.berechneteEigenschaften.values.forEach {eigenschaft ->
-      bestimmeTypen(eigenschaft.rückgabeTyp, klasse.typParameter, null, true)
+      bestimmeTyp(eigenschaft.rückgabeTyp, klasse.typParameter, null, true)
     }
     klasse.implementierungen.forEach { implementierung ->
       implementierung.adjektive.forEach { adjektiv ->
+        adjektiv.typArgumente.forEach {arg -> bestimmeTyp(arg, null, klasse.typParameter, true)}
         prüfeImplementiertSchnittstelle(klasse, adjektiv)
       }
     }
@@ -270,7 +271,7 @@ class Typisierer(startDatei: File): PipelineKomponente(startDatei) {
       throw GermanSkriptFehler.SchnittstelleErwartet(adjektiv.bezeichner.toUntyped())
     }
 
-    fun holeErwartetenTypen(schnittstellenParam: AST.Definition.TypUndName): Typ {
+    fun holeErwartetenTypen(schnittstellenParam: AST.Definition.Parameter): Typ {
       return when (val typ = schnittstellenParam.typKnoten.typ!!) {
         is Typ.Generic -> when (typ.kontext) {
           TypParamKontext.Typ -> schnittstelle.typArgumente[typ.index].typ!!
@@ -281,11 +282,12 @@ class Typisierer(startDatei: File): PipelineKomponente(startDatei) {
     }
 
     for (signatur in schnittstelle.definition.methodenSignaturen) {
-      val methode = klasse.methoden.getOrElse(signatur.vollerName!!, {
+      val methodenName = definierer.holeVollenNamenVonFunktionsSignatur(signatur, schnittstelle.typArgumente)
+      val methode = klasse.methoden.getOrElse(methodenName, {
         throw GermanSkriptFehler.UnimplementierteSchnittstelle(
             adjektiv.bezeichner.toUntyped(),
             klasse,
-            schnittstelle.definition
+            schnittstelle
         )
       })
       // überprüfe Rückgabetypen

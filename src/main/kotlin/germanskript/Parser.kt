@@ -1049,11 +1049,11 @@ private sealed class SubParser<T: AST>() {
       }
     }
 
-    protected inline fun<reified VornomenT: TokenTyp.VORNOMEN.ARTIKEL> parseTypUndName(erwarteterArtikel: String): AST.Definition.TypUndName {
+    protected inline fun<reified VornomenT: TokenTyp.VORNOMEN.ARTIKEL> parseTypUndName(erwarteterArtikel: String): AST.Definition.Parameter {
       val typ = parseTypMitArtikel<VornomenT>(erwarteterArtikel, true)
       val bezeichner = parseOptional<TokenTyp.BEZEICHNER_GROSS>()
       val name = if (bezeichner != null) AST.Nomen(null, bezeichner) else typ.name
-      return AST.Definition.TypUndName(typ, name)
+      return AST.Definition.Parameter(typ, name)
     }
 
     object Modul: Definition<AST.Definition.Modul>() {
@@ -1165,7 +1165,7 @@ private sealed class SubParser<T: AST>() {
         val name = expect<TokenTyp.BEZEICHNER_KLEIN>("bezeichner")
         val reflexivPronomen = if (erlaubeReflexivPronomen) parseOptional<TokenTyp.REFLEXIV_PRONOMEN>() else null
         val objekt = if (reflexivPronomen == null) {
-          parseOptional<AST.Definition.TypUndName, TokenTyp.VORNOMEN.ARTIKEL.BESTIMMT> {
+          parseOptional<AST.Definition.Parameter, TokenTyp.VORNOMEN.ARTIKEL.BESTIMMT> {
             parseTypUndName<TokenTyp.VORNOMEN.ARTIKEL.BESTIMMT>("bestimmter Artikel") }
         } else {
          null
@@ -1178,7 +1178,7 @@ private sealed class SubParser<T: AST>() {
 
       fun parsePräpositionsParameter(): List<AST.Definition.PräpositionsParameter> {
         return parsePräpositionsListe({
-          parseListeMitStart<AST.Definition.TypUndName, TokenTyp.KOMMA, TokenTyp.VORNOMEN.ARTIKEL.BESTIMMT>(false) {
+          parseListeMitStart<AST.Definition.Parameter, TokenTyp.KOMMA, TokenTyp.VORNOMEN.ARTIKEL.BESTIMMT>(false) {
             parseTypUndName<TokenTyp.VORNOMEN.ARTIKEL.BESTIMMT>("bestimmter Artikel")
           }
         }
@@ -1217,7 +1217,7 @@ private sealed class SubParser<T: AST>() {
           is TokenTyp.BEZEICHNER_KLEIN -> {
             parseKleinesSchlüsselwort("mit")
             überspringeLeereZeilen()
-            parseListeMitStart<AST.Definition.TypUndName, TokenTyp.KOMMA, TokenTyp.VORNOMEN.ARTIKEL>(false) {
+            parseListeMitStart<AST.Definition.Parameter, TokenTyp.KOMMA, TokenTyp.VORNOMEN.ARTIKEL>(false) {
               parseTypUndName<TokenTyp.VORNOMEN.ARTIKEL>("Artikel")
             }
           }

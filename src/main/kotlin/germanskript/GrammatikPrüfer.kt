@@ -167,6 +167,8 @@ class GrammatikPrüfer(startDatei: File): PipelineKomponente(startDatei) {
     nomen.setParentNode(adjektiv.parent!!)
     adjektiv.deklination = deklinierer.holeDeklination(nomen)
     adjektiv.normalisierung = adjektiv.deklination!!.holeForm(name.fälle.first(), name.numerus!!)
+
+    prüfeTypArgumente(adjektiv.typArgumente)
   }
 
   private fun prüfeTyp(typ: AST.TypKnoten, kasus: EnumSet<Kasus>, numerus: EnumSet<Numerus>) {
@@ -336,7 +338,7 @@ class GrammatikPrüfer(startDatei: File): PipelineKomponente(startDatei) {
     prüfeKontextbasiertenAusdruck(werfe.ausdruck, null, EnumSet.of(Kasus.AKKUSATIV), false)
   }
 
-  private fun prüfeParameter(parameter: AST.Definition.TypUndName, fälle: EnumSet<Kasus>) {
+  private fun prüfeParameter(parameter: AST.Definition.Parameter, fälle: EnumSet<Kasus>) {
     prüfeTyp(parameter.typKnoten, fälle, Numerus.BEIDE)
     prüfeNomen(parameter.name, EnumSet.of(Kasus.NOMINATIV), Numerus.BEIDE)
     if (parameter.name.vornomenString == null) {

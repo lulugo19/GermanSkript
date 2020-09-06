@@ -107,6 +107,10 @@ sealed class AST {
 
     var deklination: Deklination? = null
 
+    override val children = sequence {
+      yieldAll(typArgumente)
+    }
+
     // wandelt das Adjektiv in einen Typknoten um
     fun inTypKnoten(): TypKnoten {
       val nomen = Nomen(null, TypedToken(
@@ -228,7 +232,7 @@ sealed class AST {
       override val children: Sequence<AST> = sequenceOf(definitionen)
     }
 
-    data class TypUndName(
+    data class Parameter(
         val typKnoten: TypKnoten,
         val name: Nomen
     ): AST() {
@@ -239,7 +243,7 @@ sealed class AST {
 
     data class PräpositionsParameter(
         val präposition: Präposition,
-        val parameter: List<TypUndName>
+        val parameter: List<Parameter>
     ): AST() {
       override val children = sequence { yieldAll(parameter) }
     }
@@ -254,13 +258,13 @@ sealed class AST {
         val rückgabeTyp: TypKnoten?,
         val name: TypedToken<TokenTyp.BEZEICHNER_KLEIN>,
         val reflexivPronomen: TypedToken<TokenTyp.REFLEXIV_PRONOMEN>?,
-        val objekt: TypUndName?,
+        val objekt: Parameter?,
         val präpositionsParameter: List<PräpositionsParameter>,
         val suffix: TypedToken<TokenTyp.BEZEICHNER_KLEIN>?,
         var vollerName: String? = null
     ): Definition() {
-      private val _parameter: MutableList<TypUndName> = mutableListOf()
-      val parameter: List<TypUndName> = _parameter
+      private val _parameter: MutableList<Parameter> = mutableListOf()
+      val parameter: List<Parameter> = _parameter
 
       init {
         if (objekt != null) {
@@ -316,7 +320,7 @@ sealed class AST {
           override val typParameter: List<Nomen>,
           val name: Nomen,
           val elternKlasse: TypKnoten?,
-          val eigenschaften: MutableList<TypUndName>,
+          val eigenschaften: MutableList<Parameter>,
           val konstruktor: Satz.Bereich
       ): Typdefinition() {
         val methoden: HashMap<String, Funktion> = HashMap()
