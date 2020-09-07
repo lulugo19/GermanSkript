@@ -484,11 +484,15 @@ sealed class AST {
 
     data class VersucheFange(
         val versuche: Bereich,
-        val fange: List<Fange>
+        val fange: List<Fange>,
+        val schlussendlich: Bereich?
     ): Satz() {
       override val children = sequence {
         yield(versuche)
         yieldAll(fange)
+        if (schlussendlich != null) {
+          yield(schlussendlich!!)
+        }
       }
     }
 

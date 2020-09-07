@@ -279,6 +279,9 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
   override fun durchlaufeVersucheFange(versucheFange: AST.Satz.VersucheFange) {
     try {
       durchlaufeBereich(versucheFange.versuche, true)
+      if (versucheFange.schlussendlich != null) {
+        durchlaufeBereich(versucheFange.schlussendlich, true)
+      }
     } catch (fehler: GermanSkriptFehler.UnbehandelterFehler) {
       val fehlerObjekt = fehler.fehlerObjekt
       val fehlerTyp = typeOf(fehler.fehlerObjekt)
@@ -290,7 +293,13 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
         umgebung.schreibeVariable(fange.binder, fehlerObjekt, true)
         durchlaufeBereich(fange.bereich, false)
         umgebung.popBereich()
+        if (versucheFange.schlussendlich != null) {
+          durchlaufeBereich(versucheFange.schlussendlich, true)
+        }
       } else {
+        if (versucheFange.schlussendlich != null) {
+          durchlaufeBereich(versucheFange.schlussendlich, true)
+        }
         throw fehler
       }
     }

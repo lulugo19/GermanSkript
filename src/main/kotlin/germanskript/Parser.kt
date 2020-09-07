@@ -1013,7 +1013,13 @@ private sealed class SubParser<T: AST>() {
           fange += parseFange()
           überspringeLeereZeilen()
         }
-        return AST.Satz.VersucheFange(versuchBereich, fange)
+        val schlussendlich = if (peek().wert == "schlussendlich") {
+          next()
+          parseSätze()
+        } else {
+          null
+        }
+        return AST.Satz.VersucheFange(versuchBereich, fange, schlussendlich)
       }
 
       private fun parseFange(): AST.Satz.Fange {

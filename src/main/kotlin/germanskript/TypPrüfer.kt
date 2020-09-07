@@ -483,6 +483,9 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
       umgebung.schreibeVariable(fange.binder, typ, true)
       durchlaufeBereich(fange.bereich, true)
       umgebung.popBereich()
+      if (versucheFange.schlussendlich != null) {
+        durchlaufeBereich(versucheFange.schlussendlich, true)
+      }
     }
   }
 

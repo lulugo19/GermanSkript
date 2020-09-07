@@ -27,13 +27,15 @@ class GermanSkriptTest {
     val myOut = ByteArrayOutputStream()
     System.setOut(PrintStream(myOut))
 
-    führeGermanSkriptCodeAus(quellCode)
-
-    val actual = myOut.toString()
-    assertThat(actual).isEqualToNormalizingNewlines(erwarteteAusgabe)
-
-    // set out back to stdout
-    System.setOut(PrintStream(FileOutputStream(FileDescriptor.out)))
+    try {
+      führeGermanSkriptCodeAus(quellCode)
+    }
+    finally {
+      val actual = myOut.toString()
+      assertThat(actual).isEqualToNormalizingNewlines(erwarteteAusgabe)
+      // set out back to stdout
+      System.setOut(PrintStream(FileOutputStream(FileDescriptor.out)))
+    }
   }
 
   @Test
@@ -931,8 +933,8 @@ class GermanSkriptTest {
   }
 
   @Test
-  @DisplayName("Versuche-Fange")
-  fun versucheFange() {
+  @DisplayName("Versuche-Fange: Fehler wird gefangen")
+  fun versucheFangeFehlerGefangen() {
     val quellCode = """
       versuche:
         die Zahl ist "Hallo" als Zahl
@@ -940,11 +942,64 @@ class GermanSkriptTest {
       fange den KonvertierungsFehler:
         schreibe die Zeile (die FehlerMeldung des KonvertierungsFehlers)
       .
+      schlussendlich:
+        schreibe die Zeile "Ich werde immer ausgeführt!"
+      .
     """.trimIndent()
 
-    val erwarteteAusgabe = "Die Zeichenfolge 'Hallo' kann nicht in eine Zahl konvertiert werden.\n"
+    val erwarteteAusgabe = """
+      Die Zeichenfolge 'Hallo' kann nicht in eine Zahl konvertiert werden.
+      Ich werde immer ausgeführt!
+      
+    """.trimIndent()
 
     testeGermanSkriptCode(quellCode, erwarteteAusgabe)
+  }
+
+  @Test
+  @DisplayName("Versuche-Fange: kein Fehler wird gewurfen")
+  fun versucheFangeErfolg() {
+    val quellCode = """
+      versuche:
+        schreibe die Zeile "Eine erfolgreiche Operation."
+      .
+      fange den Fehler:
+        schreibe die Zeile (die FehlerMeldung des Fehlers)
+      .
+      schlussendlich:
+        schreibe die Zeile "Ich werde immer ausgeführt!"
+      .
+    """.trimIndent()
+
+    val erwarteteAusgabe = """
+      Eine erfolgreiche Operation.
+      Ich werde immer ausgeführt!
+      
+    """.trimIndent()
+
+    testeGermanSkriptCode(quellCode, erwarteteAusgabe)
+  }
+
+  @Test
+  @DisplayName("Versuche-Fange: Fehler wird nicht gefangen")
+  fun versucheFangeNichtGefangen() {
+    val quellCode = """
+      versuche:
+        werfe einen Fehler mit der FehlerMeldung "Ich werde nicht gefangen!"
+      .
+      fange die Zeichenfolge:
+        schreibe die Zeichenfolge
+      .
+      schlussendlich:
+        schreibe die Zeile "Ich werde immer ausgeführt!"
+      .
+    """.trimIndent()
+
+    try {
+      testeGermanSkriptCode(quellCode, "Ich werde immer ausgeführt!\n")
+    } catch (fehler: Exception) {
+       assertThat(fehler).isInstanceOf(GermanSkriptFehler.UnbehandelterFehler::class.java)
+    }
   }
 
   @Test
