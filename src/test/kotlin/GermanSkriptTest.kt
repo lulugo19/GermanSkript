@@ -1072,6 +1072,22 @@ class GermanSkriptTest {
   }
 
   @Test
+  @DisplayName("Bei Implementierungsgsbereich keine Typargumente erlaubt")
+  fun implementierungsBereichKeineTypArgumente() {
+    val quellCode = """
+      Deklination Maskulinum Singular(Test, Tests, Test, Test) Plural(Tests)
+      Nomen<Typ> Test mit dem Typ:.
+      
+      // Das hier sollte einen Parser-Fehler auslösen
+      Implementiere den Test<Zahl>:.
+    """.trimIndent()
+
+    assertThatExceptionOfType(GermanSkriptFehler.SyntaxFehler.ParseFehler::class.java).isThrownBy {
+      führeGermanSkriptCodeAus(quellCode)
+    }
+  }
+
+  @Test
   @DisplayName("Liste sortieren")
   fun listeSortieren() {
     val quellCode = """

@@ -183,24 +183,28 @@ private sealed class SubParser<T: AST>() {
   }
 
   protected fun parseTypArgumente() =
-      parseTypParameterOderArgumente { parseTypOhneArtikel(false) }
+      parseTypParameterOderArgumente { parseTypOhneArtikel(false, true) }
 
   protected fun parseTypParameter() =
       parseTypParameterOderArgumente { parseNomenOhneVornomen(false) }
 
-  protected fun parseTypOhneArtikel(symbolErlaubt: Boolean): AST.TypKnoten {
+  protected fun parseTypOhneArtikel(symbolErlaubt: Boolean, typArgumenteErlaubt: Boolean): AST.TypKnoten {
     val modulPfad = parseModulPfad()
     val nomen = AST.Nomen(null, parseGroßenBezeichner(symbolErlaubt))
-    val typArgumente = parseTypArgumente()
+    val typArgumente = if (typArgumenteErlaubt) parseTypArgumente() else emptyList()
     return AST.TypKnoten(modulPfad, nomen, typArgumente)
   }
 
-  protected inline fun <reified T: TokenTyp.VORNOMEN.ARTIKEL> parseTypMitArtikel(erwarteterArtikel: String, symbolErlaubt: Boolean): AST.TypKnoten {
+  protected inline fun <reified T: TokenTyp.VORNOMEN.ARTIKEL> parseTypMitArtikel(
+      erwarteterArtikel: String,
+      symbolErlaubt: Boolean,
+      typArgumenteErlaubt: Boolean
+  ): AST.TypKnoten {
     val artikel = expect<T>(erwarteterArtikel)
     val modulPfad = parseModulPfad()
     val nomen = AST.Nomen(artikel, parseGroßenBezeichner(symbolErlaubt))
-    val typParameter = parseTypArgumente()
-    return AST.TypKnoten(modulPfad, nomen, typParameter)
+    val typArgumente = if(typArgumenteErlaubt) parseTypArgumente() else emptyList()
+    return AST.TypKnoten(modulPfad, nomen, typArgumente)
   }
 
   protected inline fun <ElementT, reified TrennerT: TokenTyp, reified StartTokenT: TokenTyp> parseListeMitStart(canBeEmpty: Boolean, elementParser: () -> ElementT): List<ElementT> {
@@ -295,7 +299,7 @@ private sealed class SubParser<T: AST>() {
       typArgumente = parseTypArgumente()
     }
     val nomen = AST.Nomen(vornomen, bezeichner)
-    var nächstesToken = peek()
+    val nächstesToken = peek()
     val ausdruck = when (vornomen.typ) {
       is TokenTyp.VORNOMEN.ARTIKEL.BESTIMMT -> when (nächstesToken.typ) {
         is TokenTyp.OFFENE_ECKIGE_KLAMMER -> subParse(NomenAusdruck.ListenElement(nomen))
@@ -338,7 +342,7 @@ private sealed class SubParser<T: AST>() {
     return when (peekType()){
       is TokenTyp.ALS_KLEIN -> {
         next()
-        val typ = parseTypOhneArtikel(false)
+        val typ = parseTypOhneArtikel(symbolErlaubt = false, typArgumenteErlaubt = true)
         Triple(adjektiv, nomen, AST.Ausdruck.Konvertierung(ausdruck, typ))
       }
       is TokenTyp.OPERATOR -> {
@@ -661,7 +665,7 @@ private sealed class SubParser<T: AST>() {
       return when (peekType()) {
         is TokenTyp.ALS_KLEIN -> {
           next()
-          val typ = parseTypOhneArtikel(false)
+          val typ = parseTypOhneArtikel(false, true)
           AST.Ausdruck.Konvertierung(ausdruck, typ)
         }
         else -> ausdruck
@@ -1024,7 +1028,7 @@ private sealed class SubParser<T: AST>() {
 
       private fun parseFange(): AST.Satz.Fange {
         parseKleinesSchlüsselwort("fange")
-        val typ = parseTypMitArtikel<TokenTyp.VORNOMEN.ARTIKEL.BESTIMMT>("bestimmter Artikel", true)
+        val typ = parseTypMitArtikel<TokenTyp.VORNOMEN.ARTIKEL.BESTIMMT>("bestimmter Artikel", true, true)
         val binder = parseOptional<AST.Nomen, TokenTyp.BEZEICHNER_GROSS>{parseNomenOhneVornomen(true)} ?: typ.name
         val bereich = parseSätze()
         return AST.Satz.Fange(typ, binder, bereich)
@@ -1055,8 +1059,8 @@ private sealed class SubParser<T: AST>() {
       }
     }
 
-    protected inline fun<reified VornomenT: TokenTyp.VORNOMEN.ARTIKEL> parseTypUndName(erwarteterArtikel: String): AST.Definition.Parameter {
-      val typ = parseTypMitArtikel<VornomenT>(erwarteterArtikel, true)
+    protected inline fun<reified VornomenT: TokenTyp.VORNOMEN.ARTIKEL> parseParameter(erwarteterArtikel: String): AST.Definition.Parameter {
+      val typ = parseTypMitArtikel<VornomenT>(erwarteterArtikel, true, true)
       val bezeichner = parseOptional<TokenTyp.BEZEICHNER_GROSS>()
       val name = if (bezeichner != null) AST.Nomen(null, bezeichner) else typ.name
       return AST.Definition.Parameter(typ, name)
@@ -1164,7 +1168,7 @@ private sealed class SubParser<T: AST>() {
         val typParameter = parseTypParameter()
         val rückgabeTyp = if (peekType() is TokenTyp.OFFENE_KLAMMER) {
           expect<TokenTyp.OFFENE_KLAMMER>("'('")
-          parseTypOhneArtikel(false).also { expect<TokenTyp.GESCHLOSSENE_KLAMMER>("')'") }
+          parseTypOhneArtikel(symbolErlaubt = false, typArgumenteErlaubt = true).also { expect<TokenTyp.GESCHLOSSENE_KLAMMER>("')'") }
         } else {
           null
         }
@@ -1172,7 +1176,7 @@ private sealed class SubParser<T: AST>() {
         val reflexivPronomen = if (erlaubeReflexivPronomen) parseOptional<TokenTyp.REFLEXIV_PRONOMEN>() else null
         val objekt = if (reflexivPronomen == null) {
           parseOptional<AST.Definition.Parameter, TokenTyp.VORNOMEN.ARTIKEL.BESTIMMT> {
-            parseTypUndName<TokenTyp.VORNOMEN.ARTIKEL.BESTIMMT>("bestimmter Artikel") }
+            parseParameter<TokenTyp.VORNOMEN.ARTIKEL.BESTIMMT>("bestimmter Artikel") }
         } else {
          null
         }
@@ -1185,7 +1189,7 @@ private sealed class SubParser<T: AST>() {
       fun parsePräpositionsParameter(): List<AST.Definition.PräpositionsParameter> {
         return parsePräpositionsListe({
           parseListeMitStart<AST.Definition.Parameter, TokenTyp.KOMMA, TokenTyp.VORNOMEN.ARTIKEL.BESTIMMT>(false) {
-            parseTypUndName<TokenTyp.VORNOMEN.ARTIKEL.BESTIMMT>("bestimmter Artikel")
+            parseParameter<TokenTyp.VORNOMEN.ARTIKEL.BESTIMMT>("bestimmter Artikel")
           }
         }
         ) {
@@ -1216,7 +1220,7 @@ private sealed class SubParser<T: AST>() {
         val name = parseNomenOhneVornomen(false)
 
         val elternKlasse = when (peekType()) {
-          TokenTyp.ALS_KLEIN -> next().let { parseTypOhneArtikel(false) }
+          TokenTyp.ALS_KLEIN -> next().let { parseTypOhneArtikel(symbolErlaubt = false, typArgumenteErlaubt = true ) }
           else -> null
         }
         val eingenschaften = when(peekType()) {
@@ -1224,7 +1228,7 @@ private sealed class SubParser<T: AST>() {
             parseKleinesSchlüsselwort("mit")
             überspringeLeereZeilen()
             parseListeMitStart<AST.Definition.Parameter, TokenTyp.KOMMA, TokenTyp.VORNOMEN.ARTIKEL>(false) {
-              parseTypUndName<TokenTyp.VORNOMEN.ARTIKEL>("Artikel")
+              parseParameter<TokenTyp.VORNOMEN.ARTIKEL>("Artikel")
             }
           }
           else -> emptyList()
@@ -1260,7 +1264,7 @@ private sealed class SubParser<T: AST>() {
         if (zuweisung.typ.numerus != Numerus.SINGULAR) {
           throw GermanSkriptFehler.SyntaxFehler.ParseFehler(zuweisung.toUntyped(), "ist")
         }
-        val typ = parseTypOhneArtikel(false)
+        val typ = parseTypOhneArtikel(symbolErlaubt = false, typArgumenteErlaubt = true)
         return AST.Definition.Typdefinition.Alias(name, typ)
       }
     }
@@ -1283,8 +1287,7 @@ private sealed class SubParser<T: AST>() {
           }
           next()
         }
-        // TODO: Typargumente sollten an dieser Stelle nicht erlaubt sein
-        val typ = parseTypOhneArtikel(false)
+        val typ = parseTypOhneArtikel(symbolErlaubt = false, typArgumenteErlaubt = false)
         typ.name.vornomen = artikel
 
         val methoden = mutableListOf<AST.Definition.Funktion>()
@@ -1310,7 +1313,7 @@ private sealed class SubParser<T: AST>() {
 
       override fun parseImpl(): AST.Definition.Konvertierung {
         expect<TokenTyp.ALS_GROß>("'Als'")
-        val typ = parseTypOhneArtikel(false)
+        val typ = parseTypOhneArtikel(symbolErlaubt = false, typArgumenteErlaubt = true)
         val definition = parseSätze()
         return AST.Definition.Konvertierung(typ, definition)
       }
@@ -1322,7 +1325,7 @@ private sealed class SubParser<T: AST>() {
       override fun parseImpl(): AST.Definition.Eigenschaft {
         expect<TokenTyp.EIGENSCHAFT>("'Eigenschaft'")
         expect<TokenTyp.OFFENE_KLAMMER>("'('")
-        val rückgabeTyp = parseTypOhneArtikel(false)
+        val rückgabeTyp = parseTypOhneArtikel(symbolErlaubt = false, typArgumenteErlaubt = true)
         expect<TokenTyp.GESCHLOSSENE_KLAMMER>("')'")
         val name = parseNomenOhneVornomen(false)
         val definition = parseSätze()
