@@ -5,6 +5,7 @@ import org.assertj.core.api.Assertions.assertThatExceptionOfType
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
 import java.io.*
+import java.lang.Exception
 
 class GermanSkriptTest {
 
@@ -270,10 +271,12 @@ class GermanSkriptTest {
           schreibe die Zeile "#{Ich} wurde erstellt!"
       .
       
-      als Zeichenfolge für Person:
-        gebe "#{mein Name} (#{mein Alter} Jahre alt)" zurück
+      implementiere die Person:
+        als Zeichenfolge:
+          gebe "#{mein Name} (#{mein Alter} Jahre alt)" zurück
+        .
       .
-      
+
       die Person ist eine Person mit dem VorNamen "Max", dem NachNamen "Mustermann", dem Alter 29
     """.trimIndent()
 
@@ -296,16 +299,18 @@ class GermanSkriptTest {
         schreibe die Zahl (meine Zahl)
       .
       
-      Verb für Zähler erhöhe mich um die Zahl:
-        meine Zahl ist meine Zahl + die Zahl
-        schreibe die Zahl (meine Zahl)
-      .
+      implementiere den Zähler:
+        Verb erhöhe mich um die Zahl:
+          meine Zahl ist meine Zahl + die Zahl
+          schreibe die Zahl (meine Zahl)
+        .
       
-      Verb für Zähler setze mich zurück:
-        meine Zahl ist 0
-        schreibe die Zahl (meine Zahl)
+        Verb setze mich zurück:
+          meine Zahl ist 0
+          schreibe die Zahl (meine Zahl)
+        .
       .
-      
+
       der Zähler ist ein Zähler
       
       erhöhe den Zähler um die Zahl 5
@@ -408,8 +413,10 @@ class GermanSkriptTest {
         Modul B:
           Nomen Foo mit dem Bar:.
           
-          Verb für Bar test:
-            schreibe die Zeile "Bar"
+          implementiere das Bar:
+            Verb test:
+              schreibe die Zeile "Bar"
+            .
           .
         .
         Modul C:
@@ -461,20 +468,23 @@ class GermanSkriptTest {
       
       Adjektiv zeichenbar:
           Verb zeichne mich mit der Zeichenfolge Farbe
-          Verb skaliere mich um die Zahl.
+          Verb skaliere mich um die Zahl
+      .
 
       Verb zeichne das Zeichenbare mit der Zeichenfolge Farbe: 
           Zeichenbare: zeichne dich mit der Farbe!
       .
 
       Nomen Dreieck:.
-
-      Verb für Dreieck zeichne mich mit der Zeichenfolge Farbe:
+      
+      implementiere das zeichenbare Dreieck:
+        Verb zeichne mich mit der Zeichenfolge Farbe:
            schreibe die Zeile "zeichne das Dreieck mit der Farbe #{die Farbe}"
-      .
+        .
 
-      Verb für Dreieck skaliere mich um die Zahl:
+        Verb skaliere mich um die Zahl:
            schreibe die Zeile "skaliere das Dreieck um #{die Zahl}"
+        .
       .
 
       das Dreieck ist ein Dreieck
@@ -512,11 +522,13 @@ class GermanSkriptTest {
         jene AnZahl ist 0
       .
       
-      Verb für Fenster klick mich:
-        meine AnZahl ist meine AnZahl plus 1
-        schreibe die Zeile "Das Fenster wurde zum #{meine AnZahl}. angeklickt!"
+      implementiere das klickbare Fenster:
+          Verb klick mich:
+          meine AnZahl ist meine AnZahl plus 1
+          schreibe die Zeile "Das Fenster wurde zum #{meine AnZahl}. angeklickt!"
+        .
       .
-      
+
       das Fenster ist ein Fenster
       registriere das klickbare Fenster
       
@@ -555,15 +567,19 @@ class GermanSkriptTest {
         schreibe die Zeile "#{mein VorName} #{mein NachName} ist ein #{mein Studiengang}-Student!"
       .
       
-      Verb für Person stell mich vor:
-        schreibe die Zeile "Hallo, mein Name ist #{mein Name} und ich bin #{mein Alter} Jahre alt!"
+      implementiere die Person:
+        Verb stell mich vor:
+          schreibe die Zeile "Hallo, mein Name ist #{mein Name} und ich bin #{mein Alter} Jahre alt!"
+        .
       .
       
-      Verb für Student stell mich vor:
-        Super: stell mich vor!
-        schreibe die Zeile "Ich bin #{mein Studiengang}-Student."
+      implementiere den Studenten:
+        Verb stell mich vor:
+          Super: stell mich vor!
+          schreibe die Zeile "Ich bin #{mein Studiengang}-Student."
+        .
       .
-      
+
       Verb stell die Person vor:
         Person: stell dich vor!
       .
@@ -763,10 +779,12 @@ class GermanSkriptTest {
       
       Nomen Person mit der Zeichenfolge VorName, der Zeichenfolge NachName:.
       
-      Eigenschaft(Zeichenfolge) Name für Person:
-        gebe meinen VorNamen + " " + meinen NachNamen zurück
+      implementiere die Person:
+        Eigenschaft(Zeichenfolge) Name:
+          gebe meinen VorNamen + " " + meinen NachNamen zurück
+        .
       .
-      
+
       die Person ist eine Person mit dem VorNamen "Max", dem NachNamen "Mustermann"
       schreibe die Zeichenfolge (der Name der Person)
     """.trimIndent()
@@ -1013,5 +1031,126 @@ class GermanSkriptTest {
     testeGermanSkriptCode(quellCode, erwarteteAusgabe)
   }
 
+  @Test
+  @DisplayName("implementiere Adjektiv mit Typparameter")
+  fun implementiereAdjektivMitTypparameter() {
+    val quellCode = """
+      Deklination Maskulinum Singular(Test, Tests, Test, Test) Plural(Tests)
+      
+      Adjektiv<Typ> testbar:
+        Verb teste den Typ
+      .
+      
+      Nomen Test:.
+      
+      implementiere den testbaren<Zeichenfolge> Test:
+        Verb teste die Zeichenfolge:
+          schreibe die Zeichenfolge
+        .
+      .
+      
+      der Test ist ein Test
+      Test: teste die Zeichenfolge "Hallo Welt!"!
+    """.trimIndent()
 
+    testeGermanSkriptCode(quellCode, "Hallo Welt!")
+  }
+
+  @Test
+  @DisplayName("implementiere mehrerere Adjektive")
+  fun implementiereMehrereAdjektive() {
+    val quellCode = """
+      Adjektiv gefräßig:
+        Verb fütter mich
+      .
+      
+      Adjektiv flauschig:
+        Verb kuschel mich
+      .
+      
+      Deklination Maskulinum Singular(Hund, Hunds, Hund, Hund) Plural(Hunde)
+      
+      Nomen Hund:.
+      
+      implementiere den gefräßigen, flauschigen Hund:
+        Verb fütter mich:
+          schreibe die Zeile "Jam, jam, schmatz, schmatz..."
+        .
+        
+        Verb kuschel mich:
+          schreibe die Zeile "entspanntes Ausatmen"
+        .
+      .
+      
+      Verb fütter das Gefräßige:
+        Gefräßige: fütter dich!
+      .
+      
+      der HundKIRA ist ein Hund
+      fütter den gefräßigen HundKIRA
+      kuschel den HundKIRA
+    """.trimIndent()
+
+    val erwarteteAusgabe = """
+      Jam, jam, schmatz, schmatz...
+      entspanntes Ausatmen
+      
+    """.trimIndent()
+
+    testeGermanSkriptCode(quellCode, erwarteteAusgabe)
+  }
+
+  @Test
+  @DisplayName("Falscher Typ bei implementierter Schnittsteller")
+  fun falscheTypenBeiImplementierterSchnittstelle() {
+    val quellCode = """
+      Adjektiv zählbar:
+        Verb (Zahl) zähle mich weiter
+      .
+      
+      Deklination Maskulinum Singular(Zähler, Zählers, Zähler, Zähler) Plural(Zähler)
+      
+      Nomen Zähler:
+        jene Zahl ist 0
+      .
+      
+      implementiere den zählbaren Zähler:
+        Verb(Zeichenfolge) zähle mich weiter:
+          meine Zahl ist meine Zahl plus 1
+          gebe meine Zahl als Zeichenfolge zurück
+        .
+      .
+      
+      der Zähler ist ein Zähler
+      zähle den Zähler weiter
+    """.trimIndent()
+
+    assertThatExceptionOfType(GermanSkriptFehler.TypFehler.FalscherSchnittstellenTyp::class.java).isThrownBy {
+      führeGermanSkriptCodeAus(quellCode)
+    }
+  }
+
+  @Test
+  @DisplayName("Falscher Typ bei implementierter generischer Schnittstelle")
+  fun falscherTypBeiImplementierterGenerischerSchnittstelle() {
+    val quellCode = """
+      Deklination Maskulinum Singular(Test, Tests, Test, Test) Plural(Tests)
+      
+      Adjektiv<Typ> testbar:
+        Verb teste den Typ
+      .
+      
+      Nomen Test:.
+      
+      implementiere den testbaren<Zahl> Test:
+        Verb teste die Zeichenfolge Zahl:
+          schreibe die Zeile (die Zahl)
+        .
+      .
+    """.trimIndent()
+
+    assertThatExceptionOfType(GermanSkriptFehler.TypFehler.FalscherSchnittstellenTyp::class.java).isThrownBy {
+      führeGermanSkriptCodeAus(quellCode)
+    }
+  }
 }

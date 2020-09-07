@@ -13,20 +13,16 @@ class Definierer(startDatei: File): PipelineKomponente(startDatei) {
   }
 
   private fun definiere(definitionen: AST.DefinitionsContainer) {
-    definitionen.funktionenOderMethoden.forEach { knoten ->
-      when (knoten) {
-        is AST.Definition.FunktionOderMethode.Funktion -> definiereFunktion(knoten)
-        is AST.Definition.FunktionOderMethode.Methode -> definiereMethode(knoten)
-      }
-    }
-    definitionen.konvertierungen.forEach(::definiereKonvertierung)
-    definitionen.eigenschaften.forEach(::definiereEigenschaft)
-    definitionen.module.values.forEach {modul -> definiere(modul.definitionen)}
+    // Benenne die Methodensignaturen der Schnittstellen
     definitionen.definierteTypen.values.forEach { schnittstelle ->
       if (schnittstelle is AST.Definition.Typdefinition.Schnittstelle) {
-        schnittstelle.methodenSignaturen.forEach { holeVollenNameVonFunktionsSignatur(it) }
+        schnittstelle.methodenSignaturen.forEach { holeVollenNamenVonFunktionsSignatur(it) }
       }
     }
+
+    definitionen.funktionsListe.forEach(::definiereFunktion)
+    definitionen.implementierungen.forEach(::definiereImplementierung)
+    definitionen.module.values.forEach {modul -> definiere(modul.definitionen)}
   }
 
   private fun durchlaufeDefinitionsContainer(knoten: AST): Sequence<AST.DefinitionsContainer> = sequence {
@@ -38,12 +34,12 @@ class Definierer(startDatei: File): PipelineKomponente(startDatei) {
     }
   }
 
-  fun holeFunktionsDefinition(funktionsAufruf: AST.Funktion): AST.Definition.FunktionOderMethode.Funktion {
+  fun holeFunktionsDefinition(funktionsAufruf: AST.Funktion): AST.Definition.Funktion {
     if (funktionsAufruf.vollerName == null) {
       funktionsAufruf.vollerName = holeVollenNamenVonFunktionsAufruf(funktionsAufruf, null)
     }
     if (funktionsAufruf.modulPfad.isEmpty()) {
-      var funktionsDefinition: AST.Definition.FunktionOderMethode.Funktion? = null
+      var funktionsDefinition: AST.Definition.Funktion? = null
       for (definitionen in durchlaufeDefinitionsContainer(funktionsAufruf)) {
         if (definitionen.funktionen.containsKey(funktionsAufruf.vollerName!!)) {
           funktionsDefinition = definitionen.funktionen.getValue(funktionsAufruf.vollerName!!)
@@ -156,13 +152,14 @@ class Definierer(startDatei: File): PipelineKomponente(startDatei) {
     }
   }
 
-  private fun holeVollenNameVonFunktionsSignatur(
-      funktionsSignatur: AST.Definition.FunktionsSignatur): String {
+  private fun holeVollenNamenVonFunktionsSignatur(
+      funktionsSignatur: AST.Definition.FunktionsSignatur,
+      holeParamName: (AST.Definition.Parameter) -> AST.Nomen = {it.name}
+  ): String {
     var vollerName = funktionsSignatur.name.wert
     if (funktionsSignatur.objekt != null) {
       val objekt = funktionsSignatur.objekt
-      val typ = objekt.typKnoten.name
-      vollerName += " " + objekt.name.vornomenString!! + " " + objekt.name.hauptWort(typ.fälle.first(), typ.numerus!!)
+      vollerName += holeParamString(objekt, holeParamName)
     }
     else if (funktionsSignatur.reflexivPronomen != null) {
       vollerName += " ${funktionsSignatur.reflexivPronomen.wert}"
@@ -171,8 +168,7 @@ class Definierer(startDatei: File): PipelineKomponente(startDatei) {
       vollerName += " " + präposition.präposition.präposition.wert
       for (parameterIndex in präposition.parameter.indices) {
         val parameter = präposition.parameter[parameterIndex]
-        val typ = parameter.typKnoten.name
-        vollerName += " " + parameter.name.vornomenString!! + " " + parameter.name.hauptWort(typ.fälle.first(), typ.numerus!!)
+        vollerName += holeParamString(parameter, holeParamName)
         if (parameterIndex != präposition.parameter.size-1) {
           vollerName += ","
         }
@@ -185,14 +181,50 @@ class Definierer(startDatei: File): PipelineKomponente(startDatei) {
     return vollerName
   }
 
-  fun holeVollenNamenVonFunktionsAufruf(funktionsAufruf: AST.Funktion, ersetzeObjekt: String?): String {
+  private fun holeParamString(
+      param: AST.Definition.Parameter,
+      holeParamName: (AST.Definition.Parameter) -> AST.Nomen = {it.name}
+  ): String {
+    val paramName = holeParamName(param)
+    val artikel = GrammatikPrüfer.holeVornomen(
+        TokenTyp.VORNOMEN.ARTIKEL.BESTIMMT,
+        param.typKnoten.name.fälle.first(),
+        paramName.genus,
+        param.name.numerus!!
+    )
+    return " " + artikel + " " + paramName.hauptWort(param.name.fälle.first(), param.name.numerus!!)
+  }
+
+  fun holeVollenNamenVonFunktionsSignatur(
+      funktionsSignatur: AST.Definition.FunktionsSignatur,
+      typTypArgs: List<AST.TypKnoten>): String =
+      holeVollenNamenVonFunktionsSignatur(funktionsSignatur) { param ->
+        holeParamName(param, typTypArgs)
+      }
+
+  private fun holeParamName(
+      parameter: AST.Definition.Parameter,
+      typTypArgs: List<AST.TypKnoten>): AST.Nomen {
+    val typ = parameter.typKnoten.typ!!
+    return if (parameter.typIstName && typ is Typ.Generic) {
+      typTypArgs[typ.index].name
+    } else {
+      parameter.name
+    }
+  }
+
+  fun holeVollenNamenVonFunktionsAufruf(
+      funktionsAufruf: AST.Funktion,
+      ersetzeObjekt: String?,
+      holeArgName: (AST.Argument) -> AST.Nomen = {it.name}
+  ): String {
     var vollerName = funktionsAufruf.verb.wert
     if (funktionsAufruf.objekt != null) {
       val objekt = funktionsAufruf.objekt
       if (ersetzeObjekt != null) {
         vollerName += " $ersetzeObjekt"
       } else {
-        vollerName += holeArgumentString(objekt)
+        vollerName += holeArgumentString(objekt, holeArgName)
       }
     } else if (funktionsAufruf.reflexivPronomen != null) {
       val reflexivPronomen = funktionsAufruf.reflexivPronomen
@@ -211,7 +243,7 @@ class Definierer(startDatei: File): PipelineKomponente(startDatei) {
       vollerName += " " + präposition.präposition.präposition.wert
       for (argumentIndex in präposition.argumente.indices) {
         val argument = präposition.argumente[argumentIndex]
-        vollerName += holeArgumentString(argument)
+        vollerName += holeArgumentString(argument, holeArgName)
         if (argumentIndex != präposition.argumente.size-1) {
           vollerName += ","
         }
@@ -223,59 +255,18 @@ class Definierer(startDatei: File): PipelineKomponente(startDatei) {
     return vollerName
   }
 
-  fun ersetzeTypArgumentMitTypParameter(
+  fun holeVollenNamenVonFunktionsAufruf(
       funktionsAufruf: AST.Funktion,
       typTypParams: List<AST.Nomen>,
       typTypArgs: List<AST.TypKnoten>
   ): String {
-    var vollerName = funktionsAufruf.verb.wert
-    if (funktionsAufruf.objekt != null) {
-      val objekt = funktionsAufruf.objekt
-      val argName = holeArgName(objekt, typTypParams, typTypArgs)
-      vollerName += holeArgumentString(objekt, argName)
-    } else if (funktionsAufruf.reflexivPronomen != null) {
-      val reflexivPronomen = funktionsAufruf.reflexivPronomen
-      val pronomen = if(reflexivPronomen.typ == TokenTyp.REFLEXIV_PRONOMEN.MICH) {
-        reflexivPronomen.wert
-      } else {
-        when (reflexivPronomen.wert) {
-          "dich" -> "mich"
-          "dir" -> "mir"
-          else -> throw Exception("Dieser Fall sollte nie auftreten.")
-        }
-      }
-      vollerName += " $pronomen"
+    return holeVollenNamenVonFunktionsAufruf(funktionsAufruf, null) { argument ->
+      holeArgName(argument, typTypParams, typTypArgs)
     }
-    for (präposition in funktionsAufruf.präpositionsArgumente) {
-      vollerName += " " + präposition.präposition.präposition.wert
-      for (argumentIndex in präposition.argumente.indices) {
-        val argument = präposition.argumente[argumentIndex]
-        val argName = holeArgName(argument, typTypParams, typTypArgs)
-        vollerName += holeArgumentString(argument, argName)
-        if (argumentIndex != präposition.argumente.size-1) {
-          vollerName += ","
-        }
-      }
-    }
-    if (funktionsAufruf.suffix != null) {
-      vollerName += " " + funktionsAufruf.suffix.wert
-    }
-    return vollerName
   }
 
-  private fun holeArgName(
-      argument: AST.Argument,
-      typTypParams: List<AST.Nomen>,
-      typTypArgs: List<AST.TypKnoten>
-  ): AST.Nomen {
-    val ersetzeArgIndex = typTypArgs.indexOfFirst { arg -> arg.name.nominativ == argument.name.nominativ }
-    if (ersetzeArgIndex != -1) {
-      return typTypParams[ersetzeArgIndex]
-    }
-    return argument.name
-  }
-
-  private fun holeArgumentString(argument: AST.Argument, argName: AST.Nomen = argument.name): String {
+  private fun holeArgumentString(argument: AST.Argument, holeArgName: (AST.Argument) -> AST.Nomen): String {
+    val argName = holeArgName(argument)
     return if (argument.adjektiv != null) {
       val artikel = GrammatikPrüfer.holeVornomen(
           TokenTyp.VORNOMEN.ARTIKEL.BESTIMMT, argument.name.fälle.first(), Genus.NEUTRUM, argument.name.numerus!!)
@@ -292,13 +283,25 @@ class Definierer(startDatei: File): PipelineKomponente(startDatei) {
     }
   }
 
+  private fun holeArgName(
+      argument: AST.Argument,
+      typTypParams: List<AST.Nomen>,
+      typTypArgs: List<AST.TypKnoten>
+  ): AST.Nomen {
+    val ersetzeArgIndex = typTypArgs.indexOfFirst { arg -> arg.name.nominativ == argument.name.nominativ }
+    if (ersetzeArgIndex != -1) {
+      return typTypParams[ersetzeArgIndex]
+    }
+    return argument.name
+  }
+
   /**
    * Gibt alle Funktionsdefinitionen zurück.
    */
-  val funktionsDefinitionen get(): Sequence<AST.Definition.FunktionOderMethode.Funktion> = sequence {
+  val funktionsDefinitionen get(): Sequence<AST.Definition.Funktion> = sequence {
     // Der Rückgabetyp der Funktionen muss explizit dranstehen. Ansonsten gibt es einen internen Fehler
     fun holeFunktionsDefinitionen(container: AST.DefinitionsContainer):
-        Sequence<AST.Definition.FunktionOderMethode.Funktion> = sequence {
+        Sequence<AST.Definition.Funktion> = sequence {
       for (funktion in container.funktionen.values) {
         yield(funktion)
       }
@@ -357,8 +360,8 @@ class Definierer(startDatei: File): PipelineKomponente(startDatei) {
     }
   }
 
-  private fun definiereFunktion(funktionsDefinition: AST.Definition.FunktionOderMethode.Funktion) {
-    val vollerName = holeVollenNameVonFunktionsSignatur(funktionsDefinition.signatur)
+  private fun definiereFunktion(funktionsDefinition: AST.Definition.Funktion) {
+    val vollerName = holeVollenNamenVonFunktionsSignatur(funktionsDefinition.signatur)
     val definitionsContainer = funktionsDefinition.findNodeInParents<AST.DefinitionsContainer>()!!
     if (definitionsContainer.funktionen.containsKey(vollerName)) {
       throw GermanSkriptFehler.DoppelteDefinition.Funktion(
@@ -369,41 +372,41 @@ class Definierer(startDatei: File): PipelineKomponente(startDatei) {
     definitionsContainer.funktionen[vollerName] = funktionsDefinition
   }
 
-  private fun definiereMethode(methodenDefinition: AST.Definition.FunktionOderMethode.Methode) {
-    val vollerName = holeVollenNameVonFunktionsSignatur(methodenDefinition.funktion.signatur)
-    val klasse = holeTypDefinition(methodenDefinition.klasse)
+  private fun definiereImplementierung(implementierung: AST.Definition.Implementierung) {
+    val klasse = holeTypDefinition(implementierung.klasse)
     if (klasse !is AST.Definition.Typdefinition.Klasse) {
-      throw GermanSkriptFehler.KlasseErwartet(methodenDefinition.klasse.name.bezeichner.toUntyped())
+      throw GermanSkriptFehler.KlasseErwartet(implementierung.klasse.name.bezeichner.toUntyped())
     }
-    if (klasse.methoden.containsKey(vollerName)) {
-      throw GermanSkriptFehler.DoppelteDefinition.Methode(
-          methodenDefinition.funktion.signatur.name.toUntyped(),
-          klasse.methoden.getValue(vollerName)
-      )
-    }
-    klasse.methoden[vollerName] = methodenDefinition
+    klasse.implementierungen += implementierung
+    implementierung.methoden.forEach { methode -> definiereMethode(methode, klasse) }
+    implementierung.eigenschaften.forEach { eigenschaft -> definiereEigenschaft(eigenschaft, klasse) }
+    implementierung.konvertierungen.forEach { konvertierung -> definiereKonvertierung(konvertierung, klasse) }
   }
 
-  private fun definiereKonvertierung(konvertierung: AST.Definition.Konvertierung) {
-    val klasse = holeTypDefinition(konvertierung.klasse)
-    if (klasse !is AST.Definition.Typdefinition.Klasse) {
-      throw GermanSkriptFehler.KlasseErwartet(konvertierung.klasse.name.bezeichner.toUntyped())
-    }
+  private fun definiereKonvertierung(konvertierung: AST.Definition.Konvertierung, klasse: AST.Definition.Typdefinition.Klasse) {
     val typName = konvertierung.typ.name.nominativ
     if (klasse.konvertierungen.containsKey(typName)) {
       throw GermanSkriptFehler.DoppelteDefinition.Konvertierung(
-          konvertierung.klasse.name.bezeichner.toUntyped(),
+          konvertierung.typ.name.bezeichner.toUntyped(),
           klasse.konvertierungen.getValue(typName)
       )
     }
     klasse.konvertierungen[typName] = konvertierung
   }
 
-  private fun definiereEigenschaft(eigenschaft: AST.Definition.Eigenschaft) {
-    val klasse = holeTypDefinition(eigenschaft.klasse)
-    if (klasse !is AST.Definition.Typdefinition.Klasse) {
-      throw GermanSkriptFehler.KlasseErwartet(eigenschaft.klasse.name.bezeichner.toUntyped())
+  private fun definiereMethode(methode: AST.Definition.Funktion, klasse: AST.Definition.Typdefinition.Klasse) {
+    val vollerName = holeVollenNamenVonFunktionsSignatur(methode.signatur)
+    if (klasse.methoden.containsKey(vollerName)) {
+      throw GermanSkriptFehler.DoppelteDefinition.Methode(
+          methode.signatur.name.toUntyped(),
+          klasse.methoden.getValue(vollerName),
+          klasse
+      )
     }
+    klasse.methoden[vollerName] = methode
+  }
+
+  private fun definiereEigenschaft(eigenschaft: AST.Definition.Eigenschaft, klasse: AST.Definition.Typdefinition.Klasse) {
     val eigenschaftsName = eigenschaft.name.nominativ
     if (klasse.berechneteEigenschaften.containsKey(eigenschaftsName)) {
       throw GermanSkriptFehler.DoppelteDefinition.Eigenschaft(

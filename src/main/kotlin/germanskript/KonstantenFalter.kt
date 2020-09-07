@@ -29,7 +29,7 @@ class KonstantenFalter(startDatei: File): ProgrammDurchlaufer<Wert?>(startDatei)
     durchlaufeBereich(bereich, neuerBereich)
   }
 
-  private fun falteFunktion(funktion: AST.Definition.FunktionOderMethode.Funktion) {
+  private fun falteFunktion(funktion: AST.Definition.Funktion) {
     if (funktion.signatur.rückgabeTyp == null) {
       return
     }
@@ -43,7 +43,7 @@ class KonstantenFalter(startDatei: File): ProgrammDurchlaufer<Wert?>(startDatei)
 
   private fun falteKlasse(klasse: AST.Definition.Typdefinition.Klasse) {
     durchlaufeAufruf(klasse.konstruktor, Umgebung(), true)
-    klasse.methoden.values.forEach {methode -> falteFunktion(methode.funktion)}
+    klasse.methoden.values.forEach {methode -> falteFunktion(methode)}
     klasse.konvertierungen.values.forEach {konvertierung ->
       durchlaufeAufruf(konvertierung.definition, Umgebung(), true)
     }

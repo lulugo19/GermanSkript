@@ -57,7 +57,7 @@ sealed class AST {
   }
 
   data class Nomen(
-      val vornomen: TypedToken<TokenTyp.VORNOMEN>?,
+      var vornomen: TypedToken<TokenTyp.VORNOMEN>?,
       val bezeichner: TypedToken<TokenTyp.BEZEICHNER_GROSS>
   ): AST() {
     var deklination: Deklination? = null
@@ -65,8 +65,8 @@ sealed class AST {
     var numerus: Numerus? = null
     var fälle: EnumSet<Kasus> = EnumSet.noneOf(Kasus::class.java)
 
-    val unveränderlich = vornomen == null || vornomen.typ ==
-        TokenTyp.VORNOMEN.ARTIKEL.BESTIMMT || vornomen.typ == TokenTyp.VORNOMEN.DEMONSTRATIV_PRONOMEN.DIESE
+    val unveränderlich = vornomen == null || vornomen!!.typ ==
+        TokenTyp.VORNOMEN.ARTIKEL.BESTIMMT || vornomen!!.typ == TokenTyp.VORNOMEN.DEMONSTRATIV_PRONOMEN.DIESE
     val istSymbol get() = bezeichner.typ.istSymbol
     val geprüft get() = deklination != null
     val genus get() = if (istSymbol) Genus.NEUTRUM else deklination!!.genus
@@ -99,6 +99,31 @@ sealed class AST {
     }
   }
 
+  data class Adjektiv(
+      val bezeichner: TypedToken<TokenTyp.BEZEICHNER_KLEIN>,
+      val modulPfad: List<TypedToken<TokenTyp.BEZEICHNER_GROSS>> = emptyList(),
+      val typArgumente: List<TypKnoten> = emptyList(),
+      var normalisierung: String? = null): AST() {
+
+    var deklination: Deklination? = null
+
+    override val children = sequence {
+      yieldAll(typArgumente)
+    }
+
+    // wandelt das Adjektiv in einen Typknoten um
+    fun inTypKnoten(): TypKnoten {
+      val nomen = Nomen(null, TypedToken(
+          TokenTyp.BEZEICHNER_GROSS(
+              arrayOf(normalisierung!!), ""),
+          normalisierung!!, bezeichner.dateiPfad, bezeichner.anfang, bezeichner.ende))
+      nomen.deklination = deklination
+      val typKnoten = TypKnoten(modulPfad, nomen, typArgumente)
+      typKnoten.setParentNode(parent!!)
+      return typKnoten
+    }
+  }
+
   data class TypKnoten(
       val modulPfad: List<TypedToken<TokenTyp.BEZEICHNER_GROSS>>,
       val name: Nomen,
@@ -120,12 +145,11 @@ sealed class AST {
 
   class DefinitionsContainer(): AST() {
     val deklinationen = mutableListOf<Definition.DeklinationsDefinition>()
-    val funktionenOderMethoden = mutableListOf<Definition.FunktionOderMethode>()
-    val konvertierungen = mutableListOf<Definition.Konvertierung>()
-    val eigenschaften = mutableListOf<Definition.Eigenschaft>()
+    val funktionsListe = mutableListOf<Definition.Funktion>()
     val konstanten =  mutableMapOf<String, Definition.Konstante>()
     val definierteTypen: MutableMap<String, Definition.Typdefinition> = mutableMapOf()
-    val funktionen: MutableMap<String, Definition.FunktionOderMethode.Funktion> = mutableMapOf()
+    val funktionen: MutableMap<String, Definition.Funktion> = mutableMapOf()
+    val implementierungen = mutableListOf<Definition.Implementierung>()
     val module = mutableMapOf<String, Definition.Modul>()
     val verwende = mutableListOf<Definition.Verwende>()
     val verwendeteModule = mutableListOf<DefinitionsContainer>()
@@ -135,9 +159,8 @@ sealed class AST {
 
     override val children = sequence {
       yieldAll(deklinationen)
-      yieldAll(funktionenOderMethoden)
-      yieldAll(konvertierungen)
-      yieldAll(eigenschaften)
+      yieldAll(funktionsListe)
+      yieldAll(implementierungen)
       yieldAll(konstanten.values)
       yieldAll(definierteTypen.values)
       yieldAll(module.values)
@@ -172,7 +195,7 @@ sealed class AST {
 
     private val _argumente: MutableList<Argument> = mutableListOf()
     val argumente: List<Argument> = _argumente
-    var funktionsDefinition: Definition.FunktionOderMethode.Funktion? = null
+    var funktionsDefinition: Definition.Funktion? = null
     var aufrufTyp: FunktionsAufrufTyp = FunktionsAufrufTyp.FUNKTIONS_AUFRUF
     val vollständigerName: String get() = modulPfad.joinToString("::") { it.wert } +
         (if (modulPfad.isEmpty()) "" else "::") + vollerName
@@ -204,7 +227,12 @@ sealed class AST {
 
   sealed class Definition : AST() {
 
-    data class TypUndName(
+    data class Modul(val name: TypedToken<TokenTyp.BEZEICHNER_GROSS>, val definitionen: DefinitionsContainer):
+        Definition() {
+      override val children: Sequence<AST> = sequenceOf(definitionen)
+    }
+
+    data class Parameter(
         val typKnoten: TypKnoten,
         val name: Nomen
     ): AST() {
@@ -215,15 +243,9 @@ sealed class AST {
 
     data class PräpositionsParameter(
         val präposition: Präposition,
-        val parameter: List<TypUndName>
+        val parameter: List<Parameter>
     ): AST() {
       override val children = sequence { yieldAll(parameter) }
-    }
-
-
-    data class Modul(val name: TypedToken<TokenTyp.BEZEICHNER_GROSS>, val definitionen: DefinitionsContainer):
-        Definition() {
-      override val children: Sequence<AST> = sequenceOf(definitionen)
     }
 
     sealed class DeklinationsDefinition: Definition() {
@@ -236,13 +258,13 @@ sealed class AST {
         val rückgabeTyp: TypKnoten?,
         val name: TypedToken<TokenTyp.BEZEICHNER_KLEIN>,
         val reflexivPronomen: TypedToken<TokenTyp.REFLEXIV_PRONOMEN>?,
-        val objekt: TypUndName?,
+        val objekt: Parameter?,
         val präpositionsParameter: List<PräpositionsParameter>,
         val suffix: TypedToken<TokenTyp.BEZEICHNER_KLEIN>?,
         var vollerName: String? = null
     ): Definition() {
-      private val _parameter: MutableList<TypUndName> = mutableListOf()
-      val parameter: List<TypUndName> = _parameter
+      private val _parameter: MutableList<Parameter> = mutableListOf()
+      val parameter: List<Parameter> = _parameter
 
       init {
         if (objekt != null) {
@@ -265,23 +287,27 @@ sealed class AST {
       }
     }
 
-    sealed class FunktionOderMethode(): Definition() {
-      data class Funktion(
-          val signatur: FunktionsSignatur,
-          val körper: Satz.Bereich
-      ): FunktionOderMethode() {
+    data class Funktion(
+        val signatur: FunktionsSignatur,
+        val körper: Satz.Bereich
+    ): Definition() {
 
-        override val children = sequenceOf(signatur, körper)
-      }
+      override val children = sequenceOf(signatur, körper)
+    }
 
-      data class Methode(
-          val funktion: Funktion,
-          val klasse: TypKnoten
-      ): FunktionOderMethode() {
-        override val children = sequence {
-          yield(klasse)
-          yield(funktion)
-        }
+    data class Implementierung(
+        val klasse: TypKnoten,
+        val adjektive: List<Adjektiv>,
+        val methoden: List<Funktion>,
+        val eigenschaften: List<Eigenschaft>,
+        val konvertierungen: List<Konvertierung>
+    ): Definition() {
+      override val children = sequence {
+        yield(klasse)
+        yieldAll(adjektive)
+        yieldAll(methoden)
+        yieldAll(eigenschaften)
+        yieldAll(konvertierungen)
       }
     }
 
@@ -294,12 +320,14 @@ sealed class AST {
           override val typParameter: List<Nomen>,
           val name: Nomen,
           val elternKlasse: TypKnoten?,
-          val eigenschaften: MutableList<TypUndName>,
+          val eigenschaften: MutableList<Parameter>,
           val konstruktor: Satz.Bereich
       ): Typdefinition() {
-        val methoden: HashMap<String, FunktionOderMethode.Methode> = HashMap()
+        val methoden: HashMap<String, Funktion> = HashMap()
         val berechneteEigenschaften: HashMap<String, Eigenschaft> = HashMap()
         val konvertierungen: HashMap<String, Konvertierung> = HashMap()
+        val implementierteSchnittstellen = mutableListOf<Typ.Compound.Schnittstelle>()
+        val implementierungen = mutableListOf<Implementierung>()
         var geprüft = false
 
         override val namensToken = name.bezeichner.toUntyped()
@@ -338,19 +366,17 @@ sealed class AST {
 
     data class Konvertierung(
         val typ: TypKnoten,
-        val klasse: TypKnoten,
         val definition: Satz.Bereich
     ): Definition() {
-      override val children = sequenceOf(typ, klasse, definition)
+      override val children = sequenceOf(typ, definition)
     }
 
     data class Eigenschaft(
         val rückgabeTyp: TypKnoten,
         val name: Nomen,
-        val klasse: TypKnoten,
         val definition: Satz.Bereich
     ): Definition() {
-      override val children = sequenceOf(rückgabeTyp, name, klasse, definition)
+      override val children = sequenceOf(rückgabeTyp, name, definition)
     }
 
     data class Konstante(
@@ -505,8 +531,6 @@ sealed class AST {
       }
     }
   }
-
-  data class Adjektiv(val bezeichner: TypedToken<TokenTyp.BEZEICHNER_KLEIN>, var normalisierung: String? = null): AST()
 
   data class Argument(
       val adjektiv: Adjektiv?,

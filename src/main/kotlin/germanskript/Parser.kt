@@ -11,7 +11,6 @@ enum class ASTKnotenID {
   VARIABLEN_DEKLARATION,
   FUNKTIONS_AUFRUF,
   FUNKTIONS_DEFINITION,
-  METHODEN_DEFINITION,
   METHODEN_BLOCK,
   INTERN,
   DEKLINATION,
@@ -36,7 +35,9 @@ enum class ASTKnotenID {
   EIGENSCHAFTS_DEFINITION,
   KONSTANTE,
   VERSUCHE_FANGE,
-  WERFE
+  WERFE,
+  FUNKTIONS_SIGNATUR,
+  IMPLEMENTIERUNG
 }
 
 class Parser(startDatei: File): PipelineKomponente(startDatei) {
@@ -104,31 +105,6 @@ private sealed class SubParser<T: AST>() {
     }
   }
 
-  protected fun parseFunktionsAnfang(): Pair<TypParameter, AST.TypKnoten?> {
-    expect<TokenTyp.VERB>("Verb")
-    val typParameter = parseTypParameter()
-    var rückgabeTyp: AST.TypKnoten? = null
-    if (peekType() is TokenTyp.OFFENE_KLAMMER){
-      next()
-      rückgabeTyp = parseTypOhneArtikel(false)
-      expect<TokenTyp.GESCHLOSSENE_KLAMMER>(")")
-    }
-    return Pair(typParameter, rückgabeTyp)
-  }
-
-  protected fun parseFunktionOderMethode(): AST.Definition.FunktionOderMethode{
-    val (typParameter, rückgabeTyp) = parseFunktionsAnfang()
-
-    val nächstesToken = peek()
-    if (nächstesToken.wert == "für"){
-      next()
-      val klasse = parseTypOhneArtikel(false)
-      val definition =  subParse(Definition.Funktion(ASTKnotenID.METHODEN_DEFINITION, typParameter, rückgabeTyp, true))
-      return AST.Definition.FunktionOderMethode.Methode(definition, klasse)
-    }
-    return subParse(Definition.Funktion(ASTKnotenID.FUNKTIONS_DEFINITION, typParameter, rückgabeTyp, false))
-  }
-
   protected fun parseKleinesSchlüsselwort(schlüsselwort: String): TypedToken<TokenTyp.BEZEICHNER_KLEIN> {
     val token = expect<TokenTyp.BEZEICHNER_KLEIN>("'$schlüsselwort'")
     if (token.wert != schlüsselwort) {
@@ -154,9 +130,9 @@ private sealed class SubParser<T: AST>() {
       // 'mein' darf nur in Methodendefinition vorkommen und 'dein' nur in Methodenblock
       when (vornomen.typ) {
         is TokenTyp.VORNOMEN.POSSESSIV_PRONOMEN.MEIN -> {
-          if (!hierarchyContainsAnyNode(ASTKnotenID.METHODEN_DEFINITION, ASTKnotenID.KLASSEN_DEFINITION)) {
+          if (!hierarchyContainsAnyNode(ASTKnotenID.IMPLEMENTIERUNG, ASTKnotenID.KLASSEN_DEFINITION)) {
             throw GermanSkriptFehler.SyntaxFehler.ParseFehler(vornomen.toUntyped(), null,
-                "Das Possessivpronomen '${vornomen.wert}' darf nur in Methodendefinitionen oder in Konstruktoren verwendet werden.")
+                "Das Possessivpronomen '${vornomen.wert}' darf nur innerhalb einer Klassen-Implementierung verwendet werden.")
           }
         }
         is TokenTyp.VORNOMEN.POSSESSIV_PRONOMEN.DEIN -> {
@@ -172,7 +148,7 @@ private sealed class SubParser<T: AST>() {
       if (!hierarchyContainsNode(ASTKnotenID.VARIABLEN_DEKLARATION) && !hierarchyContainsNode(ASTKnotenID.KLASSEN_DEFINITION)) {
         throw GermanSkriptFehler.SyntaxFehler.ParseFehler(vornomen.toUntyped(), null,
             "Die Demonstrativpronomen 'diese' und 'jene' dürfen nur in Konstruktoren (Klassendefinitionen) verwendet werden,\n" +
-                "um von außen unzugreifbare Eigenschaften zu erstellen.")
+                "um weitere Eigenschaften zu erstellen.")
       }
     }
     val bezeichner = parseGroßenBezeichner(symbolErlaubt)
@@ -403,6 +379,16 @@ private sealed class SubParser<T: AST>() {
     return result
   }
 
+  protected fun runParseBereich(erwartetesEndToken: TokenTyp = TokenTyp.PUNKT, runner: () -> Unit) {
+    expect<TokenTyp.DOPPELPUNKT>("':'")
+    überspringeLeereZeilen()
+    while (peekType() != erwartetesEndToken) {
+      runner()
+      überspringeLeereZeilen()
+    }
+    next()
+  }
+
   protected fun parseSätze(endToken: TokenTyp = TokenTyp.PUNKT): AST.Satz.Bereich =
       parseBereich(endToken) { subParse(Programm(id)) }.programm
   // endregion
@@ -519,18 +505,12 @@ private sealed class SubParser<T: AST>() {
           }
           container.definierteTypen[schnittstellenName] = schnittstelle
         }
-        is TokenTyp.VERB -> parseFunktionOderMethode().also { funktion ->
-          container.funktionenOderMethoden += funktion
+        is TokenTyp.VERB -> subParse(Definition.Funktion(false)).also { funktion ->
+          container.funktionsListe += funktion
         }
         is TokenTyp.ALIAS -> subParse(Definition.Alias).also { alias ->
           überprüfeDoppelteDefinition(container, alias)
           container.definierteTypen[alias.name.bezeichner.wert] = alias
-        }
-        is TokenTyp.ALS -> subParse(Definition.Konvertierung).also { konvertierung ->
-          container.konvertierungen += konvertierung
-        }
-        is TokenTyp.EIGENSCHAFT -> subParse(Definition.Eigenschaft).also { eigenschaft ->
-          container.eigenschaften += eigenschaft
         }
         is TokenTyp.KONSTANTE -> subParse(Definition.Konstante).also { konstante ->
           if (container.konstanten.containsKey(konstante.name.wert)) {
@@ -538,6 +518,9 @@ private sealed class SubParser<T: AST>() {
               container.konstanten.getValue(konstante.name.wert))
           }
           container.konstanten[konstante.name.wert] = konstante
+        }
+        is TokenTyp.IMPLEMENTIERE -> subParse(Definition.Implementierung).also { implementierung ->
+          container.implementierungen += implementierung
         }
         is TokenTyp.BEZEICHNER_KLEIN -> {
           when (nextToken.wert) {
@@ -558,7 +541,7 @@ private sealed class SubParser<T: AST>() {
         modulVorhanden, moduleNeu ->
         // Funktionen und Methoden werden einfach hinzugefügt, der Definierer übernimmt hier die Aufgabe,
         // doppelte Definitionen zu erkennen
-        modulVorhanden.definitionen.funktionenOderMethoden.addAll(moduleNeu.definitionen.funktionenOderMethoden)
+        modulVorhanden.definitionen.funktionsListe.addAll(moduleNeu.definitionen.funktionsListe)
 
         // bei den Klassen müssen wir doppelte Definitionen erkennen
         for ((typName, typ) in moduleNeu.definitionen.definierteTypen) {
@@ -574,8 +557,6 @@ private sealed class SubParser<T: AST>() {
         // Deklinationen können einfach hinzugefügt werden. Doppelte Deklinationen sind erlaubt.
         modulVorhanden.definitionen.deklinationen.addAll(moduleNeu.definitionen.deklinationen)
 
-        // Konvertierungen fügen wir auch einfach hinzu. Der Definierer wird auf Doppelte Konvertierungen aufmerksam machen.
-        modulVorhanden.definitionen.konvertierungen.addAll(moduleNeu.definitionen.konvertierungen)
         modulVorhanden
       }
     }
@@ -640,16 +621,16 @@ private sealed class SubParser<T: AST>() {
         is TokenTyp.VORNOMEN ->
           parseNomenAusdruck<TokenTyp.VORNOMEN>("Vornomen", true, false).third
         is TokenTyp.REFERENZ.ICH -> {
-          if (!hierarchyContainsAnyNode(ASTKnotenID.METHODEN_DEFINITION, ASTKnotenID.KLASSEN_DEFINITION, ASTKnotenID.KONVERTIERUNGS_DEFINITION)) {
+          if (!hierarchyContainsAnyNode(ASTKnotenID.IMPLEMENTIERUNG, ASTKnotenID.KLASSEN_DEFINITION)) {
             throw GermanSkriptFehler.SyntaxFehler.ParseFehler(next(), null,
-                "Die Selbstreferenz 'Ich' darf nur in einem Konstruktor, Methoden- oder Konvertierungsdefinition vorkommen.")
+                "Die Selbstreferenz 'Ich' darf nur innerhalb einer Klassen-Implementierung verwendet werden.")
           }
           AST.Ausdruck.SelbstReferenz(next().toTyped())
         }
         is TokenTyp.REFERENZ.DU -> {
           if (!hierarchyContainsNode(ASTKnotenID.METHODEN_BLOCK)) {
             throw GermanSkriptFehler.SyntaxFehler.ParseFehler(next(), null,
-                "Die Methodenblockreferenz 'Du' darf nur in einem Methodenblock vorkommen.")
+                "Die Methodenblockreferenz 'Du' darf nur in einem Methodenblock verwendet werden.")
           }
           AST.Ausdruck.MethodenBlockReferenz(next().toTyped())
         }
@@ -739,7 +720,7 @@ private sealed class SubParser<T: AST>() {
       override fun parseImpl(): AST.Ausdruck.EigenschaftsZugriff {
         return if (nomen.vornomen!!.typ is TokenTyp.VORNOMEN.POSSESSIV_PRONOMEN) {
           val eigenschaft = parseNomenOhneVornomen(false)
-          val vornomenTyp = nomen.vornomen.typ
+          val vornomenTyp = nomen.vornomen!!.typ
           val objekt: AST.Ausdruck = if (vornomenTyp is TokenTyp.VORNOMEN.POSSESSIV_PRONOMEN.MEIN) {
             AST.Ausdruck.SelbstEigenschaftsZugriff(eigenschaft)
           } else {
@@ -775,15 +756,9 @@ private sealed class SubParser<T: AST>() {
       val reflexivPronomen = if (objekt == null) parseOptional<TokenTyp.REFLEXIV_PRONOMEN>() else null
       when (reflexivPronomen?.typ) {
         is TokenTyp.REFLEXIV_PRONOMEN.MICH -> {
-          if (!hierarchyContainsAnyNode(
-                  ASTKnotenID.METHODEN_DEFINITION,
-                  ASTKnotenID.METHODEN_DEFINITION,
-                  ASTKnotenID.KONVERTIERUNGS_DEFINITION,
-                  ASTKnotenID.EIGENSCHAFTS_DEFINITION
-              )) {
+          if (!hierarchyContainsAnyNode(ASTKnotenID.IMPLEMENTIERUNG, ASTKnotenID.KLASSEN_DEFINITION)) {
             throw GermanSkriptFehler.SyntaxFehler.UngültigerBereich(reflexivPronomen.toUntyped(),
-              "Das Reflexivpronomen 'mich' kann nur in einer Methoden, einem Konstruktor oder\n" +
-            "einer Konvertierungs-/Eigenschaftsdefinition verwendet werden.")
+              "Das Reflexivpronomen 'mich' kann nur innerhalb einer Klassen-Implementierung verwendet werden.")
           }
         }
         is TokenTyp.REFLEXIV_PRONOMEN.DICH -> {
@@ -820,7 +795,7 @@ private sealed class SubParser<T: AST>() {
 
       override fun bewacheKnoten() {
         super.bewacheKnoten()
-        if (!hierarchyContainsAnyNode(ASTKnotenID.FUNKTIONS_DEFINITION, ASTKnotenID.METHODEN_DEFINITION)) {
+        if (!hierarchyContainsNode(ASTKnotenID.FUNKTIONS_DEFINITION)) {
           throw GermanSkriptFehler.SyntaxFehler.ParseFehler(next(), null, "Das Schlüsselwort 'intern' darf nur in einer Funktionsdefinition stehen.")
         }
       }
@@ -880,9 +855,9 @@ private sealed class SubParser<T: AST>() {
       override val id: ASTKnotenID = ASTKnotenID.SUPER_BLOCK
 
       override fun bewacheKnoten() {
-        if (!hierarchyContainsAnyNode(ASTKnotenID.METHODEN_DEFINITION, ASTKnotenID.KLASSEN_DEFINITION, ASTKnotenID.KONVERTIERUNGS_DEFINITION, ASTKnotenID.EIGENSCHAFTS_DEFINITION)) {
-          throw GermanSkriptFehler.SyntaxFehler.UngültigerBereich(next(), "Ein Super-Block kann nur in einer Methode, im Konstruktor oder in einer" +
-              "Konvertierungsdefinition verwendet werden.")
+        if (!hierarchyContainsAnyNode(ASTKnotenID.IMPLEMENTIERUNG, ASTKnotenID.KLASSEN_DEFINITION)) {
+          throw GermanSkriptFehler.SyntaxFehler.UngültigerBereich(next(),
+              "Ein Super-Block kann nur innerhalb einer Klassen-Implementierung verwendet werden.")
         }
       }
 
@@ -900,7 +875,6 @@ private sealed class SubParser<T: AST>() {
       override fun bewacheKnoten() {
         if (!hierarchyContainsAnyNode(
                 ASTKnotenID.FUNKTIONS_DEFINITION,
-                ASTKnotenID.METHODEN_DEFINITION,
                 ASTKnotenID.KONVERTIERUNGS_DEFINITION,
                 ASTKnotenID.CLOSURE,
                 ASTKnotenID.EIGENSCHAFTS_DEFINITION
@@ -1069,17 +1043,17 @@ private sealed class SubParser<T: AST>() {
   sealed class Definition<T: AST.Definition>(): SubParser<T>() {
 
     override fun bewacheKnoten() {
-      if (!(parentNodeId == ASTKnotenID.PROGRAMM || parentNodeId == ASTKnotenID.MODUL)) {
+      if (!(parentNodeId == ASTKnotenID.PROGRAMM || parentNodeId == ASTKnotenID.MODUL || parentNodeId == ASTKnotenID.IMPLEMENTIERUNG)) {
         throw GermanSkriptFehler.SyntaxFehler.UngültigerBereich(next(),
-            "Definitionen können nur im globalem Bereich oder in Modulen geschrieben werden.")
+            "Definitionen können nur im globalem Bereich, in Modulen oder Klasse-Implementierungen geschrieben werden.")
       }
     }
 
-    protected inline fun<reified VornomenT: TokenTyp.VORNOMEN.ARTIKEL> parseTypUndName(erwarteterArtikel: String): AST.Definition.TypUndName {
+    protected inline fun<reified VornomenT: TokenTyp.VORNOMEN.ARTIKEL> parseTypUndName(erwarteterArtikel: String): AST.Definition.Parameter {
       val typ = parseTypMitArtikel<VornomenT>(erwarteterArtikel, true)
       val bezeichner = parseOptional<TokenTyp.BEZEICHNER_GROSS>()
       val name = if (bezeichner != null) AST.Nomen(null, bezeichner) else typ.name
-      return AST.Definition.TypUndName(typ, name)
+      return AST.Definition.Parameter(typ, name)
     }
 
     object Modul: Definition<AST.Definition.Modul>() {
@@ -1166,11 +1140,10 @@ private sealed class SubParser<T: AST>() {
     }
 
     class FunktionsSignatur(
-        override val id: ASTKnotenID,
-        private val typParameter: TypParameter,
-        private val rückgabeTyp: AST.TypKnoten?,
-        private val istMethode: Boolean
+        private val erlaubeReflexivPronomen: Boolean
     ): Definition<AST.Definition.FunktionsSignatur>() {
+
+      override val id: ASTKnotenID = ASTKnotenID.FUNKTIONS_SIGNATUR
 
       override fun bewacheKnoten() {
         // hier muss nichts überwacht werden
@@ -1181,10 +1154,18 @@ private sealed class SubParser<T: AST>() {
       }
 
       override fun parseImpl(): AST.Definition.FunktionsSignatur {
+        expect<TokenTyp.VERB>("'Verb'")
+        val typParameter = parseTypParameter()
+        val rückgabeTyp = if (peekType() is TokenTyp.OFFENE_KLAMMER) {
+          expect<TokenTyp.OFFENE_KLAMMER>("'('")
+          parseTypOhneArtikel(false).also { expect<TokenTyp.GESCHLOSSENE_KLAMMER>("')'") }
+        } else {
+          null
+        }
         val name = expect<TokenTyp.BEZEICHNER_KLEIN>("bezeichner")
-        val reflexivPronomen = if (istMethode) parseOptional<TokenTyp.REFLEXIV_PRONOMEN>() else null
+        val reflexivPronomen = if (erlaubeReflexivPronomen) parseOptional<TokenTyp.REFLEXIV_PRONOMEN>() else null
         val objekt = if (reflexivPronomen == null) {
-          parseOptional<AST.Definition.TypUndName, TokenTyp.VORNOMEN.ARTIKEL.BESTIMMT> {
+          parseOptional<AST.Definition.Parameter, TokenTyp.VORNOMEN.ARTIKEL.BESTIMMT> {
             parseTypUndName<TokenTyp.VORNOMEN.ARTIKEL.BESTIMMT>("bestimmter Artikel") }
         } else {
          null
@@ -1197,7 +1178,7 @@ private sealed class SubParser<T: AST>() {
 
       fun parsePräpositionsParameter(): List<AST.Definition.PräpositionsParameter> {
         return parsePräpositionsListe({
-          parseListeMitStart<AST.Definition.TypUndName, TokenTyp.KOMMA, TokenTyp.VORNOMEN.ARTIKEL.BESTIMMT>(false) {
+          parseListeMitStart<AST.Definition.Parameter, TokenTyp.KOMMA, TokenTyp.VORNOMEN.ARTIKEL.BESTIMMT>(false) {
             parseTypUndName<TokenTyp.VORNOMEN.ARTIKEL.BESTIMMT>("bestimmter Artikel")
           }
         }
@@ -1208,16 +1189,14 @@ private sealed class SubParser<T: AST>() {
     }
 
     class Funktion(
-        override val id: ASTKnotenID,
-        private val typParameter: TypParameter,
-        private val rückgabeTyp: AST.TypKnoten?,
-        private val hatReflexivPronomen: Boolean
-    ): Definition<AST.Definition.FunktionOderMethode.Funktion>() {
+        private val erlaubeReflexivPronomen: Boolean
+    ): Definition<AST.Definition.Funktion>() {
+      override val id = ASTKnotenID.FUNKTIONS_DEFINITION
 
-      override fun parseImpl(): AST.Definition.FunktionOderMethode.Funktion {
-        val signatur = subParse(FunktionsSignatur(id, typParameter, rückgabeTyp, hatReflexivPronomen))
+      override fun parseImpl(): AST.Definition.Funktion {
+        val signatur = subParse(FunktionsSignatur(erlaubeReflexivPronomen))
         val sätze = parseSätze()
-        return AST.Definition.FunktionOderMethode.Funktion(signatur, sätze)
+        return AST.Definition.Funktion(signatur, sätze)
       }
     }
 
@@ -1238,7 +1217,7 @@ private sealed class SubParser<T: AST>() {
           is TokenTyp.BEZEICHNER_KLEIN -> {
             parseKleinesSchlüsselwort("mit")
             überspringeLeereZeilen()
-            parseListeMitStart<AST.Definition.TypUndName, TokenTyp.KOMMA, TokenTyp.VORNOMEN.ARTIKEL>(false) {
+            parseListeMitStart<AST.Definition.Parameter, TokenTyp.KOMMA, TokenTyp.VORNOMEN.ARTIKEL>(false) {
               parseTypUndName<TokenTyp.VORNOMEN.ARTIKEL>("Artikel")
             }
           }
@@ -1257,17 +1236,11 @@ private sealed class SubParser<T: AST>() {
         expect<TokenTyp.ADJEKTIV>("'Adjektiv'")
         val typParameter = parseTypParameter()
         val name = expect<TokenTyp.BEZEICHNER_KLEIN>("bezeichner")
-        val definitionen = parseBereich {
-          überspringeLeereZeilen()
-          val signaturen = mutableListOf<AST.Definition.FunktionsSignatur>()
-          while (peekType() != TokenTyp.PUNKT) {
-            val (typParameter, rückgabeTyp) = parseFunktionsAnfang()
-            signaturen += subParse(FunktionsSignatur(id, typParameter, rückgabeTyp, true))
-            überspringeLeereZeilen()
-          }
-          signaturen
+        val signaturen = mutableListOf<AST.Definition.FunktionsSignatur>()
+        runParseBereich {
+          signaturen += subParse(FunktionsSignatur(true))
         }
-        return AST.Definition.Typdefinition.Schnittstelle(typParameter, name, definitionen)
+        return AST.Definition.Typdefinition.Schnittstelle(typParameter, name, signaturen)
       }
     }
 
@@ -1286,16 +1259,54 @@ private sealed class SubParser<T: AST>() {
       }
     }
 
+    object  Implementierung: Definition<AST.Definition.Implementierung>() {
+      override val id = ASTKnotenID.IMPLEMENTIERUNG
+
+      override fun parseImpl(): AST.Definition.Implementierung {
+        expect<TokenTyp.IMPLEMENTIERE>("'implementiere'")
+
+        val artikel = expect<TokenTyp.VORNOMEN.ARTIKEL.BESTIMMT>("bestimmter Artikel")
+        val adjektive = mutableListOf<AST.Adjektiv>()
+        while (peekType() is TokenTyp.BEZEICHNER_KLEIN || peekType(1) is TokenTyp.DOPPEL_DOPPELPUNKT) {
+          val modulPfad = parseModulPfad()
+          val bezeichner = expect<TokenTyp.BEZEICHNER_KLEIN>("Adjektiv")
+          val typArgumente = parseTypArgumente()
+          adjektive += AST.Adjektiv(bezeichner, modulPfad, typArgumente)
+          if (peekType() !is TokenTyp.KOMMA) {
+            break
+          }
+          next()
+        }
+        // TODO: Typargumente sollten an dieser Stelle nicht erlaubt sein
+        val typ = parseTypOhneArtikel(false)
+        typ.name.vornomen = artikel
+
+        val methoden = mutableListOf<AST.Definition.Funktion>()
+        val eigenschaften = mutableListOf<AST.Definition.Eigenschaft>()
+        val konvertierungen = mutableListOf<AST.Definition.Konvertierung>()
+
+        runParseBereich {
+          when (peekType()) {
+            is TokenTyp.VERB -> methoden += subParse(Funktion(true))
+            is TokenTyp.EIGENSCHAFT -> eigenschaften += subParse(Eigenschaft)
+            is TokenTyp.ALS -> konvertierungen += subParse(Konvertierung)
+            else -> throw GermanSkriptFehler.SyntaxFehler.ParseFehler(next(), "'.'",
+                "In einem Implementiere-Bereich können nur Methoden oder Eigenschafts-/Konvertierungsdefinitionen definiert werden.")
+          }
+        }
+
+        return AST.Definition.Implementierung(typ, adjektive, methoden, eigenschaften, konvertierungen)
+      }
+    }
+
     object Konvertierung: Definition<AST.Definition.Konvertierung>() {
       override val id = ASTKnotenID.KONVERTIERUNGS_DEFINITION
 
       override fun parseImpl(): AST.Definition.Konvertierung {
         expect<TokenTyp.ALS>("'als'")
         val typ = parseTypOhneArtikel(false)
-        parseKleinesSchlüsselwort("für")
-        val klasse = parseTypOhneArtikel(false)
         val definition = parseSätze()
-        return AST.Definition.Konvertierung(typ, klasse, definition)
+        return AST.Definition.Konvertierung(typ, definition)
       }
     }
 
@@ -1308,10 +1319,8 @@ private sealed class SubParser<T: AST>() {
         val rückgabeTyp = parseTypOhneArtikel(false)
         expect<TokenTyp.GESCHLOSSENE_KLAMMER>("')'")
         val name = parseNomenOhneVornomen(false)
-        parseKleinesSchlüsselwort("für")
-        val klasse = parseTypOhneArtikel(false)
         val definition = parseSätze()
-        return AST.Definition.Eigenschaft(rückgabeTyp, name, klasse, definition)
+        return AST.Definition.Eigenschaft(rückgabeTyp, name, definition)
       }
     }
 

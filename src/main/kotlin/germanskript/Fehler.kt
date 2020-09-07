@@ -99,12 +99,12 @@ sealed class GermanSkriptFehler(private val fehlerName: String, val token: Token
   class UnimplementierteSchnittstelle(
       token: Token,
       private val klasse: AST.Definition.Typdefinition.Klasse,
-      private val schnittstelle: AST.Definition.Typdefinition.Schnittstelle): GermanSkriptFehler("Unimplementierte Schnittstelle", token) {
+      private val typ: Typ.Compound.Schnittstelle): GermanSkriptFehler("Unimplementierte Schnittstelle", token) {
     override val nachricht: String get() {
-      val uninplementierteMethoden = schnittstelle.methodenSignaturen.filter {
+      val uninplementierteMethoden = typ.definition.methodenSignaturen.filter {
         !klasse.methoden.containsKey(it.vollerName!!)
       }.map {it.vollerName }
-      return "Die Klasse '${klasse.name.nominativ}' implementiert die Schnittstelle '${schnittstelle.name.wert}' nicht." +
+      return "Die Klasse '${klasse.name.nominativ}' implementiert die Schnittstelle '${typ}' nicht.\n" +
           "Folgende Methoden müssen implementiert werden:\n" + uninplementierteMethoden.joinToString("\n\t")
     }
   }
@@ -164,15 +164,15 @@ sealed class GermanSkriptFehler(private val fehlerName: String, val token: Token
   }
 
   sealed class DoppelteDefinition(token: Token): GermanSkriptFehler("Definitionsfehler", token) {
-    class Funktion(token: Token, private val definition: AST.Definition.FunktionOderMethode.Funktion): DoppelteDefinition(token) {
+    class Funktion(token: Token, private val definition: AST.Definition.Funktion): DoppelteDefinition(token) {
       override val nachricht: String
         get() = "Die Funktion '${definition.signatur.vollerName}' ist schon in ${definition.signatur.name.position} definiert."
     }
 
-    class Methode(token: Token, private val definition: AST.Definition.FunktionOderMethode.Methode): DoppelteDefinition(token) {
-      override val nachricht: String
-        get() = "Die Methode '${definition.funktion.signatur.vollerName}' für die Klasse '${definition.klasse.name.nominativ}' " +
-            "ist schon in ${definition.funktion.signatur.name.position} definiert."
+    class Methode(token: Token, methode: AST.Definition.Funktion, klasse: AST.Definition.Typdefinition.Klasse): DoppelteDefinition(token) {
+      override val nachricht =
+        "Die Methode '${methode.signatur.vollerName}' für die Klasse '${klasse.name.nominativ}' " +
+            "ist schon in ${methode.signatur.name.position} definiert."
     }
 
     class Typ(token: Token, private val vorhandeneDefinition: Token): DoppelteDefinition(token) {
@@ -182,8 +182,8 @@ sealed class GermanSkriptFehler(private val fehlerName: String, val token: Token
 
     class Konvertierung(token: Token, private val konvertierung: AST.Definition.Konvertierung): DoppelteDefinition(token) {
       override val nachricht: String
-        get() = "Die Konvertierung von '${konvertierung.klasse.name.nominativ}' zu '${konvertierung.typ.name.nominativ}'\n" +
-            "ist schon in ${konvertierung.klasse.name.bezeichner.position} definiert."
+        get() = "Die Konvertierung von '${konvertierung.typ.name.nominativ}' zu '${konvertierung.typ.name.nominativ}'\n" +
+            "ist schon in ${konvertierung.typ.name.bezeichner.position} definiert."
     }
 
     class Eigenschaft(token: Token, eigenschaft: AST.Definition.Eigenschaft): DoppelteDefinition(token) {
@@ -268,8 +268,8 @@ sealed class GermanSkriptFehler(private val fehlerName: String, val token: Token
 
     class Funktion(
         token: Token,
-        funktionA: AST.Definition.FunktionOderMethode.Funktion,
-        funktionB: AST.Definition.FunktionOderMethode.Funktion): Mehrdeutigkeit(token) {
+        funktionA: AST.Definition.Funktion,
+        funktionB: AST.Definition.Funktion): Mehrdeutigkeit(token) {
 
       override val nachricht: String = "Es ist unklar welche Funktion gemeint ist.\n" +
             "Entweder die Funktion in ${funktionA.signatur.name.position} oder die Funktion in " +
@@ -294,6 +294,17 @@ sealed class GermanSkriptFehler(private val fehlerName: String, val token: Token
     class ObjektErwartet(token: Token): TypFehler(token) {
       override val nachricht: String
         get() = "Es wird ein Objekt erwartet und kein primitiver Typ (Zahl, Zeichenfolge, Boolean)."
+    }
+
+    class FalscherSchnittstellenTyp(
+        token: Token,
+        schnittstelle: Typ.Compound.Schnittstelle,
+        methodenName: String,
+        falscherTyp: Typ,
+        erwarteterTyp: Typ
+    ): TypFehler(token) {
+      override val nachricht = "Um die Methode '${methodenName}' für die Schnittstelle '${schnittstelle}' zu implementieren,\n" +
+          "muss der Typ '${erwarteterTyp}' und nicht '${falscherTyp}' sein."
     }
   }
 

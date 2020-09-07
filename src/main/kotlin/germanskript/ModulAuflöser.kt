@@ -59,7 +59,7 @@ class ModulAuflöser(startDatei: File): PipelineKomponente(startDatei) {
     return modul ?: throw GermanSkriptFehler.Undefiniert.Modul(modulPfad[maxModulTiefe].toUntyped())
   }
 
-  fun holeModulFallsVorhanden(definitionen: AST.DefinitionsContainer, modulPfad: List<TypedToken<TokenTyp.BEZEICHNER_GROSS>>):
+  private fun holeModulFallsVorhanden(definitionen: AST.DefinitionsContainer, modulPfad: List<TypedToken<TokenTyp.BEZEICHNER_GROSS>>):
       Pair<AST.Definition.Modul?, Int> {
     var definitionen = definitionen
     for ((index, bezeichner) in modulPfad.withIndex()) {

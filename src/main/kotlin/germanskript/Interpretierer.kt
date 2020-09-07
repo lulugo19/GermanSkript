@@ -192,9 +192,9 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
       {
         is Wert.Objekt -> {
           val methode = objekt.typ.definition.methoden.getValue(funktionsAufruf.vollerName!!)
-          funktionsAufruf.vollerName = "für ${objekt.typ.definition.name.nominativ}: ${methode.funktion.signatur.vollerName}"
-          val signatur = methode.funktion.signatur
-          Pair(methode.funktion.körper, signatur.parameter.map {it.name})
+          funktionsAufruf.vollerName = "für ${objekt.typ.definition.name.nominativ}: ${methode.signatur.vollerName}"
+          val signatur = methode.signatur
+          Pair(methode.körper, signatur.parameter.map {it.name})
         }
         is Wert.Closure -> {
           funktionsUmgebung = objekt.umgebung
@@ -501,7 +501,7 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
     val (funktionsUmgebung, körper, parameterNamen) = when (wert) {
       is Wert.Objekt -> {
         val methode = wert.typ.definition.methoden.getValue(name)
-        Triple(Umgebung<Wert>(), methode.funktion.körper, methode.funktion.signatur.parameter.map { it.name })
+        Triple(Umgebung<Wert>(), methode.körper, methode.signatur.parameter.map { it.name })
       }
       is Wert.Closure -> Triple(wert.umgebung, wert.körper, holeParameterNamenFürClosure(wert))
       else -> throw Exception("Dieser Fall sollte nie auftreten!")

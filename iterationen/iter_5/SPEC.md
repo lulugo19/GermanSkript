@@ -3,6 +3,7 @@
 ## hinzugefügte Features
 - Fehler-Handling
 - Generics
+- Implementiere-Block
 - Aufzählungen
 - Zahlendekorierer
 - Einheiten
@@ -77,6 +78,14 @@ Zahlen:
         gebe die ZahlB - die ZahlA zurück
     .
 !
+```
+
+## Implementiere-Bereich
+Methoden, Eigenschafts- und Konvertierungsdefinitionen einer Klasse müssen jetzt in einem `implementiere`-Bereich stehen.
+Es kann mehrere `implementiere`-Bereiche für eine Klassen geben. Die Definitionen werden dann gesammelt.
+Außerdem können Adjektive (Schnittstellen) beim `implementiere`-Bereich hingeschrieben werden, welche die Klasse dann im Block implementieren muss.
+```
+implementiere ArtikelNb Liste(Adjektive) KlassenTyp: Implementierung.
 ```
 
 ## Aufzählungen
