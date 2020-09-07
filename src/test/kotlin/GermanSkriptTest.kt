@@ -292,6 +292,58 @@ class GermanSkriptTest {
   }
 
   @Test
+  @DisplayName("mehrere Implementierungs-Bereiche")
+  fun mehrereImplementierungsBereiche() {
+    val quellCode = """
+      Deklination Maskulinum Singular(Name, Namens, Namen, Namen) Plural(Namen)
+      Deklination Neutrum Singular(Alter, Alters, Alter, Alter) Plural(Alter)
+      Deklination Femininum Singular(Person) Plural(Personen)
+      Deklination Femininum Singular(Begrüßung) Plural(Begrüßungen)
+
+      Nomen Person mit
+          der Zeichenfolge VorName,
+          der Zeichenfolge NachName,
+          einer Zahl Alter:
+
+          // Man könnte auch schreiben: Ich als Zeichenfolge + " wurde erstellt!"
+          schreibe die Zeile "#{Ich} wurde erstellt!"
+      .
+      
+      // implementiere eine Methode
+      Implementiere die Person:
+        Verb begrüße mich mit der Zeichenfolge Begrüßung:
+          schreibe die Zeile "#{die Begrüßung} #{mein Name}!"
+        .
+      .
+      
+      // implementiere eine Eigenschaft
+      Implementiere die Person:
+        Eigenschaft(Zeichenfolge) Name:
+          gebe meinen VorNamen + " " + meinen NachNamen zurück
+        .
+      .
+      
+      // implementiere eine Konvertierung
+      Implementiere die Person:
+        Als Zeichenfolge:
+          gebe "#{mein Name} (#{mein Alter} Jahre alt)" zurück
+        .
+      .
+
+      die Person ist eine Person mit dem VorNamen "Max", dem NachNamen "Mustermann", dem Alter 29
+      begrüße die Person mit der Begrüßung "Hallo"
+    """.trimIndent()
+
+    val erwarteteAusgabe = """
+      Max Mustermann (29 Jahre alt) wurde erstellt!
+      Hallo Max Mustermann!
+      
+    """.trimIndent()
+
+    testeGermanSkriptCode(quellCode, erwarteteAusgabe)
+  }
+
+  @Test
   @DisplayName("veränderliche Eigenschaften eines Objekt")
   fun veränderlicheEigenschaftenEinesObjekts() {
     val source = """
