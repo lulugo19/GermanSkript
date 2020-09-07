@@ -1056,5 +1056,101 @@ class GermanSkriptTest {
     testeGermanSkriptCode(quellCode, "Hallo Welt!")
   }
 
+  @Test
+  @DisplayName("implementiere mehrerere Adjektive")
+  fun implementiereMehrereAdjektive() {
+    val quellCode = """
+      Adjektiv gefräßig:
+        Verb fütter mich
+      .
+      
+      Adjektiv flauschig:
+        Verb kuschel mich
+      .
+      
+      Deklination Maskulinum Singular(Hund, Hunds, Hund, Hund) Plural(Hunde)
+      
+      Nomen Hund:.
+      
+      implementiere den gefräßigen, flauschigen Hund:
+        Verb fütter mich:
+          schreibe die Zeile "Jam, jam, schmatz, schmatz..."
+        .
+        
+        Verb kuschel mich:
+          schreibe die Zeile "entspanntes Ausatmen"
+        .
+      .
+      
+      Verb fütter das Gefräßige:
+        Gefräßige: fütter dich!
+      .
+      
+      der HundKIRA ist ein Hund
+      fütter den gefräßigen HundKIRA
+      kuschel den HundKIRA
+    """.trimIndent()
 
+    val erwarteteAusgabe = """
+      Jam, jam, schmatz, schmatz...
+      entspanntes Ausatmen
+      
+    """.trimIndent()
+
+    testeGermanSkriptCode(quellCode, erwarteteAusgabe)
+  }
+
+  @Test
+  @DisplayName("Falscher Typ bei implementierter Schnittsteller")
+  fun falscheTypenBeiImplementierterSchnittstelle() {
+    val quellCode = """
+      Adjektiv zählbar:
+        Verb (Zahl) zähle mich weiter
+      .
+      
+      Deklination Maskulinum Singular(Zähler, Zählers, Zähler, Zähler) Plural(Zähler)
+      
+      Nomen Zähler:
+        jene Zahl ist 0
+      .
+      
+      implementiere den zählbaren Zähler:
+        Verb(Zeichenfolge) zähle mich weiter:
+          meine Zahl ist meine Zahl plus 1
+          gebe meine Zahl als Zeichenfolge zurück
+        .
+      .
+      
+      der Zähler ist ein Zähler
+      zähle den Zähler weiter
+    """.trimIndent()
+
+    assertThatExceptionOfType(GermanSkriptFehler.TypFehler.FalscherSchnittstellenTyp::class.java).isThrownBy {
+      führeGermanSkriptCodeAus(quellCode)
+    }
+  }
+
+  @Test
+  @DisplayName("Falscher Typ bei implementierter generischer Schnittstelle")
+  fun falscherTypBeiImplementierterGenerischerSchnittstelle() {
+    val quellCode = """
+      Deklination Maskulinum Singular(Test, Tests, Test, Test) Plural(Tests)
+      
+      Adjektiv<Typ> testbar:
+        Verb teste den Typ
+      .
+      
+      Nomen Test:.
+      
+      implementiere den testbaren<Zahl> Test:
+        Verb teste die Zeichenfolge Zahl:
+          schreibe die Zeile (die Zahl)
+        .
+      .
+    """.trimIndent()
+
+    assertThatExceptionOfType(GermanSkriptFehler.TypFehler.FalscherSchnittstellenTyp::class.java).isThrownBy {
+      führeGermanSkriptCodeAus(quellCode)
+    }
+  }
 }

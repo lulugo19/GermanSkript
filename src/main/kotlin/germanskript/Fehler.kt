@@ -295,6 +295,17 @@ sealed class GermanSkriptFehler(private val fehlerName: String, val token: Token
       override val nachricht: String
         get() = "Es wird ein Objekt erwartet und kein primitiver Typ (Zahl, Zeichenfolge, Boolean)."
     }
+
+    class FalscherSchnittstellenTyp(
+        token: Token,
+        schnittstelle: Typ.Compound.Schnittstelle,
+        methodenName: String,
+        falscherTyp: Typ,
+        erwarteterTyp: Typ
+    ): TypFehler(token) {
+      override val nachricht = "Um die Methode '${methodenName}' für die Schnittstelle '${schnittstelle}' zu implementieren,\n" +
+          "muss der Typ '${erwarteterTyp}' und nicht '${falscherTyp}' sein."
+    }
   }
 
   sealed class EigenschaftsFehler(token: Token): GermanSkriptFehler("Eigenschaftsfehler", token) {

@@ -292,16 +292,32 @@ class Typisierer(startDatei: File): PipelineKomponente(startDatei) {
       })
       // überprüfe Rückgabetypen
       if (signatur.rückgabeTyp == null && methode.signatur.rückgabeTyp != null) {
-        throw GermanSkriptFehler.TypFehler.FalscherTyp(
+        throw GermanSkriptFehler.TypFehler.FalscherSchnittstellenTyp(
             methode.signatur.rückgabeTyp.name.bezeichner.toUntyped(),
+            schnittstelle,
+            methodenName,
             methode.signatur.rückgabeTyp.typ!!,
-            "kein Rückgabetyp"
+            Typ.Nichts
         )
       }
 
       if (signatur.rückgabeTyp != null && methode.signatur.rückgabeTyp == null) {
-        throw GermanSkriptFehler.TypFehler.FalscherTyp(
-            methode.signatur.name.toUntyped(), Typ.Nichts, signatur.rückgabeTyp.toString()
+        throw GermanSkriptFehler.TypFehler.FalscherSchnittstellenTyp(
+            methode.signatur.name.toUntyped(),
+            schnittstelle,
+            methodenName,
+            Typ.Nichts,
+            signatur.rückgabeTyp.typ!!
+        )
+      }
+
+      if (signatur.rückgabeTyp != methode.signatur.rückgabeTyp) {
+        throw GermanSkriptFehler.TypFehler.FalscherSchnittstellenTyp(
+            methode.signatur.rückgabeTyp!!.name.bezeichner.toUntyped(),
+            schnittstelle,
+            methodenName,
+            methode.signatur.rückgabeTyp.typ!!,
+            signatur.rückgabeTyp!!.typ!!
         )
       }
 
@@ -311,10 +327,12 @@ class Typisierer(startDatei: File): PipelineKomponente(startDatei) {
       for (pIndex in methodenParameter.indices) {
         val erwarteterTyp = holeErwartetenTypen(schnittstellenParameter[pIndex])
         if (methodenParameter[pIndex].typKnoten.typ != erwarteterTyp) {
-          throw GermanSkriptFehler.TypFehler.FalscherTyp(
+          throw GermanSkriptFehler.TypFehler.FalscherSchnittstellenTyp(
               methodenParameter[pIndex].typKnoten.name.bezeichner.toUntyped(),
+              schnittstelle,
+              methodenName,
               methodenParameter[pIndex].typKnoten.typ!!,
-              erwarteterTyp.toString()
+              erwarteterTyp
           )
         }
       }
