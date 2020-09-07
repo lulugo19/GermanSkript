@@ -100,7 +100,8 @@ sealed class TokenTyp(val anzeigeName: String) {
     object DANN: TokenTyp("'dann'")
     object SONST: TokenTyp("'sonst'")
     object SOLANGE: TokenTyp("'solange'")
-    object ALS: TokenTyp("'als'")
+    object ALS_GROß: TokenTyp("'Als'")
+    object ALS_KLEIN: TokenTyp("'als'")
     object FORTFAHREN: TokenTyp("'fortfahren'")
     object ABBRECHEN: TokenTyp("'abbrechen'")
     object VERB: TokenTyp("'Verb'")
@@ -110,7 +111,7 @@ sealed class TokenTyp(val anzeigeName: String) {
     object MODUL: TokenTyp("'Modul'")
     object EIGENSCHAFT: TokenTyp("'Eigenschaft'")
     object KONSTANTE: TokenTyp("'Konstante'")
-    object IMPLEMENTIERE : TokenTyp("'implementiere'")
+    object IMPLEMENTIERE : TokenTyp("'Implementiere'")
     object AUFZÄHLUNG: TokenTyp("'Aufzählung'")
     object INTERN: TokenTyp("'intern'")
     object SUPER: TokenTyp("'Super'")
@@ -252,17 +253,18 @@ private val WORT_MAPPING = mapOf<String, TokenTyp>(
     "Verb" to TokenTyp.VERB,
     "Eigenschaft" to TokenTyp.EIGENSCHAFT,
     "Konstante" to TokenTyp.KONSTANTE,
-    "implementiere" to TokenTyp.IMPLEMENTIERE,
+    "Implementiere" to TokenTyp.IMPLEMENTIERE,
     "intern" to TokenTyp.INTERN,
     "Adjektiv" to TokenTyp.ADJEKTIV,
     "Alias" to TokenTyp.ALIAS,
+    "Als" to TokenTyp.ALS_GROß,
+    "als" to TokenTyp.ALS_KLEIN,
     "wenn" to TokenTyp.WENN,
     "dann" to TokenTyp.DANN,
     "sonst" to TokenTyp.SONST,
     "solange" to TokenTyp.SOLANGE,
     "fortfahren" to TokenTyp.FORTFAHREN,
     "abbrechen" to TokenTyp.ABBRECHEN,
-    "als" to TokenTyp.ALS,
     "Modul" to TokenTyp.MODUL,
     "Super" to TokenTyp.SUPER,
     // Werte
@@ -589,7 +591,7 @@ class Lexer(startDatei: File): PipelineKomponente(startDatei) {
     private fun beendeStringInterpolation() = sequence<Token> {
         next() // }
         yield(Token(TokenTyp.GESCHLOSSENE_KLAMMER, ")", currentFile, currentTokenPos, currentTokenPos))
-        yield(Token(TokenTyp.ALS, "als", currentFile, currentTokenPos, currentTokenPos))
+        yield(Token(TokenTyp.ALS_KLEIN, "als", currentFile, currentTokenPos, currentTokenPos))
         yield(Token(
             TokenTyp.BEZEICHNER_GROSS(arrayOf("Zeichenfolge"), ""),
             "Zeichenfolge", currentFile, currentTokenPos, currentTokenPos)

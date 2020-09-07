@@ -5,9 +5,10 @@ die Person ist eine Person mit
     dem NachNamen "Mustermann",
     dem Alter 42
 
-
-als Zeichenfolge für Person:
-    gebe "#{mein Name} (#{mein Alter} Jahre alt)" zurück
+Implementiere die Person:
+    Als Zeichenfolge:
+        gebe "#{mein Name} (#{mein Alter} Jahre alt)" zurück
+    .
 .
 
 schreibe die Zeile Person als Zeichenfolge

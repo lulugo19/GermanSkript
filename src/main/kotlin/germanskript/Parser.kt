@@ -295,7 +295,7 @@ private sealed class SubParser<T: AST>() {
       typArgumente = parseTypArgumente()
     }
     val nomen = AST.Nomen(vornomen, bezeichner)
-    val nächstesToken = peek()
+    var nächstesToken = peek()
     val ausdruck = when (vornomen.typ) {
       is TokenTyp.VORNOMEN.ARTIKEL.BESTIMMT -> when (nächstesToken.typ) {
         is TokenTyp.OFFENE_ECKIGE_KLAMMER -> subParse(NomenAusdruck.ListenElement(nomen))
@@ -335,8 +335,8 @@ private sealed class SubParser<T: AST>() {
       else -> throw Exception("Dieser Fall sollte nie ausgeführt werden.")
     }
 
-    return when(peekType()){
-      is TokenTyp.ALS -> {
+    return when (peekType()){
+      is TokenTyp.ALS_KLEIN -> {
         next()
         val typ = parseTypOhneArtikel(false)
         Triple(adjektiv, nomen, AST.Ausdruck.Konvertierung(ausdruck, typ))
@@ -588,7 +588,7 @@ private sealed class SubParser<T: AST>() {
         val operatorToken = expect<TokenTyp.OPERATOR>("Operator")
 
         // Hinter den Operatoren 'kleiner' und 'größer' kann optional das Wort 'als' kommen
-        if ((operator == Operator.KLEINER || operator == Operator.GRÖßER) && peek().wert == "als") {
+        if ((operator == Operator.KLEINER || operator == Operator.GRÖßER) && peekType() == TokenTyp.ALS_KLEIN) {
           next()
         }
 
@@ -658,8 +658,8 @@ private sealed class SubParser<T: AST>() {
         }
         else -> throw GermanSkriptFehler.SyntaxFehler.ParseFehler(next())
       }
-      return when (peekType()){
-        is TokenTyp.ALS -> {
+      return when (peekType()) {
+        is TokenTyp.ALS_KLEIN -> {
           next()
           val typ = parseTypOhneArtikel(false)
           AST.Ausdruck.Konvertierung(ausdruck, typ)
@@ -1216,7 +1216,7 @@ private sealed class SubParser<T: AST>() {
         val name = parseNomenOhneVornomen(false)
 
         val elternKlasse = when (peekType()) {
-          is TokenTyp.ALS -> next().let { parseTypOhneArtikel(false) }
+          TokenTyp.ALS_KLEIN -> next().let { parseTypOhneArtikel(false) }
           else -> null
         }
         val eingenschaften = when(peekType()) {
@@ -1269,7 +1269,7 @@ private sealed class SubParser<T: AST>() {
       override val id = ASTKnotenID.IMPLEMENTIERUNG
 
       override fun parseImpl(): AST.Definition.Implementierung {
-        expect<TokenTyp.IMPLEMENTIERE>("'implementiere'")
+        expect<TokenTyp.IMPLEMENTIERE>("'Implementiere'")
 
         val artikel = expect<TokenTyp.VORNOMEN.ARTIKEL.BESTIMMT>("bestimmter Artikel")
         val adjektive = mutableListOf<AST.Adjektiv>()
@@ -1295,7 +1295,7 @@ private sealed class SubParser<T: AST>() {
           when (peekType()) {
             is TokenTyp.VERB -> methoden += subParse(Funktion(true))
             is TokenTyp.EIGENSCHAFT -> eigenschaften += subParse(Eigenschaft)
-            is TokenTyp.ALS -> konvertierungen += subParse(Konvertierung)
+            is TokenTyp.ALS_GROß -> konvertierungen += subParse(Konvertierung)
             else -> throw GermanSkriptFehler.SyntaxFehler.ParseFehler(next(), "'.'",
                 "In einem Implementiere-Bereich können nur Methoden oder Eigenschafts-/Konvertierungsdefinitionen definiert werden.")
           }
@@ -1309,7 +1309,7 @@ private sealed class SubParser<T: AST>() {
       override val id = ASTKnotenID.KONVERTIERUNGS_DEFINITION
 
       override fun parseImpl(): AST.Definition.Konvertierung {
-        expect<TokenTyp.ALS>("'als'")
+        expect<TokenTyp.ALS_GROß>("'Als'")
         val typ = parseTypOhneArtikel(false)
         val definition = parseSätze()
         return AST.Definition.Konvertierung(typ, definition)

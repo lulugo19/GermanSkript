@@ -12,22 +12,23 @@ Nomen Person mit
     dieser Name ist "#{mein VorName} #{mein NachName}"
 .
 
-Verb für Person werde älter:
-    mein Alter ist mein Alter plus 1
-.
+Implementiere die Person:
+    Verb werde älter:
+        mein Alter ist mein Alter plus 1
+    .
 
-Verb für Person stelle mich vor:
-    schreibe die Zeile "Mein Name ist #{mein VorName} #{mein NachName} und ich bin #{mein Alter} Jahre alt."
-.
+    Verb stelle mich vor:
+        schreibe die Zeile "Mein Name ist #{mein VorName} #{mein NachName} und ich bin #{mein Alter} Jahre alt."
+    .
 
-Verb für Person begrüße mich mit der Zeichenfolge Begrüßung:
-    schreibe die Zeile "#{Begrüßung} #{mein VorName}!"
-.
+    Verb begrüße mich mit der Zeichenfolge Begrüßung:
+        schreibe die Zeile "#{Begrüßung} #{mein VorName}!"
+    .
 
-als Zeichenfolge für Person:
-    gebe "#{mein VorName} #{mein NachName} (#{mein Alter} Jahre alt)" zurück
+    Als Zeichenfolge:
+        gebe "#{mein VorName} #{mein NachName} (#{mein Alter} Jahre alt)" zurück
+    .
 .
-
 die Person ist eine Person mit dem NachNamen "Mustermann", dem VorNamen "Max", dem Alter 24
 
 Person:

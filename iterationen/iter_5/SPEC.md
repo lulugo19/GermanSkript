@@ -81,11 +81,11 @@ Zahlen:
 ```
 
 ## Implementiere-Bereich
-Methoden, Eigenschafts- und Konvertierungsdefinitionen einer Klasse müssen jetzt in einem `implementiere`-Bereich stehen.
-Es kann mehrere `implementiere`-Bereiche für eine Klassen geben. Die Definitionen werden dann gesammelt.
-Außerdem können Adjektive (Schnittstellen) beim `implementiere`-Bereich hingeschrieben werden, welche die Klasse dann im Block implementieren muss.
+Methoden, Eigenschafts- und Konvertierungsdefinitionen einer Klasse müssen jetzt in einem `Implementiere`-Bereich stehen.
+Es kann mehrere `Implementiere`-Bereiche für eine Klassen geben. Die Definitionen werden dann gesammelt.
+Außerdem können Adjektive (Schnittstellen) beim `Implementiere`-Bereich hingeschrieben werden, welche die Klasse dann im Block implementieren muss.
 ```
-implementiere ArtikelNb Liste(Adjektive) KlassenTyp: Implementierung.
+Implementiere ArtikelNb Liste(Adjektive) KlassenTyp: Implementierung.
 ```
 
 ## Aufzählungen

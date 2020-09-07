@@ -405,17 +405,33 @@ mit dem Genitiv: `Artikelb Eigenschaft ArtikelGb AusdruckG`
 
 Beispiel: `der Name der Person`
 
+### Implementieren einer Klasse
+
+Um Methoden, berechnete Eigenschaften und Konvertierungen für eine Klasse zu implementieren,
+gibt es den Implementierungsbereich, in dem die Klasse implementiert werden kann.
+
+Es können mehrere Implementierungsbereiche für eine Klasse geschrieben werden, die dann zusammengefasst werden.
+
+```
+Implementiere ArtikelNb Klasse:
+    // implementiere hier die Klasse
+.
+```
+
 ### berechnete Eigenschaften einer Klasse
-`Eigenschaft(Typ) BezeichnerN für Typ: Sätze.`
+`Eigenschaft(Typ) BezeichnerN: Sätze.`
 
 Eine berechnete Eigenschaft ist eine Eigenschaft die sich aus anderen Eigenschaften der Klasse ergibt.
 
 Beispiel:
 
 ```
-Eigenschaft(Zeichenfolge) Name für Person:
-    gebe meinen VorNamen + " " meinen NachNamen zurück
+Implementiere die Person:
+    Eigenschaft(Zeichenfolge) Name:
+        gebe meinen VorNamen + " " + meinen NachNamen zurück
+    .
 .
+
 
 die Person ist eine Person mit dem VorNamen "Max", dem NachNamen "Mustermann"
 schreibe die Zeichenfolge (der Name der Person) // Max Mustermann
@@ -423,7 +439,7 @@ schreibe die Zeichenfolge (der Name der Person) // Max Mustermann
 
 ### Definieren einer Methode
 
-`Verb[(Typ)] für Typ Verb [mir|mich] Parameter [Suffix]`
+`Verb[(Typ)][<Typparameter>] bezeichner [mir|mich] Parameter [Suffix]`
 
 Das Verb einer Methode sollte im Imperativ stehen. Außerdem kann das Verb optional noch einen Suffix bekommen,
 der dann bei dem Methodenaufruf am Ende stehen muss.
@@ -437,7 +453,7 @@ Verb(Zeichenfolge) für Person stelle mich mit der Zeichenfolge Begrüßung, der
     zurück Begrüßung + ", " + "mein Name ist " + mein Name " und ich bin " + mein Alter " Jahre alt." + LetzterSatz.
 ```
 
-### Methodenblock
+### Methodenbereich
 
 `Bezeichner: Sätze!`
 

@@ -55,7 +55,7 @@ Nomen<Typ> Liste:
     jene AnZahl ist 0
 .
 
-implementiere die Liste:
+Implementiere die Liste:
     Verb(Boolean) enthält den Typ: intern.
     Verb füge den Typ hinzu: intern.
     Verb entferne an der Zahl Index: intern.
@@ -73,6 +73,6 @@ Deklination Femininum Singular(Meldung) Plural(Meldungen)
 Nomen Fehler mit der Zeichenfolge FehlerMeldung:.
 Nomen KonvertierungsFehler als Fehler:.
 
-implementiere den Fehler:
-    als Zeichenfolge: gebe meine FehlerMeldung zurück.
+Implementiere den Fehler:
+    Als Zeichenfolge: gebe meine FehlerMeldung zurück.
 .

@@ -453,15 +453,38 @@ schreibe die Zahl // 22
 Innerhalb einer Klasse kann man die Eigenschaften jedoch über `mein` ändern, wenn diese als veränderbar
 deklariert wurden sind.
 
-### Methoden
+### Implementierung einer Klasse
+Zu einer Klasse kann noch mehr als der Konstruktor gehören. 
 
-Methoden werden genau so wie Funktionen definiert werden. Der einzige Unterschied ist, dass man das
-Schlüsselwort `für` verwendet um anzugegeben für welche Klasse die Methode definiert werden soll.
+Nämlich:
+- Methoden (Verben für Klassen)
+- berechnete Eigenschaften
+- Konvertierungen
+
+Diese Dinge werden alle in einem besondern Bereich, dem *Implementierungsbereich* definiert.
+Der Implementierungsbereich für die Klasse `Person` sieht folgendermaßen aus:
+```
+Implementiere die Person:
+    // hier werden Methoden, berechnete Eigenschaften und Konvertierungen definiert
+.
+```
+
+In den folgenden Abschnitten wird darauf eingegangen, 
+wie genau Methoden, berechnete Eigenschaften und Konvertierungen definiert werden.
+
+#### Methoden
+
+Methoden werden genau so wie Funktionen definiert werden. Innerhalb einer Methode hat man Zugriff
+auf die Eigenschaften der Klasse über das Possesivpronomen `mein`. Für Methodenaufrufe der eigenen Klasse
+braucht man außerdem innerhalb der Klasse keinen Methodenbereich.
 
 ```
-Verb für Person werde älter:
-    mein Alter ist mein Alter plus 1 
+Implementiere die Person:
+    Verb werde älter:
+        mein Alter ist mein Alter plus 1 
+    .
 .
+
 ```
 
 Es können auch Methoden mit dem Reflexivpronomen `mich` als Objekt definiert werden.
@@ -470,8 +493,10 @@ Diese spielen eine spezielle Rolle. Dazu kommen wir später.
 ```
 Deklination Femininum Singular(Begrüßung) Plural(Begrüßungen)
 
-Verb für Person begrüße mich mit der Zeichenfolge Begrüßung:
-    schreibe die Zeile "#{Begrüßung} #{mein VorName}!"
+implementiere die Person:
+    Verb begrüße mich mit der Zeichenfolge Begrüßung:
+        schreibe die Zeile "#{Begrüßung} #{mein VorName}!"
+    .
 .
 ```
 
@@ -500,22 +525,52 @@ Person:
 ```
 
 Bei `begrüße dich` kann man sehen, dass das Reflexivpronomen `mich` in der Definition
-in dem Methodenblock mit `dich` ersetzt wurde.
+in dem Methodenbereich mit `dich` ersetzt wurde.
 
 Über diesen rein kosmetischen Nutzen hinaus, haben Reflexivpronomen jedoch noch einen anderen Nutzen.
-Methoden mit Reflexivpronomen kann man auch außerhalb eines Methodenblocks wie eine ganz normale
+Methoden mit Reflexivpronomen kann man auch außerhalb eines Methodenbereichs wie eine ganz normale
 Funktion aufrufen. Dafür wird das Pronomen mit dem Namen der Klasse ersetzt:
 
 ```
-// außerhalb des Methodenblocks
+// außerhalb des Methodenbereichs
 begrüße die Person mit der Begrüßung "Yieepiee" // Yieepiee Lukas!
 ```
 
 Wenn es bei dieser Art des Aufrufes eine Funktion gibt, die genauso heißt wie die Methode, dann
 wird diese vor der Methode bevorzugt.
 
+#### berechnete Eigenschaften
 
-### Konvertierungen
+Berechnete Eigenschaften einer Klasse sind Eigenschaften, die sich aus anderen Eigenschaften der Klasse
+ergeben. 
+
+In der Klasse `Person` wurde eine unveränderbare Eigenschaft `Name` erstellt, 
+der sich aus dem Vornamen und dem Nachnamen zusammensetzt.
+Was ist jetzt aber, wenn sich der Vorname oder der Nachname der Person ändert. 
+Dann müsste man die Eigenschaft `Name` auch neu ändern.
+Um dieses Problem zu lösen, kann man die Eigenschaft `Name` zu einer berechneten Eigenschaft machen:
+
+```
+Implementiere die Person:
+    Eigenschaft(Zeichenfolge) Name:
+        gebe meinen VorNamen + " " + meinen NachNamen zurück
+    .
+.
+```
+
+Auf die berechnete Eigenschaft kann man ganauso wie bei normalen Eigenschaften zugreifen.
+
+```
+die Person ist eine Person mit
+    dem VorNamen "Lukas", 
+    dem NachNamen "Gobelet", 
+    dem Alter 22
+
+// gibt Lukas Gobelet aus
+schreibe die Zeile (der Name der Person) 
+```
+
+#### Konvertierungen
 
 Für Konvertierungen gibt es in GermanSkript eine eigene Syntax. Hierfür schreibt man nach dem Ausdruck,
 der konvertiert werden soll das `als`-Schlüsselwort und dann den Typ, in den der Ausdruck konvertiert
@@ -532,15 +587,17 @@ oder eine Zeichenfolge als Boolean, jenachdem ob die Zeichenfolge leer ist oder 
 Darüber hinaus ist es möglich für Klassen eigene Konvertierungen zu definieren:
 
 ```
+// Konvertierungsdefinition für die Klasse Person in den Typ Zeichenfolge
+implementiere die Person:
+    Als Zeichenfolge:
+        gebe "#{mein Name} (#{mein Alter} Jahre alt)" zurück
+    .
+.
+
 die Person ist eine Person mit
     dem VorNamen "Max",
     dem NachNamen "Mustermann",
     dem Alter 42
-
-
-als Zeichenfolge für Person:
-    gebe "#{mein Name} (#{mein Alter} Jahre alt)" zurück
-.
 
 // gibt "Max Mustermann (42 Jahre alt) aus
 schreibe die Zeile (die Person als Zeichenfolge)

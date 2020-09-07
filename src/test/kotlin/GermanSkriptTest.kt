@@ -5,10 +5,9 @@ import org.assertj.core.api.Assertions.assertThatExceptionOfType
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
 import java.io.*
-import java.lang.Exception
+import kotlin.Exception
 
 class GermanSkriptTest {
-
   private fun führeGermanSkriptCodeAus(germanSkriptSource: String) {
     // erstelle temporäre Datei mit dem Source-Code
     val tempFile = createTempFile("germanskript_test_temp", ".gm")
@@ -29,6 +28,8 @@ class GermanSkriptTest {
 
     try {
       führeGermanSkriptCodeAus(quellCode)
+    } catch (fehler: Exception) {
+      System.err.println(fehler)
     }
     finally {
       val actual = myOut.toString()
@@ -273,8 +274,8 @@ class GermanSkriptTest {
           schreibe die Zeile "#{Ich} wurde erstellt!"
       .
       
-      implementiere die Person:
-        als Zeichenfolge:
+      Implementiere die Person:
+        Als Zeichenfolge:
           gebe "#{mein Name} (#{mein Alter} Jahre alt)" zurück
         .
       .
@@ -301,7 +302,7 @@ class GermanSkriptTest {
         schreibe die Zahl (meine Zahl)
       .
       
-      implementiere den Zähler:
+      Implementiere den Zähler:
         Verb erhöhe mich um die Zahl:
           meine Zahl ist meine Zahl + die Zahl
           schreibe die Zahl (meine Zahl)
@@ -415,7 +416,7 @@ class GermanSkriptTest {
         Modul B:
           Nomen Foo mit dem Bar:.
           
-          implementiere das Bar:
+          Implementiere das Bar:
             Verb test:
               schreibe die Zeile "Bar"
             .
@@ -479,7 +480,7 @@ class GermanSkriptTest {
 
       Nomen Dreieck:.
       
-      implementiere das zeichenbare Dreieck:
+      Implementiere das zeichenbare Dreieck:
         Verb zeichne mich mit der Zeichenfolge Farbe:
            schreibe die Zeile "zeichne das Dreieck mit der Farbe #{die Farbe}"
         .
@@ -524,7 +525,7 @@ class GermanSkriptTest {
         jene AnZahl ist 0
       .
       
-      implementiere das klickbare Fenster:
+      Implementiere das klickbare Fenster:
           Verb klick mich:
           meine AnZahl ist meine AnZahl plus 1
           schreibe die Zeile "Das Fenster wurde zum #{meine AnZahl}. angeklickt!"
@@ -569,13 +570,13 @@ class GermanSkriptTest {
         schreibe die Zeile "#{mein VorName} #{mein NachName} ist ein #{mein Studiengang}-Student!"
       .
       
-      implementiere die Person:
+      Implementiere die Person:
         Verb stell mich vor:
           schreibe die Zeile "Hallo, mein Name ist #{mein Name} und ich bin #{mein Alter} Jahre alt!"
         .
       .
       
-      implementiere den Studenten:
+      Implementiere den Studenten:
         Verb stell mich vor:
           Super: stell mich vor!
           schreibe die Zeile "Ich bin #{mein Studiengang}-Student."
@@ -781,7 +782,7 @@ class GermanSkriptTest {
       
       Nomen Person mit der Zeichenfolge VorName, der Zeichenfolge NachName:.
       
-      implementiere die Person:
+      Implementiere die Person:
         Eigenschaft(Zeichenfolge) Name:
           gebe meinen VorNamen + " " + meinen NachNamen zurück
         .
@@ -1087,7 +1088,7 @@ class GermanSkriptTest {
   }
 
   @Test
-  @DisplayName("implementiere Adjektiv mit Typparameter")
+  @DisplayName("Implementiere Adjektiv mit Typparameter")
   fun implementiereAdjektivMitTypparameter() {
     val quellCode = """
       Deklination Maskulinum Singular(Test, Tests, Test, Test) Plural(Tests)
@@ -1098,7 +1099,7 @@ class GermanSkriptTest {
       
       Nomen Test:.
       
-      implementiere den testbaren<Zeichenfolge> Test:
+      Implementiere den testbaren<Zeichenfolge> Test:
         Verb teste die Zeichenfolge:
           schreibe die Zeichenfolge
         .
@@ -1112,7 +1113,7 @@ class GermanSkriptTest {
   }
 
   @Test
-  @DisplayName("implementiere mehrerere Adjektive")
+  @DisplayName("Implementiere mehrerere Adjektive")
   fun implementiereMehrereAdjektive() {
     val quellCode = """
       Adjektiv gefräßig:
@@ -1127,7 +1128,7 @@ class GermanSkriptTest {
       
       Nomen Hund:.
       
-      implementiere den gefräßigen, flauschigen Hund:
+      Implementiere den gefräßigen, flauschigen Hund:
         Verb fütter mich:
           schreibe die Zeile "Jam, jam, schmatz, schmatz..."
         .
@@ -1169,7 +1170,7 @@ class GermanSkriptTest {
         jene Zahl ist 0
       .
       
-      implementiere den zählbaren Zähler:
+      Implementiere den zählbaren Zähler:
         Verb(Zeichenfolge) zähle mich weiter:
           meine Zahl ist meine Zahl plus 1
           gebe meine Zahl als Zeichenfolge zurück
@@ -1197,7 +1198,7 @@ class GermanSkriptTest {
       
       Nomen Test:.
       
-      implementiere den testbaren<Zahl> Test:
+      Implementiere den testbaren<Zahl> Test:
         Verb teste die Zeichenfolge Zahl:
           schreibe die Zeile (die Zahl)
         .
