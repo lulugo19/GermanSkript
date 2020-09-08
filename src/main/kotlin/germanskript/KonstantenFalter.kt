@@ -108,7 +108,7 @@ class KonstantenFalter(startDatei: File): ProgrammDurchlaufer<Wert?>(startDatei)
     geleseneVariablen.pop()
   }
 
-  override fun evaluiereVariable(name: AST.Nomen): Wert? {
+  override fun evaluiereVariable(name: AST.WortArt.Nomen): Wert? {
     val geleseneVariablen = geleseneVariablen.peek()
     if (geleseneVariablen.containsKey(name.nominativ)) {
       geleseneVariablen.getValue(name.nominativ).wurdeGelesen = true
@@ -178,7 +178,7 @@ class KonstantenFalter(startDatei: File): ProgrammDurchlaufer<Wert?>(startDatei)
     durchlaufeBereich(versucheFange.versuche, true)
     for (fange in versucheFange.fange) {
       umgebung.pushBereich()
-      umgebung.schreibeVariable(fange.binder, null ,true)
+      umgebung.schreibeVariable(fange.param.name, null ,true)
       durchlaufeBereich(fange.bereich, false)
       umgebung.popBereich()
     }

@@ -13,7 +13,7 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
   // ganz viele veränderliche Variablen :(
   private var zuÜberprüfendeKlasse: Typ.Compound.KlassenTyp? = null
   private var rückgabeTyp: Typ? = null
-  private var funktionsTypParams: List<AST.Nomen>? = null
+  private var funktionsTypParams: List<AST.WortArt.Nomen>? = null
   private var letzterFunktionsAufruf: AST.Funktion? = null
   private var rückgabeErreicht = false
   private var evaluiereKonstante = false
@@ -100,7 +100,7 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
     }
   }
 
-  private fun holeParamName(param: AST.Definition.Parameter, typArgumente: List<AST.TypKnoten>): AST.Nomen {
+  private fun holeParamName(param: AST.Definition.Parameter, typArgumente: List<AST.TypKnoten>): AST.WortArt.Nomen {
     return if (param.typKnoten.typ is Typ.Generic && param.typIstName) {
       param.name.tauscheHauptWortAus(typArgumente[(param.typKnoten.typ as Typ.Generic).index].name.deklination!!)
     } else {
@@ -173,7 +173,7 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
     klasse.methoden.values.forEach(::prüfeFunktion)
     klasse.konvertierungen.values.forEach {konvertierung ->
       durchlaufeAufruf(
-          konvertierung.typ.name.bezeichner.toUntyped(),
+          konvertierung.typ.name.bezeichnerToken,
           konvertierung.definition, Umgebung(), true, konvertierung.typ.typ!!)
     }
     klasse.berechneteEigenschaften.values.forEach {eigenschaft ->
@@ -479,8 +479,8 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
     for (fange in versucheFange.fange) {
       umgebung.pushBereich()
       // TODO: hole aus dem Kontext die Typparameter
-      val typ = typisierer.bestimmeTyp(fange.typ, null, null, true)!!
-      umgebung.schreibeVariable(fange.binder, typ, true)
+      val typ = typisierer.bestimmeTyp(fange.param.typKnoten, null, null, true)!!
+      umgebung.schreibeVariable(fange.param.name, typ, true)
       durchlaufeBereich(fange.bereich, true)
       umgebung.popBereich()
       if (versucheFange.schlussendlich != null) {
@@ -573,7 +573,7 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
   override fun evaluiereListenElement(listenElement: AST.Ausdruck.ListenElement): Typ {
     nichtErlaubtInKonstante(listenElement)
     ausdruckMussTypSein(listenElement.index, Typ.Primitiv.Zahl)
-    val zeichenfolge = evaluiereVariable(listenElement.singular.hauptWort)
+    val zeichenfolge = evaluiereVariable(listenElement.singular.nominativ)
     // Bei einem Zugriff auf einen Listenindex kann es sich auch um eine Zeichenfolge handeln
     if (zeichenfolge != null) {
       if (zeichenfolge !is Typ.Primitiv.Zeichenfolge) {
@@ -585,7 +585,7 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
     return evaluiereListenSingular(listenElement.singular)
   }
 
-  private fun evaluiereListenSingular(singular: AST.Nomen): Typ {
+  private fun evaluiereListenSingular(singular: AST.WortArt.Nomen): Typ {
     val plural = singular.ganzesWort(Kasus.NOMINATIV, Numerus.PLURAL)
     val liste = evaluiereVariable(plural)?:
     throw GermanSkriptFehler.Undefiniert.Variable(singular.bezeichner.toUntyped(), plural)
@@ -602,7 +602,7 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
         true
     )!!
     if (klasse !is Typ.Compound.KlassenTyp) {
-      throw GermanSkriptFehler.TypFehler.ObjektErwartet(instanziierung.klasse.name.bezeichner.toUntyped())
+      throw GermanSkriptFehler.TypFehler.ObjektErwartet(instanziierung.klasse.name.bezeichnerToken)
     }
     inferiereTypArgumente(klasse)
 
@@ -617,7 +617,7 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
         continue
       }
       if (i >= instanziierung.eigenschaftsZuweisungen.size + j) {
-        throw GermanSkriptFehler.EigenschaftsFehler.EigenschaftsVergessen(instanziierung.klasse.name.bezeichner.toUntyped(), eigenschaft.name.nominativ)
+        throw GermanSkriptFehler.EigenschaftsFehler.EigenschaftsVergessen(instanziierung.klasse.name.bezeichnerToken, eigenschaft.name.nominativ)
       }
       val zuweisung = instanziierung.eigenschaftsZuweisungen[i-j]
 
@@ -663,7 +663,7 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
     return holeEigenschaftAusKlasse(eigenschaftsZugriff, methodenBlockObjekt)
   }
 
-  private fun holeNormaleEigenschaftAusKlasse(eigenschaftsName: AST.Nomen, klasse: Typ.Compound.KlassenTyp): AST.Definition.Parameter {
+  private fun holeNormaleEigenschaftAusKlasse(eigenschaftsName: AST.WortArt.Nomen, klasse: Typ.Compound.KlassenTyp): AST.Definition.Parameter {
     for (eigenschaft in klasse.definition.eigenschaften) {
       val name = holeParamName(eigenschaft ,klasse.typArgumente)
       if (eigenschaftsName.nominativ == name.nominativ) {
@@ -709,7 +709,7 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
     val ausdruck = evaluiereAusdruck(konvertierung.ausdruck)
     val konvertierungsTyp = typisierer.bestimmeTyp(konvertierung.typ, null, null, true)!!
     if (!ausdruck.kannNachTypKonvertiertWerden(konvertierungsTyp)){
-      throw GermanSkriptFehler.KonvertierungsFehler(konvertierung.typ.name.bezeichner.toUntyped(),
+      throw GermanSkriptFehler.KonvertierungsFehler(konvertierung.typ.name.bezeichnerToken,
           ausdruck, konvertierungsTyp)
     }
     return konvertierungsTyp
@@ -726,11 +726,11 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
         true
     )
     if (schnittstelle !is Typ.Compound.Schnittstelle) {
-      throw GermanSkriptFehler.SchnittstelleErwartet(closure.schnittstelle.name.bezeichner.toUntyped())
+      throw GermanSkriptFehler.SchnittstelleErwartet(closure.schnittstelle.name.bezeichnerToken)
     }
     inferiereTypArgumente(schnittstelle)
     if (schnittstelle.definition.methodenSignaturen.size != 1) {
-      throw GermanSkriptFehler.UngültigeClosureSchnittstelle(closure.schnittstelle.name.bezeichner.toUntyped(), schnittstelle.definition)
+      throw GermanSkriptFehler.UngültigeClosureSchnittstelle(closure.schnittstelle.name.bezeichnerToken, schnittstelle.definition)
     }
     val prevRückgabeTyp = rückgabeTyp
     val prevRückgabeErreicht = rückgabeErreicht
@@ -742,7 +742,7 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
       umgebung.schreibeVariable(paramName, paramTyp, false)
     }
     durchlaufeAufruf(
-        closure.schnittstelle.name.bezeichner.toUntyped(),
+        closure.schnittstelle.name.bezeichnerToken,
         closure.körper, umgebung,
         false,
         signatur.rückgabeTyp?.typ

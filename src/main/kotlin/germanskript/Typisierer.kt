@@ -77,11 +77,12 @@ sealed class Typ() {
     override fun equals(other: Any?): Boolean {
       if (this === other) return true
       if (other !is Compound) return false
+      // TODO: Ist das wirklich richtig so? Mit den Generics...?
       return this.definition == other.definition && this.typArgumente.size == other.typArgumente.size
           && this.typArgumente.zip(other.typArgumente).all { (a, b) ->
         a.typ is Generic && b.typ !is Generic ||
         a.typ !is Generic && b.typ is Generic ||
-            a == b
+            a.typ == b.typ
       }
     }
 
@@ -153,7 +154,7 @@ class Typisierer(startDatei: File): PipelineKomponente(startDatei) {
     }
   }
 
-  fun bestimmeTyp(nomen: AST.Nomen): Typ {
+  fun bestimmeTyp(nomen: AST.WortArt.Nomen): Typ {
     val typKnoten = AST.TypKnoten(emptyList(), nomen, emptyList())
     // setze den Parent hier manuell vom Nomen
     typKnoten.setParentNode(nomen.parent!!)
@@ -188,7 +189,7 @@ class Typisierer(startDatei: File): PipelineKomponente(startDatei) {
           is AST.Definition.Typdefinition.Schnittstelle -> Typ.Compound.Schnittstelle(typDef, typArgumente)
           is AST.Definition.Typdefinition.Alias -> {
             if (!aliasErlaubt) {
-              throw GermanSkriptFehler.AliasFehler(typKnoten.name.bezeichner.toUntyped(), typDef)
+              throw GermanSkriptFehler.AliasFehler(typKnoten.name.bezeichnerToken, typDef)
             }
             holeTypDefinition(typDef.typ, null, null, false)
           }
@@ -198,10 +199,10 @@ class Typisierer(startDatei: File): PipelineKomponente(startDatei) {
     // Überprüfe hier die Anzahl der Typargumente
     when (typ) {
       is Typ.Primitiv, is Typ.Generic -> if (typArgumente.isNotEmpty())
-        throw GermanSkriptFehler.TypArgumentFehler(typKnoten.name.bezeichner.toUntyped(), typArgumente.size, 0)
+        throw GermanSkriptFehler.TypArgumentFehler(typKnoten.name.bezeichnerToken, typArgumente.size, 0)
       is Typ.Compound -> if (typArgumente.isNotEmpty() && typArgumente.size != typ.definition.typParameter.size)
         throw GermanSkriptFehler.TypArgumentFehler(
-            typKnoten.name.bezeichner.toUntyped(),
+            typKnoten.name.bezeichnerToken,
             typArgumente.size,
             typ.definition.typParameter.size
         )
@@ -220,7 +221,10 @@ class Typisierer(startDatei: File): PipelineKomponente(startDatei) {
       singularTyp
     } else {
       // für das Typargument der Liste brauchen wir einen Typknoten, der der Singular von der Liste ist
-      val nomen = typKnoten.name.copy()
+      val nomen = when (typKnoten.name) {
+        is AST.WortArt.Nomen -> typKnoten.name.copy()
+        is AST.WortArt.Adjektiv -> typKnoten.name.copy()
+      }
       nomen.numerus = Numerus.SINGULAR
       nomen.deklination = typKnoten.name.deklination
       nomen.fälle = EnumSet.of(Kasus.NOMINATIV)
@@ -255,20 +259,20 @@ class Typisierer(startDatei: File): PipelineKomponente(startDatei) {
       bestimmeTyp(eigenschaft.rückgabeTyp, klasse.typParameter, null, true)
     }
     klasse.implementierungen.forEach { implementierung ->
-      implementierung.adjektive.forEach { adjektiv ->
-        adjektiv.typArgumente.forEach {arg -> bestimmeTyp(arg, null, klasse.typParameter, true)}
-        prüfeImplementiertSchnittstelle(klasse, adjektiv)
+      implementierung.schnittstellen.forEach { schnittstelle ->
+        schnittstelle.typArgumente.forEach {arg -> bestimmeTyp(arg, null, klasse.typParameter, true)}
+        prüfeImplementiertSchnittstelle(klasse, schnittstelle)
       }
     }
   }
 
   private fun prüfeImplementiertSchnittstelle(
       klasse: AST.Definition.Typdefinition.Klasse,
-      adjektiv: AST.Adjektiv) {
+      adjektiv: AST.TypKnoten) {
 
-    val schnittstelle = holeTypDefinition(adjektiv.inTypKnoten(), null, klasse.typParameter, true)
+    val schnittstelle = holeTypDefinition(adjektiv, null, klasse.typParameter, true)
     if (schnittstelle !is Typ.Compound.Schnittstelle) {
-      throw GermanSkriptFehler.SchnittstelleErwartet(adjektiv.bezeichner.toUntyped())
+      throw GermanSkriptFehler.SchnittstelleErwartet(adjektiv.name.bezeichnerToken)
     }
 
     fun holeErwartetenTypen(schnittstellenParam: AST.Definition.Parameter): Typ {
@@ -285,7 +289,7 @@ class Typisierer(startDatei: File): PipelineKomponente(startDatei) {
       val methodenName = definierer.holeVollenNamenVonFunktionsSignatur(signatur, schnittstelle.typArgumente)
       val methode = klasse.methoden.getOrElse(methodenName, {
         throw GermanSkriptFehler.UnimplementierteSchnittstelle(
-            adjektiv.bezeichner.toUntyped(),
+            adjektiv.name.bezeichnerToken,
             klasse,
             schnittstelle
         )
@@ -293,7 +297,7 @@ class Typisierer(startDatei: File): PipelineKomponente(startDatei) {
       // überprüfe Rückgabetypen
       if (signatur.rückgabeTyp == null && methode.signatur.rückgabeTyp != null) {
         throw GermanSkriptFehler.TypFehler.FalscherSchnittstellenTyp(
-            methode.signatur.rückgabeTyp.name.bezeichner.toUntyped(),
+            methode.signatur.rückgabeTyp.name.bezeichnerToken,
             schnittstelle,
             methodenName,
             methode.signatur.rückgabeTyp.typ!!,
@@ -313,7 +317,7 @@ class Typisierer(startDatei: File): PipelineKomponente(startDatei) {
 
       if (signatur.rückgabeTyp != methode.signatur.rückgabeTyp) {
         throw GermanSkriptFehler.TypFehler.FalscherSchnittstellenTyp(
-            methode.signatur.rückgabeTyp!!.name.bezeichner.toUntyped(),
+            methode.signatur.rückgabeTyp!!.name.bezeichnerToken,
             schnittstelle,
             methodenName,
             methode.signatur.rückgabeTyp.typ!!,
@@ -328,7 +332,7 @@ class Typisierer(startDatei: File): PipelineKomponente(startDatei) {
         val erwarteterTyp = holeErwartetenTypen(schnittstellenParameter[pIndex])
         if (methodenParameter[pIndex].typKnoten.typ != erwarteterTyp) {
           throw GermanSkriptFehler.TypFehler.FalscherSchnittstellenTyp(
-              methodenParameter[pIndex].typKnoten.name.bezeichner.toUntyped(),
+              methodenParameter[pIndex].typKnoten.name.bezeichnerToken,
               schnittstelle,
               methodenName,
               methodenParameter[pIndex].typKnoten.typ!!,

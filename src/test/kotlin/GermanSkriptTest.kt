@@ -42,12 +42,12 @@ class GermanSkriptTest {
   @Test
   @DisplayName("Hallo Welt")
   fun halloWelt() {
-    val source = """
+    val quellCode = """
       schreibe die Zeile "Hallo Welt"
     """.trimIndent()
     val expectedOutput = "Hallo Welt\n"
 
-    testeGermanSkriptCode(source, expectedOutput)
+    testeGermanSkriptCode(quellCode, expectedOutput)
   }
 
   @Test
@@ -497,7 +497,7 @@ class GermanSkriptTest {
   @Test
   @DisplayName("Zugriff auf einzelne Zeichen einer Zeichenfolge")
   fun zeichenfolgeUmkehren() {
-    val source = """
+    val quellCode = """
       Verb(Zeichenfolge) kehre die Zeichenfolge um:
         ein Index ist die Länge der Zeichenfolge minus 1
         ein ERGEBNIS ist ""
@@ -511,7 +511,7 @@ class GermanSkriptTest {
       schreibe die Zeichenfolge (kehre die Zeichenfolge "Hallo Welt" um)
     """.trimIndent()
 
-    testeGermanSkriptCode(source, "tleW ollaH")
+    testeGermanSkriptCode(quellCode, "tleW ollaH")
   }
 
   @Test
@@ -1276,5 +1276,54 @@ class GermanSkriptTest {
     assertThatExceptionOfType(GermanSkriptFehler.TypFehler.FalscherSchnittstellenTyp::class.java).isThrownBy {
       führeGermanSkriptCodeAus(quellCode)
     }
+  }
+
+  @Test
+  @DisplayName("Liste von Schnittstellen")
+  fun listeVonSchnittstellen() {
+    val quellCode = """
+      Deklination Maskulinum Singular(Hund, Hunds, Hund, Hund) Plural(Hunde)
+      Deklination Femininum Singular(Katze) Plural(Katzen)
+      Deklination Neutrum Singular(Tier, Tiers, Tier, Tier) Plural(Tiere)
+      
+      Adjektiv tierisch:
+        Verb melde mich
+      .
+      
+      Nomen Hund:.
+      Nomen Katze:.
+      
+      Implementiere den tierischen Hund:
+        Verb melde mich:
+          schreibe die Zeile "Woof!"
+        .
+      .
+      
+      Implementiere die tierische Katze:
+        Verb melde mich:
+          schreibe die Zeile "Miauu!"
+        .
+      .
+      
+      Verb melde die tierischen Tiere:
+        für jedes Tier:
+          Tier: melde dich!
+        .
+      .
+      
+      die Tiere sind einige Tierische[eine Katze, ein Hund, ein Hund, eine Katze, eine Katze]
+      melde die Tiere
+    """.trimIndent()
+
+    val erwarteteAusgabe = """
+      Miauu!
+      Woof!
+      Woof!
+      Miauu!
+      Miauu!
+      
+    """.trimIndent()
+
+    testeGermanSkriptCode(quellCode, erwarteteAusgabe)
   }
 }

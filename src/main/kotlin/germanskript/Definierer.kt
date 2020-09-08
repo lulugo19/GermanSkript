@@ -66,8 +66,19 @@ class Definierer(startDatei: File): PipelineKomponente(startDatei) {
   }
 
   fun holeTypDefinition(typ: AST.TypKnoten): AST.Definition.Typdefinition {
-    val teilWörter = typ.name.bezeichner.typ.teilWörter
-    val hauptWort = typ.name.hauptWort(Kasus.NOMINATIV, Numerus.SINGULAR)
+    val teilWörter = when (typ.name) {
+      is AST.WortArt.Nomen -> typ.name.bezeichner.typ.teilWörter
+      is AST.WortArt.Adjektiv -> arrayOf(typ.name.normalisierung)
+    }
+    val hauptWort = when (typ.name) {
+      is AST.WortArt.Nomen -> {
+        // ein kleiner Hack damit Listenerstellungen mit Schnittstellen funktionieren
+        if (typ.name.deklination!!.istNominalisiertesAdjektiv && typ.name.numerus == Numerus.PLURAL)
+          typ.name.hauptWort(Kasus.NOMINATIV, Numerus.PLURAL)
+        else typ.name.hauptWort(Kasus.NOMINATIV, Numerus.SINGULAR)
+      }
+      is AST.WortArt.Adjektiv -> typ.name.normalisierung
+    }
     if (typ.modulPfad.isEmpty()) {
       var typDefinition: AST.Definition.Typdefinition? = null
       for (definitionen in durchlaufeDefinitionsContainer(typ)) {
@@ -79,7 +90,7 @@ class Definierer(startDatei: File): PipelineKomponente(startDatei) {
           if (definitionen.verwendeteTypen.containsKey(typName)) {
             val gefundeneDefinition = definitionen.verwendeteTypen.getValue(typName)
             if (typDefinition != null && typDefinition != gefundeneDefinition) {
-              throw GermanSkriptFehler.Mehrdeutigkeit.Typ(typ.name.bezeichner.toUntyped(), typDefinition,
+              throw GermanSkriptFehler.Mehrdeutigkeit.Typ(typ.name.bezeichnerToken, typDefinition,
                 gefundeneDefinition)
             }
             typDefinition = gefundeneDefinition
@@ -88,7 +99,7 @@ class Definierer(startDatei: File): PipelineKomponente(startDatei) {
             if (verwendetesModul.definierteTypen.containsKey(typName)) {
               val gefundeneDefinition = verwendetesModul.definierteTypen.getValue(typName)
               if (typDefinition != null && typDefinition != gefundeneDefinition) {
-                throw GermanSkriptFehler.Mehrdeutigkeit.Typ(typ.name.bezeichner.toUntyped(), typDefinition,
+                throw GermanSkriptFehler.Mehrdeutigkeit.Typ(typ.name.bezeichnerToken, typDefinition,
                 verwendetesModul.definierteTypen.getValue(typName))
               }
               typDefinition = gefundeneDefinition
@@ -100,7 +111,7 @@ class Definierer(startDatei: File): PipelineKomponente(startDatei) {
         }
       }
       return typDefinition ?:
-        throw GermanSkriptFehler.Undefiniert.Typ(typ.name.bezeichner.toUntyped(), typ)
+        throw GermanSkriptFehler.Undefiniert.Typ(typ.name.bezeichnerToken, typ)
     } else {
       val modul = modulAuflöser.löseModulPfadAuf(typ, typ.modulPfad)
       for (i in teilWörter.indices) {
@@ -109,7 +120,7 @@ class Definierer(startDatei: File): PipelineKomponente(startDatei) {
           return modul.definitionen.definierteTypen.getValue(typName)
         }
       }
-      throw GermanSkriptFehler.Undefiniert.Typ(typ.name.bezeichner.toUntyped(), typ)
+      throw GermanSkriptFehler.Undefiniert.Typ(typ.name.bezeichnerToken, typ)
     }
   }
 
@@ -154,7 +165,7 @@ class Definierer(startDatei: File): PipelineKomponente(startDatei) {
 
   private fun holeVollenNamenVonFunktionsSignatur(
       funktionsSignatur: AST.Definition.FunktionsSignatur,
-      holeParamName: (AST.Definition.Parameter) -> AST.Nomen = {it.name}
+      holeParamName: (AST.Definition.Parameter) -> AST.WortArt = {it.name}
   ): String {
     var vollerName = funktionsSignatur.name.wert
     if (funktionsSignatur.objekt != null) {
@@ -183,7 +194,7 @@ class Definierer(startDatei: File): PipelineKomponente(startDatei) {
 
   private fun holeParamString(
       param: AST.Definition.Parameter,
-      holeParamName: (AST.Definition.Parameter) -> AST.Nomen = {it.name}
+      holeParamName: (AST.Definition.Parameter) -> AST.WortArt = {it.name}
   ): String {
     val paramName = holeParamName(param)
     val artikel = GrammatikPrüfer.holeVornomen(
@@ -204,7 +215,7 @@ class Definierer(startDatei: File): PipelineKomponente(startDatei) {
 
   private fun holeParamName(
       parameter: AST.Definition.Parameter,
-      typTypArgs: List<AST.TypKnoten>): AST.Nomen {
+      typTypArgs: List<AST.TypKnoten>): AST.WortArt {
     val typ = parameter.typKnoten.typ!!
     return if (parameter.typIstName && typ is Typ.Generic) {
       typTypArgs[typ.index].name
@@ -216,7 +227,7 @@ class Definierer(startDatei: File): PipelineKomponente(startDatei) {
   fun holeVollenNamenVonFunktionsAufruf(
       funktionsAufruf: AST.Funktion,
       ersetzeObjekt: String?,
-      holeArgName: (AST.Argument) -> AST.Nomen = {it.name}
+      holeArgName: (AST.Argument) -> AST.WortArt.Nomen = {it.name}
   ): String {
     var vollerName = funktionsAufruf.verb.wert
     if (funktionsAufruf.objekt != null) {
@@ -257,7 +268,7 @@ class Definierer(startDatei: File): PipelineKomponente(startDatei) {
 
   fun holeVollenNamenVonFunktionsAufruf(
       funktionsAufruf: AST.Funktion,
-      typTypParams: List<AST.Nomen>,
+      typTypParams: List<AST.WortArt.Nomen>,
       typTypArgs: List<AST.TypKnoten>
   ): String {
     return holeVollenNamenVonFunktionsAufruf(funktionsAufruf, null) { argument ->
@@ -265,29 +276,29 @@ class Definierer(startDatei: File): PipelineKomponente(startDatei) {
     }
   }
 
-  private fun holeArgumentString(argument: AST.Argument, holeArgName: (AST.Argument) -> AST.Nomen): String {
+  private fun holeArgumentString(argument: AST.Argument, holeArgName: (AST.Argument) -> AST.WortArt.Nomen): String {
     val argName = holeArgName(argument)
     return if (argument.adjektiv != null) {
       val artikel = GrammatikPrüfer.holeVornomen(
-          TokenTyp.VORNOMEN.ARTIKEL.BESTIMMT, argument.name.fälle.first(), Genus.NEUTRUM, argument.name.numerus!!)
-      " " + artikel + " " + argument.adjektiv.normalisierung
+          TokenTyp.VORNOMEN.ARTIKEL.BESTIMMT, argument.name.kasus, Genus.NEUTRUM, argument.name.numerus!!)
+      " " + artikel + " " + argument.adjektiv.ganzesWort(argument.name.kasus, argument.name.numerus!!)
     } else {
       val artikel = GrammatikPrüfer.holeVornomen(
           TokenTyp.VORNOMEN.ARTIKEL.BESTIMMT,
-          argument.name.fälle.first(),
+          argument.name.kasus,
           argName.genus,
           argument.name.numerus!!
       )
 
-      " " + artikel + " " + argName.hauptWort(argument.name.fälle.first(), argument.name.numerus!!)
+      " " + artikel + " " + argName.hauptWort(argument.name.kasus, argument.name.numerus!!)
     }
   }
 
   private fun holeArgName(
       argument: AST.Argument,
-      typTypParams: List<AST.Nomen>,
+      typTypParams: List<AST.WortArt.Nomen>,
       typTypArgs: List<AST.TypKnoten>
-  ): AST.Nomen {
+  ): AST.WortArt.Nomen {
     val ersetzeArgIndex = typTypArgs.indexOfFirst { arg -> arg.name.nominativ == argument.name.nominativ }
     if (ersetzeArgIndex != -1) {
       return typTypParams[ersetzeArgIndex]
@@ -375,7 +386,7 @@ class Definierer(startDatei: File): PipelineKomponente(startDatei) {
   private fun definiereImplementierung(implementierung: AST.Definition.Implementierung) {
     val klasse = holeTypDefinition(implementierung.klasse)
     if (klasse !is AST.Definition.Typdefinition.Klasse) {
-      throw GermanSkriptFehler.KlasseErwartet(implementierung.klasse.name.bezeichner.toUntyped())
+      throw GermanSkriptFehler.KlasseErwartet(implementierung.klasse.name.bezeichnerToken)
     }
     klasse.implementierungen += implementierung
     implementierung.methoden.forEach { methode -> definiereMethode(methode, klasse) }
@@ -387,7 +398,7 @@ class Definierer(startDatei: File): PipelineKomponente(startDatei) {
     val typName = konvertierung.typ.name.nominativ
     if (klasse.konvertierungen.containsKey(typName)) {
       throw GermanSkriptFehler.DoppelteDefinition.Konvertierung(
-          konvertierung.typ.name.bezeichner.toUntyped(),
+          konvertierung.typ.name.bezeichnerToken,
           klasse.konvertierungen.getValue(typName)
       )
     }

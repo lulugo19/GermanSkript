@@ -126,7 +126,6 @@ class Deklinierer(startDatei: File): PipelineKomponente(startDatei) {
         else -> return@visit false
       }
     }
-
     löseDudenAnfragenAuf(dudenAnfragen)
   }
 
@@ -163,29 +162,29 @@ class Deklinierer(startDatei: File): PipelineKomponente(startDatei) {
     }
   }
 
-  fun holeDeklination(nomen: AST.Nomen): Deklination {
-    val container: AST.DefinitionsContainer? = nomen.findNodeInParents() ?:
-    nomen.findNodeInParents<AST.Programm>()!!.definitionen
+  fun holeDeklination(wort: AST.WortArt): Deklination {
+    val container: AST.DefinitionsContainer? = wort.findNodeInParents() ?:
+    wort.findNodeInParents<AST.Programm>()!!.definitionen
 
-    val modulPfad = nomen.findNodeInParents<AST.Funktion>()?.modulPfad ?:
-      nomen.findNodeInParents<AST.Ausdruck.ObjektInstanziierung>()?.klasse?.modulPfad
+    val modulPfad = wort.findNodeInParents<AST.Funktion>()?.modulPfad ?:
+      wort.findNodeInParents<AST.Ausdruck.ObjektInstanziierung>()?.klasse?.modulPfad
     if (modulPfad != null && modulPfad.isNotEmpty()) {
       val modul = modulAuflöser.findeModul(container!!, modulPfad)
-      holeDeklination(nomen, modul.definitionen)?.let { return it }
+      holeDeklination(wort, modul.definitionen)?.let { return it }
     }
-    holeDeklination(nomen, container!!)?.let { return it }
+    holeDeklination(wort, container!!)?.let { return it }
 
     for (verwendetesModul in container.verwendeteModule) {
-      holeDeklination(nomen, verwendetesModul)?.let { return it }
+      holeDeklination(wort, verwendetesModul)?.let { return it }
     }
-    throw GermanSkriptFehler.UnbekanntesWort(nomen.bezeichner.toUntyped(), nomen.hauptWort)
+    throw GermanSkriptFehler.UnbekanntesWort(wort.bezeichnerToken, wort.hauptWort)
   }
 
-  private fun holeDeklination(nomen: AST.Nomen, container: AST.DefinitionsContainer): Deklination? {
+  private fun holeDeklination(wort: AST.WortArt, container: AST.DefinitionsContainer): Deklination? {
     var container: AST.DefinitionsContainer? = container
     while (true) {
       try {
-        return container!!.wörterbuch.holeDeklination(nomen.hauptWort, nomen.vornomen?.typ)
+        return container!!.wörterbuch.holeDeklination(wort.hauptWort, wort.vornomen?.typ)
       } catch (fehler: Wörterbuch.WortNichtGefunden) {
         container = container!!.findNodeInParents()
         if (container == null) {
@@ -233,8 +232,8 @@ class Wörterbuch {
 
   fun holeDeklination(wort: String, vornomen: TokenTyp.VORNOMEN?): Deklination {
     var lo = 0
-    var hi = tabelle.size
-    while (lo < hi) {
+    var hi = tabelle.size - 1
+    while (lo <= hi) {
       val mid = ((lo.toDouble() + hi) / 2).toInt()
       val deklination = tabelle[mid]
       val nominativSingular = deklination.nominativSingular
@@ -255,14 +254,14 @@ class Wörterbuch {
           if (nominativSingular < wort) {
             lo = mid + 1
           } else {
-            hi = mid
+            hi = mid - 1
           }
         }
       }
       else if (wortVergleichBerücksichtigeUmlaute(deklination.nominativSingular, wort) == -1) {
         lo = mid + 1
       } else {
-        hi = mid
+        hi = mid - 1
       }
     }
 
@@ -273,12 +272,13 @@ class Wörterbuch {
   private val unbestimmterArtikelAdjektivEndungen = Pair(arrayOf("es", "en", "en", "es"), arrayOf("en", "en", "en", "en"))
   private val ohneArtikelAdjektivEndungen = Pair(arrayOf("es", "en", "em", "es"), arrayOf("e", "er", "en", "e"))
 
-  fun holeEndungen(vornomen: TokenTyp.VORNOMEN?) = when (vornomen) {
+  private fun holeEndungen(vornomen: TokenTyp.VORNOMEN?) = when (vornomen) {
     null, TokenTyp.VORNOMEN.ETWAS -> ohneArtikelAdjektivEndungen
     TokenTyp.VORNOMEN.ARTIKEL.BESTIMMT,
     TokenTyp.VORNOMEN.DEMONSTRATIV_PRONOMEN.DIESE,
     TokenTyp.VORNOMEN.DEMONSTRATIV_PRONOMEN.JENE -> bestimmterArtikelAdjektivEndungen
-    TokenTyp.VORNOMEN.ARTIKEL.UNBESTIMMT,
+    // 'einige' ist ein spezieller Fall, wo dann die unbestimmten Adjektivendungen verwendet werden
+    TokenTyp.VORNOMEN.ARTIKEL.UNBESTIMMT -> Pair(unbestimmterArtikelAdjektivEndungen.first, ohneArtikelAdjektivEndungen.second)
     TokenTyp.VORNOMEN.POSSESSIV_PRONOMEN.MEIN,
     TokenTyp.VORNOMEN.POSSESSIV_PRONOMEN.DEIN -> unbestimmterArtikelAdjektivEndungen
   }

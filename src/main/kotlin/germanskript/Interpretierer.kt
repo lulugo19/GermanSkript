@@ -94,13 +94,11 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
 
     private fun aufrufStapelElementToString(element: AufrufStapelElement): String {
       val aufruf = element.aufruf
-      val zeichenfolge = "'${aufruf.vollerName}' in ${aufruf.token.position}"
-      /*
+      var zeichenfolge = "'${aufruf.vollerName}' in ${aufruf.token.position}"
       if (element.objekt is Wert.Objekt) {
         val klassenName = element.objekt.typ.definition.name.hauptWort
         zeichenfolge = "'für $klassenName: ${aufruf.vollerName}' in ${aufruf.token.position}"
       }
-       */
 
       return zeichenfolge
     }
@@ -167,7 +165,7 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
   /**
    * Bei Closures werden die Parameternamen bei generischen Parametern mit dem Namen des eingesetzen Typen ersetzt.
    */
-  private fun holeParameterNamenFürClosure(objekt: Wert.Closure): List<AST.Nomen> {
+  private fun holeParameterNamenFürClosure(objekt: Wert.Closure): List<AST.WortArt.Nomen> {
     val typArgumente = objekt.schnittstelle.typArgumente
     val signatur = objekt.schnittstelle.definition.methodenSignaturen[0]
     return signatur.parameter.map { param ->
@@ -192,7 +190,7 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
       {
         is Wert.Objekt -> {
           val methode = objekt.typ.definition.methoden.getValue(funktionsAufruf.vollerName!!)
-          funktionsAufruf.vollerName = "für ${objekt.typ.definition.name.nominativ}: ${methode.signatur.vollerName}"
+          // funktionsAufruf.vollerName = "für ${objekt.typ.definition.name.nominativ}: ${methode.signatur.vollerName}"
           val signatur = methode.signatur
           Pair(methode.körper, signatur.parameter.map {it.name})
         }
@@ -286,11 +284,11 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
       val fehlerObjekt = fehler.fehlerObjekt
       val fehlerTyp = typeOf(fehler.fehlerObjekt)
       val fange = versucheFange.fange.find { fange ->
-        typPrüfer.typIstTyp(fehlerTyp, fange.typ.typ!!)
+        typPrüfer.typIstTyp(fehlerTyp, fange.param.typKnoten.typ!!)
       }
       if (fange != null) {
         umgebung.pushBereich()
-        umgebung.schreibeVariable(fange.binder, fehlerObjekt, true)
+        umgebung.schreibeVariable(fange.param.name, fehlerObjekt, true)
         durchlaufeBereich(fange.bereich, false)
         umgebung.popBereich()
         if (versucheFange.schlussendlich != null) {
@@ -311,8 +309,13 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
     throw GermanSkriptFehler.UnbehandelterFehler(werfe.werfe.toUntyped(), aufrufStapel.toString(), fehlerMeldung, wert)
   }
 
-  override fun durchlaufeIntern(intern: AST.Satz.Intern) = interneFunktionen.getValue(aufrufStapel.top().aufruf.vollerName!!)()
-
+  override fun durchlaufeIntern(intern: AST.Satz.Intern) {
+    val lookUpName = when (val objekt = aufrufStapel.top().objekt) {
+      is Wert.Objekt -> "für ${objekt.typ.definition.name.nominativ}: ${aufrufStapel.top().aufruf.vollerName!!}"
+      else -> aufrufStapel.top().aufruf.vollerName!!
+    }
+    return interneFunktionen.getValue(lookUpName)()
+  }
 
   override fun bevorDurchlaufeMethodenBlock(methodenBlock: AST.Satz.MethodenBlock, blockObjekt: Wert?) {
     // mache nichts hier, das ist eigentlich nur für den Typprüfer gedacht
@@ -423,49 +426,49 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
   }
 
   companion object {
-    val preloadedKlassenDefinitionen = arrayOf("Fehler", "KonvertierungsFehler")
+  val preloadedKlassenDefinitionen = arrayOf("Fehler", "KonvertierungsFehler")
 
-    fun zeichenFolgenOperation(operator: Operator, links: Wert.Primitiv.Zeichenfolge, rechts: Wert.Primitiv.Zeichenfolge): Wert {
-      return when (operator) {
-        Operator.GLEICH -> Wert.Primitiv.Boolean(links == rechts)
-        Operator.UNGLEICH -> Wert.Primitiv.Boolean(links != rechts)
-        Operator.GRÖßER -> Wert.Primitiv.Boolean(links > rechts)
-        Operator.KLEINER -> Wert.Primitiv.Boolean(links < rechts)
-        Operator.GRÖSSER_GLEICH -> Wert.Primitiv.Boolean(links >= rechts)
-        Operator.KLEINER_GLEICH -> Wert.Primitiv.Boolean(links <= rechts)
-        Operator.PLUS -> Wert.Primitiv.Zeichenfolge(links + rechts)
-        else -> throw Exception("Operator $operator ist für den Typen Zeichenfolge nicht definiert.")
-      }
-    }
-
-    fun zahlOperation(operator: Operator, links: Wert.Primitiv.Zahl, rechts: Wert.Primitiv.Zahl): Wert {
-      return when (operator) {
-        Operator.GLEICH -> Wert.Primitiv.Boolean(links == rechts)
-        Operator.UNGLEICH -> Wert.Primitiv.Boolean(links != rechts)
-        Operator.GRÖßER -> Wert.Primitiv.Boolean(links > rechts)
-        Operator.KLEINER -> Wert.Primitiv.Boolean(links < rechts)
-        Operator.GRÖSSER_GLEICH -> Wert.Primitiv.Boolean(links >= rechts)
-        Operator.KLEINER_GLEICH -> Wert.Primitiv.Boolean(links <= rechts)
-        Operator.PLUS -> links + rechts
-        Operator.MINUS -> links - rechts
-        Operator.MAL -> links * rechts
-        Operator.GETEILT -> links / rechts
-        Operator.MODULO -> links % rechts
-        Operator.HOCH -> links.pow(rechts)
-        else -> throw Exception("Operator $operator ist für den Typen Zahl nicht definiert.")
-      }
-    }
-
-    fun booleanOperation(operator: Operator, links: Wert.Primitiv.Boolean, rechts: Wert.Primitiv.Boolean): Wert {
-      return when (operator) {
-        Operator.ODER -> Wert.Primitiv.Boolean(links.boolean || rechts.boolean)
-        Operator.UND -> Wert.Primitiv.Boolean(links.boolean && rechts.boolean)
-        Operator.GLEICH -> Wert.Primitiv.Boolean(links.boolean == rechts.boolean)
-        Operator.UNGLEICH -> Wert.Primitiv.Boolean(links.boolean != rechts.boolean)
-        else -> throw Exception("Operator $operator ist für den Typen Boolean nicht definiert.")
-      }
+  fun zeichenFolgenOperation(operator: Operator, links: Wert.Primitiv.Zeichenfolge, rechts: Wert.Primitiv.Zeichenfolge): Wert {
+    return when (operator) {
+      Operator.GLEICH -> Wert.Primitiv.Boolean(links == rechts)
+      Operator.UNGLEICH -> Wert.Primitiv.Boolean(links != rechts)
+      Operator.GRÖßER -> Wert.Primitiv.Boolean(links > rechts)
+      Operator.KLEINER -> Wert.Primitiv.Boolean(links < rechts)
+      Operator.GRÖSSER_GLEICH -> Wert.Primitiv.Boolean(links >= rechts)
+      Operator.KLEINER_GLEICH -> Wert.Primitiv.Boolean(links <= rechts)
+      Operator.PLUS -> Wert.Primitiv.Zeichenfolge(links + rechts)
+      else -> throw Exception("Operator $operator ist für den Typen Zeichenfolge nicht definiert.")
     }
   }
+
+  fun zahlOperation(operator: Operator, links: Wert.Primitiv.Zahl, rechts: Wert.Primitiv.Zahl): Wert {
+    return when (operator) {
+      Operator.GLEICH -> Wert.Primitiv.Boolean(links == rechts)
+      Operator.UNGLEICH -> Wert.Primitiv.Boolean(links != rechts)
+      Operator.GRÖßER -> Wert.Primitiv.Boolean(links > rechts)
+      Operator.KLEINER -> Wert.Primitiv.Boolean(links < rechts)
+      Operator.GRÖSSER_GLEICH -> Wert.Primitiv.Boolean(links >= rechts)
+      Operator.KLEINER_GLEICH -> Wert.Primitiv.Boolean(links <= rechts)
+      Operator.PLUS -> links + rechts
+      Operator.MINUS -> links - rechts
+      Operator.MAL -> links * rechts
+      Operator.GETEILT -> links / rechts
+      Operator.MODULO -> links % rechts
+      Operator.HOCH -> links.pow(rechts)
+      else -> throw Exception("Operator $operator ist für den Typen Zahl nicht definiert.")
+    }
+  }
+
+  fun booleanOperation(operator: Operator, links: Wert.Primitiv.Boolean, rechts: Wert.Primitiv.Boolean): Wert {
+    return when (operator) {
+      Operator.ODER -> Wert.Primitiv.Boolean(links.boolean || rechts.boolean)
+      Operator.UND -> Wert.Primitiv.Boolean(links.boolean && rechts.boolean)
+      Operator.GLEICH -> Wert.Primitiv.Boolean(links.boolean == rechts.boolean)
+      Operator.UNGLEICH -> Wert.Primitiv.Boolean(links.boolean != rechts.boolean)
+      else -> throw Exception("Operator $operator ist für den Typen Boolean nicht definiert.")
+    }
+  }
+}
 
   private fun listenOperation(operator: Operator, links: Wert.Objekt.Liste, rechts: Wert.Objekt.Liste): Wert {
     return when (operator) {
@@ -525,119 +528,119 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
 
   // region interne Funktionen
   private val interneFunktionen = mapOf<String, () -> (Unit)>(
-      "schreibe die Zeichenfolge" to {
-        val zeichenfolge = umgebung.leseVariable("Zeichenfolge")!!.wert as Wert.Primitiv.Zeichenfolge
-        print(zeichenfolge)
-      },
+    "schreibe die Zeichenfolge" to {
+      val zeichenfolge = umgebung.leseVariable("Zeichenfolge")!!.wert as Wert.Primitiv.Zeichenfolge
+      print(zeichenfolge)
+    },
 
-      "schreibe die Zeile" to {
-        val zeile = umgebung.leseVariable("Zeile")!!.wert as Wert.Primitiv.Zeichenfolge
-        println(zeile)
-      },
+    "schreibe die Zeile" to {
+      val zeile = umgebung.leseVariable("Zeile")!!.wert as Wert.Primitiv.Zeichenfolge
+      println(zeile)
+    },
 
-      "schreibe die Zahl" to {
-        val zahl = umgebung.leseVariable("Zahl")!!.wert as Wert.Primitiv.Zahl
-        println(zahl)
-      },
+    "schreibe die Zahl" to {
+      val zahl = umgebung.leseVariable("Zahl")!!.wert as Wert.Primitiv.Zahl
+      println(zahl)
+    },
 
-      "lese" to {
-        rückgabeWert = Wert.Primitiv.Zeichenfolge(readLine()!!)
-      },
+    "lese" to {
+      rückgabeWert = Wert.Primitiv.Zeichenfolge(readLine()!!)
+    },
 
-      "runde die Zahl" to {
-        val zahl = umgebung.leseVariable("Zahl")!!.wert as Wert.Primitiv.Zahl
-        rückgabeWert = Wert.Primitiv.Zahl(round(zahl.zahl))
-      },
+    "runde die Zahl" to {
+      val zahl = umgebung.leseVariable("Zahl")!!.wert as Wert.Primitiv.Zahl
+      rückgabeWert = Wert.Primitiv.Zahl(round(zahl.zahl))
+    },
 
-      "runde die Zahl ab" to {
-        val zahl = umgebung.leseVariable("Zahl")!!.wert as Wert.Primitiv.Zahl
-        rückgabeWert = Wert.Primitiv.Zahl(floor(zahl.zahl))
-      },
+    "runde die Zahl ab" to {
+      val zahl = umgebung.leseVariable("Zahl")!!.wert as Wert.Primitiv.Zahl
+      rückgabeWert = Wert.Primitiv.Zahl(floor(zahl.zahl))
+    },
 
-      "runde die Zahl auf" to {
-        val zahl = umgebung.leseVariable("Zahl")!!.wert as Wert.Primitiv.Zahl
-        rückgabeWert = Wert.Primitiv.Zahl(ceil(zahl.zahl))
-      },
+    "runde die Zahl auf" to {
+      val zahl = umgebung.leseVariable("Zahl")!!.wert as Wert.Primitiv.Zahl
+      rückgabeWert = Wert.Primitiv.Zahl(ceil(zahl.zahl))
+    },
 
-      "sinus von der Zahl" to {
-        val zahl = umgebung.leseVariable("Zahl")!!.wert as Wert.Primitiv.Zahl
-        rückgabeWert = Wert.Primitiv.Zahl(sin(zahl.zahl))
-      },
+    "sinus von der Zahl" to {
+      val zahl = umgebung.leseVariable("Zahl")!!.wert as Wert.Primitiv.Zahl
+      rückgabeWert = Wert.Primitiv.Zahl(sin(zahl.zahl))
+    },
 
-      "cosinus von der Zahl" to {
-        val zahl = umgebung.leseVariable("Zahl")!!.wert as Wert.Primitiv.Zahl
-        rückgabeWert = Wert.Primitiv.Zahl(cos(zahl.zahl))
-      },
+    "cosinus von der Zahl" to {
+      val zahl = umgebung.leseVariable("Zahl")!!.wert as Wert.Primitiv.Zahl
+      rückgabeWert = Wert.Primitiv.Zahl(cos(zahl.zahl))
+    },
 
-      "tangens von der Zahl" to {
-        val zahl = umgebung.leseVariable("Zahl")!!.wert as Wert.Primitiv.Zahl
-        rückgabeWert = Wert.Primitiv.Zahl(tan(zahl.zahl))
-      },
+    "tangens von der Zahl" to {
+      val zahl = umgebung.leseVariable("Zahl")!!.wert as Wert.Primitiv.Zahl
+      rückgabeWert = Wert.Primitiv.Zahl(tan(zahl.zahl))
+    },
 
-      "randomisiere" to {
-        rückgabeWert = Wert.Primitiv.Zahl(Random.nextDouble())
-      },
+    "randomisiere" to {
+      rückgabeWert = Wert.Primitiv.Zahl(Random.nextDouble())
+    },
 
-      "randomisiere zwischen dem Minimum, dem Maximum" to {
-        val min = umgebung.leseVariable("Minimum")!!.wert as Wert.Primitiv.Zahl
-        val max = umgebung.leseVariable("Maximum")!!.wert as Wert.Primitiv.Zahl
-        rückgabeWert = Wert.Primitiv.Zahl(Random.nextDouble(min.zahl, max.zahl))
-      },
+    "randomisiere zwischen dem Minimum, dem Maximum" to {
+      val min = umgebung.leseVariable("Minimum")!!.wert as Wert.Primitiv.Zahl
+      val max = umgebung.leseVariable("Maximum")!!.wert as Wert.Primitiv.Zahl
+      rückgabeWert = Wert.Primitiv.Zahl(Random.nextDouble(min.zahl, max.zahl))
+    },
 
-      "buchstabiere die Zeichenfolge groß" to {
-        val wert = umgebung.leseVariable("Zeichenfolge")!!.wert as Wert.Primitiv.Zeichenfolge
-        rückgabeWert = Wert.Primitiv.Zeichenfolge(wert.zeichenfolge.toUpperCase())
-      },
+    "buchstabiere die Zeichenfolge groß" to {
+      val wert = umgebung.leseVariable("Zeichenfolge")!!.wert as Wert.Primitiv.Zeichenfolge
+      rückgabeWert = Wert.Primitiv.Zeichenfolge(wert.zeichenfolge.toUpperCase())
+    },
 
-      "buchstabiere die Zeichenfolge klein" to {
-        val wert = umgebung.leseVariable("Zeichenfolge")!!.wert as Wert.Primitiv.Zeichenfolge
-        rückgabeWert = Wert.Primitiv.Zeichenfolge(wert.zeichenfolge.toLowerCase())
-      },
+    "buchstabiere die Zeichenfolge klein" to {
+      val wert = umgebung.leseVariable("Zeichenfolge")!!.wert as Wert.Primitiv.Zeichenfolge
+      rückgabeWert = Wert.Primitiv.Zeichenfolge(wert.zeichenfolge.toLowerCase())
+    },
 
-      "trenne die Zeichenfolge zwischen dem Separator" to {
-        val zeichenfolge = umgebung.leseVariable("Zeichenfolge")!!.wert as Wert.Primitiv.Zeichenfolge
-        val separator = umgebung.leseVariable("Separator")!!.wert as Wert.Primitiv.Zeichenfolge
-        // TODO: Das hier ist sehr unschön. Dass ich hier einen TypKnoten erstellen muss. Könnte man da vielleicht etwas dran ändern?
-        val zeichenfolgeTypParameter = AST.TypKnoten(emptyList(), AST.Nomen(null,
-            TypedToken(TokenTyp.BEZEICHNER_GROSS(arrayOf("Zeichenfolge"), ""), "Zeichenfolge", "", Token.Position.Ende, Token.Position.Ende)),
-            emptyList()
-        )
-        zeichenfolgeTypParameter.typ = Typ.Primitiv.Zeichenfolge
-        rückgabeWert = Wert.Objekt.Liste(Typ.Compound.KlassenTyp.Liste(listenKlassenDefinition, listOf(zeichenfolgeTypParameter)),
-            zeichenfolge.zeichenfolge.split(separator.zeichenfolge).map { Wert.Primitiv.Zeichenfolge(it) }.toMutableList())
-      },
+    "trenne die Zeichenfolge zwischen dem Separator" to {
+      val zeichenfolge = umgebung.leseVariable("Zeichenfolge")!!.wert as Wert.Primitiv.Zeichenfolge
+      val separator = umgebung.leseVariable("Separator")!!.wert as Wert.Primitiv.Zeichenfolge
+      // TODO: Das hier ist sehr unschön. Dass ich hier einen TypKnoten erstellen muss. Könnte man da vielleicht etwas dran ändern?
+      val zeichenfolgeTypParameter = AST.TypKnoten(emptyList(), AST.WortArt.Nomen(null,
+          TypedToken(TokenTyp.BEZEICHNER_GROSS(arrayOf("Zeichenfolge"), ""), "Zeichenfolge", "", Token.Position.Ende, Token.Position.Ende)),
+          emptyList()
+      )
+      zeichenfolgeTypParameter.typ = Typ.Primitiv.Zeichenfolge
+      rückgabeWert = Wert.Objekt.Liste(Typ.Compound.KlassenTyp.Liste(listenKlassenDefinition, listOf(zeichenfolgeTypParameter)),
+          zeichenfolge.zeichenfolge.split(separator.zeichenfolge).map { Wert.Primitiv.Zeichenfolge(it) }.toMutableList())
+    },
 
-      "für Liste: enthält den Typ" to  {
-        val liste = aufrufStapel.top().objekt!! as Wert.Objekt.Liste
-        val element = umgebung.leseVariable("Typ")!!.wert
-        rückgabeWert = Wert.Primitiv.Boolean(liste.elemente.contains(element))
-      },
+    "für Liste: enthält den Typ" to  {
+      val liste = aufrufStapel.top().objekt!! as Wert.Objekt.Liste
+      val element = umgebung.leseVariable("Typ")!!.wert
+      rückgabeWert = Wert.Primitiv.Boolean(liste.elemente.contains(element))
+    },
 
-      "für Liste: füge den Typ hinzu" to {
-        val liste = aufrufStapel.top().objekt!! as Wert.Objekt.Liste
-        val element = umgebung.leseVariable("Typ")!!.wert
-        liste.elemente.add(element)
-        // Unit weil sonst gemeckert wird, dass keine Unit zurückgegeben wird
-        Unit
-      },
+    "für Liste: füge den Typ hinzu" to {
+      val liste = aufrufStapel.top().objekt!! as Wert.Objekt.Liste
+      val element = umgebung.leseVariable("Typ")!!.wert
+      liste.elemente.add(element)
+      // Unit weil sonst gemeckert wird, dass keine Unit zurückgegeben wird
+      Unit
+    },
 
-      "für Liste: entferne an dem Index" to {
-        val liste = aufrufStapel.top().objekt!! as Wert.Objekt.Liste
-        val index = umgebung.leseVariable("Index")!!.wert as Wert.Primitiv.Zahl
-        liste.elemente.removeAt(index.toInt())
-        // Unit weil sonst gemeckert wird, dass keine Unit zurückgegeben wird
-        Unit
-      },
+    "für Liste: entferne an dem Index" to {
+      val liste = aufrufStapel.top().objekt!! as Wert.Objekt.Liste
+      val index = umgebung.leseVariable("Index")!!.wert as Wert.Primitiv.Zahl
+      liste.elemente.removeAt(index.toInt())
+      // Unit weil sonst gemeckert wird, dass keine Unit zurückgegeben wird
+      Unit
+    },
 
-      "für Liste: sortiere mich mit dem Vergleichbaren" to {
-        val liste = aufrufStapel.top().objekt!! as Wert.Objekt.Liste
-        val typArg = liste.typ.typArgumente[0].name.nominativ
-        val vergleichbar = umgebung.leseVariable("Vergleichbare")!!.wert
-        liste.elemente.sortWith(kotlin.Comparator { a, b ->
-          (durchlaufeInternenSchnittstellenAufruf(vergleichbar, "vergleiche den ${typArg}A mit dem ${typArg}B", a, b)
-              as Wert.Primitiv.Zahl).zahl.toInt()
-        })
-      }
+    "für Liste: sortiere mich mit dem Vergleichbaren" to {
+      val liste = aufrufStapel.top().objekt!! as Wert.Objekt.Liste
+      val typArg = liste.typ.typArgumente[0].name.nominativ
+      val vergleichbar = umgebung.leseVariable("Vergleichbare")!!.wert
+      liste.elemente.sortWith(kotlin.Comparator { a, b ->
+        (durchlaufeInternenSchnittstellenAufruf(vergleichbar, "vergleiche den ${typArg}A mit dem ${typArg}B", a, b)
+            as Wert.Primitiv.Zahl).zahl.toInt()
+      })
+    }
   )
 
   override fun evaluiereKonvertierung(konvertierung: AST.Ausdruck.Konvertierung): Wert {
@@ -664,9 +667,9 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
         catch (parseFehler: ParseException) {
           val fehlerMeldung = "Die Zeichenfolge '${wert.zeichenfolge}' kann nicht in eine Zahl konvertiert werden."
           val fehlerObjekt = Wert.Objekt.SkriptObjekt(Typ.Compound.KlassenTyp.Klasse(klassenDefinitionen.getValue("KonvertierungsFehler"), emptyList()),
-            mutableMapOf(
-                "FehlerMeldung" to Wert.Primitiv.Zeichenfolge(fehlerMeldung)
-            ))
+              mutableMapOf(
+                  "FehlerMeldung" to Wert.Primitiv.Zeichenfolge(fehlerMeldung)
+              ))
           throw GermanSkriptFehler.UnbehandelterFehler(konvertierung.token, aufrufStapel.toString(), fehlerMeldung, fehlerObjekt)
         }
       }
@@ -703,6 +706,7 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
     }
   }
 }
+
 
 fun main() {
   val interpreter = Interpretierer(File("./iterationen/iter_2/code.gm"))

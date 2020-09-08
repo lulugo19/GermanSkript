@@ -56,77 +56,83 @@ sealed class AST {
     }
   }
 
-  data class Nomen(
-      var vornomen: TypedToken<TokenTyp.VORNOMEN>?,
-      val bezeichner: TypedToken<TokenTyp.BEZEICHNER_GROSS>
-  ): AST() {
-    var deklination: Deklination? = null
-    var vornomenString: String? = null
-    var numerus: Numerus? = null
-    var fälle: EnumSet<Kasus> = EnumSet.noneOf(Kasus::class.java)
+  sealed class WortArt: AST() {
+    abstract val bezeichnerToken: Token
+    abstract var deklination: Deklination?
+    abstract var numerus: Numerus?
+    abstract var fälle: EnumSet<Kasus>
+    abstract var vornomen: TypedToken<TokenTyp.VORNOMEN>?
+    abstract val hauptWort: String
 
-    val unveränderlich = vornomen == null || vornomen!!.typ ==
-        TokenTyp.VORNOMEN.ARTIKEL.BESTIMMT || vornomen!!.typ == TokenTyp.VORNOMEN.DEMONSTRATIV_PRONOMEN.DIESE
-    val istSymbol get() = bezeichner.typ.istSymbol
     val geprüft get() = deklination != null
-    val genus get() = if (istSymbol) Genus.NEUTRUM else deklination!!.genus
-
-    val hauptWort: String get() = bezeichner.typ.hauptWort!!
+    open val genus get() = deklination!!.genus
     val nominativ: String get() = ganzesWort(Kasus.NOMINATIV, numerus!!)
+    val kasus: Kasus get() = fälle.first()
 
-    fun hauptWort(kasus: Kasus, numerus: Numerus): String {
-      if (istSymbol) {
-        return bezeichner.typ.symbol
+    val unveränderlich get() = vornomen == null || vornomen!!.typ ==
+        TokenTyp.VORNOMEN.ARTIKEL.BESTIMMT || vornomen!!.typ == TokenTyp.VORNOMEN.DEMONSTRATIV_PRONOMEN.DIESE
+
+    open fun hauptWort(kasus: Kasus, numerus: Numerus): String = deklination!!.holeForm(kasus, numerus)
+    abstract fun ganzesWort(kasus: Kasus, numerus: Numerus): String
+
+    data class Nomen(
+        override var vornomen: TypedToken<TokenTyp.VORNOMEN>?,
+        val bezeichner: TypedToken<TokenTyp.BEZEICHNER_GROSS>
+    ): WortArt() {
+      override val bezeichnerToken = bezeichner.toUntyped()
+      override var deklination: Deklination? = null
+      override var numerus: Numerus? = null
+      override var fälle: EnumSet<Kasus> = EnumSet.noneOf(Kasus::class.java)
+
+      var vornomenString: String? = null
+      val istSymbol get() = bezeichner.typ.istSymbol
+      override val genus get() = if (istSymbol) Genus.NEUTRUM else deklination!!.genus
+
+      override val hauptWort = if (istSymbol) bezeichner.typ.symbol else bezeichner.typ.hauptWort!!
+
+      override fun ganzesWort(kasus: Kasus, numerus: Numerus): String {
+        if (istSymbol) {
+          return bezeichnerToken.wert
+        }
+        return bezeichner.typ.ersetzeHauptWort(deklination!!.holeForm(kasus, numerus))
       }
-      return deklination!!.holeForm(kasus, numerus)
-    }
 
-    fun ganzesWort(kasus: Kasus, numerus: Numerus): String {
-      if (istSymbol) {
-        return bezeichner.typ.symbol
+      override fun hauptWort(kasus: Kasus, numerus: Numerus): String {
+        if (istSymbol) {
+          return bezeichner.typ.symbol
+        }
+        return super.hauptWort(kasus, numerus)
       }
-      return bezeichner.typ.ersetzeHauptWort(deklination!!.holeForm(kasus, numerus))
+
+      /**
+       * Gibt ein neues Nomen basierend auf dem alten Nomen zurück, bei dem das Hauptwort ausgetauscht wurde.
+       */
+      fun tauscheHauptWortAus(deklination: Deklination): Nomen {
+        val neuesNomen = this.copy()
+        neuesNomen.numerus = this.numerus
+        neuesNomen.deklination = deklination
+        return neuesNomen
+      }
     }
 
-    /**
-     * Gibt ein neues Nomen basierend auf dem alten Nomen zurück, bei dem das Hauptwort ausgetauscht wurde.
-     */
-    fun tauscheHauptWortAus(deklination: Deklination): Nomen {
-      val neuesNomen = this.copy()
-      neuesNomen.numerus = this.numerus
-      neuesNomen.deklination = deklination
-      return neuesNomen
-    }
-  }
+    data class Adjektiv(
+        override var vornomen: TypedToken<TokenTyp.VORNOMEN>?,
+        val bezeichner: TypedToken<TokenTyp.BEZEICHNER_KLEIN>): WortArt() {
 
-  data class Adjektiv(
-      val bezeichner: TypedToken<TokenTyp.BEZEICHNER_KLEIN>,
-      val modulPfad: List<TypedToken<TokenTyp.BEZEICHNER_GROSS>> = emptyList(),
-      val typArgumente: List<TypKnoten> = emptyList(),
-      var normalisierung: String? = null): AST() {
+      override var numerus: Numerus? = null
+      override var deklination: Deklination? = null
+      override var fälle: EnumSet<Kasus> = EnumSet.noneOf(Kasus::class.java)
+      override val bezeichnerToken = bezeichner.toUntyped()
+      var normalisierung: String = ""
 
-    var deklination: Deklination? = null
-
-    override val children = sequence {
-      yieldAll(typArgumente)
-    }
-
-    // wandelt das Adjektiv in einen Typknoten um
-    fun inTypKnoten(): TypKnoten {
-      val nomen = Nomen(null, TypedToken(
-          TokenTyp.BEZEICHNER_GROSS(
-              arrayOf(normalisierung!!), ""),
-          normalisierung!!, bezeichner.dateiPfad, bezeichner.anfang, bezeichner.ende))
-      nomen.deklination = deklination
-      val typKnoten = TypKnoten(modulPfad, nomen, typArgumente)
-      typKnoten.setParentNode(parent!!)
-      return typKnoten
+      override val hauptWort = bezeichner.wert.capitalize()
+      override fun ganzesWort(kasus: Kasus, numerus: Numerus): String = hauptWort(kasus, numerus)
     }
   }
 
   data class TypKnoten(
       val modulPfad: List<TypedToken<TokenTyp.BEZEICHNER_GROSS>>,
-      val name: Nomen,
+      val name: WortArt,
       val typArgumente: List<TypKnoten>
   ): AST() {
     var typ: Typ? = null
@@ -134,8 +140,8 @@ sealed class AST {
       yieldAll(typArgumente)
       yield(name)
     }
-    val vollständigerName: String = modulPfad.joinToString("::") { it.wert } +
-        (if (modulPfad.isEmpty()) "" else "::")  + name.bezeichner.wert
+    val vollständigerName: String get() = modulPfad.joinToString("::") { it.wert } +
+        (if (modulPfad.isEmpty()) "" else "::")  + name.nominativ
   }
 
   interface IAufruf {
@@ -234,7 +240,7 @@ sealed class AST {
 
     data class Parameter(
         val typKnoten: TypKnoten,
-        val name: Nomen
+        val name: WortArt.Nomen
     ): AST() {
       val istPrivat get() = typKnoten.name.vornomen!!.typ is TokenTyp.VORNOMEN.DEMONSTRATIV_PRONOMEN
       val typIstName get() = typKnoten.name === name
@@ -254,7 +260,7 @@ sealed class AST {
     }
 
     data class FunktionsSignatur(
-        val typParameter: List<Nomen>,
+        val typParameter: List<WortArt.Nomen>,
         val rückgabeTyp: TypKnoten?,
         val name: TypedToken<TokenTyp.BEZEICHNER_KLEIN>,
         val reflexivPronomen: TypedToken<TokenTyp.REFLEXIV_PRONOMEN>?,
@@ -297,14 +303,14 @@ sealed class AST {
 
     data class Implementierung(
         val klasse: TypKnoten,
-        val adjektive: List<Adjektiv>,
+        val schnittstellen: List<TypKnoten>,
         val methoden: List<Funktion>,
         val eigenschaften: List<Eigenschaft>,
         val konvertierungen: List<Konvertierung>
     ): Definition() {
       override val children = sequence {
         yield(klasse)
-        yieldAll(adjektive)
+        yieldAll(schnittstellen)
         yieldAll(methoden)
         yieldAll(eigenschaften)
         yieldAll(konvertierungen)
@@ -314,11 +320,11 @@ sealed class AST {
     sealed class Typdefinition: Definition() {
 
       abstract val namensToken: Token
-      abstract val typParameter: List<Nomen>
+      abstract val typParameter: List<WortArt.Nomen>
 
       data class Klasse(
-          override val typParameter: List<Nomen>,
-          val name: Nomen,
+          override val typParameter: List<WortArt.Nomen>,
+          val name: WortArt.Nomen,
           val elternKlasse: TypKnoten?,
           val eigenschaften: MutableList<Parameter>,
           val konstruktor: Satz.Bereich
@@ -344,7 +350,7 @@ sealed class AST {
       }
 
       data class Schnittstelle(
-          override val typParameter: List<Nomen>,
+          override val typParameter: List<WortArt.Nomen>,
           val name: TypedToken<TokenTyp.BEZEICHNER_KLEIN>,
           val methodenSignaturen: List<FunktionsSignatur>
       ): Typdefinition() {
@@ -357,9 +363,9 @@ sealed class AST {
         }
       }
 
-      data class Alias(val name: Nomen, val typ: TypKnoten): Typdefinition() {
+      data class Alias(val name: WortArt.Nomen, val typ: TypKnoten): Typdefinition() {
         override val namensToken = name.bezeichner.toUntyped()
-        override val typParameter = emptyList<Nomen>()
+        override val typParameter = emptyList<WortArt.Nomen>()
         override val children = sequenceOf(name, typ)
       }
     }
@@ -373,7 +379,7 @@ sealed class AST {
 
     data class Eigenschaft(
         val rückgabeTyp: TypKnoten,
-        val name: Nomen,
+        val name: WortArt.Nomen,
         val definition: Satz.Bereich
     ): Definition() {
       override val children = sequenceOf(rückgabeTyp, name, definition)
@@ -412,7 +418,7 @@ sealed class AST {
     }
 
     data class VariablenDeklaration(
-        val name: Nomen,
+        val name: WortArt.Nomen,
         val neu: TypedToken<TokenTyp.NEU>?,
         val zuweisungsOperator: TypedToken<TokenTyp.ZUWEISUNG>,
         var wert: Ausdruck
@@ -463,8 +469,8 @@ sealed class AST {
 
     data class FürJedeSchleife(
         val jede: TypedToken<TokenTyp.JEDE>,
-        val singular: Nomen,
-        val binder: Nomen,
+        val singular: WortArt.Nomen,
+        val binder: WortArt.Nomen,
         val liste: Ausdruck?,
         val reichweite: Reichweite?,
         val bereich: Bereich
@@ -497,11 +503,10 @@ sealed class AST {
     }
 
     data class Fange(
-        val typ: TypKnoten,
-        val binder: Nomen,
+        val param: Definition.Parameter,
         val bereich: Bereich
     ): Satz() {
-      override val children = sequenceOf(typ, binder, bereich)
+      override val children = sequenceOf(param, bereich)
     }
 
     data class Werfe(
@@ -519,7 +524,7 @@ sealed class AST {
       override val children = sequenceOf(aufruf)
     }
 
-    data class MethodenBlock(val name: Nomen, val bereich: Bereich ): Satz() {
+    data class MethodenBlock(val name: WortArt.Nomen, val bereich: Bereich ): Satz() {
       override val children = sequenceOf(name, bereich)
     }
 
@@ -537,8 +542,8 @@ sealed class AST {
   }
 
   data class Argument(
-      val adjektiv: Adjektiv?,
-      val name: Nomen,
+      val adjektiv: WortArt.Adjektiv?,
+      val name: WortArt.Nomen,
       var ausdruck: Ausdruck
   ): AST() {
 
@@ -562,7 +567,7 @@ sealed class AST {
 
     data class Boolean(val boolean: TypedToken<TokenTyp.BOOLEAN>) : Ausdruck()
 
-    data class Variable(val name: Nomen) : Ausdruck() {
+    data class Variable(val name: WortArt.Nomen) : Ausdruck() {
       override val children = sequenceOf(name)
       var konstante: Konstante? = null
     }
@@ -585,7 +590,7 @@ sealed class AST {
     }
 
     data class ListenElement(
-        val singular: Nomen,
+        val singular: WortArt.Nomen,
         var index: Ausdruck
     ): Ausdruck() {
       override val children = sequenceOf(singular, index)
@@ -612,8 +617,9 @@ sealed class AST {
         var ausdruck: Ausdruck,
         val typ: TypKnoten
     ): Ausdruck(), IAufruf {
-      override val token = typ.name.bezeichner.toUntyped()
-      override val vollerName = "als ${typ.name}"
+      val typName = typ.name as WortArt.Nomen
+      override val token = typName.bezeichner.toUntyped()
+      override val vollerName get() = "als ${typName.nominativ}"
 
       override val children = sequenceOf(ausdruck, typ)
     }
@@ -627,7 +633,8 @@ sealed class AST {
         yieldAll(eigenschaftsZuweisungen)
       }
 
-      override val token: Token = klasse.name.bezeichner.toUntyped()
+      private val klassenName = (klasse.name) as WortArt.Nomen
+      override val token: Token = klassenName.bezeichner.toUntyped()
 
       override val vollerName: String get() {
         val artikel = when (klasse.name.genus) {
@@ -635,7 +642,7 @@ sealed class AST {
           Genus.FEMININUM -> "die"
           Genus.NEUTRUM -> "das"
         }
-        return "erstelle $artikel ${klasse.name.ganzesWort(Kasus.NOMINATIV, Numerus.SINGULAR)}"
+        return "erstelle $artikel ${klassenName.ganzesWort(Kasus.NOMINATIV, Numerus.SINGULAR)}"
       }
     }
 
@@ -644,12 +651,12 @@ sealed class AST {
     }
 
     interface IEigenschaftsZugriff: IAufruf {
-      val eigenschaftsName: Nomen
+      val eigenschaftsName: WortArt.Nomen
       var aufrufName: String?
     }
 
     data class EigenschaftsZugriff(
-        override val eigenschaftsName: Nomen,
+        override val eigenschaftsName: WortArt.Nomen,
         val objekt: Ausdruck
     ): Ausdruck(), IEigenschaftsZugriff {
       override val children = sequenceOf(eigenschaftsName , objekt)
@@ -659,7 +666,7 @@ sealed class AST {
     }
 
     data class MethodenBlockEigenschaftsZugriff(
-        override val eigenschaftsName: Nomen
+        override val eigenschaftsName: WortArt.Nomen
     ): Ausdruck(), IEigenschaftsZugriff {
       override val children = sequenceOf(eigenschaftsName)
       override val token = eigenschaftsName.bezeichner.toUntyped()
@@ -668,7 +675,7 @@ sealed class AST {
     }
 
     data class SelbstEigenschaftsZugriff(
-        override val eigenschaftsName: Nomen
+        override val eigenschaftsName: WortArt.Nomen
     ): Ausdruck(), IEigenschaftsZugriff {
       override val children = sequenceOf(eigenschaftsName)
       override val token = eigenschaftsName.bezeichner.toUntyped()

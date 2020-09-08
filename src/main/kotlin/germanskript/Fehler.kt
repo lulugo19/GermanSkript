@@ -127,16 +127,16 @@ sealed class GermanSkriptFehler(private val fehlerName: String, val token: Token
 
   sealed class GrammatikFehler(token: Token): GermanSkriptFehler("Grammatikfehler",token) {
 
-    sealed class FormFehler(token: Token, protected val kasus: Kasus, protected val nomen: AST.Nomen): GrammatikFehler(token) {
+    sealed class FormFehler(token: Token, protected val kasus: Kasus, protected val nomen: AST.WortArt.Nomen): GrammatikFehler(token) {
       val form get() = "(${kasus.anzeigeName}, ${nomen.genus.anzeigeName}, ${nomen.numerus!!.anzeigeName})"
 
-      class FalschesVornomen(token: Token, kasus: Kasus, nomen: AST.Nomen, private val richtigesVornomen: String) : FormFehler(token, kasus, nomen) {
+      class FalschesVornomen(token: Token, kasus: Kasus, nomen: AST.WortArt.Nomen, private val richtigesVornomen: String) : FormFehler(token, kasus, nomen) {
         override val nachricht: String
           get() = "Falsches Vornomen (${token.typ.anzeigeName}) '${token.wert} ${nomen.bezeichner.wert}'.\n" +
               "Das richtige Vornomen $form ist '$richtigesVornomen ${nomen.bezeichner.wert}'."
       }
 
-      class FalschesNomen(token: Token, kasus: Kasus, nomen: AST.Nomen, private val richtigeForm: String) : FormFehler(token, kasus, nomen) {
+      class FalschesNomen(token: Token, kasus: Kasus, nomen: AST.WortArt.Nomen, private val richtigeForm: String) : FormFehler(token, kasus, nomen) {
         override val nachricht: String
           get() = "Falsche Form des Nomens '${token.wert}'. Die richtige Form $form ist '$richtigeForm'."
       }
@@ -183,7 +183,7 @@ sealed class GermanSkriptFehler(private val fehlerName: String, val token: Token
     class Konvertierung(token: Token, private val konvertierung: AST.Definition.Konvertierung): DoppelteDefinition(token) {
       override val nachricht: String
         get() = "Die Konvertierung von '${konvertierung.typ.name.nominativ}' zu '${konvertierung.typ.name.nominativ}'\n" +
-            "ist schon in ${konvertierung.typ.name.bezeichner.position} definiert."
+            "ist schon in ${konvertierung.typ.name.bezeichnerToken.position} definiert."
     }
 
     class Eigenschaft(token: Token, eigenschaft: AST.Definition.Eigenschaft): DoppelteDefinition(token) {
@@ -201,7 +201,7 @@ sealed class GermanSkriptFehler(private val fehlerName: String, val token: Token
     override val nachricht = "Die Klasse '${klasse.namensToken.wert}' hat bereits eine Eigenschaft mit dem Namen ${token.wert}."
   }
 
-  class Variablenfehler(token: Token, deklaration: AST.Nomen): GermanSkriptFehler("Variablen Fehler", token) {
+  class Variablenfehler(token: Token, deklaration: AST.WortArt.Nomen): GermanSkriptFehler("Variablen Fehler", token) {
     override val nachricht = "Die Variable '${token.wert}' ist schon in ${deklaration.bezeichner.position} deklariert und kann nicht erneut deklariert werden."
   }
 

@@ -59,13 +59,13 @@ abstract  class ProgrammDurchlaufer<T>(startDatei: File): PipelineKomponente(sta
       is AST.Ausdruck.BinärerAusdruck -> holeErstesTokenVonAusdruck(ausdruck.links)
       is AST.Ausdruck.Minus -> holeErstesTokenVonAusdruck(ausdruck.ausdruck)
       is AST.Ausdruck.Konvertierung -> holeErstesTokenVonAusdruck(ausdruck.ausdruck)
-      is AST.Ausdruck.ObjektInstanziierung -> ausdruck.klasse.name.bezeichner.toUntyped()
+      is AST.Ausdruck.ObjektInstanziierung -> ausdruck.klasse.name.bezeichnerToken
       is AST.Ausdruck.EigenschaftsZugriff -> ausdruck.eigenschaftsName.bezeichner.toUntyped()
       is AST.Ausdruck.SelbstEigenschaftsZugriff -> ausdruck.eigenschaftsName.bezeichner.toUntyped()
       is AST.Ausdruck.MethodenBlockEigenschaftsZugriff -> ausdruck.eigenschaftsName.bezeichner.toUntyped()
       is AST.Ausdruck.SelbstReferenz -> ausdruck.ich.toUntyped()
       is AST.Ausdruck.MethodenBlockReferenz -> ausdruck.du.toUntyped()
-      is AST.Ausdruck.Closure -> ausdruck.schnittstelle.name.bezeichner.toUntyped()
+      is AST.Ausdruck.Closure -> ausdruck.schnittstelle.name.bezeichnerToken
       is AST.Ausdruck.Konstante -> ausdruck.name.toUntyped()
     }
   }
@@ -126,7 +126,7 @@ abstract  class ProgrammDurchlaufer<T>(startDatei: File): PipelineKomponente(sta
     }
   }
 
-  protected open fun evaluiereVariable(name: AST.Nomen): T {
+  protected open fun evaluiereVariable(name: AST.WortArt.Nomen): T {
     return umgebung.leseVariable(name).wert
   }
 

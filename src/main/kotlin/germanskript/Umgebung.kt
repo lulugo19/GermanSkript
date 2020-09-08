@@ -3,7 +3,7 @@ package germanskript
 import java.util.*
 import kotlin.collections.HashMap
 
-data class Variable<T>(val name: AST.Nomen, val wert: T)
+data class Variable<T>(val name: AST.WortArt.Nomen, val wert: T)
 
 class Bereich<T>(val methodenBlockObjekt: T?) {
   val variablen: HashMap<String, Variable<T>> = HashMap()
@@ -14,7 +14,7 @@ class Umgebung<T>() {
 
   val istLeer get() = bereiche.empty()
 
-  fun leseVariable(varName: AST.Nomen): Variable<T> {
+  fun leseVariable(varName: AST.WortArt.Nomen): Variable<T> {
     return  leseVariable(varName.nominativ)?: throw GermanSkriptFehler.Undefiniert.Variable(varName.bezeichner.toUntyped())
   }
 
@@ -22,7 +22,7 @@ class Umgebung<T>() {
       return bereiche.findLast { bereich -> bereich.variablen.containsKey(varName) }?.variablen?.get(varName)
   }
 
-  fun schreibeVariable(varName: AST.Nomen, wert: T, überschreibe: Boolean) {
+  fun schreibeVariable(varName: AST.WortArt.Nomen, wert: T, überschreibe: Boolean) {
     val variablen = bereiche.peek()!!.variablen
     if (!überschreibe && variablen.containsKey(varName.nominativ)) {
       throw GermanSkriptFehler.Variablenfehler(varName.bezeichner.toUntyped(), variablen.getValue(varName.nominativ).name)
@@ -30,7 +30,7 @@ class Umgebung<T>() {
     variablen[varName.nominativ] = Variable(varName, wert)
   }
 
-  fun überschreibeVariable(varName: AST.Nomen, wert: T) {
+  fun überschreibeVariable(varName: AST.WortArt.Nomen, wert: T) {
     val bereich = bereiche.findLast {it.variablen.containsKey(varName.nominativ) }
     if (bereich != null) {
       bereich.variablen[varName.nominativ] = Variable(varName, wert)
