@@ -123,7 +123,7 @@ class GrammatikPrüfer(startDatei: File): PipelineKomponente(startDatei) {
       return
     }
     val vorNomen = nomen.vornomen!!
-    val ersterFall = nomen.fälle.first()
+    val ersterFall = nomen.kasus
     for (kasus in nomen.fälle) {
       val erwartetesVornomen = holeVornomen(vorNomen.typ, kasus, nomen.genus, nomen.numerus!!)
       if (vorNomen.wert == erwartetesVornomen) {
@@ -151,7 +151,7 @@ class GrammatikPrüfer(startDatei: File): PipelineKomponente(startDatei) {
 
   private fun prüfeNumerus(nomen: AST.WortArt.Nomen, numerus: Numerus) {
     if (nomen.numerus!! != numerus) {
-      val numerusForm = deklinierer.holeDeklination(nomen).holeForm(nomen.fälle.first(), numerus)
+      val numerusForm = deklinierer.holeDeklination(nomen).holeForm(nomen.kasus, numerus)
       throw GermanSkriptFehler.GrammatikFehler.FalscherNumerus(nomen.bezeichner.toUntyped(), numerus, numerusForm)
     }
   }
@@ -343,7 +343,7 @@ class GrammatikPrüfer(startDatei: File): PipelineKomponente(startDatei) {
     prüfeTyp(parameter.typKnoten, fälle, Numerus.BEIDE, parameter.name)
     if (parameter.name.vornomenString == null) {
       val paramName = parameter.name
-      paramName.vornomenString = holeVornomen(TokenTyp.VORNOMEN.ARTIKEL.BESTIMMT, parameter.typKnoten.name.fälle.first(), paramName.genus, paramName.numerus!!)
+      paramName.vornomenString = holeVornomen(TokenTyp.VORNOMEN.ARTIKEL.BESTIMMT, parameter.typKnoten.name.kasus, paramName.genus, paramName.numerus!!)
     }
   }
 

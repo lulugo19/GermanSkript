@@ -110,10 +110,9 @@ class KonstantenFalter(startDatei: File): ProgrammDurchlaufer<Wert?>(startDatei)
 
   override fun evaluiereVariable(name: AST.WortArt.Nomen): Wert? {
     val geleseneVariablen = geleseneVariablen.peek()
-    if (geleseneVariablen.containsKey(name.nominativ)) {
-      geleseneVariablen.getValue(name.nominativ).wurdeGelesen = true
+    geleseneVariablen[name.nominativ]?.also { variable ->
+      variable.wurdeGelesen = true
     }
-
     return super.evaluiereVariable(name)
   }
 

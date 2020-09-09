@@ -199,11 +199,11 @@ class Definierer(startDatei: File): PipelineKomponente(startDatei) {
     val paramName = holeParamName(param)
     val artikel = GrammatikPrüfer.holeVornomen(
         TokenTyp.VORNOMEN.ARTIKEL.BESTIMMT,
-        param.typKnoten.name.fälle.first(),
+        param.typKnoten.name.kasus,
         paramName.genus,
         param.name.numerus!!
     )
-    return " " + artikel + " " + paramName.hauptWort(param.name.fälle.first(), param.name.numerus!!)
+    return " " + artikel + " " + paramName.hauptWort(param.name.kasus, param.name.numerus!!)
   }
 
   fun holeVollenNamenVonFunktionsSignatur(

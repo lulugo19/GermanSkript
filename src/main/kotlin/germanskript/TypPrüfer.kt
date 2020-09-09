@@ -334,18 +334,16 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
       if (klasse is Typ.Compound.KlassenTyp) {
         val methoden = klasse.definition.methoden
         val klassenTyp = klasse.definition.name
-        val reflexivPronomen = when (funktionsAufruf.objekt.name.fälle.first()) {
+        val reflexivPronomen = when (funktionsAufruf.objekt.name.kasus) {
           Kasus.AKKUSATIV -> "mich"
           Kasus.DATIV -> "mir"
           else -> throw Exception("Dieser Fall sollte nie eintreten, da der Grammatikprüfer dies überprüfen sollte. "
               + "${klassenTyp.bezeichner}")
         }
         val methodenName = definierer.holeVollenNamenVonFunktionsAufruf(funktionsAufruf, reflexivPronomen)
-        if (methoden.containsKey(methodenName)) {
-          //funktionsAufruf.vollerName = "für ${klassenTyp.bezeichner}: ${methodenName}"
-          //funktionsAufruf.funktionsDefinition = methoden.getValue(methodenName)
+        methoden[methodenName]?.also { methode ->
           funktionsSignatur = methoden.getValue(methodenName).signatur
-          funktionsAufruf.vollerName = funktionsSignatur.vollerName
+          funktionsAufruf.vollerName = methode.signatur.vollerName
           funktionsAufruf.aufrufTyp = FunktionsAufrufTyp.METHODEN_OBJEKT_AUFRUF
         }
       }
@@ -355,16 +353,16 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
       throw undefiniertFehler!!
     }
 
-    if (istAusdruck && funktionsSignatur.rückgabeTyp == null) {
-      throw GermanSkriptFehler.SyntaxFehler.FunktionAlsAusdruckFehler(funktionsSignatur.name.toUntyped())
+    if (istAusdruck && funktionsSignatur!!.rückgabeTyp == null) {
+      throw GermanSkriptFehler.SyntaxFehler.FunktionAlsAusdruckFehler(funktionsSignatur!!.name.toUntyped())
     }
 
-    val parameter = funktionsSignatur.parameter
+    val parameter = funktionsSignatur!!.parameter
     val argumente = funktionsAufruf.argumente
     val j = if (funktionsAufruf.aufrufTyp == FunktionsAufrufTyp.METHODEN_OBJEKT_AUFRUF) 1 else 0
     val anzahlArgumente = argumente.size - j
     if (anzahlArgumente != parameter.size) {
-      throw GermanSkriptFehler.SyntaxFehler.AnzahlDerParameterFehler(funktionsSignatur.name.toUntyped())
+      throw GermanSkriptFehler.SyntaxFehler.AnzahlDerParameterFehler(funktionsSignatur!!.name.toUntyped())
     }
 
     // stimmen die Argument Typen mit den Parameter Typen überein?
@@ -379,7 +377,7 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
     }
     letzterFunktionsAufruf = null
 
-    return funktionsSignatur.rückgabeTyp?.typ
+    return funktionsSignatur!!.rückgabeTyp?.typ
   }
 
   private fun findeMethode(
@@ -403,30 +401,29 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
     }
 
     // ist Methodenaufruf von Block-Variable
-    if (typ.definition.methoden.containsKey(funktionsAufruf.vollerName!!)) {
-      val methodenDefinition = typ.definition.methoden.getValue(funktionsAufruf.vollerName!!)
+    typ.definition.methoden[funktionsAufruf.vollerName!!]?.also { methode ->
       if (aufrufTyp == FunktionsAufrufTyp.METHODEN_SELBST_AUFRUF) {
-        funktionsAufruf.funktionsDefinition = methodenDefinition
+        funktionsAufruf.funktionsDefinition = methode
         funktionsAufruf.vollerName = "für ${typ}: ${funktionsAufruf.vollerName}"
       }
       funktionsAufruf.aufrufTyp = aufrufTyp
-      return methodenDefinition.signatur
+      return methode.signatur
     }
 
     if (typ.definition.typParameter.isNotEmpty()) {
       // TODO: hier müssen nicht nur TypTypParameter sondern auch die FunktionTypParameter berücksichtigt werden
       val ersetzeTypArgsName = definierer.holeVollenNamenVonFunktionsAufruf(
           funktionsAufruf, typ.definition.typParameter, typ.typArgumente)
-      if (typ.definition.methoden.containsKey(ersetzeTypArgsName)) {
+
+      typ.definition.methoden[ersetzeTypArgsName]?.also { methode ->
         // TODO: Die Typparameternamen müssen für den Interpreter später hier ersetzt werden
-        val methodenDefinition = typ.definition.methoden.getValue(ersetzeTypArgsName)
         funktionsAufruf.vollerName = ersetzeTypArgsName
         if (aufrufTyp == FunktionsAufrufTyp.METHODEN_SELBST_AUFRUF) {
-          funktionsAufruf.funktionsDefinition = methodenDefinition
+          funktionsAufruf.funktionsDefinition = methode
           funktionsAufruf.vollerName = "für ${typ}: ${funktionsAufruf.vollerName}"
         }
         funktionsAufruf.aufrufTyp = aufrufTyp
-        return methodenDefinition.signatur
+        return methode.signatur
       }
     }
 
