@@ -246,9 +246,9 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
       }
     } else {
       val liste = if (schleife.liste != null) {
-        evaluiereAusdruck(schleife.liste) as Wert.Objekt.Liste
+        evaluiereAusdruck(schleife.liste) as Wert.Objekt.InternesObjekt.Liste
       } else {
-        evaluiereVariable(schleife.singular.ganzesWort(Kasus.NOMINATIV, Numerus.PLURAL))!! as Wert.Objekt.Liste
+        evaluiereVariable(schleife.singular.ganzesWort(Kasus.NOMINATIV, Numerus.PLURAL))!! as Wert.Objekt.InternesObjekt.Liste
       }
       umgebung.pushBereich()
       for (element in liste.elemente) {
@@ -307,11 +307,12 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
   }
 
   override fun durchlaufeIntern(intern: AST.Satz.Intern) {
-    val lookUpName = when (val objekt = aufrufStapel.top().objekt) {
-      is Wert.Objekt -> "für ${objekt.typ.definition.name.nominativ}: ${aufrufStapel.top().aufruf.vollerName!!}"
-      else -> aufrufStapel.top().aufruf.vollerName!!
+    val funktionsName = aufrufStapel.top().aufruf.vollerName!!
+    rückgabeWert = when (val objekt = aufrufStapel.top().objekt) {
+      is Wert.Objekt ->
+        (objekt as Wert.Objekt.InternesObjekt).rufeMethodeAuf(funktionsName, umgebung, ::durchlaufeInternenSchnittstellenAufruf)
+      else -> interneFunktionen.getValue(funktionsName)()
     }
-    return interneFunktionen.getValue(lookUpName)()
   }
 
   override fun bevorDurchlaufeMethodenBlock(methodenBlock: AST.Satz.MethodenBlock, blockObjekt: Wert?) {
@@ -343,7 +344,7 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
   override fun evaluiereKonstante(konstante: AST.Ausdruck.Konstante): Wert = evaluiereAusdruck(konstante.wert!!)
 
   override fun evaluiereListe(ausdruck: AST.Ausdruck.Liste): Wert {
-    return Wert.Objekt.Liste(
+    return Wert.Objekt.InternesObjekt.Liste(
         Typ.Compound.KlassenTyp.Liste(listenKlassenDefinition, listOf(ausdruck.pluralTyp)),
         ausdruck.elemente.map(::evaluiereAusdruck).toMutableList()
     )
@@ -417,7 +418,7 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
         zahlOperation(operator, links, rechts)
       }
       is Wert.Primitiv.Boolean -> booleanOperation(operator, links, rechts as Wert.Primitiv.Boolean)
-      is Wert.Objekt.Liste -> listenOperation(operator, links, rechts as Wert.Objekt.Liste)
+      is Wert.Objekt.InternesObjekt.Liste -> listenOperation(operator, links, rechts as Wert.Objekt.InternesObjekt.Liste)
       else -> throw Exception("Typprüfer sollte disen Fehler verhindern.")
     }
   }
@@ -467,7 +468,7 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
   }
 }
 
-  private fun listenOperation(operator: Operator, links: Wert.Objekt.Liste, rechts: Wert.Objekt.Liste): Wert {
+  private fun listenOperation(operator: Operator, links: Wert.Objekt.InternesObjekt.Liste, rechts: Wert.Objekt.InternesObjekt.Liste): Wert {
     return when (operator) {
       Operator.PLUS ->links + rechts
       else -> throw Exception("Operator $operator ist für den Typen Liste nicht definiert.")
@@ -491,7 +492,7 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
       return Wert.Primitiv.Zeichenfolge(zeichenfolge[index].toString())
     }
 
-    val liste = evaluiereVariable(listenElement.singular.ganzesWort(Kasus.NOMINATIV, Numerus.PLURAL)) as Wert.Objekt.Liste
+    val liste = evaluiereVariable(listenElement.singular.ganzesWort(Kasus.NOMINATIV, Numerus.PLURAL)) as Wert.Objekt.InternesObjekt.Liste
 
     if (index >= liste.elemente.size) {
       throw GermanSkriptFehler.LaufzeitFehler(holeErstesTokenVonAusdruck(listenElement.index),
@@ -506,7 +507,7 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
   // endregion
 
 
-  private fun durchlaufeInternenSchnittstellenAufruf(wert: Wert, name: String, vararg argumente: Wert): Wert? {
+  private fun durchlaufeInternenSchnittstellenAufruf(wert: Wert, name: String, argumente: Array<Wert>): Wert? {
     val (funktionsUmgebung, körper, parameterNamen) = when (wert) {
       is Wert.Objekt -> {
         val methode = wert.typ.definition.methoden.getValue(name)
@@ -524,74 +525,77 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
   }
 
   // region interne Funktionen
-  private val interneFunktionen = mapOf<String, () -> (Unit)>(
+  private val interneFunktionen = mapOf<String, () -> (Wert?)>(
     "schreibe die Zeichenfolge" to {
       val zeichenfolge = umgebung.leseVariable("Zeichenfolge")!!.wert as Wert.Primitiv.Zeichenfolge
       print(zeichenfolge)
+      null
     },
 
     "schreibe die Zeile" to {
       val zeile = umgebung.leseVariable("Zeile")!!.wert as Wert.Primitiv.Zeichenfolge
       println(zeile)
+      null
     },
 
     "schreibe die Zahl" to {
       val zahl = umgebung.leseVariable("Zahl")!!.wert as Wert.Primitiv.Zahl
       println(zahl)
+      null
     },
 
     "lese" to {
-      rückgabeWert = Wert.Primitiv.Zeichenfolge(readLine()!!)
+      Wert.Primitiv.Zeichenfolge(readLine()!!)
     },
 
     "runde die Zahl" to {
       val zahl = umgebung.leseVariable("Zahl")!!.wert as Wert.Primitiv.Zahl
-      rückgabeWert = Wert.Primitiv.Zahl(round(zahl.zahl))
+      Wert.Primitiv.Zahl(round(zahl.zahl))
     },
 
     "runde die Zahl ab" to {
       val zahl = umgebung.leseVariable("Zahl")!!.wert as Wert.Primitiv.Zahl
-      rückgabeWert = Wert.Primitiv.Zahl(floor(zahl.zahl))
+      Wert.Primitiv.Zahl(floor(zahl.zahl))
     },
 
     "runde die Zahl auf" to {
       val zahl = umgebung.leseVariable("Zahl")!!.wert as Wert.Primitiv.Zahl
-      rückgabeWert = Wert.Primitiv.Zahl(ceil(zahl.zahl))
+      Wert.Primitiv.Zahl(ceil(zahl.zahl))
     },
 
     "sinus von der Zahl" to {
       val zahl = umgebung.leseVariable("Zahl")!!.wert as Wert.Primitiv.Zahl
-      rückgabeWert = Wert.Primitiv.Zahl(sin(zahl.zahl))
+      Wert.Primitiv.Zahl(sin(zahl.zahl))
     },
 
     "cosinus von der Zahl" to {
       val zahl = umgebung.leseVariable("Zahl")!!.wert as Wert.Primitiv.Zahl
-      rückgabeWert = Wert.Primitiv.Zahl(cos(zahl.zahl))
+      Wert.Primitiv.Zahl(cos(zahl.zahl))
     },
 
     "tangens von der Zahl" to {
       val zahl = umgebung.leseVariable("Zahl")!!.wert as Wert.Primitiv.Zahl
-      rückgabeWert = Wert.Primitiv.Zahl(tan(zahl.zahl))
+      Wert.Primitiv.Zahl(tan(zahl.zahl))
     },
 
     "randomisiere" to {
-      rückgabeWert = Wert.Primitiv.Zahl(Random.nextDouble())
+      Wert.Primitiv.Zahl(Random.nextDouble())
     },
 
     "randomisiere zwischen dem Minimum, dem Maximum" to {
       val min = umgebung.leseVariable("Minimum")!!.wert as Wert.Primitiv.Zahl
       val max = umgebung.leseVariable("Maximum")!!.wert as Wert.Primitiv.Zahl
-      rückgabeWert = Wert.Primitiv.Zahl(Random.nextDouble(min.zahl, max.zahl))
+      Wert.Primitiv.Zahl(Random.nextDouble(min.zahl, max.zahl))
     },
 
     "buchstabiere die Zeichenfolge groß" to {
       val wert = umgebung.leseVariable("Zeichenfolge")!!.wert as Wert.Primitiv.Zeichenfolge
-      rückgabeWert = Wert.Primitiv.Zeichenfolge(wert.zeichenfolge.toUpperCase())
+      Wert.Primitiv.Zeichenfolge(wert.zeichenfolge.toUpperCase())
     },
 
     "buchstabiere die Zeichenfolge klein" to {
       val wert = umgebung.leseVariable("Zeichenfolge")!!.wert as Wert.Primitiv.Zeichenfolge
-      rückgabeWert = Wert.Primitiv.Zeichenfolge(wert.zeichenfolge.toLowerCase())
+      Wert.Primitiv.Zeichenfolge(wert.zeichenfolge.toLowerCase())
     },
 
     "trenne die Zeichenfolge zwischen dem Separator" to {
@@ -603,40 +607,8 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
           emptyList()
       )
       zeichenfolgeTypParameter.typ = Typ.Primitiv.Zeichenfolge
-      rückgabeWert = Wert.Objekt.Liste(Typ.Compound.KlassenTyp.Liste(listenKlassenDefinition, listOf(zeichenfolgeTypParameter)),
+      Wert.Objekt.InternesObjekt.Liste(Typ.Compound.KlassenTyp.Liste(listenKlassenDefinition, listOf(zeichenfolgeTypParameter)),
           zeichenfolge.zeichenfolge.split(separator.zeichenfolge).map { Wert.Primitiv.Zeichenfolge(it) }.toMutableList())
-    },
-
-    "für Liste: enthalten den Typ" to  {
-      val liste = aufrufStapel.top().objekt!! as Wert.Objekt.Liste
-      val element = umgebung.leseVariable("Typ")!!.wert
-      rückgabeWert = Wert.Primitiv.Boolean(liste.elemente.contains(element))
-    },
-
-    "für Liste: füge den Typ hinzu" to {
-      val liste = aufrufStapel.top().objekt!! as Wert.Objekt.Liste
-      val element = umgebung.leseVariable("Typ")!!.wert
-      liste.elemente.add(element)
-      // Unit weil sonst gemeckert wird, dass keine Unit zurückgegeben wird
-      Unit
-    },
-
-    "für Liste: entferne an dem Index" to {
-      val liste = aufrufStapel.top().objekt!! as Wert.Objekt.Liste
-      val index = umgebung.leseVariable("Index")!!.wert as Wert.Primitiv.Zahl
-      liste.elemente.removeAt(index.toInt())
-      // Unit weil sonst gemeckert wird, dass keine Unit zurückgegeben wird
-      Unit
-    },
-
-    "für Liste: sortiere mich mit dem Vergleichbaren" to {
-      val liste = aufrufStapel.top().objekt!! as Wert.Objekt.Liste
-      val typArg = liste.typ.typArgumente[0].name.nominativ
-      val vergleichbar = umgebung.leseVariable("Vergleichbare")!!.wert
-      liste.elemente.sortWith(kotlin.Comparator { a, b ->
-        (durchlaufeInternenSchnittstellenAufruf(vergleichbar, "vergleiche den ${typArg}A mit dem ${typArg}B", a, b)
-            as Wert.Primitiv.Zahl).zahl.toInt()
-      })
     }
   )
 
