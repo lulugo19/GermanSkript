@@ -45,9 +45,9 @@ class GermanSkriptTest {
     val quellCode = """
       schreibe die Zeile "Hallo Welt"
     """.trimIndent()
-    val expectedOutput = "Hallo Welt\n"
+    val erwarteteAusgabe = "Hallo Welt\n"
 
-    testeGermanSkriptCode(quellCode, expectedOutput)
+    testeGermanSkriptCode(quellCode, erwarteteAusgabe)
   }
 
   @Test
@@ -560,7 +560,7 @@ class GermanSkriptTest {
   @Test
   @DisplayName("Schnittstelle 2")
   fun schnittstelle2() {
-    val source = """
+    val quellCode = """
       Deklination Neutrum Singular(Fenster, Fensters, Fenster, Fenster) Plural(Fenster)
       
       Adjektiv klickbar:
@@ -579,9 +579,9 @@ class GermanSkriptTest {
       
       Implementiere das klickbare Fenster:
           Verb klick mich:
-          meine AnZahl ist meine AnZahl plus 1
-          schreibe die Zeile "Das Fenster wurde zum #{meine AnZahl}. angeklickt!"
-        .
+            meine AnZahl ist meine AnZahl plus 1
+            schreibe die Zeile "Das Fenster wurde zum #{meine AnZahl}. angeklickt!"
+          .
       .
 
       das Fenster ist ein Fenster
@@ -590,13 +590,13 @@ class GermanSkriptTest {
       klick das Fenster
     """.trimIndent()
 
-    val expectedOutput = """
+    val erwarteteAusgabe = """
       Das Fenster wurde zum 1. angeklickt!
       Das Fenster wurde zum 2. angeklickt!
       
     """.trimIndent()
 
-    testeGermanSkriptCode(source, expectedOutput)
+    testeGermanSkriptCode(quellCode, erwarteteAusgabe)
   }
 
   @Test
@@ -1090,13 +1090,13 @@ class GermanSkriptTest {
   }
 
   @Test
-  @DisplayName("Liste (füge hinzu, enthält)")
+  @DisplayName("Liste (füge hinzu, enthalten)")
   fun liste() {
     val quellCode = """
       die Zahlen sind einige Zahlen[1, 2, 3, 4]
       Zahlen:
         füge die Zahl 5 hinzu
-        wenn enthält die Zahl 5:
+        wenn enthalten die Zahl 5:
           schreibe die Zeile "Die Zahl 5 wurde hinzugefügt!"
         .
       !
@@ -1325,5 +1325,19 @@ class GermanSkriptTest {
     """.trimIndent()
 
     testeGermanSkriptCode(quellCode, erwarteteAusgabe)
+  }
+
+  @Test
+  @DisplayName("Bedingungs-Aufrufweise einer Methode")
+  fun bedingungsAufrufweiseEinerMethode() {
+    val quellCode = """
+      die Zahlen sind einige Zahlen [0, 1, 2, 3]
+
+      wenn die Zahlen die Zahl 3 enthalten:
+        schreibe die Zeile "3 ist enthalten"
+      .
+    """.trimIndent()
+
+    testeGermanSkriptCode(quellCode, "3 ist enthalten\n")
   }
 }

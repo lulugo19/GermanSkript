@@ -15,6 +15,7 @@ enum class FunktionsAufrufTyp {
   METHODEN_SELBST_AUFRUF,
   METHODEN_BLOCK_AUFRUF,
   METHODEN_OBJEKT_AUFRUF,
+  METHODEN_SUBJEKT_AUFRUF,
 }
 
 sealed class AST {
@@ -187,18 +188,19 @@ sealed class AST {
     }
   }
 
-  data class Funktion(
+  data class FunktionsAufruf(
       val typArgumente: List<TypKnoten>,
       val modulPfad: List<TypedToken<TokenTyp.BEZEICHNER_GROSS>>,
+      val subjekt: Ausdruck?,
       val verb: TypedToken<TokenTyp.BEZEICHNER_KLEIN>,
       val objekt: Argument?,
       val reflexivPronomen: TypedToken<TokenTyp.REFLEXIV_PRONOMEN>?,
       val präpositionsArgumente: List<PräpositionsArgumente>,
-      val suffix: TypedToken<TokenTyp.BEZEICHNER_KLEIN>?,
-      override var vollerName: String? = null
+      val suffix: TypedToken<TokenTyp.BEZEICHNER_KLEIN>?
   ) : AST(), IAufruf {
     override val token = verb.toUntyped()
 
+    override var vollerName: String? = null
     private val _argumente: MutableList<Argument> = mutableListOf()
     val argumente: List<Argument> = _argumente
     var funktionsDefinition: Definition.Funktion? = null
@@ -216,6 +218,9 @@ sealed class AST {
     }
 
     override val children = sequence {
+      if (subjekt != null) {
+        yield(subjekt!!)
+      }
       yieldAll(typArgumente)
       if (objekt != null) {
         yield(objekt!!)
@@ -432,7 +437,7 @@ sealed class AST {
     data class BedingungsTerm(
         var bedingung: Ausdruck,
         val bereich: Bereich
-    ): AST() {
+    ): Satz() {
       override val children = sequence {
           yield(bedingung)
           yield(bereich)
@@ -520,7 +525,7 @@ sealed class AST {
       override val children = sequenceOf(anfang, ende)
     }
 
-    data class FunktionsAufruf(val aufruf: Funktion): Satz() {
+    data class FunktionsAufruf(val aufruf: AST.FunktionsAufruf): Satz() {
       override val children = sequenceOf(aufruf)
     }
 
@@ -596,7 +601,7 @@ sealed class AST {
       override val children = sequenceOf(singular, index)
     }
 
-    data class FunktionsAufruf(val aufruf: Funktion): Ausdruck() {
+    data class FunktionsAufruf(val aufruf: AST.FunktionsAufruf): Ausdruck() {
       override val children = sequenceOf(aufruf)
     }
 

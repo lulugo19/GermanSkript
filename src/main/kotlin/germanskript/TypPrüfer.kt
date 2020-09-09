@@ -14,7 +14,7 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
   private var zuÜberprüfendeKlasse: Typ.Compound.KlassenTyp? = null
   private var rückgabeTyp: Typ? = null
   private var funktionsTypParams: List<AST.WortArt.Nomen>? = null
-  private var letzterFunktionsAufruf: AST.Funktion? = null
+  private var letzterFunktionsAufruf: AST.FunktionsAufruf? = null
   private var rückgabeErreicht = false
   private var evaluiereKonstante = false
   private var erwarteterTyp: Typ? = null
@@ -250,7 +250,7 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
     }
   }
 
-  override fun durchlaufeFunktionsAufruf(funktionsAufruf: AST.Funktion, istAusdruck: Boolean): Typ? {
+  override fun durchlaufeFunktionsAufruf(funktionsAufruf: AST.FunktionsAufruf, istAusdruck: Boolean): Typ? {
     if (funktionsAufruf.vollerName == null) {
       funktionsAufruf.vollerName = definierer.holeVollenNamenVonFunktionsAufruf(funktionsAufruf, null)
     }
@@ -258,8 +258,27 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
     logger.addLine("prüfe Funktionsaufruf in ${funktionsAufruf.verb.position}: ${funktionsAufruf.vollerName!!}")
     val methodenBlockObjekt = umgebung.holeMethodenBlockObjekt()
 
-    // ist Methodenaufruf von Block-Variable
-    if (methodenBlockObjekt is Typ.Compound.KlassenTyp && funktionsAufruf.reflexivPronomen?.typ != TokenTyp.REFLEXIV_PRONOMEN.MICH) {
+    var subjekt: Typ.Compound.KlassenTyp? = null
+    if (funktionsAufruf.subjekt != null) {
+      subjekt = evaluiereAusdruck(funktionsAufruf.subjekt) as Typ.Compound.KlassenTyp
+      funktionsSignatur = findeMethode(
+          funktionsAufruf,
+          subjekt,
+          FunktionsAufrufTyp.METHODEN_SUBJEKT_AUFRUF,
+          TokenTyp.REFLEXIV_PRONOMEN.DICH,
+          true
+      )
+
+      if (funktionsSignatur == null ) {
+        throw GermanSkriptFehler.Undefiniert.Funktion(funktionsAufruf.token, funktionsAufruf)
+      }
+    }
+
+    // ist Methodenaufruf von Bereich-Variable oder Subjekt
+    if (funktionsSignatur == null &&
+        methodenBlockObjekt is Typ.Compound.KlassenTyp &&
+        funktionsAufruf.reflexivPronomen?.typ != TokenTyp.REFLEXIV_PRONOMEN.MICH
+    ) {
       funktionsSignatur = findeMethode(
           funktionsAufruf,
           methodenBlockObjekt,
@@ -323,10 +342,11 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
         }
         val methodenName = definierer.holeVollenNamenVonFunktionsAufruf(funktionsAufruf, reflexivPronomen)
         if (methoden.containsKey(methodenName)) {
-          funktionsAufruf.vollerName = "für ${klassenTyp.bezeichner}: ${methodenName}"
-          funktionsAufruf.funktionsDefinition = methoden.getValue(methodenName)
+          //funktionsAufruf.vollerName = "für ${klassenTyp.bezeichner}: ${methodenName}"
+          //funktionsAufruf.funktionsDefinition = methoden.getValue(methodenName)
+          funktionsSignatur = methoden.getValue(methodenName).signatur
+          funktionsAufruf.vollerName = funktionsSignatur.vollerName
           funktionsAufruf.aufrufTyp = FunktionsAufrufTyp.METHODEN_OBJEKT_AUFRUF
-          funktionsSignatur = funktionsAufruf.funktionsDefinition!!.signatur
         }
       }
     }
@@ -350,10 +370,11 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
     // stimmen die Argument Typen mit den Parameter Typen überein?
     letzterFunktionsAufruf = funktionsAufruf
     for (i in parameter.indices) {
-      val typKontext =
-        if (funktionsAufruf.aufrufTyp == FunktionsAufrufTyp.METHODEN_BLOCK_AUFRUF)
-          (umgebung.holeMethodenBlockObjekt()!! as Typ.Compound).typArgumente
-        else null
+      val typKontext = when (funktionsAufruf.aufrufTyp) {
+        FunktionsAufrufTyp.METHODEN_BLOCK_AUFRUF -> (umgebung.holeMethodenBlockObjekt()!! as Typ.Compound).typArgumente
+        FunktionsAufrufTyp.METHODEN_SUBJEKT_AUFRUF -> subjekt!!.typArgumente
+        else -> null
+      }
       ausdruckMussTypSein(argumente[i+j].ausdruck, parameter[i].typKnoten.typ!!, funktionsAufruf.typArgumente, typKontext)
     }
     letzterFunktionsAufruf = null
@@ -362,7 +383,7 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
   }
 
   private fun findeMethode(
-      funktionsAufruf: AST.Funktion,
+      funktionsAufruf: AST.FunktionsAufruf,
       typ: Typ.Compound.KlassenTyp,
       aufrufTyp: FunktionsAufrufTyp,
       reflexivPronomen: TokenTyp.REFLEXIV_PRONOMEN,
@@ -384,7 +405,6 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
     // ist Methodenaufruf von Block-Variable
     if (typ.definition.methoden.containsKey(funktionsAufruf.vollerName!!)) {
       val methodenDefinition = typ.definition.methoden.getValue(funktionsAufruf.vollerName!!)
-      // Bei einem Selbstaufruf wird die Methodendefinition festgelegt (kein dynamisches Binding)
       if (aufrufTyp == FunktionsAufrufTyp.METHODEN_SELBST_AUFRUF) {
         funktionsAufruf.funktionsDefinition = methodenDefinition
         funktionsAufruf.vollerName = "für ${typ}: ${funktionsAufruf.vollerName}"

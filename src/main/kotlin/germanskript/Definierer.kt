@@ -34,7 +34,7 @@ class Definierer(startDatei: File): PipelineKomponente(startDatei) {
     }
   }
 
-  fun holeFunktionsDefinition(funktionsAufruf: AST.Funktion): AST.Definition.Funktion {
+  fun holeFunktionsDefinition(funktionsAufruf: AST.FunktionsAufruf): AST.Definition.Funktion {
     if (funktionsAufruf.vollerName == null) {
       funktionsAufruf.vollerName = holeVollenNamenVonFunktionsAufruf(funktionsAufruf, null)
     }
@@ -225,7 +225,7 @@ class Definierer(startDatei: File): PipelineKomponente(startDatei) {
   }
 
   fun holeVollenNamenVonFunktionsAufruf(
-      funktionsAufruf: AST.Funktion,
+      funktionsAufruf: AST.FunktionsAufruf,
       ersetzeObjekt: String?,
       holeArgName: (AST.Argument) -> AST.WortArt.Nomen = {it.name}
   ): String {
@@ -267,7 +267,7 @@ class Definierer(startDatei: File): PipelineKomponente(startDatei) {
   }
 
   fun holeVollenNamenVonFunktionsAufruf(
-      funktionsAufruf: AST.Funktion,
+      funktionsAufruf: AST.FunktionsAufruf,
       typTypParams: List<AST.WortArt.Nomen>,
       typTypArgs: List<AST.TypKnoten>
   ): String {

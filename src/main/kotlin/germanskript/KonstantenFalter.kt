@@ -67,7 +67,7 @@ class KonstantenFalter(startDatei: File): ProgrammDurchlaufer<Wert?>(startDatei)
 
   override fun sollSätzeAbbrechen(): Boolean = false
 
-  override fun durchlaufeFunktionsAufruf(funktionsAufruf: AST.Funktion, istAusdruck: Boolean): Wert? {
+  override fun durchlaufeFunktionsAufruf(funktionsAufruf: AST.FunktionsAufruf, istAusdruck: Boolean): Wert? {
     funktionsAufruf.argumente.forEach {arg -> arg.ausdruck = falteKonstante(arg.ausdruck)}
     return  null
   }

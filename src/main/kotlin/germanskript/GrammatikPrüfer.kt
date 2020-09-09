@@ -427,7 +427,10 @@ class GrammatikPrüfer(startDatei: File): PipelineKomponente(startDatei) {
     }
   }
 
-  private fun prüfeFunktionsAufruf(funktionsAufruf: AST.Funktion) {
+  private fun prüfeFunktionsAufruf(funktionsAufruf: AST.FunktionsAufruf) {
+    if (funktionsAufruf.subjekt != null) {
+      prüfeKontextbasiertenAusdruck(funktionsAufruf.subjekt, null, EnumSet.of(Kasus.NOMINATIV), false)
+    }
     if (funktionsAufruf.objekt != null) {
       prüfeArgument(funktionsAufruf.objekt, EnumSet.of(Kasus.AKKUSATIV, Kasus.DATIV))
     }

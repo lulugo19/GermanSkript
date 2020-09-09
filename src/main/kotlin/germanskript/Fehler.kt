@@ -215,12 +215,12 @@ sealed class GermanSkriptFehler(private val fehlerName: String, val token: Token
   }
 
   sealed class Undefiniert(token: Token): GermanSkriptFehler("Undefiniert Fehler", token) {
-    class Funktion(token: Token, private val funktionsAufruf: AST.Funktion): Undefiniert(token) {
+    class Funktion(token: Token, private val funktionsAufruf: AST.FunktionsAufruf): Undefiniert(token) {
       override val nachricht: String
         get() = "Die Funktion '${funktionsAufruf.vollständigerName}' ist nicht definiert."
     }
 
-    class Methode(token: Token, private val methodenAufruf: AST.Funktion, private val klassenName: String): Undefiniert(token) {
+    class Methode(token: Token, private val methodenAufruf: AST.FunktionsAufruf, private val klassenName: String): Undefiniert(token) {
       override val nachricht: String
         get() = "Die Methode 'für $klassenName: ${methodenAufruf.vollerName!!}' ist nicht definiert."
     }

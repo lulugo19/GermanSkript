@@ -4,6 +4,7 @@
 - Fehler-Handling
 - Generics
 - Implementiere-Block
+- Änderung der Aufrufsweise einer Methode in einer wenn-Bedingung
 - Aufzählungen
 - Zahlendekorierer
 - Einheiten
@@ -12,8 +13,8 @@
 
 ## Fehler-Handling
 
-Das Fehler-Handling soll wie in anderen Sprachen wie Java, Javascript, ... mit einer try-catch 
-`versuche ... fange` und throw `werfe` funktionieren.
+Das Fehler-Handling soll wie in anderen Sprachen wie Java, Javascript, ... mit try-catch-[finally] 
+`versuche ... fange ... [finally]` und throw `werfe` funktionieren.
 
 Beispiel:
 
@@ -86,6 +87,32 @@ Es kann mehrere `Implementiere`-Bereiche für eine Klassen geben. Die Definition
 Außerdem können Adjektive (Schnittstellen) beim `Implementiere`-Bereich hingeschrieben werden, welche die Klasse dann im Block implementieren muss.
 ```
 Implementiere ArtikelNb Liste(Adjektive) KlassenTyp: Implementierung.
+```
+
+## Änderung der Aufrufsweise einer Methode in einer Bedingung
+
+Bisher:
+
+```
+die Zahlen sind einige Zahlen[1, 2, 3, 4, 5]
+Zahlen:
+    wenn enthält die Zahl 3: schreibe die Zeile "3 ist enthalten".
+!
+```
+Aufrufsweise ändern:
+```
+die Zahlen sind einige Zahlen[1, 2, 3, 4, 5]
+wenn die Zahlen die Zahl 3 enthalten: schreibe die Zeile "3 ist enthalten"
+```
+
+normale Aufrufsweise:
+```
+Verb [Objekt] {Präposition} [Suffix]
+```
+
+geänderte Aufrufweise in wenn-Bedingung:
+```
+Subjekt [Objekt] {Präposition} [Suffix] [Verb]
 ```
 
 ## Aufzählungen

@@ -166,7 +166,7 @@ class Deklinierer(startDatei: File): PipelineKomponente(startDatei) {
     val container: AST.DefinitionsContainer? = wort.findNodeInParents() ?:
     wort.findNodeInParents<AST.Programm>()!!.definitionen
 
-    val modulPfad = wort.findNodeInParents<AST.Funktion>()?.modulPfad ?:
+    val modulPfad = wort.findNodeInParents<AST.FunktionsAufruf>()?.modulPfad ?:
       wort.findNodeInParents<AST.Ausdruck.ObjektInstanziierung>()?.klasse?.modulPfad
     if (modulPfad != null && modulPfad.isNotEmpty()) {
       val modul = modulAuflöser.findeModul(container!!, modulPfad)

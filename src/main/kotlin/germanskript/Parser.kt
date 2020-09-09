@@ -37,7 +37,8 @@ enum class ASTKnotenID {
   VERSUCHE_FANGE,
   WERFE,
   FUNKTIONS_SIGNATUR,
-  IMPLEMENTIERUNG
+  IMPLEMENTIERUNG,
+  BEDINGUNGS_TERM
 }
 
 class Parser(startDatei: File): PipelineKomponente(startDatei) {
@@ -301,11 +302,16 @@ private sealed class SubParser<T: AST>() {
           parser: () -> ParserT,
           combiner: (TypedToken<TokenTyp.BEZEICHNER_KLEIN>, ParserT) -> ElementT
   ): List<ElementT> {
-    if (peekType() !is TokenTyp.BEZEICHNER_KLEIN) {
+    var nächstesToken = peek()
+    if (nächstesToken.typ !is TokenTyp.BEZEICHNER_KLEIN && !präpositionsFälle.containsKey(nächstesToken.wert)) {
       return emptyList()
     }
     val list = mutableListOf<ElementT>()
-    while (peekType() is TokenTyp.BEZEICHNER_KLEIN && peekType(1) is TokenTyp.VORNOMEN) {
+    nächstesToken = peek()
+    while (nächstesToken.typ is TokenTyp.BEZEICHNER_KLEIN &&
+        präpositionsFälle.containsKey(nächstesToken.wert) &&
+        peekType(1) is TokenTyp.VORNOMEN
+    ) {
       list += combiner(expect("Präposition"), parser())
     }
     return list
@@ -616,7 +622,12 @@ private sealed class SubParser<T: AST>() {
     }
   }
 
-  class Ausdruck(private val mitVornomen: Boolean, private val optionalesIstNachVergleich: Boolean, private val linkerAusdruck: AST.Ausdruck? = null): SubParser<AST.Ausdruck>() {
+  class Ausdruck(
+      private val mitVornomen: Boolean,
+      private val optionalesIstNachVergleich: Boolean,
+      private val linkerAusdruck: AST.Ausdruck? = null,
+      private val inBedingungsTerm: Boolean = false
+  ): SubParser<AST.Ausdruck>() {
     override val id: ASTKnotenID
       get() = ASTKnotenID.AUSDRUCK
 
@@ -671,9 +682,17 @@ private sealed class SubParser<T: AST>() {
         is TokenTyp.ZEICHENFOLGE -> AST.Ausdruck.Zeichenfolge(next().toTyped())
         is TokenTyp.ZAHL -> AST.Ausdruck.Zahl(next().toTyped())
         is TokenTyp.BOOLEAN -> AST.Ausdruck.Boolean(next().toTyped())
-        is TokenTyp.BEZEICHNER_KLEIN -> AST.Ausdruck.FunktionsAufruf(subParse(FunktionsAufruf))
-        is TokenTyp.VORNOMEN ->
-          parseNomenAusdruck<TokenTyp.VORNOMEN>("Vornomen", true, false).third
+        is TokenTyp.BEZEICHNER_KLEIN -> AST.Ausdruck.FunktionsAufruf(subParse(FunktionsAufruf.FunktionsAufrufImperativ))
+        is TokenTyp.VORNOMEN -> {
+          val subjekt = parseNomenAusdruck<TokenTyp.VORNOMEN>("Vornomen", true, false).third
+          val nächterTokenTyp = peekType()
+          // prüfe hier ob ein bedingter Aufruf geparst werden soll
+          return if (inBedingungsTerm && (nächterTokenTyp is TokenTyp.VORNOMEN || nächterTokenTyp is TokenTyp.BEZEICHNER_KLEIN)) {
+            AST.Ausdruck.FunktionsAufruf(subParse(FunktionsAufruf.FunktionsAufrufBedingung(subjekt)))
+          } else {
+            subjekt
+          }
+        }
         is TokenTyp.REFERENZ.ICH -> {
           if (!hierarchyContainsAnyNode(ASTKnotenID.IMPLEMENTIERUNG, ASTKnotenID.KLASSEN_DEFINITION)) {
             throw GermanSkriptFehler.SyntaxFehler.ParseFehler(next(), null,
@@ -804,40 +823,59 @@ private sealed class SubParser<T: AST>() {
     }
   }
 
-  object FunktionsAufruf: SubParser<AST.Funktion>() {
+  sealed class FunktionsAufruf: SubParser<AST.FunktionsAufruf>() {
+
     override val id: ASTKnotenID
       get() = ASTKnotenID.FUNKTIONS_AUFRUF
 
-    override fun parseImpl(): AST.Funktion {
-      val modulPfad = parseModulPfad()
-      val verb = expect<TokenTyp.BEZEICHNER_KLEIN>("bezeichner")
-      val typParameter = parseTypArgumente()
-      val objekt = parseOptional<AST.Argument, TokenTyp.VORNOMEN>(::parseArgument)
-      val reflexivPronomen = if (objekt == null) parseOptional<TokenTyp.REFLEXIV_PRONOMEN>() else null
-      when (reflexivPronomen?.typ) {
-        is TokenTyp.REFLEXIV_PRONOMEN.MICH -> {
-          if (!hierarchyContainsAnyNode(ASTKnotenID.IMPLEMENTIERUNG, ASTKnotenID.KLASSEN_DEFINITION)) {
-            throw GermanSkriptFehler.SyntaxFehler.UngültigerBereich(reflexivPronomen.toUntyped(),
-              "Das Reflexivpronomen 'mich' kann nur innerhalb einer Klassen-Implementierung verwendet werden.")
-          }
-        }
-        is TokenTyp.REFLEXIV_PRONOMEN.DICH -> {
-          if (!hierarchyContainsNode(ASTKnotenID.METHODEN_BLOCK)) {
-            throw GermanSkriptFehler.SyntaxFehler.UngültigerBereich(reflexivPronomen.toUntyped(),
-              "Das Reflexivpronomen 'dich' kann nur in einem Methodenblock verwendet werden.")
-          }
-        }
-      }
-      val präpositionen = parsePräpositionsArgumente()
-      val suffix = parseOptional<TokenTyp.BEZEICHNER_KLEIN>()
-      return AST.Funktion(typParameter, modulPfad, verb, objekt, reflexivPronomen, präpositionen, suffix)
-    }
-
     fun parsePräpositionsArgumente(): List<AST.PräpositionsArgumente> {
       return parsePräpositionsListe(
-              {parseListeMitStart<AST.Argument, TokenTyp.KOMMA, TokenTyp.VORNOMEN.ARTIKEL.BESTIMMT>(false, ::parseArgument)}
-      ) {
-        präposition, argumente -> AST.PräpositionsArgumente(AST.Präposition(präposition), argumente)
+          { parseListeMitStart<AST.Argument, TokenTyp.KOMMA, TokenTyp.VORNOMEN.ARTIKEL.BESTIMMT>(false, ::parseArgument) }
+      ) { präposition, argumente ->
+        AST.PräpositionsArgumente(AST.Präposition(präposition), argumente)
+      }
+    }
+
+    object FunktionsAufrufImperativ: FunktionsAufruf() {
+      override fun parseImpl(): AST.FunktionsAufruf {
+        val modulPfad = parseModulPfad()
+        val verb = expect<TokenTyp.BEZEICHNER_KLEIN>("bezeichner")
+        val typArgumente = parseTypArgumente()
+        val objekt = parseOptional<AST.Argument, TokenTyp.VORNOMEN>(::parseArgument)
+        val reflexivPronomen = if (objekt == null) parseOptional<TokenTyp.REFLEXIV_PRONOMEN>() else null
+        when (reflexivPronomen?.typ) {
+          is TokenTyp.REFLEXIV_PRONOMEN.MICH -> {
+            if (!hierarchyContainsAnyNode(ASTKnotenID.IMPLEMENTIERUNG, ASTKnotenID.KLASSEN_DEFINITION)) {
+              throw GermanSkriptFehler.SyntaxFehler.UngültigerBereich(reflexivPronomen.toUntyped(),
+                "Das Reflexivpronomen 'mich' kann nur innerhalb einer Klassen-Implementierung verwendet werden.")
+            }
+          }
+          is TokenTyp.REFLEXIV_PRONOMEN.DICH -> {
+            if (!hierarchyContainsNode(ASTKnotenID.METHODEN_BLOCK)) {
+              throw GermanSkriptFehler.SyntaxFehler.UngültigerBereich(reflexivPronomen.toUntyped(),
+                "Das Reflexivpronomen 'dich' kann nur in einem Methodenblock verwendet werden.")
+            }
+          }
+        }
+        val präpositionen = parsePräpositionsArgumente()
+        val suffix = parseOptional<TokenTyp.BEZEICHNER_KLEIN>()
+        return AST.FunktionsAufruf(typArgumente, modulPfad, null, verb, objekt, reflexivPronomen, präpositionen, suffix)
+      }
+    }
+
+    class FunktionsAufrufBedingung(val subjekt: AST.Ausdruck): FunktionsAufruf() {
+      override fun parseImpl(): AST.FunktionsAufruf {
+        val objekt = parseOptional<AST.Argument, TokenTyp.VORNOMEN>(::parseArgument)
+        // Reflexivpronomen sind hier nicht erlaubt
+        val präpositionen = parsePräpositionsArgumente()
+        var suffix: TypedToken<TokenTyp.BEZEICHNER_KLEIN>? = expect("bezeichner")
+        var verb = parseOptional<TokenTyp.BEZEICHNER_KLEIN>()
+        if (verb == null) {
+          verb = suffix
+          suffix = null
+        }
+        val typArgumente = parseTypArgumente()
+        return AST.FunktionsAufruf(typArgumente, emptyList(), subjekt, verb!!, objekt, null, präpositionen, suffix)
       }
     }
   }
@@ -897,7 +935,7 @@ private sealed class SubParser<T: AST>() {
       override val id: ASTKnotenID
         get() = ASTKnotenID.FUNKTIONS_AUFRUF
 
-      override fun parseImpl(): AST.Satz.FunktionsAufruf = AST.Satz.FunktionsAufruf(subParse(SubParser.FunktionsAufruf))
+      override fun parseImpl(): AST.Satz.FunktionsAufruf = AST.Satz.FunktionsAufruf(subParse(SubParser.FunktionsAufruf.FunktionsAufrufImperativ))
     }
 
     object MethodenBlock: Satz<AST.Satz.MethodenBlock>() {
@@ -955,31 +993,35 @@ private sealed class SubParser<T: AST>() {
       }
     }
 
+    object BedingungsTerm: Satz<AST.Satz.BedingungsTerm>() {
+      override val id = ASTKnotenID.BEDINGUNGS_TERM
+
+      override fun parseImpl(): AST.Satz.BedingungsTerm {
+        val bedingung = subParse(Ausdruck(mitVornomen = true, optionalesIstNachVergleich = true, inBedingungsTerm = true))
+        val sätze = parseSätze()
+        return AST.Satz.BedingungsTerm(bedingung, sätze)
+      }
+    }
+
     object Bedingung: Satz<AST.Satz.Bedingung>() {
-      override val id: ASTKnotenID
-        get() = ASTKnotenID.BEDINGUNG
+      override val id = ASTKnotenID.BEDINGUNG
 
       override fun parseImpl(): AST.Satz.Bedingung {
         val bedingungen = mutableListOf<AST.Satz.BedingungsTerm>()
 
         expect<TokenTyp.WENN>("'wenn'")
-        var bedingung = subParse(Ausdruck(mitVornomen = true, optionalesIstNachVergleich = true))
-        var sätze = parseSätze()
 
-        bedingungen += AST.Satz.BedingungsTerm(bedingung, sätze)
+        bedingungen += subParse(BedingungsTerm)
 
         überspringeLeereZeilen()
         while (peekType() is TokenTyp.SONST) {
           expect<TokenTyp.SONST>("'sonst'")
           if (peekType() !is TokenTyp.WENN) {
-            sätze = parseSätze()
+            val sätze = parseSätze()
             return AST.Satz.Bedingung(bedingungen, sätze)
           }
           expect<TokenTyp.WENN>("'wenn'")
-          bedingung = subParse(Ausdruck(mitVornomen = true, optionalesIstNachVergleich = true))
-          sätze = parseSätze()
-          val bedingungsTerm = AST.Satz.BedingungsTerm(bedingung, sätze)
-          bedingungen += bedingungsTerm
+          bedingungen += subParse(BedingungsTerm)
           überspringeLeereZeilen()
         }
         return AST.Satz.Bedingung(bedingungen, null)
@@ -992,9 +1034,7 @@ private sealed class SubParser<T: AST>() {
 
       override fun parseImpl(): AST.Satz.SolangeSchleife {
         expect<TokenTyp.SOLANGE>("'solange'")
-        val bedingung = subParse(Ausdruck(mitVornomen = true, optionalesIstNachVergleich = true))
-        val sätze = parseSätze()
-        return AST.Satz.SolangeSchleife(AST.Satz.BedingungsTerm(bedingung, sätze))
+        return AST.Satz.SolangeSchleife(subParse(BedingungsTerm))
       }
     }
 

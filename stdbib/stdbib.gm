@@ -56,7 +56,7 @@ Nomen<Typ> Liste:
 .
 
 Implementiere die Liste:
-    Verb(Boolean) enthält den Typ: intern.
+    Verb(Boolean) enthalten den Typ: intern.
     Verb füge den Typ hinzu: intern.
     Verb entferne an der Zahl Index: intern.
     Verb sortiere mich mit dem Vergleichbaren<Typ>: intern.

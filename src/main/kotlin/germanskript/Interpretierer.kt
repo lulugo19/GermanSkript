@@ -60,20 +60,7 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
 
     fun top(): AufrufStapelElement = stapel.peek()
     fun push(funktionsAufruf: AST.IAufruf, neueUmgebung: Umgebung<Wert>, aufrufObjekt: Wert.Objekt? = null) {
-      val objekt = when (funktionsAufruf) {
-        is AST.Programm -> null
-        is AST.Funktion -> when (funktionsAufruf.aufrufTyp) {
-          FunktionsAufrufTyp.FUNKTIONS_AUFRUF -> null
-          FunktionsAufrufTyp.METHODEN_SELBST_AUFRUF -> top().objekt
-          FunktionsAufrufTyp.METHODEN_BLOCK_AUFRUF -> top().umgebung.holeMethodenBlockObjekt()
-          FunktionsAufrufTyp.METHODEN_OBJEKT_AUFRUF -> evaluiereAusdruck(funktionsAufruf.objekt!!.ausdruck)
-        }
-        is AST.Ausdruck.ObjektInstanziierung,
-        is AST.Ausdruck.Konvertierung,
-        is AST.Ausdruck.IEigenschaftsZugriff  -> aufrufObjekt
-        else -> throw Exception("Unbehandelter Funktionsaufruftyp")
-      }
-      stapel.push(AufrufStapelElement(funktionsAufruf, objekt, neueUmgebung))
+      stapel.push(AufrufStapelElement(funktionsAufruf, aufrufObjekt, neueUmgebung))
     }
 
     fun pop(): AufrufStapelElement = stapel.pop()
@@ -177,26 +164,36 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
     }
   }
 
-  override fun durchlaufeFunktionsAufruf(funktionsAufruf: AST.Funktion, istAusdruck: Boolean): Wert? {
+  override fun durchlaufeFunktionsAufruf(funktionsAufruf: AST.FunktionsAufruf, istAusdruck: Boolean): Wert? {
     rückgabeWert = null
     var funktionsUmgebung = Umgebung<Wert>()
-    val (körper, parameterNamen) = if (funktionsAufruf.funktionsDefinition != null) {
+    var objekt: Wert.Objekt? = null
+    val (körper, parameterNamen) = if (funktionsAufruf.aufrufTyp == FunktionsAufrufTyp.FUNKTIONS_AUFRUF) {
       val definition = funktionsAufruf.funktionsDefinition!!
       Pair(definition.körper, definition.signatur.parameter.map{it.name})
     } else {
       // dynamisches Binden von Methoden
-      val objekt = umgebung.holeMethodenBlockObjekt()
-      when (objekt)
+      val methodenObjekt = when(funktionsAufruf.aufrufTyp) {
+        FunktionsAufrufTyp.METHODEN_SUBJEKT_AUFRUF -> evaluiereAusdruck(funktionsAufruf.subjekt!!)
+        FunktionsAufrufTyp.METHODEN_OBJEKT_AUFRUF -> evaluiereAusdruck(funktionsAufruf.objekt!!.ausdruck)
+        FunktionsAufrufTyp.METHODEN_SELBST_AUFRUF -> aufrufStapel.top().objekt!!
+        else -> umgebung.holeMethodenBlockObjekt()
+      }
+      objekt = if (methodenObjekt is Wert.Objekt) methodenObjekt else null
+      if (funktionsAufruf.funktionsDefinition != null) {
+        val definition = funktionsAufruf.funktionsDefinition!!
+        Pair(definition.körper, definition.signatur.parameter.map{it.name})
+      } else when (methodenObjekt)
       {
         is Wert.Objekt -> {
-          val methode = objekt.typ.definition.methoden.getValue(funktionsAufruf.vollerName!!)
+          val methode = methodenObjekt.typ.definition.methoden.getValue(funktionsAufruf.vollerName!!)
           // funktionsAufruf.vollerName = "für ${objekt.typ.definition.name.nominativ}: ${methode.signatur.vollerName}"
           val signatur = methode.signatur
           Pair(methode.körper, signatur.parameter.map {it.name})
         }
         is Wert.Closure -> {
-          funktionsUmgebung = objekt.umgebung
-          Pair(objekt.körper, holeParameterNamenFürClosure(objekt))
+          funktionsUmgebung = methodenObjekt.umgebung
+          Pair(methodenObjekt.körper, holeParameterNamenFürClosure(methodenObjekt))
         }
         else -> throw Exception("Dieser Fall sollte nie eintreten.")
       }
@@ -208,7 +205,7 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
       funktionsUmgebung.schreibeVariable(parameterNamen[i], evaluiereAusdruck(argumente[i+j].ausdruck), false)
     }
 
-    return durchlaufeAufruf(funktionsAufruf, körper, funktionsUmgebung, false, null)
+    return durchlaufeAufruf(funktionsAufruf, körper, funktionsUmgebung, false, objekt)
   }
 
   override fun durchlaufeZurückgabe(zurückgabe: AST.Satz.Zurückgabe) {
@@ -610,7 +607,7 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
           zeichenfolge.zeichenfolge.split(separator.zeichenfolge).map { Wert.Primitiv.Zeichenfolge(it) }.toMutableList())
     },
 
-    "für Liste: enthält den Typ" to  {
+    "für Liste: enthalten den Typ" to  {
       val liste = aufrufStapel.top().objekt!! as Wert.Objekt.Liste
       val element = umgebung.leseVariable("Typ")!!.wert
       rückgabeWert = Wert.Primitiv.Boolean(liste.elemente.contains(element))
