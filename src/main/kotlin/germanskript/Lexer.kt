@@ -63,6 +63,7 @@ data class Token(val typ: TokenTyp, var wert: String, val dateiPfad: String, val
     // um die Ausgabe zu vereinfachen
     // override fun toString(): String = typ.toString()
 
+    @Suppress("UNCHECKED_CAST")
     fun <T: TokenTyp> toTyped() = TypedToken<T>(typ as T, wert, dateiPfad, anfang, ende)
 
     open class Position(val zeile: Int, val spalte: Int) {
@@ -79,7 +80,7 @@ data class Token(val typ: TokenTyp, var wert: String, val dateiPfad: String, val
 // für den Parser gedacht
 data class TypedToken<out T : TokenTyp>(val typ: T, val wert: String, val dateiPfad: String, val anfang: Token.Position, val ende: Token.Position) {
     fun toUntyped()  = Token(typ, wert, dateiPfad, anfang, ende)
-
+    fun<TChange: TokenTyp> changeType(typ: TChange): TypedToken<TChange> = TypedToken(typ, wert, dateiPfad, anfang, ende)
     val position: String = "'$dateiPfad' $anfang"
 }
 
@@ -201,6 +202,7 @@ sealed class TokenTyp(val anzeigeName: String) {
     }
 
     // Literale
+    object NICHTS: TokenTyp("'nichts'")
     data class BOOLEAN(val boolean: Wert.Primitiv.Boolean): TokenTyp("'richtig' oder 'falsch'")
     data class ZAHL(val zahl: Wert.Primitiv.Zahl): TokenTyp("Zahl")
     data class ZEICHENFOLGE(val zeichenfolge: Wert.Primitiv.Zeichenfolge): TokenTyp("Zeichenfolge")
@@ -270,6 +272,7 @@ private val WORT_MAPPING = mapOf<String, TokenTyp>(
     // Werte
     "wahr" to TokenTyp.BOOLEAN(Wert.Primitiv.Boolean(true)),
     "falsch" to TokenTyp.BOOLEAN(Wert.Primitiv.Boolean(false)),
+    "nichts" to TokenTyp.NICHTS,
 
     // Operatoren
     "ist" to TokenTyp.ZUWEISUNG(Numerus.SINGULAR),

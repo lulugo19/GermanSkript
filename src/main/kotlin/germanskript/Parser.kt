@@ -365,7 +365,7 @@ private sealed class SubParser<T: AST>() {
         else -> when(vornomen.typ) {
           TokenTyp.VORNOMEN.ARTIKEL.BESTIMMT -> AST.Ausdruck.Variable(nomen)
           TokenTyp.VORNOMEN.POSSESSIV_PRONOMEN.MEIN -> AST.Ausdruck.SelbstEigenschaftsZugriff(nomen)
-          TokenTyp.VORNOMEN.POSSESSIV_PRONOMEN.DEIN -> AST.Ausdruck.MethodenBlockEigenschaftsZugriff(nomen)
+          TokenTyp.VORNOMEN.POSSESSIV_PRONOMEN.DEIN -> AST.Ausdruck.MethodenBereichEigenschaftsZugriff(nomen)
           else -> throw GermanSkriptFehler.SyntaxFehler.ParseFehler(vornomen.toUntyped(), "bestimmter Artikel oder Possessivpronomen")
         }
       }
@@ -386,7 +386,7 @@ private sealed class SubParser<T: AST>() {
         subParse(NomenAusdruck.Closure(schnittstelle))
       }
       TokenTyp.VORNOMEN.POSSESSIV_PRONOMEN.MEIN -> AST.Ausdruck.SelbstEigenschaftsZugriff(nomen)
-      TokenTyp.VORNOMEN.POSSESSIV_PRONOMEN.DEIN -> AST.Ausdruck.MethodenBlockEigenschaftsZugriff(nomen)
+      TokenTyp.VORNOMEN.POSSESSIV_PRONOMEN.DEIN -> AST.Ausdruck.MethodenBereichEigenschaftsZugriff(nomen)
       is TokenTyp.VORNOMEN.DEMONSTRATIV_PRONOMEN -> throw GermanSkriptFehler.SyntaxFehler.ParseFehler(vornomen.toUntyped(), null,
           "Die Demonstrativpronomen 'diese' und 'jene' dürfen nicht in Ausdrücken verwendet werden.")
       else -> throw Exception("Dieser Fall sollte nie ausgeführt werden.")
@@ -518,7 +518,7 @@ private sealed class SubParser<T: AST>() {
           }
         is TokenTyp.BEZEICHNER_GROSS -> {
           when (peekType(1)) {
-            is TokenTyp.DOPPELPUNKT -> subParse(Satz.MethodenBlock)
+            is TokenTyp.DOPPELPUNKT -> AST.Satz.MethodenBereich(subParse(MethodenBereich))
             is TokenTyp.DOPPEL_DOPPELPUNKT -> subParse(Satz.FunktionsAufruf)
             else -> null
           }
@@ -705,7 +705,7 @@ private sealed class SubParser<T: AST>() {
             throw GermanSkriptFehler.SyntaxFehler.ParseFehler(next(), null,
                 "Die Methodenblockreferenz 'Du' darf nur in einem Methodenblock verwendet werden.")
           }
-          AST.Ausdruck.MethodenBlockReferenz(next().toTyped())
+          AST.Ausdruck.MethodenBereichReferenz(next().toTyped())
         }
         is TokenTyp.OFFENE_KLAMMER -> {
           next()
@@ -724,8 +724,12 @@ private sealed class SubParser<T: AST>() {
           }
         }
         is TokenTyp.BEZEICHNER_GROSS ->
-          if (mitArtikel) AST.Ausdruck.Konstante(parseModulPfad(), parseGroßenBezeichner(true))
+          if (mitArtikel)  when (peekType(1)) {
+            is TokenTyp.DOPPELPUNKT -> AST.Ausdruck.MethodenBereich(subParse(MethodenBereich))
+            else ->  AST.Ausdruck.Konstante(parseModulPfad(), parseGroßenBezeichner(true))
+          }
           else when (peekType(1)) {
+            is TokenTyp.DOPPELPUNKT -> AST.Ausdruck.MethodenBereich(subParse(MethodenBereich))
             is TokenTyp.DOPPEL_DOPPELPUNKT -> AST.Ausdruck.Konstante(parseModulPfad(), parseGroßenBezeichner(true))
             else ->  AST.Ausdruck.Variable(parseNomenOhneVornomen(true))
         }
@@ -803,7 +807,7 @@ private sealed class SubParser<T: AST>() {
           val objekt: AST.Ausdruck = if (vornomenTyp is TokenTyp.VORNOMEN.POSSESSIV_PRONOMEN.MEIN) {
             AST.Ausdruck.SelbstEigenschaftsZugriff(eigenschaft)
           } else {
-            AST.Ausdruck.MethodenBlockEigenschaftsZugriff(eigenschaft)
+            AST.Ausdruck.MethodenBereichEigenschaftsZugriff(eigenschaft)
           }
           AST.Ausdruck.EigenschaftsZugriff(nomen, objekt)
         } else {
@@ -880,6 +884,17 @@ private sealed class SubParser<T: AST>() {
     }
   }
 
+  object MethodenBereich: SubParser<AST.MethodenBereich>() {
+    override val id: ASTKnotenID
+      get() = ASTKnotenID.METHODEN_BLOCK
+
+    override fun parseImpl(): AST.MethodenBereich {
+      val name = MethodenBereich.parseNomenOhneVornomen(true)
+      val sätze = MethodenBereich.parseSätze(TokenTyp.AUSRUFEZEICHEN)
+      return AST.MethodenBereich(name, sätze)
+    }
+  }
+
   sealed class Satz<T: AST.Satz>(): SubParser<T>() {
     override fun bewacheKnoten() {
       if (parentNodeId == ASTKnotenID.MODUL) {
@@ -938,17 +953,6 @@ private sealed class SubParser<T: AST>() {
       override fun parseImpl(): AST.Satz.FunktionsAufruf = AST.Satz.FunktionsAufruf(subParse(SubParser.FunktionsAufruf.FunktionsAufrufImperativ))
     }
 
-    object MethodenBlock: Satz<AST.Satz.MethodenBlock>() {
-      override val id: ASTKnotenID
-        get() = ASTKnotenID.METHODEN_BLOCK
-
-      override fun parseImpl(): AST.Satz.MethodenBlock {
-        val name = parseNomenOhneVornomen(true)
-        val sätze = parseSätze(TokenTyp.AUSRUFEZEICHEN)
-        return AST.Satz.MethodenBlock(name, sätze)
-      }
-    }
-
     object SuperBlock: Satz<AST.Satz.SuperBlock>() {
       override val id: ASTKnotenID = ASTKnotenID.SUPER_BLOCK
 
@@ -984,7 +988,7 @@ private sealed class SubParser<T: AST>() {
       override fun parseImpl(): AST.Satz.Zurückgabe {
         val schlüsselWort = next().toTyped<TokenTyp.BEZEICHNER_KLEIN>()
         return if (schlüsselWort.wert == "zurück") {
-          AST.Satz.Zurückgabe(schlüsselWort, null)
+          AST.Satz.Zurückgabe(schlüsselWort, AST.Ausdruck.Nichts(schlüsselWort.changeType(TokenTyp.NICHTS)))
         } else {
           val ausdruck = subParse(Ausdruck(mitVornomen = true, optionalesIstNachVergleich = false))
           parseKleinesSchlüsselwort("zurück")
@@ -1252,7 +1256,7 @@ private sealed class SubParser<T: AST>() {
       }
 
       override fun parseImpl(): AST.Definition.FunktionsSignatur {
-        expect<TokenTyp.VERB>("'Verb'")
+        val verb = expect<TokenTyp.VERB>("'Verb'")
         val typParameter = parseTypParameter()
         val rückgabeTyp = if (peekType() is TokenTyp.OFFENE_KLAMMER) {
           expect<TokenTyp.OFFENE_KLAMMER>("'('")
@@ -1261,7 +1265,9 @@ private sealed class SubParser<T: AST>() {
               nomenErlaubt = true, adjektivErlaubt = true
           ).also { expect<TokenTyp.GESCHLOSSENE_KLAMMER>("')'") }
         } else {
-          null
+          // Wenn kein Rückgabetyp angegeben ist dann ist der Rückgabetyp Nichts
+          val nichts = AST.WortArt.Nomen(null, verb.changeType(TokenTyp.BEZEICHNER_GROSS(arrayOf("Nichts"),"")))
+          AST.TypKnoten(emptyList(), nichts, emptyList())
         }
         val name = expect<TokenTyp.BEZEICHNER_KLEIN>("bezeichner")
         val reflexivPronomen = if (erlaubeReflexivPronomen) parseOptional<TokenTyp.REFLEXIV_PRONOMEN>() else null

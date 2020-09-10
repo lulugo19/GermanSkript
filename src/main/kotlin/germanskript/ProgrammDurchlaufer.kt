@@ -1,34 +1,39 @@
 package germanskript
 
 import java.io.File
+import java.lang.Exception
 
 abstract  class ProgrammDurchlaufer<T>(startDatei: File): PipelineKomponente(startDatei ) {
   abstract val definierer: Definierer
 
+  protected abstract val nichts: T
   protected abstract val umgebung: Umgebung<T>
   protected var inSuperBlock = false
     private set
 
   // region Sätze
-  protected fun durchlaufeBereich(bereich: AST.Satz.Bereich, neuerBereich: Boolean)  {
+  protected fun durchlaufeBereich(bereich: AST.Satz.Bereich, neuerBereich: Boolean): T  {
     if (neuerBereich) {
       umgebung.pushBereich()
     }
     starteBereich(bereich)
+    var rückgabe = nichts
     for (satz in bereich.sätze) {
       if (sollSätzeAbbrechen()) {
-        return
+        return nichts
       }
-      when (satz) {
+      @Suppress("IMPLICIT_CAST_TO_ANY")
+      rückgabe = when (satz) {
         is AST.Satz.VariablenDeklaration -> durchlaufeVariablenDeklaration(satz)
         is AST.Satz.FunktionsAufruf -> durchlaufeFunktionsAufruf(satz.aufruf, false)
         is AST.Satz.Bereich -> durchlaufeBereich(satz, true)
-        is AST.Satz.MethodenBlock -> durchlaufeMethodenBlock(satz)
+        is AST.Satz.MethodenBereich -> durchlaufeMethodenBereich(satz.methodenBereich)
         is AST.Satz.SuperBlock -> {
           val prevInSuperBlock = inSuperBlock
           inSuperBlock = true
-          durchlaufeBereich(satz.bereich, true)
-          inSuperBlock = prevInSuperBlock
+          durchlaufeBereich(satz.bereich, true).also {
+            inSuperBlock = prevInSuperBlock
+          }
         }
         is AST.Satz.Zurückgabe -> durchlaufeZurückgabe(satz)
         is AST.Satz.Bedingung -> durchlaufeBedingungsSatz(satz)
@@ -39,12 +44,14 @@ abstract  class ProgrammDurchlaufer<T>(startDatei: File): PipelineKomponente(sta
         is AST.Satz.SchleifenKontrolle.Abbrechen -> durchlaufeAbbrechen()
         is AST.Satz.SchleifenKontrolle.Fortfahren -> durchlaufeFortfahren()
         is AST.Satz.Intern -> durchlaufeIntern(satz)
-      }
+        else -> throw Exception("Dieser Fall sollte nie eintreten!")
+      }.let { if (it is Unit) nichts else it as T }
     }
     beendeBereich(bereich)
     if (neuerBereich) {
       umgebung.popBereich()
     }
+    return rückgabe
   }
 
   protected fun holeErstesTokenVonAusdruck(ausdruck: AST.Ausdruck): Token {
@@ -62,35 +69,36 @@ abstract  class ProgrammDurchlaufer<T>(startDatei: File): PipelineKomponente(sta
       is AST.Ausdruck.ObjektInstanziierung -> ausdruck.klasse.name.bezeichnerToken
       is AST.Ausdruck.EigenschaftsZugriff -> ausdruck.eigenschaftsName.bezeichner.toUntyped()
       is AST.Ausdruck.SelbstEigenschaftsZugriff -> ausdruck.eigenschaftsName.bezeichner.toUntyped()
-      is AST.Ausdruck.MethodenBlockEigenschaftsZugriff -> ausdruck.eigenschaftsName.bezeichner.toUntyped()
+      is AST.Ausdruck.MethodenBereichEigenschaftsZugriff -> ausdruck.eigenschaftsName.bezeichner.toUntyped()
       is AST.Ausdruck.SelbstReferenz -> ausdruck.ich.toUntyped()
-      is AST.Ausdruck.MethodenBlockReferenz -> ausdruck.du.toUntyped()
+      is AST.Ausdruck.MethodenBereichReferenz -> ausdruck.du.toUntyped()
       is AST.Ausdruck.Closure -> ausdruck.schnittstelle.name.bezeichnerToken
       is AST.Ausdruck.Konstante -> ausdruck.name.toUntyped()
+      is AST.Ausdruck.MethodenBereich -> ausdruck.methodenBereich.name.bezeichnerToken
+      is AST.Ausdruck.Nichts -> ausdruck.nichts.toUntyped()
     }
   }
 
-  private fun durchlaufeMethodenBlock(methodenBlock: AST.Satz.MethodenBlock){
-    val wert = evaluiereVariable(methodenBlock.name)
-    bevorDurchlaufeMethodenBlock(methodenBlock, wert)
+  private fun durchlaufeMethodenBereich(methodenBereich: AST.MethodenBereich): T{
+    val wert = evaluiereVariable(methodenBereich.name)
+    bevorDurchlaufeMethodenBereich(methodenBereich, wert)
     umgebung.pushBereich(wert)
-    durchlaufeBereich(methodenBlock.bereich, false)
-    umgebung.popBereich()
+    return durchlaufeBereich(methodenBereich.bereich, false).also { umgebung.popBereich() }
   }
 
-  protected abstract fun bevorDurchlaufeMethodenBlock(methodenBlock: AST.Satz.MethodenBlock, blockObjekt: T?)
+  protected abstract fun bevorDurchlaufeMethodenBereich(methodenBereich: AST.MethodenBereich, blockObjekt: T?)
   protected abstract fun sollSätzeAbbrechen(): Boolean
-  protected abstract fun durchlaufeFunktionsAufruf(funktionsAufruf: AST.FunktionsAufruf, istAusdruck: Boolean): T?
-  protected abstract fun durchlaufeVariablenDeklaration(deklaration: AST.Satz.VariablenDeklaration)
-  protected abstract fun durchlaufeZurückgabe(zurückgabe: AST.Satz.Zurückgabe)
+  protected abstract fun durchlaufeFunktionsAufruf(funktionsAufruf: AST.FunktionsAufruf, istAusdruck: Boolean): T
+  protected abstract fun durchlaufeVariablenDeklaration(deklaration: AST.Satz.VariablenDeklaration): T
+  protected abstract fun durchlaufeZurückgabe(zurückgabe: AST.Satz.Zurückgabe): T
   protected abstract fun durchlaufeBedingungsSatz(bedingungsSatz: AST.Satz.Bedingung)
   protected abstract fun durchlaufeAbbrechen()
   protected abstract fun durchlaufeFortfahren()
   protected abstract fun durchlaufeSolangeSchleife(schleife: AST.Satz.SolangeSchleife)
   protected abstract fun durchlaufeFürJedeSchleife(schleife: AST.Satz.FürJedeSchleife)
   protected abstract fun durchlaufeVersucheFange(versucheFange: AST.Satz.VersucheFange)
-  abstract fun durchlaufeWerfe(werfe: AST.Satz.Werfe)
-  protected abstract fun durchlaufeIntern(intern: AST.Satz.Intern)
+  abstract fun durchlaufeWerfe(werfe: AST.Satz.Werfe): T
+  protected abstract fun durchlaufeIntern(intern: AST.Satz.Intern): T
   protected abstract fun starteBereich(bereich: AST.Satz.Bereich)
   protected abstract fun beendeBereich(bereich: AST.Satz.Bereich)
 
@@ -110,11 +118,13 @@ abstract  class ProgrammDurchlaufer<T>(startDatei: File): PipelineKomponente(sta
       is AST.Ausdruck.ObjektInstanziierung -> evaluiereObjektInstanziierung(ausdruck)
       is AST.Ausdruck.EigenschaftsZugriff -> evaluiereEigenschaftsZugriff(ausdruck)
       is AST.Ausdruck.SelbstEigenschaftsZugriff -> evaluiereSelbstEigenschaftsZugriff(ausdruck)
-      is AST.Ausdruck.MethodenBlockEigenschaftsZugriff -> evaluiereMethodenBlockEigenschaftsZugriff(ausdruck)
+      is AST.Ausdruck.MethodenBereichEigenschaftsZugriff -> evaluiereMethodenBlockEigenschaftsZugriff(ausdruck)
       is AST.Ausdruck.SelbstReferenz -> evaluiereSelbstReferenz()
-      is AST.Ausdruck.MethodenBlockReferenz -> evaluiereMethodenBlockReferenz()
+      is AST.Ausdruck.MethodenBereichReferenz -> evaluiereMethodenBlockReferenz()
       is AST.Ausdruck.Closure -> evaluiereClosure(ausdruck)
       is AST.Ausdruck.Konstante -> evaluiereKonstante(ausdruck)
+      is AST.Ausdruck.MethodenBereich -> durchlaufeMethodenBereich(ausdruck.methodenBereich)
+      is AST.Ausdruck.Nichts -> nichts
     }
   }
 
@@ -149,7 +159,7 @@ abstract  class ProgrammDurchlaufer<T>(startDatei: File): PipelineKomponente(sta
   protected abstract fun evaluiereObjektInstanziierung(instanziierung: AST.Ausdruck.ObjektInstanziierung): T
   protected abstract fun evaluiereEigenschaftsZugriff(eigenschaftsZugriff: AST.Ausdruck.EigenschaftsZugriff): T
   protected abstract fun evaluiereSelbstEigenschaftsZugriff(eigenschaftsZugriff: AST.Ausdruck.SelbstEigenschaftsZugriff): T
-  protected abstract fun evaluiereMethodenBlockEigenschaftsZugriff(eigenschaftsZugriff: AST.Ausdruck.MethodenBlockEigenschaftsZugriff): T
+  protected abstract fun evaluiereMethodenBlockEigenschaftsZugriff(eigenschaftsZugriff: AST.Ausdruck.MethodenBereichEigenschaftsZugriff): T
   protected abstract fun evaluiereSelbstReferenz(): T
   protected abstract fun evaluiereClosure(closure: AST.Ausdruck.Closure): T
   protected abstract fun evaluiereKonstante(konstante: AST.Ausdruck.Konstante): T

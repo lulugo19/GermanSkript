@@ -517,7 +517,7 @@ class GermanSkriptTest {
   @Test
   @DisplayName("Schnittstelle (Adjektiv)")
   fun schnittstelle() {
-    val source = """
+    val quellCode = """
       Deklination Femininum Singular(Farbe) Plural(Farben)
       Deklination Neutrum Singular(Dreieck, Dreiecks, Dreieck, Dreieck) Plural(Dreiecke, Dreiecke, Dreiecken, Dreiecke)
       
@@ -548,13 +548,13 @@ class GermanSkriptTest {
       skaliere das Dreieck um die Zahl 2
     """.trimIndent()
 
-    val expectedOutput = """
+    val erwarteteAusgabe = """
       zeichne das Dreieck mit der Farbe rot
       skaliere das Dreieck um 2
       
     """.trimIndent()
 
-    testeGermanSkriptCode(source, expectedOutput)
+    testeGermanSkriptCode(quellCode, erwarteteAusgabe)
   }
 
   @Test
@@ -1177,7 +1177,8 @@ class GermanSkriptTest {
       Test: teste die Zeichenfolge "Hallo Welt!"!
     """.trimIndent()
 
-    testeGermanSkriptCode(quellCode, "Hallo Welt!")
+    führeGermanSkriptCodeAus(quellCode)
+    // testeGermanSkriptCode(quellCode, "Hallo Welt!")
   }
 
   @Test
@@ -1339,5 +1340,17 @@ class GermanSkriptTest {
     """.trimIndent()
 
     testeGermanSkriptCode(quellCode, "3 ist enthalten\n")
+  }
+
+  @Test
+  @DisplayName("Methodenblock als Ausdruck")
+  fun methodenBlockAlsAusdruck() {
+    val quellCode = """
+      die Zahlen sind einige Zahlen [1, 2, 3]
+      das ENTHÄLT ist Zahlen: enthalten die Zahl 4!
+      schreibe die Zeile (das ENTHÄLT als Zeichenfolge)
+    """.trimIndent()
+
+    testeGermanSkriptCode(quellCode, "falsch\n")
   }
 }

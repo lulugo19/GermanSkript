@@ -7,6 +7,8 @@ import kotlin.math.*
 typealias AufrufCallback = (Wert, String, argumente: Array<Wert>) -> Wert?
 
 sealed class Wert {
+  object Nichts: Wert()
+
   sealed class Primitiv: Wert() {
     data class Zeichenfolge(val zeichenfolge: String): Primitiv(), Comparable<Zeichenfolge> {
       override fun toString(): String = zeichenfolge
@@ -90,7 +92,7 @@ sealed class Wert {
 
     sealed class InternesObjekt(typ: Typ.Compound.KlassenTyp): Objekt(typ) {
 
-      abstract fun rufeMethodeAuf(methodenName: String, umgebung: Umgebung<Wert>, aufrufCallback: AufrufCallback): Wert?
+      abstract fun rufeMethodeAuf(methodenName: String, umgebung: Umgebung<Wert>, aufrufCallback: AufrufCallback): Wert
 
       class Liste(typ: Typ.Compound.KlassenTyp, val elemente: MutableList<Wert>): InternesObjekt(typ) {
         operator fun plus(liste: Liste) = Liste(typ, (this.elemente + liste.elemente).toMutableList())
@@ -110,7 +112,7 @@ sealed class Wert {
           // vielleicht kommt hier später mal was, sieht aber nicht danach aus
         }
 
-        override fun rufeMethodeAuf(methodenName: String, umgebung: Umgebung<Wert>, aufrufCallback: AufrufCallback): Wert? {
+        override fun rufeMethodeAuf(methodenName: String, umgebung: Umgebung<Wert>, aufrufCallback: AufrufCallback): Wert {
           return when (methodenName) {
             "enthalten den Typ" -> enthaltenDenTyp(umgebung)
             "füge den Typ hinzu" -> fügeDenTypHinzu(umgebung)
@@ -120,31 +122,31 @@ sealed class Wert {
           }
         }
 
-        private fun enthaltenDenTyp(umgebung: Umgebung<Wert>): Wert? {
+        private fun enthaltenDenTyp(umgebung: Umgebung<Wert>): Wert {
           val element = umgebung.leseVariable("Typ")!!.wert
           return Primitiv.Boolean(elemente.contains(element))
         }
 
-        private fun fügeDenTypHinzu(umgebung: Umgebung<Wert>): Wert? {
+        private fun fügeDenTypHinzu(umgebung: Umgebung<Wert>): Wert {
           val element = umgebung.leseVariable("Typ")!!.wert
           elemente.add(element)
-          return null
+          return Nichts
         }
 
-        private fun entferneAnDemIndex(umgebung: Umgebung<Wert>): Wert? {
+        private fun entferneAnDemIndex(umgebung: Umgebung<Wert>): Wert {
           val index = umgebung.leseVariable("Index")!!.wert as Primitiv.Zahl
           elemente.removeAt(index.toInt())
-          return null
+          return Nichts
         }
 
-        private fun sortiereMichMitDemVergleichbaren(umgebung: Umgebung<Wert>, aufrufCallback: AufrufCallback): Wert? {
+        private fun sortiereMichMitDemVergleichbaren(umgebung: Umgebung<Wert>, aufrufCallback: AufrufCallback): Wert {
           val typArg = typ.typArgumente[0].name.nominativ
           val vergleichbar = umgebung.leseVariable("Vergleichbare")!!.wert
           elemente.sortWith(kotlin.Comparator { a, b ->
             (aufrufCallback(vergleichbar, "vergleiche den ${typArg}A mit dem ${typArg}B", arrayOf(a, b))
                 as Primitiv.Zahl).zahl.toInt()
           })
-          return null
+          return Nichts
         }
       }
 

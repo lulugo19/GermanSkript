@@ -6,13 +6,14 @@ import germanskript.util.SimpleLogger
 class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
   val typisierer = Typisierer(startDatei)
   override val definierer = typisierer.definierer
+  override val nichts = Typ.Nichts
   override var umgebung = Umgebung<Typ>()
   val logger = SimpleLogger()
   val ast: AST.Programm get() = typisierer.ast
 
   // ganz viele veränderliche Variablen :(
   private var zuÜberprüfendeKlasse: Typ.Compound.KlassenTyp? = null
-  private var rückgabeTyp: Typ? = null
+  private var rückgabeTyp: Typ = Typ.Nichts
   private var funktionsTypParams: List<AST.WortArt.Nomen>? = null
   private var letzterFunktionsAufruf: AST.FunktionsAufruf? = null
   private var rückgabeErreicht = false
@@ -28,7 +29,7 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
     definierer.funktionsDefinitionen.forEach(::prüfeFunktion)
 
     // neue germanskript.Umgebung
-    durchlaufeAufruf(ast.programmStart!!, ast.programm, Umgebung(), true,null)
+    durchlaufeAufruf(ast.programmStart!!, ast.programm, Umgebung(), true,Typ.Nichts)
   }
 
   private fun ausdruckMussTypSein(
@@ -145,7 +146,7 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
     }
     val signatur = funktion.signatur
     funktionsTypParams = signatur.typParameter
-    durchlaufeAufruf(signatur.name.toUntyped(), funktion.körper, funktionsUmgebung, false, signatur.rückgabeTyp?.typ)
+    durchlaufeAufruf(signatur.name.toUntyped(), funktion.körper, funktionsUmgebung, false, signatur.rückgabeTyp.typ!!)
     funktionsTypParams = null
   }
 
@@ -169,7 +170,7 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
       typKnoten.typ = Typ.Generic(index, TypParamKontext.Typ)
       typKnoten
     })
-    durchlaufeAufruf(klasse.name.bezeichner.toUntyped(), klasse.konstruktor, Umgebung(), true,null)
+    durchlaufeAufruf(klasse.name.bezeichner.toUntyped(), klasse.konstruktor, Umgebung(), true, Typ.Nichts)
     klasse.methoden.values.forEach(::prüfeFunktion)
     klasse.konvertierungen.values.forEach {konvertierung ->
       durchlaufeAufruf(
@@ -199,17 +200,18 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
     }
   }
 
-  private fun durchlaufeAufruf(token: Token, bereich: AST.Satz.Bereich, umgebung: Umgebung<Typ>, neuerBereich: Boolean, rückgabeTyp: Typ?) {
+  private fun durchlaufeAufruf(token: Token, bereich: AST.Satz.Bereich, umgebung: Umgebung<Typ>, neuerBereich: Boolean, rückgabeTyp: Typ): Typ {
     this.rückgabeTyp = rückgabeTyp
     this.umgebung = umgebung
     rückgabeErreicht = false
-    durchlaufeBereich(bereich, neuerBereich)
-    if (rückgabeTyp != null && !rückgabeErreicht) {
-      throw GermanSkriptFehler.RückgabeFehler.RückgabeVergessen(token, rückgabeTyp)
+    return durchlaufeBereich(bereich, neuerBereich).also {
+      if (rückgabeTyp != Typ.Nichts && !rückgabeErreicht) {
+        throw GermanSkriptFehler.RückgabeFehler.RückgabeVergessen(token, rückgabeTyp)
+      }
     }
   }
 
-  override fun durchlaufeVariablenDeklaration(deklaration: AST.Satz.VariablenDeklaration) {
+  override fun durchlaufeVariablenDeklaration(deklaration: AST.Satz.VariablenDeklaration): Typ {
     if (deklaration.istEigenschaftsNeuZuweisung) {
       val eigenschaft = holeNormaleEigenschaftAusKlasse(deklaration.name, zuÜberprüfendeKlasse!!)
       if (eigenschaft.typKnoten.name.unveränderlich) {
@@ -248,9 +250,10 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
         umgebung.überschreibeVariable(deklaration.name, wert)
       }
     }
+    return Typ.Nichts
   }
 
-  override fun durchlaufeFunktionsAufruf(funktionsAufruf: AST.FunktionsAufruf, istAusdruck: Boolean): Typ? {
+  override fun durchlaufeFunktionsAufruf(funktionsAufruf: AST.FunktionsAufruf, istAusdruck: Boolean): Typ {
     if (funktionsAufruf.vollerName == null) {
       funktionsAufruf.vollerName = definierer.holeVollenNamenVonFunktionsAufruf(funktionsAufruf, null)
     }
@@ -353,10 +356,6 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
       throw undefiniertFehler!!
     }
 
-    if (istAusdruck && funktionsSignatur!!.rückgabeTyp == null) {
-      throw GermanSkriptFehler.SyntaxFehler.FunktionAlsAusdruckFehler(funktionsSignatur!!.name.toUntyped())
-    }
-
     val parameter = funktionsSignatur!!.parameter
     val argumente = funktionsAufruf.argumente
     val j = if (funktionsAufruf.aufrufTyp == FunktionsAufrufTyp.METHODEN_OBJEKT_AUFRUF) 1 else 0
@@ -377,7 +376,7 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
     }
     letzterFunktionsAufruf = null
 
-    return funktionsSignatur!!.rückgabeTyp?.typ
+    return funktionsSignatur!!.rückgabeTyp.typ!!
   }
 
   private fun findeMethode(
@@ -437,19 +436,12 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
     return null
   }
 
-  override fun durchlaufeZurückgabe(zurückgabe: AST.Satz.Zurückgabe) {
-    if (rückgabeTyp == null && zurückgabe.ausdruck != null) {
-      throw GermanSkriptFehler.RückgabeFehler.UngültigeRückgabe(zurückgabe.erstesToken.toUntyped())
-    }
-    if (rückgabeTyp != null) {
-      if (zurückgabe.ausdruck == null) {
-        throw GermanSkriptFehler.RückgabeFehler.RückgabeVergessen(zurückgabe.erstesToken.toUntyped(), rückgabeTyp!!)
-      }
-      ausdruckMussTypSein(zurückgabe.ausdruck!!, rückgabeTyp!!)
-    }
+  override fun durchlaufeZurückgabe(zurückgabe: AST.Satz.Zurückgabe): Typ {
+    ausdruckMussTypSein(zurückgabe.ausdruck, rückgabeTyp)
     // Die Rückgabe ist nur auf alle Fälle erreichbar, wenn sie an keine Bedingung und in keiner Schleife ist
     rückgabeErreicht = zurückgabe.findNodeInParents<AST.Satz.BedingungsTerm>() == null &&
         zurückgabe.findNodeInParents<AST.Satz.FürJedeSchleife>() == null
+    return rückgabeTyp
   }
 
   private fun prüfeBedingung(bedingung: AST.Satz.BedingungsTerm) {
@@ -506,19 +498,21 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
     }
   }
 
-  override fun durchlaufeWerfe(werfe: AST.Satz.Werfe) {
+  override fun durchlaufeWerfe(werfe: AST.Satz.Werfe): Typ {
     evaluiereAusdruck(werfe.ausdruck)
+    return Typ.Niemals
   }
 
-  override fun durchlaufeIntern(intern: AST.Satz.Intern) {
+  override fun durchlaufeIntern(intern: AST.Satz.Intern): Typ {
     // Hier muss nicht viel gemacht werden
     // die internen Sachen sind schon von kotlin Typ-gecheckt :)
     rückgabeErreicht = true
+    return rückgabeTyp
   }
 
-  override fun bevorDurchlaufeMethodenBlock(methodenBlock: AST.Satz.MethodenBlock, blockObjekt: Typ?) {
+  override fun bevorDurchlaufeMethodenBereich(methodenBereich: AST.MethodenBereich, blockObjekt: Typ?) {
     if (blockObjekt !is Typ.Compound && blockObjekt !is Typ.Compound.Schnittstelle) {
-      throw GermanSkriptFehler.TypFehler.ObjektErwartet(methodenBlock.name.bezeichner.toUntyped())
+      throw GermanSkriptFehler.TypFehler.ObjektErwartet(methodenBereich.name.bezeichner.toUntyped())
     }
   }
 
@@ -674,7 +668,7 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
   }
 
 
-  override fun evaluiereMethodenBlockEigenschaftsZugriff(eigenschaftsZugriff: AST.Ausdruck.MethodenBlockEigenschaftsZugriff): Typ {
+  override fun evaluiereMethodenBlockEigenschaftsZugriff(eigenschaftsZugriff: AST.Ausdruck.MethodenBereichEigenschaftsZugriff): Typ {
     nichtErlaubtInKonstante(eigenschaftsZugriff)
     val methodenBlockObjekt = umgebung.holeMethodenBlockObjekt() as Typ.Compound.KlassenTyp
     return holeEigenschaftAusKlasse(eigenschaftsZugriff, methodenBlockObjekt)
@@ -762,7 +756,7 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
         closure.schnittstelle.name.bezeichnerToken,
         closure.körper, umgebung,
         false,
-        signatur.rückgabeTyp?.typ
+        signatur.rückgabeTyp.typ!!
     )
     umgebung.popBereich()
     rückgabeTyp = prevRückgabeTyp

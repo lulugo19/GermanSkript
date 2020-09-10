@@ -38,11 +38,6 @@ sealed class GermanSkriptFehler(private val fehlerName: String, val token: Token
 
     class UngültigerBereich(token: Token, override val nachricht: String): SyntaxFehler(token)
 
-    class FunktionAlsAusdruckFehler(token: Token): SyntaxFehler(token){
-      override val nachricht: String
-        get() = "Die Funktion '${token.wert}' kann nicht als Ausdruck verwendet werden, da sie keinen Rückgabetyp besitzt."
-    }
-
     class AnzahlDerParameterFehler(token: Token): SyntaxFehler(token){
       override val nachricht: String
         get() = "Die Anzahl der Parameter und Argumente der Funktion '${token.wert}' stimmen nicht überein."
@@ -50,11 +45,6 @@ sealed class GermanSkriptFehler(private val fehlerName: String, val token: Token
   }
 
   sealed class RückgabeFehler(token: Token): GermanSkriptFehler("Rückgabefehler", token) {
-    class UngültigeRückgabe(token: Token): RückgabeFehler(token) {
-      override val nachricht: String
-        get() = "Ungültige Rückgabe. Der Aufruf gibt nichts zurück und eine Rückgabe ist hier nicht erlaubt."
-    }
-
     class RückgabeVergessen(token: Token, private val rückgabeTyp: Typ): RückgabeFehler(token) {
       override val nachricht: String
         get() = "Es wird eine Rückgabe vom Typ '${rückgabeTyp.name}' erwartet."

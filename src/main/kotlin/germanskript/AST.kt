@@ -236,6 +236,10 @@ sealed class AST {
         }
   }
 
+  data class MethodenBereich(val name: WortArt.Nomen, val bereich: Satz.Bereich): AST() {
+    override val children = sequenceOf(name, bereich)
+  }
+
   sealed class Definition : AST() {
 
     data class Modul(val name: TypedToken<TokenTyp.BEZEICHNER_GROSS>, val definitionen: DefinitionsContainer):
@@ -266,7 +270,7 @@ sealed class AST {
 
     data class FunktionsSignatur(
         val typParameter: List<WortArt.Nomen>,
-        val rückgabeTyp: TypKnoten?,
+        val rückgabeTyp: TypKnoten,
         val name: TypedToken<TokenTyp.BEZEICHNER_KLEIN>,
         val reflexivPronomen: TypedToken<TokenTyp.REFLEXIV_PRONOMEN>?,
         val objekt: Parameter?,
@@ -288,9 +292,7 @@ sealed class AST {
 
       override val children = sequence {
         yieldAll(typParameter)
-        if (rückgabeTyp != null) {
-          yield(rückgabeTyp!!)
-        }
+        yield(rückgabeTyp)
         if (objekt != null) {
           yield(objekt!!)
         }
@@ -529,20 +531,16 @@ sealed class AST {
       override val children = sequenceOf(aufruf)
     }
 
-    data class MethodenBlock(val name: WortArt.Nomen, val bereich: Bereich ): Satz() {
-      override val children = sequenceOf(name, bereich)
+    data class MethodenBereich(val methodenBereich: AST.MethodenBereich): Satz() {
+      override val children = sequenceOf(methodenBereich)
     }
 
     data class SuperBlock(val bereich: Bereich): Satz() {
       override val children = sequenceOf(bereich)
     }
 
-    data class Zurückgabe(val erstesToken: TypedToken<TokenTyp.BEZEICHNER_KLEIN>, var ausdruck: Ausdruck?): Satz() {
-      override val children = sequence {
-        if (ausdruck != null) {
-          yield(ausdruck!!)
-        }
-      }
+    data class Zurückgabe(val erstesToken: TypedToken<TokenTyp.BEZEICHNER_KLEIN>, var ausdruck: Ausdruck): Satz() {
+      override val children = sequenceOf(ausdruck)
     }
   }
 
@@ -566,6 +564,8 @@ sealed class AST {
   }
 
   sealed class Ausdruck : AST() {
+    data class Nichts(val nichts: TypedToken<TokenTyp.NICHTS>): Ausdruck()
+
     data class Zeichenfolge(val zeichenfolge: TypedToken<TokenTyp.ZEICHENFOLGE>) : Ausdruck()
 
     data class Zahl(val zahl: TypedToken<TokenTyp.ZAHL>) : Ausdruck()
@@ -603,6 +603,10 @@ sealed class AST {
 
     data class FunktionsAufruf(val aufruf: AST.FunktionsAufruf): Ausdruck() {
       override val children = sequenceOf(aufruf)
+    }
+
+    data class MethodenBereich(val methodenBereich: AST.MethodenBereich): Ausdruck() {
+      override val children = sequenceOf(methodenBereich)
     }
 
     data class BinärerAusdruck(
@@ -670,7 +674,7 @@ sealed class AST {
       override val vollerName get() = aufrufName
     }
 
-    data class MethodenBlockEigenschaftsZugriff(
+    data class MethodenBereichEigenschaftsZugriff(
         override val eigenschaftsName: WortArt.Nomen
     ): Ausdruck(), IEigenschaftsZugriff {
       override val children = sequenceOf(eigenschaftsName)
@@ -689,6 +693,6 @@ sealed class AST {
     }
 
     data class SelbstReferenz(val ich: TypedToken<TokenTyp.REFERENZ.ICH>): Ausdruck()
-    data class MethodenBlockReferenz(val du: TypedToken<TokenTyp.REFERENZ.DU>): Ausdruck()
+    data class MethodenBereichReferenz(val du: TypedToken<TokenTyp.REFERENZ.DU>): Ausdruck()
   }
 }

@@ -11,13 +11,15 @@ import kotlin.random.Random
 class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
   val typPrüfer = TypPrüfer(startDatei)
 
+  override val nichts = Wert.Nichts
+
   override val definierer = typPrüfer.definierer
   val ast: AST.Programm = typPrüfer.ast
 
-  private var rückgabeWert: Wert? = null
   private val flags = EnumSet.noneOf(Flag::class.java)
   private val aufrufStapel = AufrufStapel()
   private val listenKlassenDefinition get() = typPrüfer.typisierer.listenKlassenDefinition
+  private var rückgabeWert: Wert = Wert.Nichts
 
   override val umgebung: Umgebung<Wert> get() = aufrufStapel.top().umgebung
 
@@ -124,7 +126,7 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
     // hier muss nichts gemacht werden...
   }
 
-  override fun durchlaufeVariablenDeklaration(deklaration: AST.Satz.VariablenDeklaration) {
+  override fun durchlaufeVariablenDeklaration(deklaration: AST.Satz.VariablenDeklaration): Wert {
     if (deklaration.istEigenschaftsNeuZuweisung || deklaration.istEigenschaft) {
       // weise Eigenschaft neu zu
       (aufrufStapel.top().objekt!! as Wert.Objekt).setzeEigenschaft(deklaration.name, evaluiereAusdruck(deklaration.wert))
@@ -139,14 +141,16 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
         umgebung.überschreibeVariable(deklaration.name, wert)
       }
     }
+    return Wert.Nichts
   }
 
-  private fun durchlaufeAufruf(aufruf: AST.IAufruf, bereich: AST.Satz.Bereich, umgebung: Umgebung<Wert>, neuerBereich: Boolean, objekt: Wert.Objekt?): Wert? {
+  private fun durchlaufeAufruf(aufruf: AST.IAufruf, bereich: AST.Satz.Bereich, umgebung: Umgebung<Wert>, neuerBereich: Boolean, objekt: Wert.Objekt?): Wert {
+    rückgabeWert = Wert.Nichts
     aufrufStapel.push(aufruf, umgebung, objekt)
-    durchlaufeBereich(bereich, neuerBereich)
-    flags.remove(Flag.ZURÜCK)
-    aufrufStapel.pop()
-    return rückgabeWert
+    return durchlaufeBereich(bereich, neuerBereich).also {
+      flags.remove(Flag.ZURÜCK)
+      aufrufStapel.pop()
+    }
   }
 
   /**
@@ -164,8 +168,7 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
     }
   }
 
-  override fun durchlaufeFunktionsAufruf(funktionsAufruf: AST.FunktionsAufruf, istAusdruck: Boolean): Wert? {
-    rückgabeWert = null
+  override fun durchlaufeFunktionsAufruf(funktionsAufruf: AST.FunktionsAufruf, istAusdruck: Boolean): Wert {
     var funktionsUmgebung = Umgebung<Wert>()
     var objekt: Wert.Objekt? = null
     val (körper, parameterNamen) = if (funktionsAufruf.aufrufTyp == FunktionsAufrufTyp.FUNKTIONS_AUFRUF) {
@@ -205,14 +208,13 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
       funktionsUmgebung.schreibeVariable(parameterNamen[i], evaluiereAusdruck(argumente[i+j].ausdruck), false)
     }
 
-    return durchlaufeAufruf(funktionsAufruf, körper, funktionsUmgebung, false, objekt)
+    return durchlaufeAufruf(funktionsAufruf, körper, funktionsUmgebung, false, objekt).let { rückgabeWert }
   }
 
-  override fun durchlaufeZurückgabe(zurückgabe: AST.Satz.Zurückgabe) {
-    if (zurückgabe.ausdruck != null) {
-      rückgabeWert = evaluiereAusdruck(zurückgabe.ausdruck!!)
-    }
-    flags.add(Flag.ZURÜCK)
+  override fun durchlaufeZurückgabe(zurückgabe: AST.Satz.Zurückgabe): Wert {
+    return evaluiereAusdruck(zurückgabe.ausdruck).also {
+      flags.add(Flag.ZURÜCK)
+    }.also { rückgabeWert = it }
   }
 
   override fun durchlaufeBedingungsSatz(bedingungsSatz: AST.Satz.Bedingung) {
@@ -300,22 +302,23 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
     }
   }
 
-  override fun durchlaufeWerfe(werfe: AST.Satz.Werfe) {
+  override fun durchlaufeWerfe(werfe: AST.Satz.Werfe): Nothing {
     val wert = evaluiereAusdruck(werfe.ausdruck)
     val fehlerMeldung = konvertiereZuZeichenfolge(wert).zeichenfolge
     throw GermanSkriptFehler.UnbehandelterFehler(werfe.werfe.toUntyped(), aufrufStapel.toString(), fehlerMeldung, wert)
   }
 
-  override fun durchlaufeIntern(intern: AST.Satz.Intern) {
+  override fun durchlaufeIntern(intern: AST.Satz.Intern): Wert {
     val funktionsName = aufrufStapel.top().aufruf.vollerName!!
-    rückgabeWert = when (val objekt = aufrufStapel.top().objekt) {
+    return when (val objekt = aufrufStapel.top().objekt) {
       is Wert.Objekt ->
-        (objekt as Wert.Objekt.InternesObjekt).rufeMethodeAuf(funktionsName, umgebung, ::durchlaufeInternenSchnittstellenAufruf)
+        (objekt as Wert.Objekt.InternesObjekt).rufeMethodeAuf(
+            funktionsName, umgebung, ::durchlaufeInternenSchnittstellenAufruf).also { rückgabeWert = it }
       else -> interneFunktionen.getValue(funktionsName)()
     }
   }
 
-  override fun bevorDurchlaufeMethodenBlock(methodenBlock: AST.Satz.MethodenBlock, blockObjekt: Wert?) {
+  override fun bevorDurchlaufeMethodenBereich(methodenBereich: AST.MethodenBereich, blockObjekt: Wert?) {
     // mache nichts hier, das ist eigentlich nur für den Typprüfer gedacht
   }
 
@@ -375,7 +378,7 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
       objekt.holeEigenschaft(zugriff.eigenschaftsName)
     } catch (nichtGefunden: NoSuchElementException) {
       val berechneteEigenschaft = objekt.typ.definition.berechneteEigenschaften.getValue(zugriff.eigenschaftsName.nominativ)
-      durchlaufeAufruf(zugriff, berechneteEigenschaft.definition, Umgebung(), true, objekt)!!
+      durchlaufeAufruf(zugriff, berechneteEigenschaft.definition, Umgebung(), true, objekt)
     }
   }
 
@@ -392,7 +395,7 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
     return holeEigenschaft(eigenschaftsZugriff, objekt)
   }
 
-  override fun evaluiereMethodenBlockEigenschaftsZugriff(eigenschaftsZugriff: AST.Ausdruck.MethodenBlockEigenschaftsZugriff): Wert {
+  override fun evaluiereMethodenBlockEigenschaftsZugriff(eigenschaftsZugriff: AST.Ausdruck.MethodenBereichEigenschaftsZugriff): Wert {
     val objekt = umgebung.holeMethodenBlockObjekt()!! as Wert.Objekt
     return holeEigenschaft(eigenschaftsZugriff, objekt)
   }
@@ -507,7 +510,7 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
   // endregion
 
 
-  private fun durchlaufeInternenSchnittstellenAufruf(wert: Wert, name: String, argumente: Array<Wert>): Wert? {
+  private fun durchlaufeInternenSchnittstellenAufruf(wert: Wert, name: String, argumente: Array<Wert>): Wert {
     val (funktionsUmgebung, körper, parameterNamen) = when (wert) {
       is Wert.Objekt -> {
         val methode = wert.typ.definition.methoden.getValue(name)
@@ -525,23 +528,23 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
   }
 
   // region interne Funktionen
-  private val interneFunktionen = mapOf<String, () -> (Wert?)>(
+  private val interneFunktionen = mapOf<String, () -> (Wert)>(
     "schreibe die Zeichenfolge" to {
       val zeichenfolge = umgebung.leseVariable("Zeichenfolge")!!.wert as Wert.Primitiv.Zeichenfolge
       print(zeichenfolge)
-      null
+      Wert.Nichts
     },
 
     "schreibe die Zeile" to {
       val zeile = umgebung.leseVariable("Zeile")!!.wert as Wert.Primitiv.Zeichenfolge
       println(zeile)
-      null
+      Wert.Nichts
     },
 
     "schreibe die Zahl" to {
       val zahl = umgebung.leseVariable("Zahl")!!.wert as Wert.Primitiv.Zahl
       println(zahl)
-      null
+      Wert.Nichts
     },
 
     "lese" to {
@@ -616,7 +619,7 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
     val wert = evaluiereAusdruck(konvertierung.ausdruck)
     if (wert is Wert.Objekt && wert.typ.definition.konvertierungen.containsKey(konvertierung.typ.name.nominativ)) {
       val konvertierungsDefinition = wert.typ.definition.konvertierungen.getValue(konvertierung.typ.name.nominativ)
-      return durchlaufeAufruf(konvertierung, konvertierungsDefinition.definition, Umgebung(), true, wert)!!
+      return durchlaufeAufruf(konvertierung, konvertierungsDefinition.definition, Umgebung(), true, wert)
     }
     return when (konvertierung.typ.typ!!) {
       is Typ.Primitiv.Zahl -> konvertiereZuZahl(konvertierung, wert)
@@ -667,6 +670,7 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
 
   private fun typeOf(wert: Wert): Typ {
     return when (wert) {
+      is Wert.Nichts -> Typ.Nichts
       is Wert.Primitiv.Zeichenfolge -> Typ.Primitiv.Zeichenfolge
       is Wert.Primitiv.Zahl -> Typ.Primitiv.Zahl
       is Wert.Primitiv.Boolean -> Typ.Primitiv.Boolean

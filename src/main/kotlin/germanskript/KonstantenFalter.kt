@@ -12,8 +12,11 @@ import java.util.*
 class KonstantenFalter(startDatei: File): ProgrammDurchlaufer<Wert?>(startDatei) {
   val typPrüfer = TypPrüfer(startDatei)
   val ast = typPrüfer.ast
+
   override val definierer: Definierer
     get() = typPrüfer.definierer
+
+  override val nichts: Wert? = null
 
   override var umgebung = Umgebung<Wert?>()
 
@@ -30,9 +33,6 @@ class KonstantenFalter(startDatei: File): ProgrammDurchlaufer<Wert?>(startDatei)
   }
 
   private fun falteFunktion(funktion: AST.Definition.Funktion) {
-    if (funktion.signatur.rückgabeTyp == null) {
-      return
-    }
     val funktionsUmgebung = Umgebung<Wert?>()
     funktionsUmgebung.pushBereich()
     for (parameter in funktion.signatur.parameter) {
@@ -61,7 +61,7 @@ class KonstantenFalter(startDatei: File): ProgrammDurchlaufer<Wert?>(startDatei)
     }
   }
 
-  override fun bevorDurchlaufeMethodenBlock(methodenBlock: AST.Satz.MethodenBlock, blockObjekt: Wert?) {
+  override fun bevorDurchlaufeMethodenBereich(methodenBereich: AST.MethodenBereich, blockObjekt: Wert?) {
     // hier muss nichts gemacht werden
   }
 
@@ -76,10 +76,10 @@ class KonstantenFalter(startDatei: File): ProgrammDurchlaufer<Wert?>(startDatei)
 
   val geleseneVariablen = Stack<MutableMap<String, GeleseneVariable>>()
 
-  override fun durchlaufeVariablenDeklaration(deklaration: AST.Satz.VariablenDeklaration) {
+  override fun durchlaufeVariablenDeklaration(deklaration: AST.Satz.VariablenDeklaration): Wert? {
     deklaration.wert = falteKonstante(deklaration.wert)
     if (deklaration.istEigenschaftsNeuZuweisung || deklaration.istEigenschaft) {
-      return
+      return null
     }
     else {
       val geleseneVariablen = geleseneVariablen.peek()!!
@@ -95,6 +95,7 @@ class KonstantenFalter(startDatei: File): ProgrammDurchlaufer<Wert?>(startDatei)
       }
       geleseneVariablen[deklaration.name.nominativ] = GeleseneVariable(deklaration, false)
     }
+    return null
   }
 
   override fun starteBereich(bereich: AST.Satz.Bereich) {
@@ -118,10 +119,9 @@ class KonstantenFalter(startDatei: File): ProgrammDurchlaufer<Wert?>(startDatei)
 
   override fun evaluiereKonstante(konstante: AST.Ausdruck.Konstante): Wert? = evaluiereAusdruck(konstante.wert!!)
 
-  override fun durchlaufeZurückgabe(zurückgabe: AST.Satz.Zurückgabe) {
-    if (zurückgabe.ausdruck != null) {
-      zurückgabe.ausdruck = falteKonstante(zurückgabe.ausdruck!!)
-    }
+  override fun durchlaufeZurückgabe(zurückgabe: AST.Satz.Zurückgabe): Wert? {
+    zurückgabe.ausdruck = falteKonstante(zurückgabe.ausdruck)
+    return null
   }
 
   override fun durchlaufeBedingungsSatz(bedingungsSatz: AST.Satz.Bedingung) {
@@ -183,12 +183,14 @@ class KonstantenFalter(startDatei: File): ProgrammDurchlaufer<Wert?>(startDatei)
     }
   }
 
-  override fun durchlaufeWerfe(werfe: AST.Satz.Werfe) {
+  override fun durchlaufeWerfe(werfe: AST.Satz.Werfe): Wert? {
     werfe.ausdruck = falteKonstante(werfe.ausdruck)
+    return null
   }
 
-  override fun durchlaufeIntern(intern: AST.Satz.Intern) {
+  override fun durchlaufeIntern(intern: AST.Satz.Intern): Wert? {
     // hier muss nichts gemacht werden
+    return null
   }
 
   override fun evaluiereZeichenfolge(ausdruck: AST.Ausdruck.Zeichenfolge): Wert? = ausdruck.zeichenfolge.typ.zeichenfolge
@@ -253,7 +255,7 @@ class KonstantenFalter(startDatei: File): ProgrammDurchlaufer<Wert?>(startDatei)
 
   override fun evaluiereSelbstEigenschaftsZugriff(eigenschaftsZugriff: AST.Ausdruck.SelbstEigenschaftsZugriff): Wert? = null
 
-  override fun evaluiereMethodenBlockEigenschaftsZugriff(eigenschaftsZugriff: AST.Ausdruck.MethodenBlockEigenschaftsZugriff): Wert? = null
+  override fun evaluiereMethodenBlockEigenschaftsZugriff(eigenschaftsZugriff: AST.Ausdruck.MethodenBereichEigenschaftsZugriff): Wert? = null
 
   override fun evaluiereSelbstReferenz(): Wert? = null
 }

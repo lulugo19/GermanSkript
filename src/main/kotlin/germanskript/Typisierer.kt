@@ -10,6 +10,20 @@ sealed class Typ() {
   abstract val definierteOperatoren: Map<Operator, Typ>
   abstract fun kannNachTypKonvertiertWerden(typ: Typ): Boolean
 
+  // äquivalent zu Kotlins Typen "Unit"
+  object Nichts: Typ() {
+    override val name = "Nichts"
+    override val definierteOperatoren: Map<Operator, Typ> = mapOf()
+    override fun kannNachTypKonvertiertWerden(typ: Typ) = false
+  }
+
+  // äquivalent zu Kotlins Typen "Nothing"
+  object Niemals: Typ() {
+    override val name = "Niemals"
+    override val definierteOperatoren: Map<Operator, Typ> = mapOf()
+    override fun kannNachTypKonvertiertWerden(typ: Typ) = false
+  }
+
   sealed class Primitiv(override val name: String): Typ() {
     object Zahl : Primitiv("Zahl") {
       override val definierteOperatoren: Map<Operator, Typ> = mapOf(
@@ -53,12 +67,6 @@ sealed class Typ() {
 
       override fun kannNachTypKonvertiertWerden(typ: Typ) = typ == Boolean || typ == Zeichenfolge || typ == Zahl
     }
-  }
-
-  object Nichts: Typ() {
-    override val name = "Nichts"
-    override val definierteOperatoren: Map<Operator, Typ> = mapOf()
-    override fun kannNachTypKonvertiertWerden(typ: Typ) = false
   }
 
   data class Generic(val index: Int, val kontext: TypParamKontext) : Typ() {
@@ -184,6 +192,7 @@ class Typisierer(startDatei: File): PipelineKomponente(startDatei) {
         "Zahl" -> Typ.Primitiv.Zahl
         "Zeichenfolge" -> Typ.Primitiv.Zeichenfolge
         "Boolean" -> Typ.Primitiv.Boolean
+        "Nichts" -> Typ.Nichts
         else -> when (val typDef = definierer.holeTypDefinition(typKnoten)) {
           is AST.Definition.Typdefinition.Klasse -> Typ.Compound.KlassenTyp.Klasse(typDef, typArgumente)
           is AST.Definition.Typdefinition.Schnittstelle -> Typ.Compound.Schnittstelle(typDef, typArgumente)
@@ -294,34 +303,14 @@ class Typisierer(startDatei: File): PipelineKomponente(startDatei) {
             schnittstelle
         )
       })
-      // überprüfe Rückgabetypen
-      if (signatur.rückgabeTyp == null && methode.signatur.rückgabeTyp != null) {
+
+      if (signatur.rückgabeTyp.typ != methode.signatur.rückgabeTyp.typ) {
         throw GermanSkriptFehler.TypFehler.FalscherSchnittstellenTyp(
             methode.signatur.rückgabeTyp.name.bezeichnerToken,
             schnittstelle,
             methodenName,
             methode.signatur.rückgabeTyp.typ!!,
-            Typ.Nichts
-        )
-      }
-
-      if (signatur.rückgabeTyp != null && methode.signatur.rückgabeTyp == null) {
-        throw GermanSkriptFehler.TypFehler.FalscherSchnittstellenTyp(
-            methode.signatur.name.toUntyped(),
-            schnittstelle,
-            methodenName,
-            Typ.Nichts,
             signatur.rückgabeTyp.typ!!
-        )
-      }
-
-      if (signatur.rückgabeTyp != methode.signatur.rückgabeTyp) {
-        throw GermanSkriptFehler.TypFehler.FalscherSchnittstellenTyp(
-            methode.signatur.rückgabeTyp!!.name.bezeichnerToken,
-            schnittstelle,
-            methodenName,
-            methode.signatur.rückgabeTyp.typ!!,
-            signatur.rückgabeTyp!!.typ!!
         )
       }
 

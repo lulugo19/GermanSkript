@@ -32,13 +32,12 @@ class GrammatikPrüfer(startDatei: File): PipelineKomponente(startDatei) {
         is AST.Definition.Typdefinition.Alias -> prüfeAlias(knoten)
         is AST.Satz.VariablenDeklaration -> prüfeVariablendeklaration(knoten)
         is AST.Satz.BedingungsTerm -> prüfeKontextbasiertenAusdruck(knoten.bedingung, null, EnumSet.of(Kasus.NOMINATIV), false)
-        is AST.Satz.Zurückgabe -> if (knoten.ausdruck != null)
-            prüfeKontextbasiertenAusdruck(knoten.ausdruck!!, null, EnumSet.of(Kasus.AKKUSATIV), false)
+        is AST.Satz.Zurückgabe -> prüfeKontextbasiertenAusdruck(knoten.ausdruck, null, EnumSet.of(Kasus.AKKUSATIV), false)
         is AST.Satz.FürJedeSchleife -> prüfeFürJedeSchleife(knoten)
         is AST.Satz.Fange -> prüfeParameter(knoten.param, EnumSet.of(Kasus.AKKUSATIV))
         is AST.Satz.Werfe -> prüfeWerfe(knoten)
         is AST.Satz.FunktionsAufruf -> prüfeFunktionsAufruf(knoten.aufruf)
-        is AST.Satz.MethodenBlock -> prüfeNomen(knoten.name, EnumSet.of(Kasus.NOMINATIV), Numerus.BEIDE)
+        is AST.MethodenBereich -> prüfeNomen(knoten.name, EnumSet.of(Kasus.NOMINATIV), Numerus.BEIDE)
       }
       // germanskript.visit everything
       true
@@ -187,7 +186,7 @@ class GrammatikPrüfer(startDatei: File): PipelineKomponente(startDatei) {
       is AST.Ausdruck.ListenElement -> prüfeListenElement(ausdruck, kontextNomen, fälle, pluralErwartet)
       is AST.Ausdruck.ObjektInstanziierung -> prüfeObjektinstanziierung(ausdruck, kontextNomen, fälle, pluralErwartet)
       is AST.Ausdruck.EigenschaftsZugriff -> prüfeEigenschaftsZugriff(ausdruck, kontextNomen, fälle, pluralErwartet)
-      is AST.Ausdruck.MethodenBlockEigenschaftsZugriff -> prüfeNomenKontextBasiert(ausdruck.eigenschaftsName, kontextNomen, fälle, pluralErwartet)
+      is AST.Ausdruck.MethodenBereichEigenschaftsZugriff -> prüfeNomenKontextBasiert(ausdruck.eigenschaftsName, kontextNomen, fälle, pluralErwartet)
       is AST.Ausdruck.SelbstEigenschaftsZugriff -> prüfeNomenKontextBasiert(ausdruck.eigenschaftsName, kontextNomen, fälle, pluralErwartet)
       is AST.Ausdruck.Konvertierung -> prüfeKonvertierung(ausdruck, kontextNomen, fälle, pluralErwartet)
       is AST.Ausdruck.BinärerAusdruck -> prüfeBinärenAusdruck(ausdruck, kontextNomen, fälle, pluralErwartet)
@@ -367,9 +366,7 @@ class GrammatikPrüfer(startDatei: File): PipelineKomponente(startDatei) {
 
   private fun prüfeFunktionsSignatur(signatur: AST.Definition.FunktionsSignatur) {
     prüfeTypParameter(signatur.typParameter)
-    if (signatur.rückgabeTyp != null) {
-      prüfeTyp(signatur.rückgabeTyp, EnumSet.of(Kasus.NOMINATIV), Numerus.BEIDE, null)
-    }
+    prüfeTyp(signatur.rückgabeTyp, EnumSet.of(Kasus.NOMINATIV), Numerus.BEIDE, null)
     if (signatur.objekt != null) {
       prüfeParameter(signatur.objekt, EnumSet.of(Kasus.DATIV, Kasus.AKKUSATIV))
     }
