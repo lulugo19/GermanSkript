@@ -46,7 +46,9 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
     var erwarteterTyp = erwarteterTyp
     if (erwarteterTyp is Typ.Generic) {
       erwarteterTyp = when (erwarteterTyp.kontext) {
-        TypParamKontext.Funktion -> funktionsTypArgs!![erwarteterTyp.index].typ!!
+        TypParamKontext.Funktion ->
+          if (funktionsTypArgs == null) erwarteterTyp
+          else funktionsTypArgs[erwarteterTyp.index].typ!!
         TypParamKontext.Typ -> typTypArgs!![erwarteterTyp.index].typ!!
       }
     }
@@ -211,7 +213,7 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
     }
   }
 
-  override fun durchlaufeVariablenDeklaration(deklaration: AST.Satz.VariablenDeklaration): Typ {
+  override fun durchlaufeVariablenDeklaration(deklaration: AST.Satz.VariablenDeklaration) {
     if (deklaration.istEigenschaftsNeuZuweisung) {
       val eigenschaft = holeNormaleEigenschaftAusKlasse(deklaration.name, zuÜberprüfendeKlasse!!)
       if (eigenschaft.typKnoten.name.unveränderlich) {
@@ -250,7 +252,12 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
         umgebung.überschreibeVariable(deklaration.name, wert)
       }
     }
-    return Typ.Nichts
+  }
+
+  override fun durchlaufeListenElementZuweisung(zuweisung: AST.Satz.ListenElementZuweisung) {
+    ausdruckMussTypSein(zuweisung.index, Typ.Primitiv.Zahl)
+    val elementTyp = evaluiereListenSingular(zuweisung.singular)
+    ausdruckMussTypSein(zuweisung.wert, elementTyp)
   }
 
   override fun durchlaufeFunktionsAufruf(funktionsAufruf: AST.FunktionsAufruf, istAusdruck: Boolean): Typ {
@@ -591,6 +598,7 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
         throw GermanSkriptFehler.TypFehler.FalscherTyp(
             listenElement.singular.bezeichner.toUntyped(), zeichenfolge, "Zeichenfolge")
       }
+      listenElement.istZeichenfolgeZugriff = true
       return Typ.Primitiv.Zeichenfolge
     }
     return evaluiereListenSingular(listenElement.singular)
@@ -598,9 +606,14 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
 
   private fun evaluiereListenSingular(singular: AST.WortArt.Nomen): Typ {
     val plural = singular.ganzesWort(Kasus.NOMINATIV, Numerus.PLURAL)
-    val liste = evaluiereVariable(plural)?:
-    throw GermanSkriptFehler.Undefiniert.Variable(singular.bezeichner.toUntyped(), plural)
-
+    val liste = when (singular.vornomen?.typ) {
+        TokenTyp.VORNOMEN.ARTIKEL.BESTIMMT, null -> evaluiereVariable(plural)?:
+          throw GermanSkriptFehler.Undefiniert.Variable(singular.bezeichner.toUntyped(), plural)
+        TokenTyp.VORNOMEN.POSSESSIV_PRONOMEN.MEIN -> holeNormaleEigenschaftAusKlasse(singular, zuÜberprüfendeKlasse!!, Numerus.PLURAL)
+        TokenTyp.VORNOMEN.POSSESSIV_PRONOMEN.DEIN -> holeNormaleEigenschaftAusKlasse(
+            singular, umgebung.holeMethodenBlockObjekt()!! as Typ.Compound.KlassenTyp, Numerus.PLURAL)
+        else -> throw Exception("Dieser Fall sollte nie eintreten.")
+    }
     return (liste as Typ.Compound.KlassenTyp.Liste).typArgumente[0].typ!!
   }
 
@@ -674,14 +687,19 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
     return holeEigenschaftAusKlasse(eigenschaftsZugriff, methodenBlockObjekt)
   }
 
-  private fun holeNormaleEigenschaftAusKlasse(eigenschaftsName: AST.WortArt.Nomen, klasse: Typ.Compound.KlassenTyp): AST.Definition.Parameter {
+  private fun holeNormaleEigenschaftAusKlasse(
+      eigenschaftsName: AST.WortArt.Nomen,
+      klasse: Typ.Compound.KlassenTyp,
+      numerus: Numerus = eigenschaftsName.numerus!!
+  ): AST.Definition.Parameter {
+    val eigName = eigenschaftsName.ganzesWort(Kasus.NOMINATIV, numerus)
     for (eigenschaft in klasse.definition.eigenschaften) {
       val name = holeParamName(eigenschaft ,klasse.typArgumente)
-      if (eigenschaftsName.nominativ == name.nominativ) {
+      if (name.nominativ == eigName) {
         return eigenschaft
       }
     }
-    throw GermanSkriptFehler.Undefiniert.Eigenschaft(eigenschaftsName.bezeichner.toUntyped(), klasse.definition.name.nominativ)
+    throw GermanSkriptFehler.Undefiniert.Eigenschaft(eigenschaftsName.bezeichner.toUntyped(), eigName, klasse.definition.name.nominativ)
   }
 
   private fun holeEigenschaftAusKlasse(eigenschaftsZugriff: AST.Ausdruck.IEigenschaftsZugriff, klasse: Typ.Compound.KlassenTyp): Typ {

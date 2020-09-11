@@ -88,9 +88,7 @@ sealed class Typ() {
       // TODO: Ist das wirklich richtig so? Mit den Generics...?
       return this.definition == other.definition && this.typArgumente.size == other.typArgumente.size
           && this.typArgumente.zip(other.typArgumente).all { (a, b) ->
-        a.typ is Generic && b.typ !is Generic ||
-        a.typ !is Generic && b.typ is Generic ||
-            a.typ == b.typ
+        a.typ is Generic || b.typ is Generic || a.typ == b.typ
       }
     }
 

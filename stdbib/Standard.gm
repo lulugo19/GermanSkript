@@ -3,11 +3,9 @@ Deklination Neutrum Singular(Niemals) Plural(Niemals)
 Deklination Femininum Singular(Zahl) Plural(Zahlen)
 Deklination Femininum Singular(Zeichenfolge) Plural(Zeichenfolgen)
 Deklination Neutrum Singular(Boolean) Plural(Booleans)
-Deklination Femininum Singular(Liste) Plural(Listen)
 Deklination Femininum Singular(Zeile) Plural(Zeilen)
 Deklination Femininum Singular(Länge) Plural(Längen)
 Deklination Maskulinum Singular(Typ, Typs, Typ, Typ) Plural(Typen)
-Deklination Maskulinum Singular(Index) Plural(Indizes)
 Deklination Neutrum Singular(Minimum, Minimums, Minimum, Minimum) Plural(Minima)
 Deklination Neutrum Singular(Maximum, Maximums, Maximum, Maximum) Plural(Maxima)
 Deklination Maskulinum Singular(Separator, Separators, Separator, Separator) Plural(Separatoren)
@@ -50,23 +48,6 @@ Verb(Zahl) randomisiere zwischen der Zahl Minimum, der Zahl Maximum: intern.
 Verb(Zeichenfolge) buchstabiere die Zeichenfolge groß: intern.   // toUpperCase
 Verb(Zeichenfolge) buchstabiere die Zeichenfolge klein: intern.  // toLowerCase
 Verb(Zeichenfolgen) trenne die Zeichenfolge zwischen der Zeichenfolge Separator: intern.
-
-
-// Listen Definition und Methoden
-Nomen<Typ> Liste:
-    jene AnZahl ist 0
-.
-
-Implementiere die Liste:
-    Verb(Boolean) enthalten den Typ: intern.
-    Verb füge den Typ hinzu: intern.
-    Verb entferne an der Zahl Index: intern.
-    Verb sortiere mich mit dem Vergleichbaren<Typ>: intern.
-.
-
-Adjektiv<Typ> vergleichbar:
-    Verb(Zahl) vergleiche den TypA mit dem TypB
-.
 
 // Fehler
 Deklination Maskulinum Singular(Fehler, Fehlers, Fehler, Fehler) Plural(Fehler)

@@ -31,6 +31,7 @@ class GrammatikPrüfer(startDatei: File): PipelineKomponente(startDatei) {
         is AST.Definition.Typdefinition.Schnittstelle -> prüfeSchnittstelle(knoten)
         is AST.Definition.Typdefinition.Alias -> prüfeAlias(knoten)
         is AST.Satz.VariablenDeklaration -> prüfeVariablendeklaration(knoten)
+        is AST.Satz.ListenElementZuweisung -> prüfeListenElementZuweisung(knoten)
         is AST.Satz.BedingungsTerm -> prüfeKontextbasiertenAusdruck(knoten.bedingung, null, EnumSet.of(Kasus.NOMINATIV), false)
         is AST.Satz.Zurückgabe -> prüfeKontextbasiertenAusdruck(knoten.ausdruck, null, EnumSet.of(Kasus.AKKUSATIV), false)
         is AST.Satz.FürJedeSchleife -> prüfeFürJedeSchleife(knoten)
@@ -280,8 +281,8 @@ class GrammatikPrüfer(startDatei: File): PipelineKomponente(startDatei) {
     val nomen = variablenDeklaration.name
     prüfeNomen(nomen, EnumSet.of(Kasus.NOMINATIV), Numerus.BEIDE)
     // prüfe ob Numerus mit 'ist' oder 'sind' übereinstimmt
-    if (nomen.numerus != variablenDeklaration.zuweisungsOperator.typ.numerus) {
-      throw GermanSkriptFehler.GrammatikFehler.FalscheZuweisung(variablenDeklaration.zuweisungsOperator.toUntyped(), nomen.numerus!!)
+    if (nomen.numerus != variablenDeklaration.zuweisung.typ.numerus) {
+      throw GermanSkriptFehler.GrammatikFehler.FalscheZuweisung(variablenDeklaration.zuweisung.toUntyped(), nomen.numerus!!)
     }
     if (variablenDeklaration.neu != null) {
       if (nomen.genus != variablenDeklaration.neu.typ.genus) {
@@ -292,6 +293,16 @@ class GrammatikPrüfer(startDatei: File): PipelineKomponente(startDatei) {
     }
     // logger.addLine("geprüft: $variablenDeklaration")
     prüfeKontextbasiertenAusdruck(variablenDeklaration.wert, nomen, EnumSet.of(Kasus.NOMINATIV), false)
+  }
+
+  private fun prüfeListenElementZuweisung(elementZuweisung: AST.Satz.ListenElementZuweisung) {
+    val nomen = elementZuweisung.singular
+    prüfeNomen(elementZuweisung.singular, EnumSet.of(Kasus.NOMINATIV), EnumSet.of(Numerus.SINGULAR))
+    if (nomen.numerus != elementZuweisung.zuweisung.typ.numerus) {
+      throw GermanSkriptFehler.GrammatikFehler.FalscheZuweisung(elementZuweisung.zuweisung.toUntyped(), nomen.numerus!!)
+    }
+    prüfeKontextbasiertenAusdruck(elementZuweisung.index, null, EnumSet.of(Kasus.NOMINATIV), false)
+    prüfeKontextbasiertenAusdruck(elementZuweisung.wert, nomen, EnumSet.of(Kasus.NOMINATIV), false)
   }
 
   private fun prüfeBinärenAusdruck(binärerAusdruck: AST.Ausdruck.BinärerAusdruck, kontextNomen: AST.WortArt.Nomen?, fälle: EnumSet<Kasus>, pluralErwartet: Boolean) {

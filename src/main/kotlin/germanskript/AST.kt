@@ -427,13 +427,23 @@ sealed class AST {
     data class VariablenDeklaration(
         val name: WortArt.Nomen,
         val neu: TypedToken<TokenTyp.NEU>?,
-        val zuweisungsOperator: TypedToken<TokenTyp.ZUWEISUNG>,
+        val zuweisung: TypedToken<TokenTyp.ZUWEISUNG>,
         var wert: Ausdruck
     ): Satz() {
       override val children = sequenceOf(name, wert)
 
       val istEigenschaftsNeuZuweisung = name.vornomen!!.typ == TokenTyp.VORNOMEN.POSSESSIV_PRONOMEN.MEIN
       val istEigenschaft = name.vornomen!!.typ is TokenTyp.VORNOMEN.DEMONSTRATIV_PRONOMEN
+    }
+
+    data class ListenElementZuweisung(
+        val singular: WortArt.Nomen,
+        val index: Ausdruck,
+        val zuweisung: TypedToken<TokenTyp.ZUWEISUNG>,
+        var wert: Ausdruck
+    ): Satz() {
+      override val children = sequenceOf(singular, wert)
+      val istEigenschaft = singular.vornomen!!.typ is TokenTyp.VORNOMEN.DEMONSTRATIV_PRONOMEN
     }
 
     data class BedingungsTerm(
@@ -598,6 +608,7 @@ sealed class AST {
         val singular: WortArt.Nomen,
         var index: Ausdruck
     ): Ausdruck() {
+      var istZeichenfolgeZugriff = false
       override val children = sequenceOf(singular, index)
     }
 

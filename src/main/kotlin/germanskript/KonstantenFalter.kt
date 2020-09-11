@@ -76,10 +76,10 @@ class KonstantenFalter(startDatei: File): ProgrammDurchlaufer<Wert?>(startDatei)
 
   val geleseneVariablen = Stack<MutableMap<String, GeleseneVariable>>()
 
-  override fun durchlaufeVariablenDeklaration(deklaration: AST.Satz.VariablenDeklaration): Wert? {
+  override fun durchlaufeVariablenDeklaration(deklaration: AST.Satz.VariablenDeklaration) {
     deklaration.wert = falteKonstante(deklaration.wert)
     if (deklaration.istEigenschaftsNeuZuweisung || deklaration.istEigenschaft) {
-      return null
+      return
     }
     else {
       val geleseneVariablen = geleseneVariablen.peek()!!
@@ -95,7 +95,10 @@ class KonstantenFalter(startDatei: File): ProgrammDurchlaufer<Wert?>(startDatei)
       }
       geleseneVariablen[deklaration.name.nominativ] = GeleseneVariable(deklaration, false)
     }
-    return null
+  }
+
+  override fun durchlaufeListenElementZuweisung(zuweisung: AST.Satz.ListenElementZuweisung) {
+    falteKonstante(zuweisung.wert)
   }
 
   override fun starteBereich(bereich: AST.Satz.Bereich) {

@@ -12,7 +12,7 @@ enum class Assoziativität {
 enum class OperatorKlasse(val kasus: Kasus) {
     ARITHMETISCH(Kasus.AKKUSATIV),
     VERGLEICH(Kasus.AKKUSATIV),
-    LOGISCH(Kasus.AKKUSATIV),
+    LOGISCH(Kasus.NOMINATIV),
 }
 
 enum class Operator(val bindungsKraft: Int, val assoziativität: Assoziativität, val klasse: OperatorKlasse) {
@@ -357,6 +357,10 @@ private val WORT_MAPPING = mapOf<String, TokenTyp>(
 )
 
 class Lexer(startDatei: File): PipelineKomponente(startDatei) {
+    companion object {
+        const val STANDARD_BIB_PATH = "./stdbib"
+    }
+
     private var iterator: Peekable<Char>? = null
     private var zeilenIndex = 0
     private var inStringInterpolation = false
@@ -373,7 +377,7 @@ class Lexer(startDatei: File): PipelineKomponente(startDatei) {
     private val bearbeiteteDateien = mutableSetOf<String>()
 
     fun tokeniziere(): Sequence<Token> = sequence {
-        dateiSchlange.add(File("./stdbib/stdbib.gm"))
+        importiereStandardBibliothek()
         yield(Token(
             TokenTyp.HAUPT_PROGRAMM_START,
             "Programmstart", startDatei.absolutePath,
@@ -405,6 +409,10 @@ class Lexer(startDatei: File): PipelineKomponente(startDatei) {
         if (!bearbeiteteDateien.contains(datei.path)) {
             dateiSchlange.add(datei)
         }
+    }
+
+    private fun importiereStandardBibliothek() {
+        dateiSchlange.addAll(File(STANDARD_BIB_PATH).walkBottomUp().filter { it.isFile })
     }
 
     private fun tokeniziereDatei(datei: File) : Sequence<Token> = sequence {
@@ -632,8 +640,8 @@ class Lexer(startDatei: File): PipelineKomponente(startDatei) {
                             yield(Token(WORT_MAPPING.getValue(erstesWort), erstesWort, currentFile, firstWordStartPos, firstWordEndPos))
                             val tokenTyp = (WORT_MAPPING.getOrElse(nächstesWort, {
                                 when {
-                                    nächstesWort.all { zeichen -> zeichen.isLowerCase() } -> TokenTyp.BEZEICHNER_KLEIN(nächstesWort)
-                                    else -> großerBezeichner(nächstesWort, nextWordStartPos, nextWordEndPos)
+                                    nächstesWort[0].isUpperCase() -> großerBezeichner(nächstesWort, nextWordStartPos, nextWordEndPos)
+                                    else -> TokenTyp.BEZEICHNER_KLEIN(nächstesWort)
                                 }
                             }))
                             val token = Token(tokenTyp, nächstesWort, currentFile, nextWordStartPos, nextWordEndPos)
@@ -646,14 +654,14 @@ class Lexer(startDatei: File): PipelineKomponente(startDatei) {
                 }
                 else -> yield(Token(WORT_MAPPING.getValue(erstesWort), erstesWort, currentFile, firstWordStartPos, firstWordEndPos))
             }
-            erstesWort.all { zeichen -> zeichen.isLowerCase() } -> {
+            erstesWort[0].isUpperCase() -> yield(
+                Token(großerBezeichner(erstesWort, firstWordStartPos, firstWordEndPos),
+                    erstesWort, currentFile, firstWordStartPos, firstWordEndPos))
+
+            else -> {
                 val token = Token(TokenTyp.BEZEICHNER_KLEIN(erstesWort), erstesWort, currentFile, firstWordStartPos, firstWordEndPos)
                 yieldAll(präpositionArtikelVerschmelzung(token))
             }
-
-            else -> yield(
-                Token(großerBezeichner(erstesWort, firstWordStartPos, firstWordEndPos),
-                    erstesWort, currentFile, firstWordStartPos, firstWordEndPos))
         }
     }
 
@@ -687,7 +695,24 @@ class Lexer(startDatei: File): PipelineKomponente(startDatei) {
 
     private fun teilWort(): String {
         var wort = next()!!.toString()
-        while (peek()?.isLetter() == true) {
+        val istGroßerBezeichner = wort[0].isUpperCase()
+        while (true) {
+            val nächstesZeichen = peek()
+            if (nächstesZeichen?.isLetter() != true && nächstesZeichen != '_') {
+                break
+            }
+            if (istGroßerBezeichner && nächstesZeichen == '_') {
+                throw GermanSkriptFehler.SyntaxFehler.LexerFehler(
+                    Token(
+                        TokenTyp.FEHLER,
+                        nächstesZeichen.toString(),
+                        currentFile,
+                        currentTokenPos,
+                        nextTokenPos
+                    ),
+                    "Ein großer Bezeichner darf keine Unterstriche '_' haben."
+                )
+            }
             wort += next()!!
         }
         return wort

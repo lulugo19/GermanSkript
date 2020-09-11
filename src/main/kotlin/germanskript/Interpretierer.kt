@@ -126,10 +126,10 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
     // hier muss nichts gemacht werden...
   }
 
-  override fun durchlaufeVariablenDeklaration(deklaration: AST.Satz.VariablenDeklaration): Wert {
+  override fun durchlaufeVariablenDeklaration(deklaration: AST.Satz.VariablenDeklaration) {
     if (deklaration.istEigenschaftsNeuZuweisung || deklaration.istEigenschaft) {
       // weise Eigenschaft neu zu
-      (aufrufStapel.top().objekt!! as Wert.Objekt).setzeEigenschaft(deklaration.name, evaluiereAusdruck(deklaration.wert))
+      (aufrufStapel.top().objekt!! as Wert.Objekt).setzeEigenschaft(deklaration.name.nominativ, evaluiereAusdruck(deklaration.wert))
     }
     else {
       val wert = evaluiereAusdruck(deklaration.wert)
@@ -141,7 +141,16 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
         umgebung.überschreibeVariable(deklaration.name, wert)
       }
     }
-    return Wert.Nichts
+  }
+
+  override fun durchlaufeListenElementZuweisung(zuweisung: AST.Satz.ListenElementZuweisung) {
+    val liste = evaluiereListenSingular(zuweisung.singular)
+    val index = (evaluiereAusdruck(zuweisung.index) as Wert.Primitiv.Zahl).toInt()
+    if (index >= liste.elemente.size) {
+      throw GermanSkriptFehler.LaufzeitFehler(holeErstesTokenVonAusdruck(zuweisung.index),
+          aufrufStapel.toString(), "Index außerhalb des Bereichs. Der Index ist $index, doch die Länge der Liste ist ${liste.elemente.size}.\n")
+    }
+    liste.elemente[index] = evaluiereAusdruck(zuweisung.wert)
   }
 
   private fun durchlaufeAufruf(aufruf: AST.IAufruf, bereich: AST.Satz.Bereich, umgebung: Umgebung<Wert>, neuerBereich: Boolean, objekt: Wert.Objekt?): Wert {
@@ -314,7 +323,7 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
       is Wert.Objekt ->
         (objekt as Wert.Objekt.InternesObjekt).rufeMethodeAuf(
             funktionsName, umgebung, ::durchlaufeInternenSchnittstellenAufruf).also { rückgabeWert = it }
-      else -> interneFunktionen.getValue(funktionsName)()
+      else -> interneFunktionen.getValue(funktionsName)().also { rückgabeWert = it }
     }
   }
 
@@ -374,10 +383,11 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
   }
 
   private fun holeEigenschaft(zugriff: AST.Ausdruck.IEigenschaftsZugriff, objekt: Wert.Objekt): Wert {
+    val eigName = zugriff.eigenschaftsName.nominativ
     return try {
-      objekt.holeEigenschaft(zugriff.eigenschaftsName)
+      objekt.holeEigenschaft(eigName)
     } catch (nichtGefunden: NoSuchElementException) {
-      val berechneteEigenschaft = objekt.typ.definition.berechneteEigenschaften.getValue(zugriff.eigenschaftsName.nominativ)
+      val berechneteEigenschaft = objekt.typ.definition.berechneteEigenschaften.getValue(eigName)
       durchlaufeAufruf(zugriff, berechneteEigenschaft.definition, Umgebung(), true, objekt)
     }
   }
@@ -404,8 +414,16 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
 
   override  fun evaluiereBinärenAusdruck(ausdruck: AST.Ausdruck.BinärerAusdruck): Wert {
     val links = evaluiereAusdruck(ausdruck.links)
-    val rechts = evaluiereAusdruck(ausdruck.rechts)
     val operator = ausdruck.operator.typ.operator
+
+    // implementiere hier Short-circuit evaluation (https://en.wikipedia.org/wiki/Short-circuit_evaluation)
+    if (links is Wert.Primitiv.Boolean) {
+      if ((operator == Operator.UND && !links.boolean) || (operator == Operator.ODER && links.boolean)) {
+        return links
+      }
+    }
+
+    val rechts = evaluiereAusdruck(ausdruck.rechts)
 
     // Referenzvergleich von Klassen
     if (operator == Operator.GLEICH && links is Wert.Objekt && rechts is Wert.Objekt) {
@@ -483,11 +501,26 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
     return -ausdruck
   }
 
+  protected fun evaluiereListenSingular(singular: AST.WortArt.Nomen): Wert.Objekt.InternesObjekt.Liste {
+    return when (val vornomenTyp = singular.vornomen!!.typ) {
+      is TokenTyp.VORNOMEN.POSSESSIV_PRONOMEN -> {
+        val objekt = when (vornomenTyp) {
+          TokenTyp.VORNOMEN.POSSESSIV_PRONOMEN.MEIN -> aufrufStapel.top().objekt!! as Wert.Objekt
+          TokenTyp.VORNOMEN.POSSESSIV_PRONOMEN.DEIN -> umgebung.holeMethodenBlockObjekt()!! as Wert.Objekt
+        }
+        objekt.holeEigenschaft(singular.ganzesWort(Kasus.NOMINATIV, Numerus.PLURAL)) as Wert.Objekt.InternesObjekt.Liste
+      }
+      is TokenTyp.VORNOMEN.ARTIKEL.BESTIMMT ->
+        evaluiereVariable(singular.ganzesWort(Kasus.NOMINATIV, Numerus.PLURAL)) as Wert.Objekt.InternesObjekt.Liste
+      else -> throw Exception("Dieser Fall sollte nie eintreten!")
+    }
+  }
+
   override fun evaluiereListenElement(listenElement: AST.Ausdruck.ListenElement): Wert {
     val index = (evaluiereAusdruck(listenElement.index) as Wert.Primitiv.Zahl).toInt()
-    val zeichenfolge = evaluiereVariable(listenElement.singular.hauptWort)
-    if (zeichenfolge != null && zeichenfolge is Wert.Primitiv.Zeichenfolge) {
-      val zeichenfolge = zeichenfolge.zeichenfolge
+
+    if (listenElement.istZeichenfolgeZugriff) {
+      val zeichenfolge = (evaluiereVariable(listenElement.singular.hauptWort) as Wert.Primitiv.Zeichenfolge).zeichenfolge
       if (index >= zeichenfolge.length) {
         throw GermanSkriptFehler.LaufzeitFehler(holeErstesTokenVonAusdruck(listenElement.index),
             aufrufStapel.toString(), "Index außerhalb des Bereichs. Der Index ist $index, doch die Länge der Zeichenfolge ist ${zeichenfolge.length}.\n")
@@ -495,7 +528,7 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
       return Wert.Primitiv.Zeichenfolge(zeichenfolge[index].toString())
     }
 
-    val liste = evaluiereVariable(listenElement.singular.ganzesWort(Kasus.NOMINATIV, Numerus.PLURAL)) as Wert.Objekt.InternesObjekt.Liste
+    val liste = evaluiereListenSingular(listenElement.singular)
 
     if (index >= liste.elemente.size) {
       throw GermanSkriptFehler.LaufzeitFehler(holeErstesTokenVonAusdruck(listenElement.index),

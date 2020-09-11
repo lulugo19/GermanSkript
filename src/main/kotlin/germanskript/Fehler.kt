@@ -235,9 +235,8 @@ sealed class GermanSkriptFehler(private val fehlerName: String, val token: Token
         get() = "Der Operator '${token.wert}' ist für den Typen '$typ' nicht definiert."
     }
 
-    class Eigenschaft(token: Token, private val klasse: String): Undefiniert(token) {
-      override val nachricht: String
-        get() = "Die Eigenschaft '${token.wert}' ist für die Klasse '$klasse' nicht definiert."
+    class Eigenschaft(token: Token, eigenschaftsName: String, klasse: String): Undefiniert(token) {
+      override val nachricht = "Die Eigenschaft '$eigenschaftsName' ist für die Klasse '$klasse' nicht definiert."
     }
 
     class Modul(token: Token): Undefiniert(token) {

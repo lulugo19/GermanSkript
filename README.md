@@ -638,7 +638,7 @@ Nomen Person mit
 ```
 
 ### Standardbibliothek
-Die [Standardbibliothek](./stdbib/stdbib.gm) enthält einige Funktionen und außerdem Methoden für Listen. 
+Die [Standardbibliothek](./stdbib) enthält einige Funktionen und außerdem Methoden für Listen. 
 Da GermanSkript noch mitten in der Entwicklung ist, wird diese hier nicht genauer aufgeführt.
 
 Die bisher wichtigsten Funktionen in der Standardbibliothek sind das Schreiben in die Standardausgabe

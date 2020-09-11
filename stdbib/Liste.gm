@@ -1,0 +1,61 @@
+verwende Standard::Collections
+
+Nomen<Typ> Liste:
+    jene AnZahl ist 0
+.
+
+Modul Standard::Collections:
+    Deklination Femininum Singular(Liste) Plural(Listen)
+    Deklination Neutrum Singular(Element) Plural(Elemente)
+    Deklination Maskulinum Singular(Index) Plural(Indizes)
+
+    Implementiere die Liste:
+        Verb(Boolean) enthalten den Typ: intern.
+        Verb füge den Typ hinzu: intern.
+        Verb entferne an der Zahl Index: intern.
+        Verb sortiere mich mit dem Vergleichbaren<Typ>:
+            merge_sortiere die Typen Ich mit dem Vergleichbaren
+        .
+    .
+
+    Adjektiv<Typ> vergleichbar:
+        Verb(Zahl) vergleiche den TypA mit dem TypB
+    .
+
+    Verb<Typ> merge_sortiere die TypenA mit dem Vergleichbaren<Typ>:
+        die TypenB sind kopiere die TypenA
+        split_merge die TypenB von der Zahl 0 zur AnZahl der TypenA in die TypenA mit dem Vergleichbaren
+    .
+
+    Verb<Typ> split_merge die TypenB von der ZahlB zur ZahlE in die TypenA mit dem Vergleichbaren<Typ>:
+        wenn die ZahlE - die ZahlB <= 1 ist: zurück.
+        die ZahlM ist runde die Zahl ((die ZahlB + die ZahlE) / 2) ab
+        split_merge die TypenA von der ZahlB zur ZahlM in die TypenB mit dem Vergleichbaren
+        split_merge die TypenA von der ZahlM zur ZahlE in die TypenB mit dem Vergleichbaren
+        merge die TypenB von der ZahlB mit der ZahlM zur ZahlE in die TypenA mit dem Vergleichbaren
+    .
+
+    Verb<Typ> merge die TypenA von der ZahlB mit der ZahlM zur ZahlE in die TypenB mit dem Vergleichbaren<Typ>:
+        ein I ist die ZahlB
+        ein J ist die ZahlM
+        für jedes K von der ZahlB bis zur ZahlE:
+            wenn das I < die ZahlM und
+              (das J >= die ZahlE oder (Vergleichbares: vergleiche den TypA[I] mit dem TypA[J]!) <= 0):
+                der TypB[K] ist der TypA[I]
+                ein I ist das I plus 1
+            .
+            sonst:
+                der TypB[K] ist der TypA[J]
+                ein J ist das J plus 1
+            .
+        .
+    .
+
+    Verb<Typ>(Typen) kopiere die Typen:
+        die TypenKOPIE sind einige Typen[]
+        für jeden Typ:
+            TypenKOPIE: füge den Typ hinzu!
+        .
+        gebe die TypenKOPIE zurück
+    .
+.

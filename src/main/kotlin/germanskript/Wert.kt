@@ -77,16 +77,16 @@ sealed class Wert {
   sealed class Objekt(internal val typ: Typ.Compound.KlassenTyp): Wert() {
     // TODO: String sollte eindeutigen Identifier zurückliefern
     override fun toString() = typ.definition.name.nominativ
-    abstract fun holeEigenschaft(eigenschaftsName: AST.WortArt.Nomen): Wert
-    abstract fun setzeEigenschaft(eigenschaftsName: AST.WortArt.Nomen, wert: Wert)
+    abstract fun holeEigenschaft(eigenschaftsName: String): Wert
+    abstract fun setzeEigenschaft(eigenschaftsName: String, wert: Wert)
 
     class SkriptObjekt(
         typ: Typ.Compound.KlassenTyp,
         val eigenschaften: MutableMap<String, Wert>
     ) : Objekt(typ) {
-      override fun holeEigenschaft(eigenschaftsName: AST.WortArt.Nomen) = eigenschaften.getValue(eigenschaftsName.nominativ)
-      override fun setzeEigenschaft(eigenschaftsName: AST.WortArt.Nomen, wert: Wert) {
-        eigenschaften[eigenschaftsName.nominativ] = wert
+      override fun holeEigenschaft(eigenschaftsName: String) = eigenschaften.getValue(eigenschaftsName)
+      override fun setzeEigenschaft(eigenschaftsName: String, wert: Wert) {
+        eigenschaften[eigenschaftsName] = wert
       }
     }
 
@@ -101,14 +101,14 @@ sealed class Wert {
           return "[${elemente.joinToString(", ")}]"
         }
 
-        override fun holeEigenschaft(eigenschaftsName: AST.WortArt.Nomen): Wert {
-          if (eigenschaftsName.nominativ == "AnZahl") {
+        override fun holeEigenschaft(eigenschaftsName: String): Wert {
+          if (eigenschaftsName == "AnZahl") {
             return Primitiv.Zahl(elemente.size.toDouble())
           }
-          throw Exception("Die Eigenschaft ${eigenschaftsName.nominativ} ist für den Typen Liste nicht definiert.")
+          throw Exception("Die Eigenschaft ${eigenschaftsName} ist für den Typen Liste nicht definiert.")
         }
 
-        override fun setzeEigenschaft(eigenschaftsName: AST.WortArt.Nomen, wert: Wert) {
+        override fun setzeEigenschaft(eigenschaftsName: String, wert: Wert) {
           // vielleicht kommt hier später mal was, sieht aber nicht danach aus
         }
 

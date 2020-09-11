@@ -25,6 +25,7 @@ abstract  class ProgrammDurchlaufer<T>(startDatei: File): PipelineKomponente(sta
       @Suppress("IMPLICIT_CAST_TO_ANY")
       rückgabe = when (satz) {
         is AST.Satz.VariablenDeklaration -> durchlaufeVariablenDeklaration(satz)
+        is AST.Satz.ListenElementZuweisung -> durchlaufeListenElementZuweisung(satz)
         is AST.Satz.FunktionsAufruf -> durchlaufeFunktionsAufruf(satz.aufruf, false)
         is AST.Satz.Bereich -> durchlaufeBereich(satz, true)
         is AST.Satz.MethodenBereich -> durchlaufeMethodenBereich(satz.methodenBereich)
@@ -45,7 +46,10 @@ abstract  class ProgrammDurchlaufer<T>(startDatei: File): PipelineKomponente(sta
         is AST.Satz.SchleifenKontrolle.Fortfahren -> durchlaufeFortfahren()
         is AST.Satz.Intern -> durchlaufeIntern(satz)
         else -> throw Exception("Dieser Fall sollte nie eintreten!")
-      }.let { if (it is Unit) nichts else it as T }
+      }.let {
+        @Suppress("UNCHECKED_CAST")
+        if (it is Unit) nichts else it as T
+      }
     }
     beendeBereich(bereich)
     if (neuerBereich) {
@@ -89,7 +93,8 @@ abstract  class ProgrammDurchlaufer<T>(startDatei: File): PipelineKomponente(sta
   protected abstract fun bevorDurchlaufeMethodenBereich(methodenBereich: AST.MethodenBereich, blockObjekt: T?)
   protected abstract fun sollSätzeAbbrechen(): Boolean
   protected abstract fun durchlaufeFunktionsAufruf(funktionsAufruf: AST.FunktionsAufruf, istAusdruck: Boolean): T
-  protected abstract fun durchlaufeVariablenDeklaration(deklaration: AST.Satz.VariablenDeklaration): T
+  protected abstract fun durchlaufeVariablenDeklaration(deklaration: AST.Satz.VariablenDeklaration)
+  protected abstract fun durchlaufeListenElementZuweisung(zuweisung: AST.Satz.ListenElementZuweisung)
   protected abstract fun durchlaufeZurückgabe(zurückgabe: AST.Satz.Zurückgabe): T
   protected abstract fun durchlaufeBedingungsSatz(bedingungsSatz: AST.Satz.Bedingung)
   protected abstract fun durchlaufeAbbrechen()

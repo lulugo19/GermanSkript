@@ -1142,17 +1142,26 @@ class GermanSkriptTest {
   @Test
   @DisplayName("Liste sortieren")
   fun listeSortieren() {
-    val quellCode = """
-      die Zahlen sind einige Zahlen[1, 2, 3]
+
+    fun formatiereListe(liste: Array<Int>) = "[${liste.joinToString(", ")}]"
+
+    fun testeSortierung(testListe: Array<Int>, erwarteteListe: Array<Int>, aufsteigend: Boolean) {
+      val aufOderAbCode = if (aufsteigend) "die ZahlA - die ZahlB" else "die ZahlB - die ZahlA"
+      val quellCode = """
+      die Zahlen sind einige Zahlen${formatiereListe(testListe)}
       Zahlen:
-        sortiere dich mit etwas Vergleichbarem: gebe die ZahlB - die ZahlA zurück.
+        sortiere dich mit etwas Vergleichbarem: gebe $aufOderAbCode zurück.
       !
       schreibe die Zeichenfolge (die Zahlen als Zeichenfolge)
     """.trimIndent()
 
-    val erwarteteAusgabe = "[3, 2, 1]"
+      testeGermanSkriptCode(quellCode, formatiereListe(erwarteteListe))
+    }
 
-    testeGermanSkriptCode(quellCode, erwarteteAusgabe)
+    testeSortierung(arrayOf(3, 2, 1), arrayOf(1, 2, 3), true)
+    testeSortierung(arrayOf(1, 2, 3), arrayOf(3, 2, 1), false)
+    testeSortierung(arrayOf(4, -99, -10, 100, 23, 11, 5, 42), arrayOf(-99, -10, 4, 5, 11, 23, 42, 100), true)
+    testeSortierung(arrayOf(), arrayOf(), true)
   }
 
   @Test
@@ -1352,5 +1361,19 @@ class GermanSkriptTest {
     """.trimIndent()
 
     testeGermanSkriptCode(quellCode, "falsch\n")
+  }
+
+  @Test
+  @DisplayName("Funktion mit generischer Liste als Parameter")
+  fun funktionMitGenerischerListeAlsParameter() {
+    val quellCode = """
+      Verb<Typ> drucke die Typen Elemente:
+        schreibe die Zeile (die Elemente als Zeichenfolge)
+      .
+      
+      drucke die Elemente einige Zahlen[1, 2, 3]
+    """.trimIndent()
+
+    führeGermanSkriptCodeAus(quellCode)
   }
 }

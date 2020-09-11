@@ -38,7 +38,8 @@ enum class ASTKnotenID {
   WERFE,
   FUNKTIONS_SIGNATUR,
   IMPLEMENTIERUNG,
-  BEDINGUNGS_TERM
+  BEDINGUNGS_TERM,
+  LISTEN_ELEMENT_ZUWEISUNG
 }
 
 class Parser(startDatei: File): PipelineKomponente(startDatei) {
@@ -385,8 +386,12 @@ private sealed class SubParser<T: AST>() {
         val schnittstelle = AST.TypKnoten(modulPfad!!, nomen, typArgumente)
         subParse(NomenAusdruck.Closure(schnittstelle))
       }
-      TokenTyp.VORNOMEN.POSSESSIV_PRONOMEN.MEIN -> AST.Ausdruck.SelbstEigenschaftsZugriff(nomen)
-      TokenTyp.VORNOMEN.POSSESSIV_PRONOMEN.DEIN -> AST.Ausdruck.MethodenBereichEigenschaftsZugriff(nomen)
+      TokenTyp.VORNOMEN.POSSESSIV_PRONOMEN.MEIN ->
+        if (nächstesToken.typ is TokenTyp.OFFENE_ECKIGE_KLAMMER) subParse(NomenAusdruck.ListenElement(nomen))
+        else  AST.Ausdruck.SelbstEigenschaftsZugriff(nomen)
+      TokenTyp.VORNOMEN.POSSESSIV_PRONOMEN.DEIN ->
+        if (nächstesToken.typ is TokenTyp.OFFENE_ECKIGE_KLAMMER) subParse(NomenAusdruck.ListenElement(nomen))
+        else   AST.Ausdruck.MethodenBereichEigenschaftsZugriff(nomen)
       is TokenTyp.VORNOMEN.DEMONSTRATIV_PRONOMEN -> throw GermanSkriptFehler.SyntaxFehler.ParseFehler(vornomen.toUntyped(), null,
           "Die Demonstrativpronomen 'diese' und 'jene' dürfen nicht in Ausdrücken verwendet werden.")
       else -> throw Exception("Dieser Fall sollte nie ausgeführt werden.")
@@ -494,7 +499,10 @@ private sealed class SubParser<T: AST>() {
       val nextToken = peek()
       return when (nextToken.typ) {
         is TokenTyp.INTERN -> subParse(Satz.Intern)
-        is TokenTyp.VORNOMEN -> subParse(Satz.VariablenDeklaration)
+        is TokenTyp.VORNOMEN -> {
+          if (peekType(2) is TokenTyp.OFFENE_ECKIGE_KLAMMER) subParse(Satz.ListenElementZuweisung)
+          else subParse(Satz.VariablenDeklaration)
+        }
         is TokenTyp.DOPPELPUNKT -> AST.Satz.Bereich(parseSätze(TokenTyp.PUNKT).sätze)
         is TokenTyp.SUPER -> subParse(Satz.SuperBlock)
         is TokenTyp.WENN -> subParse(Satz.Bedingung)
@@ -632,12 +640,12 @@ private sealed class SubParser<T: AST>() {
       get() = ASTKnotenID.AUSDRUCK
 
     override fun parseImpl(): AST.Ausdruck {
-      return parseBinärenAusdruck(0.0, mitVornomen, linkerAusdruck)
+      return parseBinärenAusdruck(0.0, null, mitVornomen, linkerAusdruck)
     }
 
     // pratt parsing: https://matklad.github.io/2020/04/13/simple-but-powerful-pratt-parsing.html
-    private fun parseBinärenAusdruck(minBindungskraft: Double, mitArtikel: Boolean, linkerA: AST.Ausdruck? = null) : AST.Ausdruck {
-      var links = linkerA?: parseEinzelnerAusdruck(mitArtikel)
+    private fun parseBinärenAusdruck(minBindungskraft: Double, letzterOp: Operator?, mitVornomen: Boolean, linkerA: AST.Ausdruck? = null) : AST.Ausdruck {
+      var links = linkerA?: parseEinzelnerAusdruck(mitVornomen)
 
       loop@ while (true) {
         val operator = when (val tokenTyp = peekType()) {
@@ -661,7 +669,7 @@ private sealed class SubParser<T: AST>() {
         val inStringInterpolation = parseOptional<TokenTyp.STRING_INTERPOLATION>() != null
         überspringeLeereZeilen()
 
-        val rechts = parseBinärenAusdruck(rechteBindungsKraft, mitArtikel)
+        val rechts = parseBinärenAusdruck(rechteBindungsKraft, operator, mitVornomen = mitVornomen)
         if (optionalesIstNachVergleich && operator.klasse == OperatorKlasse.VERGLEICH) {
           val ist = parseOptional<TokenTyp.ZUWEISUNG>()
           if (ist != null && ist.typ.numerus != Numerus.SINGULAR) {
@@ -669,9 +677,9 @@ private sealed class SubParser<T: AST>() {
           }
         }
 
-        links = AST.Ausdruck.BinärerAusdruck(operatorToken, links, rechts,
-            minBindungskraft == 0.0, inStringInterpolation
-        )
+        // istAnfang brauchen wir später für den Grammatikprüfer, da dieser dann den Kasus zurücksetzt
+        val istAnfang = minBindungskraft == 0.0 || letzterOp!!.klasse != operator.klasse
+        links = AST.Ausdruck.BinärerAusdruck(operatorToken, links, rechts, istAnfang, inStringInterpolation)
       }
 
       return links
@@ -944,6 +952,25 @@ private sealed class SubParser<T: AST>() {
         val ausdruck = subParse(Ausdruck(mitVornomen = true, optionalesIstNachVergleich = false))
         return AST.Satz.VariablenDeklaration(nomen, neu, zuweisung, ausdruck)
       }
+    }
+
+    object ListenElementZuweisung: Satz<AST.Satz.ListenElementZuweisung>() {
+      override val id = ASTKnotenID.LISTEN_ELEMENT_ZUWEISUNG
+
+      override fun parseImpl(): AST.Satz.ListenElementZuweisung {
+        val name = parseNomenMitVornomen<TokenTyp.VORNOMEN>("Vornomen", true)
+        if (name.vornomen!!.typ is TokenTyp.VORNOMEN.ARTIKEL.UNBESTIMMT) {
+          throw GermanSkriptFehler.SyntaxFehler.ParseFehler(name.vornomen!!.toUntyped(), "Vornomen",
+            "Bei Listenelement-Zuweisungen sind unbestimmte Artikel nicht erlaubt.")
+        }
+        expect<TokenTyp.OFFENE_ECKIGE_KLAMMER>("'['")
+        val index = subParse(Ausdruck(mitVornomen = false, optionalesIstNachVergleich = false))
+        expect<TokenTyp.GESCHLOSSENE_ECKIGE_KLAMMER>("']'")
+        val zuweisung = expect<TokenTyp.ZUWEISUNG>("'ist'")
+        val wert = subParse(Ausdruck(mitVornomen = true, optionalesIstNachVergleich = false))
+        return AST.Satz.ListenElementZuweisung(name, index, zuweisung, wert)
+      }
+
     }
 
     object FunktionsAufruf: Satz<AST.Satz.FunktionsAufruf>() {
