@@ -690,7 +690,7 @@ private sealed class SubParser<T: AST>() {
         is TokenTyp.ZEICHENFOLGE -> AST.Ausdruck.Zeichenfolge(next().toTyped())
         is TokenTyp.ZAHL -> AST.Ausdruck.Zahl(next().toTyped())
         is TokenTyp.BOOLEAN -> AST.Ausdruck.Boolean(next().toTyped())
-        is TokenTyp.BEZEICHNER_KLEIN -> AST.Ausdruck.FunktionsAufruf(subParse(FunktionsAufruf.FunktionsAufrufImperativ))
+        is TokenTyp.BEZEICHNER_KLEIN -> AST.Ausdruck.FunktionsAufruf(subParse(FunktionsAufruf.FunktionsAufrufImperativ(emptyList())))
         is TokenTyp.VORNOMEN -> {
           val subjekt = parseNomenAusdruck<TokenTyp.VORNOMEN>("Vornomen", true, false).third
           val nächterTokenTyp = peekType()
@@ -734,11 +734,11 @@ private sealed class SubParser<T: AST>() {
         is TokenTyp.BEZEICHNER_GROSS ->
           if (mitArtikel)  when (peekType(1)) {
             is TokenTyp.DOPPELPUNKT -> AST.Ausdruck.MethodenBereich(subParse(MethodenBereich))
-            else ->  AST.Ausdruck.Konstante(parseModulPfad(), parseGroßenBezeichner(true))
+            else -> parseFunktionOderKonstante()
           }
           else when (peekType(1)) {
             is TokenTyp.DOPPELPUNKT -> AST.Ausdruck.MethodenBereich(subParse(MethodenBereich))
-            is TokenTyp.DOPPEL_DOPPELPUNKT -> AST.Ausdruck.Konstante(parseModulPfad(), parseGroßenBezeichner(true))
+            is TokenTyp.DOPPEL_DOPPELPUNKT -> parseFunktionOderKonstante()
             else ->  AST.Ausdruck.Variable(parseNomenOhneVornomen(true))
         }
         else -> throw GermanSkriptFehler.SyntaxFehler.ParseFehler(next())
@@ -753,6 +753,15 @@ private sealed class SubParser<T: AST>() {
           AST.Ausdruck.Konvertierung(ausdruck, typ)
         }
         else -> ausdruck
+      }
+    }
+
+    fun parseFunktionOderKonstante(): AST.Ausdruck {
+      val modulPfad = parseModulPfad()
+      return when (peekType()) {
+        is TokenTyp.BEZEICHNER_KLEIN -> AST.Ausdruck.FunktionsAufruf(subParse(FunktionsAufruf.FunktionsAufrufImperativ(modulPfad)))
+        is TokenTyp.BEZEICHNER_GROSS -> AST.Ausdruck.Konstante(modulPfad, parseGroßenBezeichner(true))
+        else -> throw GermanSkriptFehler.SyntaxFehler.ParseFehler(next(), "Bezeichner")
       }
     }
   }
@@ -848,9 +857,8 @@ private sealed class SubParser<T: AST>() {
       }
     }
 
-    object FunktionsAufrufImperativ: FunktionsAufruf() {
+    class FunktionsAufrufImperativ(val modulPfad: List<TypedToken<TokenTyp.BEZEICHNER_GROSS>>): FunktionsAufruf() {
       override fun parseImpl(): AST.FunktionsAufruf {
-        val modulPfad = parseModulPfad()
         val verb = expect<TokenTyp.BEZEICHNER_KLEIN>("bezeichner")
         val typArgumente = parseTypArgumente()
         val objekt = parseOptional<AST.Argument, TokenTyp.VORNOMEN>(::parseArgument)
@@ -977,7 +985,8 @@ private sealed class SubParser<T: AST>() {
       override val id: ASTKnotenID
         get() = ASTKnotenID.FUNKTIONS_AUFRUF
 
-      override fun parseImpl(): AST.Satz.FunktionsAufruf = AST.Satz.FunktionsAufruf(subParse(SubParser.FunktionsAufruf.FunktionsAufrufImperativ))
+      override fun parseImpl(): AST.Satz.FunktionsAufruf =
+          AST.Satz.FunktionsAufruf(subParse(SubParser.FunktionsAufruf.FunktionsAufrufImperativ(parseModulPfad())))
     }
 
     object SuperBlock: Satz<AST.Satz.SuperBlock>() {

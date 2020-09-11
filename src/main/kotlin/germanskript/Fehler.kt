@@ -239,9 +239,8 @@ sealed class GermanSkriptFehler(private val fehlerName: String, val token: Token
       override val nachricht = "Die Eigenschaft '$eigenschaftsName' ist für die Klasse '$klasse' nicht definiert."
     }
 
-    class Modul(token: Token): Undefiniert(token) {
-      override val nachricht: String
-        get() = "Das Modul `${token.wert}` ist nicht definiert."
+    class Modul(token: Token, modulPfad: List<TypedToken<TokenTyp.BEZEICHNER_GROSS>>): Undefiniert(token) {
+      override val nachricht = "Das Modul '${modulPfad.joinToString("::") { it.wert }}' ist nicht definiert."
     }
   }
 

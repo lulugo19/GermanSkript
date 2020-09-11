@@ -23,7 +23,7 @@ class ModulAuflöser(startDatei: File): PipelineKomponente(startDatei) {
           definitionen.verwendeteTypen[name] = verwendeteDefinitionen.definierteTypen.getValue(name)
         verwendeteDefinitionen.module.containsKey(name) ->
           definitionen.verwendeteModule += verwendeteDefinitionen.module.getValue(name).definitionen
-        else -> throw GermanSkriptFehler.Undefiniert.Modul(verwende.modulOderKlasse.toUntyped())
+        else -> throw GermanSkriptFehler.Undefiniert.Modul(verwende.modulOderKlasse.toUntyped(), verwende.modulPfad)
       }
     }
     definitionen.module.values.forEach {modul -> löseModulPfadeAuf(modul.definitionen)}
@@ -47,6 +47,8 @@ class ModulAuflöser(startDatei: File): PipelineKomponente(startDatei) {
   fun findeModul(definitionen: AST.DefinitionsContainer, modulPfad: List<TypedToken<TokenTyp.BEZEICHNER_GROSS>>): AST.Definition.Modul {
     val (potenziellesModul, index) = holeModulFallsVorhanden(definitionen, modulPfad)
     var modul = potenziellesModul
+    // Die Max-Modul-Tiefe gibt an wie weit man in der Suche des Moduls maximal gekommen ist
+    // Das wird gebraucht um das richtige Token anzuzeigen
     var maxModulTiefe = index
     for (verwendetesModul in definitionen.verwendeteModule) {
       if (modul != null) {
@@ -56,7 +58,14 @@ class ModulAuflöser(startDatei: File): PipelineKomponente(startDatei) {
       modul = potenziellesModul
       maxModulTiefe = kotlin.math.max(maxModulTiefe, index)
     }
-    return modul ?: throw GermanSkriptFehler.Undefiniert.Modul(modulPfad[maxModulTiefe].toUntyped())
+    // gucke auch noch im globalen Bereich
+    if (modul == null) {
+      val (potenziellesModul, index) = holeModulFallsVorhanden(ast.definitionen, modulPfad)
+      modul = potenziellesModul
+      maxModulTiefe = kotlin.math.max(maxModulTiefe, index)
+    }
+
+    return modul ?: throw GermanSkriptFehler.Undefiniert.Modul(modulPfad[maxModulTiefe].toUntyped(), modulPfad)
   }
 
   private fun holeModulFallsVorhanden(definitionen: AST.DefinitionsContainer, modulPfad: List<TypedToken<TokenTyp.BEZEICHNER_GROSS>>):

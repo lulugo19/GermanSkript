@@ -1,0 +1,29 @@
+Modul Mathe:
+    Deklination Neutrum Singular(Minimum, Minimums, Minimum, Minimum) Plural(Maxima)
+    Deklination Neutrum Singular(Maximum, Maximums, Maximum, Maximum) Plural(Maxima)
+
+    // mathematische Funktionen
+    Verb(Zahl) runde die Zahl: intern.
+    Verb(Zahl) runde die Zahl auf: intern.
+    Verb(Zahl) runde die Zahl ab: intern.
+    Verb(Zahl) sinus von der Zahl: intern.
+    Verb(Zahl) cosinus von der Zahl: intern.
+    Verb(Zahl) tangens von der Zahl: intern.
+
+    Verb(Zahl) maximum von der ZahlA, der ZahlB:
+        wenn die ZahlA > (die ZahlB) ist: gebe die ZahlA zurück.
+        sonst: gebe die ZahlB zurück.
+    .
+    Verb(Zahl) minimum von der ZahlA, der ZahlB:
+        wenn die ZahlA < (die ZahlB) ist: gebe die ZahlA zurück.
+        sonst: gebe die ZahlB zurück.
+    .
+    Verb(Zahl) betrag von der Zahl:
+        wenn die Zahl >= 0 ist: gebe die Zahl zurück.
+        sonst: gebe minus die Zahl zurück.
+    .
+
+    // Random
+    Verb(Zahl) randomisiere: intern. // gibt Zahl zwischen 0 und 1 zurück
+    Verb(Zahl) randomisiere zwischen der Zahl Minimum, der Zahl Maximum: intern.
+.

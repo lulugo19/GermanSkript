@@ -1,5 +1,7 @@
 verwende Standard::Collections
 
+// der Listentyp ist in Germanskript ein so elementarer Typ (Plural, spezielle Syntax nur für Liste),
+// dass er außerhalb des Moduls definiert wird
 Nomen<Typ> Liste:
     jene AnZahl ist 0
 .
@@ -29,7 +31,7 @@ Modul Standard::Collections:
 
     Verb<Typ> split_merge die TypenB von der ZahlB zur ZahlE in die TypenA mit dem Vergleichbaren<Typ>:
         wenn die ZahlE - die ZahlB <= 1 ist: zurück.
-        die ZahlM ist runde die Zahl ((die ZahlB + die ZahlE) / 2) ab
+        die ZahlM ist Mathe::runde die Zahl ((die ZahlB + die ZahlE) / 2) ab
         split_merge die TypenA von der ZahlB zur ZahlM in die TypenB mit dem Vergleichbaren
         split_merge die TypenA von der ZahlM zur ZahlE in die TypenB mit dem Vergleichbaren
         merge die TypenB von der ZahlB mit der ZahlM zur ZahlE in die TypenA mit dem Vergleichbaren
