@@ -539,7 +539,7 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
     // hier muss nichts gemacht werden...
   }
 
-  override fun evaluiereZeichenfolge(ausdruck: AST.Ausdruck.Zeichenfolge) = Typ.Primitiv.Zeichenfolge
+  override fun evaluiereZeichenfolge(ausdruck: AST.Ausdruck.Zeichenfolge) = Typ.Compound.KlassenTyp.Zeichenfolge
 
   override fun evaluiereZahl(ausdruck: AST.Ausdruck.Zahl) = Typ.Primitiv.Zahl
 
@@ -594,12 +594,12 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
     val zeichenfolge = evaluiereVariable(listenElement.singular.nominativ)
     // Bei einem Zugriff auf einen Listenindex kann es sich auch um eine Zeichenfolge handeln
     if (zeichenfolge != null) {
-      if (zeichenfolge !is Typ.Primitiv.Zeichenfolge) {
+      if (zeichenfolge !is Typ.Compound.KlassenTyp.Zeichenfolge) {
         throw GermanSkriptFehler.TypFehler.FalscherTyp(
             listenElement.singular.bezeichner.toUntyped(), zeichenfolge, "Zeichenfolge")
       }
       listenElement.istZeichenfolgeZugriff = true
-      return Typ.Primitiv.Zeichenfolge
+      return Typ.Compound.KlassenTyp.Zeichenfolge
     }
     return evaluiereListenSingular(listenElement.singular)
   }
@@ -667,8 +667,6 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
     val klasse = evaluiereAusdruck(eigenschaftsZugriff.objekt)
     return if (klasse is Typ.Compound.KlassenTyp) {
       holeEigenschaftAusKlasse(eigenschaftsZugriff, klasse)
-    } else if (klasse is Typ.Primitiv.Zeichenfolge && eigenschaftsZugriff.eigenschaftsName.nominativ == "Länge") {
-      Typ.Primitiv.Zahl
     }
     else {
       throw GermanSkriptFehler.TypFehler.ObjektErwartet(holeErstesTokenVonAusdruck(eigenschaftsZugriff.objekt))

@@ -536,7 +536,7 @@ private sealed class SubParser<T: AST>() {
     }
 
     companion object {
-      val reservierteTypNamen = arrayOf("Zahl", "Boolean", "Zeichenfolge")
+      val reservierteTypNamen = arrayOf("Zahl", "Boolean")
     }
 
     fun überprüfeDoppelteDefinition(container: AST.DefinitionsContainer, typDef: AST.Definition.Typdefinition) {

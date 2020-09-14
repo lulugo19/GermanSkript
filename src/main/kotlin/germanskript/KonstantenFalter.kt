@@ -55,7 +55,7 @@ class KonstantenFalter(startDatei: File): ProgrammDurchlaufer<Wert?>(startDatei)
   private fun falteKonstante(originalerAusdruck: AST.Ausdruck): AST.Ausdruck {
     return when (val konstanterWert = evaluiereAusdruck(originalerAusdruck)) {
       is Wert.Primitiv.Zahl -> AST.Ausdruck.Zahl(TypedToken(TokenTyp.ZAHL(konstanterWert), "", "", Token.Position.Ende, Token.Position.Ende))
-      is Wert.Primitiv.Zeichenfolge -> AST.Ausdruck.Zeichenfolge(TypedToken(TokenTyp.ZEICHENFOLGE(konstanterWert), "", "", Token.Position.Ende, Token.Position.Ende))
+      is Wert.Objekt.InternesObjekt.Zeichenfolge -> AST.Ausdruck.Zeichenfolge(TypedToken(TokenTyp.ZEICHENFOLGE(konstanterWert), "", "", Token.Position.Ende, Token.Position.Ende))
       is Wert.Primitiv.Boolean -> AST.Ausdruck.Boolean(TypedToken(TokenTyp.BOOLEAN(konstanterWert), "", "", Token.Position.Ende, Token.Position.Ende))
       else -> originalerAusdruck
     }
@@ -217,7 +217,8 @@ class KonstantenFalter(startDatei: File): ProgrammDurchlaufer<Wert?>(startDatei)
     val rechts = evaluiereAusdruck(ausdruck.rechts)
     val operator = ausdruck.operator.typ.operator
     return when {
-      links is Wert.Primitiv.Zeichenfolge && rechts is Wert.Primitiv.Zeichenfolge -> Interpretierer.zeichenFolgenOperation(operator, links, rechts)
+      links is Wert.Objekt.InternesObjekt.Zeichenfolge &&
+        rechts is Wert.Objekt.InternesObjekt.Zeichenfolge  -> Interpretierer.zeichenFolgenOperation(operator, links, rechts)
       links is Wert.Primitiv.Zahl && rechts is Wert.Primitiv.Zahl -> Interpretierer.zahlOperation(operator, links, rechts)
       links is Wert.Primitiv.Boolean && rechts is Wert.Primitiv.Boolean -> Interpretierer.booleanOperation(operator, links, rechts)
       else -> null

@@ -18,7 +18,6 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
 
   private val flags = EnumSet.noneOf(Flag::class.java)
   private val aufrufStapel = AufrufStapel()
-  private val listenKlassenDefinition get() = typPrüfer.typisierer.listenKlassenDefinition
   private var rückgabeWert: Wert = Wert.Nichts
 
   override val umgebung: Umgebung<Wert> get() = aufrufStapel.top().umgebung
@@ -357,7 +356,7 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
 
   override fun evaluiereListe(ausdruck: AST.Ausdruck.Liste): Wert {
     return Wert.Objekt.InternesObjekt.Liste(
-        Typ.Compound.KlassenTyp.Liste(listenKlassenDefinition, listOf(ausdruck.pluralTyp)),
+        Typ.Compound.KlassenTyp.Liste(listOf(ausdruck.pluralTyp)),
         ausdruck.elemente.map(::evaluiereAusdruck).toMutableList()
     )
   }
@@ -395,7 +394,6 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
   override fun evaluiereEigenschaftsZugriff(eigenschaftsZugriff: AST.Ausdruck.EigenschaftsZugriff): Wert {
     return when (val objekt = evaluiereAusdruck(eigenschaftsZugriff.objekt)) {
       is Wert.Objekt -> holeEigenschaft(eigenschaftsZugriff, objekt)
-      is Wert.Primitiv.Zeichenfolge -> Wert.Primitiv.Zahl(objekt.zeichenfolge.length.toDouble())
       else -> throw Exception("Dies sollte nie passieren, weil der Typprüfer diesen Fall schon überprüft")
     }
   }
@@ -430,7 +428,7 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
       return Wert.Primitiv.Boolean(links == rechts)
     }
     return when (links) {
-      is Wert.Primitiv.Zeichenfolge -> zeichenFolgenOperation(operator, links, rechts as Wert.Primitiv.Zeichenfolge)
+      is Wert.Objekt.InternesObjekt.Zeichenfolge -> zeichenFolgenOperation(operator, links, rechts as Wert.Objekt.InternesObjekt.Zeichenfolge)
       is Wert.Primitiv.Zahl -> {
         if ((rechts as Wert.Primitiv.Zahl).isZero() && operator == Operator.GETEILT) {
           throw GermanSkriptFehler.LaufzeitFehler(holeErstesTokenVonAusdruck(ausdruck.rechts), aufrufStapel.toString(),
@@ -447,7 +445,11 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
   companion object {
   val preloadedKlassenDefinitionen = arrayOf("Fehler", "KonvertierungsFehler")
 
-  fun zeichenFolgenOperation(operator: Operator, links: Wert.Primitiv.Zeichenfolge, rechts: Wert.Primitiv.Zeichenfolge): Wert {
+  fun zeichenFolgenOperation(
+      operator: Operator,
+      links: Wert.Objekt.InternesObjekt.Zeichenfolge,
+      rechts: Wert.Objekt.InternesObjekt.Zeichenfolge
+  ): Wert {
     return when (operator) {
       Operator.GLEICH -> Wert.Primitiv.Boolean(links == rechts)
       Operator.UNGLEICH -> Wert.Primitiv.Boolean(links != rechts)
@@ -455,7 +457,7 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
       Operator.KLEINER -> Wert.Primitiv.Boolean(links < rechts)
       Operator.GRÖSSER_GLEICH -> Wert.Primitiv.Boolean(links >= rechts)
       Operator.KLEINER_GLEICH -> Wert.Primitiv.Boolean(links <= rechts)
-      Operator.PLUS -> Wert.Primitiv.Zeichenfolge(links + rechts)
+      Operator.PLUS -> Wert.Objekt.InternesObjekt.Zeichenfolge(links + rechts)
       else -> throw Exception("Operator $operator ist für den Typen Zeichenfolge nicht definiert.")
     }
   }
@@ -520,12 +522,12 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
     val index = (evaluiereAusdruck(listenElement.index) as Wert.Primitiv.Zahl).toInt()
 
     if (listenElement.istZeichenfolgeZugriff) {
-      val zeichenfolge = (evaluiereVariable(listenElement.singular.hauptWort) as Wert.Primitiv.Zeichenfolge).zeichenfolge
+      val zeichenfolge = (evaluiereVariable(listenElement.singular.hauptWort) as Wert.Objekt.InternesObjekt.Zeichenfolge).zeichenfolge
       if (index >= zeichenfolge.length) {
         throw GermanSkriptFehler.LaufzeitFehler(holeErstesTokenVonAusdruck(listenElement.index),
             aufrufStapel.toString(), "Index außerhalb des Bereichs. Der Index ist $index, doch die Länge der Zeichenfolge ist ${zeichenfolge.length}.\n")
       }
-      return Wert.Primitiv.Zeichenfolge(zeichenfolge[index].toString())
+      return Wert.Objekt.InternesObjekt.Zeichenfolge(zeichenfolge[index].toString())
     }
 
     val liste = evaluiereListenSingular(listenElement.singular)
@@ -563,13 +565,13 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
   // region interne Funktionen
   private val interneFunktionen = mapOf<String, () -> (Wert)>(
     "schreibe die Zeichenfolge" to {
-      val zeichenfolge = umgebung.leseVariable("Zeichenfolge")!!.wert as Wert.Primitiv.Zeichenfolge
+      val zeichenfolge = umgebung.leseVariable("Zeichenfolge")!!.wert as Wert.Objekt.InternesObjekt.Zeichenfolge
       print(zeichenfolge)
       Wert.Nichts
     },
 
     "schreibe die Zeile" to {
-      val zeile = umgebung.leseVariable("Zeile")!!.wert as Wert.Primitiv.Zeichenfolge
+      val zeile = umgebung.leseVariable("Zeile")!!.wert as Wert.Objekt.InternesObjekt.Zeichenfolge
       println(zeile)
       Wert.Nichts
     },
@@ -581,7 +583,7 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
     },
 
     "lese" to {
-      Wert.Primitiv.Zeichenfolge(readLine()!!)
+      Wert.Objekt.InternesObjekt.Zeichenfolge(readLine()!!)
     },
 
     "runde die Zahl" to {
@@ -622,29 +624,6 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
       val min = umgebung.leseVariable("Minimum")!!.wert as Wert.Primitiv.Zahl
       val max = umgebung.leseVariable("Maximum")!!.wert as Wert.Primitiv.Zahl
       Wert.Primitiv.Zahl(Random.nextDouble(min.zahl, max.zahl))
-    },
-
-    "buchstabiere die Zeichenfolge groß" to {
-      val wert = umgebung.leseVariable("Zeichenfolge")!!.wert as Wert.Primitiv.Zeichenfolge
-      Wert.Primitiv.Zeichenfolge(wert.zeichenfolge.toUpperCase())
-    },
-
-    "buchstabiere die Zeichenfolge klein" to {
-      val wert = umgebung.leseVariable("Zeichenfolge")!!.wert as Wert.Primitiv.Zeichenfolge
-      Wert.Primitiv.Zeichenfolge(wert.zeichenfolge.toLowerCase())
-    },
-
-    "trenne die Zeichenfolge zwischen dem Separator" to {
-      val zeichenfolge = umgebung.leseVariable("Zeichenfolge")!!.wert as Wert.Primitiv.Zeichenfolge
-      val separator = umgebung.leseVariable("Separator")!!.wert as Wert.Primitiv.Zeichenfolge
-      // TODO: Das hier ist sehr unschön. Dass ich hier einen TypKnoten erstellen muss. Könnte man da vielleicht etwas dran ändern?
-      val zeichenfolgeTypParameter = AST.TypKnoten(emptyList(), AST.WortArt.Nomen(null,
-          TypedToken(TokenTyp.BEZEICHNER_GROSS(arrayOf("Zeichenfolge"), ""), "Zeichenfolge", "", Token.Position.Ende, Token.Position.Ende)),
-          emptyList()
-      )
-      zeichenfolgeTypParameter.typ = Typ.Primitiv.Zeichenfolge
-      Wert.Objekt.InternesObjekt.Liste(Typ.Compound.KlassenTyp.Liste(listenKlassenDefinition, listOf(zeichenfolgeTypParameter)),
-          zeichenfolge.zeichenfolge.split(separator.zeichenfolge).map { Wert.Primitiv.Zeichenfolge(it) }.toMutableList())
     }
   )
 
@@ -657,7 +636,7 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
     return when (konvertierung.typ.typ!!) {
       is Typ.Primitiv.Zahl -> konvertiereZuZahl(konvertierung, wert)
       is Typ.Primitiv.Boolean -> konvertiereZuBoolean(wert)
-      is Typ.Primitiv.Zeichenfolge -> konvertiereZuZeichenfolge(wert)
+      is Typ.Compound.KlassenTyp.Zeichenfolge -> konvertiereZuZeichenfolge(wert)
       else -> throw Exception("Typprüfer sollte diesen Fall schon überprüfen!")
     }
   }
@@ -665,7 +644,7 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
   private fun konvertiereZuZahl(konvertierung: AST.Ausdruck.Konvertierung, wert: Wert): Wert.Primitiv.Zahl {
     return when (wert) {
       is Wert.Primitiv.Zahl -> wert
-      is Wert.Primitiv.Zeichenfolge -> {
+      is Wert.Objekt.InternesObjekt.Zeichenfolge -> {
         try {
           Wert.Primitiv.Zahl(wert.zeichenfolge)
         }
@@ -673,7 +652,7 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
           val fehlerMeldung = "Die Zeichenfolge '${wert.zeichenfolge}' kann nicht in eine Zahl konvertiert werden."
           val fehlerObjekt = Wert.Objekt.SkriptObjekt(Typ.Compound.KlassenTyp.Klasse(klassenDefinitionen.getValue("KonvertierungsFehler"), emptyList()),
               mutableMapOf(
-                  "FehlerMeldung" to Wert.Primitiv.Zeichenfolge(fehlerMeldung)
+                  "FehlerMeldung" to Wert.Objekt.InternesObjekt.Zeichenfolge(fehlerMeldung)
               ))
           throw GermanSkriptFehler.UnbehandelterFehler(konvertierung.token, aufrufStapel.toString(), fehlerMeldung, fehlerObjekt)
         }
@@ -683,19 +662,19 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
     }
   }
 
-  private fun konvertiereZuZeichenfolge(wert: Wert): Wert.Primitiv.Zeichenfolge {
+  private fun konvertiereZuZeichenfolge(wert: Wert): Wert.Objekt.InternesObjekt.Zeichenfolge {
     return when (wert) {
-      is Wert.Primitiv.Zeichenfolge -> wert
-      is Wert.Primitiv.Boolean -> Wert.Primitiv.Zeichenfolge(if (wert.boolean) "wahr" else "falsch")
-      else -> Wert.Primitiv.Zeichenfolge(wert.toString())
+      is Wert.Objekt.InternesObjekt.Zeichenfolge -> wert
+      is Wert.Primitiv.Boolean -> Wert.Objekt.InternesObjekt.Zeichenfolge(if (wert.boolean) "wahr" else "falsch")
+      else -> Wert.Objekt.InternesObjekt.Zeichenfolge(wert.toString())
     }
   }
 
   private fun konvertiereZuBoolean(wert: Wert): Wert.Primitiv.Boolean {
     return when (wert) {
       is Wert.Primitiv.Boolean -> wert
-      is Wert.Primitiv.Zeichenfolge -> Wert.Primitiv.Boolean(wert.zeichenfolge.isNotEmpty())
       is Wert.Primitiv.Zahl -> Wert.Primitiv.Boolean(!wert.isZero())
+      is Wert.Objekt.InternesObjekt.Zeichenfolge -> Wert.Primitiv.Boolean(wert.zeichenfolge.isNotEmpty())
       else -> throw Exception("Typ-Prüfer sollte dies schon überprüfen!")
     }
   }
@@ -704,7 +683,6 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
   private fun typeOf(wert: Wert): Typ {
     return when (wert) {
       is Wert.Nichts -> Typ.Nichts
-      is Wert.Primitiv.Zeichenfolge -> Typ.Primitiv.Zeichenfolge
       is Wert.Primitiv.Zahl -> Typ.Primitiv.Zahl
       is Wert.Primitiv.Boolean -> Typ.Primitiv.Boolean
       is Wert.Objekt -> wert.typ

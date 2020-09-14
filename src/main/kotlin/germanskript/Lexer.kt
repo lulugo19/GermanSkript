@@ -205,7 +205,7 @@ sealed class TokenTyp(val anzeigeName: String) {
     object NICHTS: TokenTyp("'nichts'")
     data class BOOLEAN(val boolean: Wert.Primitiv.Boolean): TokenTyp("'richtig' oder 'falsch'")
     data class ZAHL(val zahl: Wert.Primitiv.Zahl): TokenTyp("Zahl")
-    data class ZEICHENFOLGE(val zeichenfolge: Wert.Primitiv.Zeichenfolge): TokenTyp("Zeichenfolge")
+    data class ZEICHENFOLGE(val zeichenfolge: Wert.Objekt.InternesObjekt.Zeichenfolge): TokenTyp("Zeichenfolge")
 
     object UNDEFINIERT: TokenTyp("undefiniert")
 }
@@ -563,7 +563,7 @@ class Lexer(startDatei: File): PipelineKomponente(startDatei) {
         }
         next()
         val endPos = currentTokenPos
-        val token = Token(TokenTyp.ZEICHENFOLGE(Wert.Primitiv.Zeichenfolge(zeichenfolge)),
+        val token = Token(TokenTyp.ZEICHENFOLGE(Wert.Objekt.InternesObjekt.Zeichenfolge(zeichenfolge)),
             '"' + zeichenfolge + '"', currentFile, startPos, endPos)
         yield(token)
     }
@@ -588,7 +588,7 @@ class Lexer(startDatei: File): PipelineKomponente(startDatei) {
     private fun starteStringInterpolation(zeichenfolge: String, startPosition: Token.Position) = sequence<Token> {
         // String Interpolation
         yield(Token(
-            TokenTyp.ZEICHENFOLGE(Wert.Primitiv.Zeichenfolge(zeichenfolge)),
+            TokenTyp.ZEICHENFOLGE(Wert.Objekt.InternesObjekt.Zeichenfolge(zeichenfolge)),
             '"' + zeichenfolge + '"', currentFile, startPosition, currentTokenPos))
         next() // #
         next() // {

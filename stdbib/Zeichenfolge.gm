@@ -1,0 +1,13 @@
+Deklination Femininum Singular(Länge) Plural(Längen)
+Deklination Femininum Singular(Zeichenfolge) Plural(Zeichenfolgen)
+Deklination Maskulinum Singular(Separator, Separators, Separator, Separator) Plural(Separatoren)
+
+Nomen Zeichenfolge:
+    jene Länge ist 0
+.
+
+Implementiere die Zeichenfolge:
+    Verb(Zeichenfolge) buchstabiere mich groß: intern.
+    Verb(Zeichenfolge) buchstabiere mich klein: intern.
+    Verb(Zeichenfolgen) trenne mich zwischen der Zeichenfolge Separator: intern.
+.

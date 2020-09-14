@@ -10,12 +10,6 @@ sealed class Wert {
   object Nichts: Wert()
 
   sealed class Primitiv: Wert() {
-    data class Zeichenfolge(val zeichenfolge: String): Primitiv(), Comparable<Zeichenfolge> {
-      override fun toString(): String = zeichenfolge
-      operator fun plus(zeichenfolge: Zeichenfolge) = this.zeichenfolge + zeichenfolge.zeichenfolge
-      override fun compareTo(other: Zeichenfolge): Int = this.zeichenfolge.compareTo(other.zeichenfolge)
-    }
-
     class Zahl(val zahl: Double): Primitiv(), Comparable<Zahl> {
       object Static {
         val format = DecimalFormat()
@@ -150,8 +144,59 @@ sealed class Wert {
         }
       }
 
-    }
+      data class Zeichenfolge(val zeichenfolge: String): InternesObjekt(Typ.Compound.KlassenTyp.Zeichenfolge), Comparable<Zeichenfolge> {
 
+        companion object {
+          val zeichenFolgenTypArgument = AST.TypKnoten(emptyList(), AST.WortArt.Nomen(null,
+              TypedToken(TokenTyp.BEZEICHNER_GROSS(arrayOf("Zeichenfolge"), ""), "Zeichenfolge", "", Token.Position.Ende, Token.Position.Ende)),
+              emptyList()
+          )
+
+          init {
+            zeichenFolgenTypArgument.typ = Typ.Compound.KlassenTyp.Zeichenfolge
+          }
+        }
+
+        override fun rufeMethodeAuf(methodenName: String, umgebung: Umgebung<Wert>, aufrufCallback: AufrufCallback): Wert {
+          return when (methodenName) {
+            "buchstabiere mich groß" -> buchstabiereMichGroß()
+            "buchstabiere mich klein" -> buchstabierMichKlein()
+            "trenne mich zwischen dem Separator" -> trenneMichZwischenDemSeperator(umgebung)
+            else -> throw Exception("Ungültige Methode '$methodenName' für die Klasse Zeichenfolge!")
+          }
+        }
+
+        override fun toString(): String = zeichenfolge
+
+        operator fun plus(zeichenfolge: Zeichenfolge) = this.zeichenfolge + zeichenfolge.zeichenfolge
+        override fun compareTo(other: Zeichenfolge): Int = this.zeichenfolge.compareTo(other.zeichenfolge)
+
+        override fun holeEigenschaft(eigenschaftsName: String): Wert {
+          if (eigenschaftsName == "Länge") {
+            return Primitiv.Zahl(zeichenfolge.length.toDouble())
+          } else {
+            throw Exception("Ungültige Eigenschaft '$eigenschaftsName' der Klasse 'Zeichenfolge'.")
+          }
+        }
+
+        override fun setzeEigenschaft(eigenschaftsName: String, wert: Wert) {
+          // Eine Zeichenfolge ist immutable
+          TODO("Not yet implemented")
+        }
+
+        private fun buchstabiereMichGroß() = Zeichenfolge(zeichenfolge.toUpperCase())
+
+        private fun buchstabierMichKlein() = Zeichenfolge(zeichenfolge.toLowerCase())
+
+        private fun trenneMichZwischenDemSeperator(umgebung: Umgebung<Wert>): Wert {
+          val zeichenfolge = umgebung.leseVariable("Zeichenfolge")!!.wert as Zeichenfolge
+          val separator = umgebung.leseVariable("Separator")!!.wert as Zeichenfolge
+
+          return Liste(Typ.Compound.KlassenTyp.Liste(listOf(zeichenFolgenTypArgument)),
+              zeichenfolge.zeichenfolge.split(separator.zeichenfolge).map { Zeichenfolge(it) }.toMutableList())
+        }
+      }
+    }
   }
 
   class Closure(val schnittstelle: Typ.Compound.Schnittstelle, val körper: AST.Satz.Bereich, val umgebung: Umgebung<Wert>): Wert()

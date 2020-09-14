@@ -1,13 +1,9 @@
 Deklination Neutrum Singular(Nichts) Plural(Nichts)
 Deklination Neutrum Singular(Niemals) Plural(Niemals)
 Deklination Femininum Singular(Zahl) Plural(Zahlen)
-Deklination Femininum Singular(Zeichenfolge) Plural(Zeichenfolgen)
 Deklination Neutrum Singular(Boolean) Plural(Booleans)
 Deklination Femininum Singular(Zeile) Plural(Zeilen)
-Deklination Femininum Singular(Länge) Plural(Längen)
 Deklination Maskulinum Singular(Typ, Typs, Typ, Typ) Plural(Typen)
-Deklination Maskulinum Singular(Separator, Separators, Separator, Separator) Plural(Separatoren)
-
 
 // Standardausgabe
 Verb schreibe die Zeichenfolge: intern. // print
@@ -16,11 +12,6 @@ Verb schreibe die Zahl: intern.
 
 // Standardeingabe
 Verb(Zeichenfolge) lese: intern. // readline
-
-// String Funktionen
-Verb(Zeichenfolge) buchstabiere die Zeichenfolge groß: intern.   // toUpperCase
-Verb(Zeichenfolge) buchstabiere die Zeichenfolge klein: intern.  // toLowerCase
-Verb(Zeichenfolgen) trenne die Zeichenfolge zwischen der Zeichenfolge Separator: intern.
 
 // Fehler
 Deklination Maskulinum Singular(Fehler, Fehlers, Fehler, Fehler) Plural(Fehler)

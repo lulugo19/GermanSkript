@@ -40,6 +40,12 @@ class GermanSkriptTest {
   }
 
   @Test
+  @DisplayName("Standardbibliothek kompiliert")
+  fun standardBibliothekKompiliert(){
+    führeGermanSkriptCodeAus("")
+  }
+
+  @Test
   @DisplayName("Hallo Welt")
   fun halloWelt() {
     val quellCode = """

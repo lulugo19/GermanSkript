@@ -41,20 +41,7 @@ sealed class Typ() {
             Operator.GLEICH to Boolean
         )
 
-      override fun kannNachTypKonvertiertWerden(typ: Typ) = typ == Zahl || typ == Zeichenfolge || typ == Boolean
-    }
-
-    object Zeichenfolge : Primitiv("Zeichenfolge") {
-      override val definierteOperatoren: Map<Operator, Typ> = mapOf(
-            Operator.PLUS to Zeichenfolge,
-            Operator.GLEICH to Boolean,
-            Operator.UNGLEICH to Boolean,
-            Operator.GRÖßER to Boolean,
-            Operator.KLEINER to Boolean,
-            Operator.GRÖSSER_GLEICH to Boolean,
-            Operator.KLEINER_GLEICH to Boolean
-        )
-      override fun kannNachTypKonvertiertWerden(typ: Typ) = typ == Zeichenfolge || typ == Zahl || typ == Boolean
+      override fun kannNachTypKonvertiertWerden(typ: Typ) = typ == Zahl || typ == Compound.KlassenTyp.Zeichenfolge || typ == Boolean
     }
 
     object Boolean : Primitiv("Boolean") {
@@ -65,7 +52,7 @@ sealed class Typ() {
             Operator.UNGLEICH to Boolean
         )
 
-      override fun kannNachTypKonvertiertWerden(typ: Typ) = typ == Boolean || typ == Zeichenfolge || typ == Zahl
+      override fun kannNachTypKonvertiertWerden(typ: Typ) = typ == Boolean || typ == Compound.KlassenTyp.Zeichenfolge || typ == Zahl
     }
   }
 
@@ -104,20 +91,44 @@ sealed class Typ() {
         )
 
         override fun kannNachTypKonvertiertWerden(typ: Typ): Boolean {
-          return typ.name == this.name || typ == Primitiv.Zeichenfolge || definition.konvertierungen.containsKey(typ.name)
+          return typ.name == this.name || typ == Zeichenfolge || definition.konvertierungen.containsKey(typ.name)
         }
       }
 
       class Liste(
-          override val definition: AST.Definition.Typdefinition.Klasse,
           override var typArgumente: List<AST.TypKnoten>
       ) : KlassenTyp("Liste") {
+
+        override val definition: AST.Definition.Typdefinition.Klasse
+          get() = Liste.definition
+
+        companion object {
+          lateinit var definition: AST.Definition.Typdefinition.Klasse
+        }
+
         // Das hier muss umbedingt ein Getter sein, sonst gibt es Probleme mit StackOverflow
         override val definierteOperatoren: Map<Operator, Typ> get() = mapOf(
-            Operator.PLUS to Liste(definition, typArgumente),
+            Operator.PLUS to Liste(typArgumente),
             Operator.GLEICH to Primitiv.Boolean
         )
-        override fun kannNachTypKonvertiertWerden(typ: Typ) = typ.name == this.name || typ == Primitiv.Zeichenfolge
+        override fun kannNachTypKonvertiertWerden(typ: Typ) = typ.name == this.name || typ == Zeichenfolge
+      }
+
+      object Zeichenfolge : KlassenTyp("Zeichenfolge") {
+        override lateinit var definition: AST.Definition.Typdefinition.Klasse
+
+        override var typArgumente: List<AST.TypKnoten> = emptyList()
+
+        override val definierteOperatoren: Map<Operator, Typ> = mapOf(
+              Operator.PLUS to Zeichenfolge,
+              Operator.GLEICH to Primitiv.Boolean,
+              Operator.UNGLEICH to Primitiv.Boolean,
+              Operator.GRÖßER to Primitiv.Boolean,
+              Operator.KLEINER to Primitiv.Boolean,
+              Operator.GRÖSSER_GLEICH to Primitiv.Boolean,
+              Operator.KLEINER_GLEICH to Primitiv.Boolean
+          )
+        override fun kannNachTypKonvertiertWerden(typ: Typ) = typ == Zeichenfolge || typ == Primitiv.Zahl || typ == Primitiv.Boolean
       }
     }
 
@@ -130,7 +141,7 @@ sealed class Typ() {
       )
 
       override fun kannNachTypKonvertiertWerden(typ: Typ): Boolean {
-        return typ.name == this.name || typ == Primitiv.Zeichenfolge
+        return typ.name == this.name || typ == KlassenTyp.Zeichenfolge
       }
     }
   }
@@ -144,12 +155,16 @@ enum class TypParamKontext {
 class Typisierer(startDatei: File): PipelineKomponente(startDatei) {
   val definierer = Definierer(startDatei)
   val ast = definierer.ast
-  private var _listenKlassenDefinition: AST.Definition.Typdefinition.Klasse? = null
-  val listenKlassenDefinition get() = _listenKlassenDefinition!!
 
   fun typisiere() {
     definierer.definiere()
-    _listenKlassenDefinition = definierer.holeTypDefinition("Liste") as AST.Definition.Typdefinition.Klasse
+
+    // hole die Typdefinitionen des Typen Zeichenfolge und Liste
+    Typ.Compound.KlassenTyp.Liste.definition= definierer.holeTypDefinition("Liste")
+        as AST.Definition.Typdefinition.Klasse
+    Typ.Compound.KlassenTyp.Zeichenfolge.definition = definierer.holeTypDefinition("Zeichenfolge")
+        as AST.Definition.Typdefinition.Klasse
+
     definierer.funktionsDefinitionen.forEach { typisiereFunktionsSignatur(it.signatur, null)}
     definierer.typDefinitionen.forEach {typDefinition ->
       // Klassen werden von Typprüfer typisiert, da die Reihenfolge und die Konstruktoren eine wichtige Rolle spielen
@@ -188,7 +203,7 @@ class Typisierer(startDatei: File): PipelineKomponente(startDatei) {
     if (typ == null) {
       typ = when (typName) {
         "Zahl" -> Typ.Primitiv.Zahl
-        "Zeichenfolge" -> Typ.Primitiv.Zeichenfolge
+        "Zeichenfolge" -> Typ.Compound.KlassenTyp.Zeichenfolge
         "Boolean" -> Typ.Primitiv.Boolean
         "Nichts" -> Typ.Nichts
         else -> when (val typDef = definierer.holeTypDefinition(typKnoten)) {
@@ -237,7 +252,7 @@ class Typisierer(startDatei: File): PipelineKomponente(startDatei) {
       nomen.fälle = EnumSet.of(Kasus.NOMINATIV)
       val singularTypKnoten = AST.TypKnoten(typKnoten.modulPfad, nomen, emptyList())
       singularTypKnoten.typ = singularTyp
-      Typ.Compound.KlassenTyp.Liste(listenKlassenDefinition, listOf(singularTypKnoten))
+      Typ.Compound.KlassenTyp.Liste(listOf(singularTypKnoten))
     }
     return typKnoten.typ
    }
