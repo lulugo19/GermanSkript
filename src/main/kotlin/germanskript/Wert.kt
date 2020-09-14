@@ -148,7 +148,7 @@ sealed class Wert {
 
         companion object {
           val zeichenFolgenTypArgument = AST.TypKnoten(emptyList(), AST.WortArt.Nomen(null,
-              TypedToken(TokenTyp.BEZEICHNER_GROSS(arrayOf("Zeichenfolge"), ""), "Zeichenfolge", "", Token.Position.Ende, Token.Position.Ende)),
+              TypedToken.imaginäresToken(TokenTyp.BEZEICHNER_GROSS(arrayOf("Zeichenfolge"),""), "Zeichenfolge")),
               emptyList()
           )
 

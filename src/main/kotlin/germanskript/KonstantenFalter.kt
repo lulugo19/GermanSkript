@@ -54,9 +54,9 @@ class KonstantenFalter(startDatei: File): ProgrammDurchlaufer<Wert?>(startDatei)
 
   private fun falteKonstante(originalerAusdruck: AST.Ausdruck): AST.Ausdruck {
     return when (val konstanterWert = evaluiereAusdruck(originalerAusdruck)) {
-      is Wert.Primitiv.Zahl -> AST.Ausdruck.Zahl(TypedToken(TokenTyp.ZAHL(konstanterWert), "", "", Token.Position.Ende, Token.Position.Ende))
-      is Wert.Objekt.InternesObjekt.Zeichenfolge -> AST.Ausdruck.Zeichenfolge(TypedToken(TokenTyp.ZEICHENFOLGE(konstanterWert), "", "", Token.Position.Ende, Token.Position.Ende))
-      is Wert.Primitiv.Boolean -> AST.Ausdruck.Boolean(TypedToken(TokenTyp.BOOLEAN(konstanterWert), "", "", Token.Position.Ende, Token.Position.Ende))
+      is Wert.Primitiv.Zahl -> AST.Ausdruck.Zahl(TypedToken.imaginäresToken(TokenTyp.ZAHL(konstanterWert),""))
+      is Wert.Objekt.InternesObjekt.Zeichenfolge -> AST.Ausdruck.Zeichenfolge(TypedToken.imaginäresToken(TokenTyp.ZEICHENFOLGE(konstanterWert), ""))
+      is Wert.Primitiv.Boolean -> AST.Ausdruck.Boolean(TypedToken.imaginäresToken(TokenTyp.BOOLEAN(konstanterWert), ""))
       else -> originalerAusdruck
     }
   }

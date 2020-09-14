@@ -82,6 +82,11 @@ data class TypedToken<out T : TokenTyp>(val typ: T, val wert: String, val dateiP
     fun toUntyped()  = Token(typ, wert, dateiPfad, anfang, ende)
     fun<TChange: TokenTyp> changeType(typ: TChange): TypedToken<TChange> = TypedToken(typ, wert, dateiPfad, anfang, ende)
     val position: String = "'$dateiPfad' $anfang"
+
+    companion object {
+        fun<T: TokenTyp> imaginäresToken(typ: T, wert: String)
+            = TypedToken(typ, wert, "", Token.Position.Ende, Token.Position.Ende)
+    }
 }
 
 sealed class TokenTyp(val anzeigeName: String) {
