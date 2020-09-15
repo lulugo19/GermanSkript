@@ -303,17 +303,21 @@ private sealed class SubParser<T: AST>() {
           parser: () -> ParserT,
           combiner: (TypedToken<TokenTyp.BEZEICHNER_KLEIN>, ParserT) -> ElementT
   ): List<ElementT> {
-    var nächstesToken = peek()
-    if (nächstesToken.typ !is TokenTyp.BEZEICHNER_KLEIN && !präpositionsFälle.containsKey(nächstesToken.wert)) {
-      return emptyList()
-    }
     val list = mutableListOf<ElementT>()
-    nächstesToken = peek()
-    while (nächstesToken.typ is TokenTyp.BEZEICHNER_KLEIN &&
-        präpositionsFälle.containsKey(nächstesToken.wert) &&
-        peekType(1) is TokenTyp.VORNOMEN
-    ) {
-      list += combiner(expect("Präposition"), parser())
+    while (true) {
+      // überspringe nur leere Zeile wenn dahinter eine Präposition kommt
+      var i = 0
+      while (peekType(i) is TokenTyp.NEUE_ZEILE) {
+        i++
+      }
+      var nächstesToken = peek(i)
+      if (nächstesToken.typ is TokenTyp.BEZEICHNER_KLEIN && präpositionsFälle.containsKey(nächstesToken.wert)
+          && peekType(i+1) is TokenTyp.VORNOMEN) {
+        überspringeLeereZeilen()
+        list += combiner(expect("Präposition"), parser())
+      } else {
+        break
+      }
     }
     return list
   }
@@ -1313,6 +1317,7 @@ private sealed class SubParser<T: AST>() {
         } else {
          null
         }
+        überspringeLeereZeilen()
         val präpositionsParameter = parsePräpositionsParameter()
         val suffix = parseOptional<TokenTyp.BEZEICHNER_KLEIN>()
 

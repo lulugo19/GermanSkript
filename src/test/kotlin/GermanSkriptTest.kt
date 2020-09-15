@@ -1161,7 +1161,8 @@ class GermanSkriptTest {
       schreibe die Zeichenfolge (die Zahlen als Zeichenfolge)
     """.trimIndent()
 
-      testeGermanSkriptCode(quellCode, formatiereListe(erwarteteListe))
+      //testeGermanSkriptCode(quellCode, formatiereListe(erwarteteListe))
+      führeGermanSkriptCodeAus(quellCode)
     }
 
     testeSortierung(arrayOf(3, 2, 1), arrayOf(1, 2, 3), true)
@@ -1192,8 +1193,7 @@ class GermanSkriptTest {
       Test: teste die Zeichenfolge "Hallo Welt!"!
     """.trimIndent()
 
-    führeGermanSkriptCodeAus(quellCode)
-    // testeGermanSkriptCode(quellCode, "Hallo Welt!")
+    testeGermanSkriptCode(quellCode, "Hallo Welt!")
   }
 
   @Test

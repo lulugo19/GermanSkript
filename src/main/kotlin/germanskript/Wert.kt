@@ -108,8 +108,8 @@ sealed class Wert {
 
         override fun rufeMethodeAuf(methodenName: String, umgebung: Umgebung<Wert>, aufrufCallback: AufrufCallback): Wert {
           return when (methodenName) {
-            "enthalten den Typ" -> enthaltenDenTyp(umgebung)
-            "füge den Typ hinzu" -> fügeDenTypHinzu(umgebung)
+            "enthalten das Element" -> enthaltenDenTyp(umgebung)
+            "füge das Element hinzu" -> fügeDenTypHinzu(umgebung)
             "entferne an dem Index" -> entferneAnDemIndex(umgebung)
             "sortiere mich mit dem Vergleichbaren" -> sortiereMichMitDemVergleichbaren(umgebung, aufrufCallback)
             else -> throw Exception("Undefinierte Methode für Liste")
@@ -117,12 +117,12 @@ sealed class Wert {
         }
 
         private fun enthaltenDenTyp(umgebung: Umgebung<Wert>): Wert {
-          val element = umgebung.leseVariable("Typ")!!.wert
+          val element = umgebung.leseVariable("Element")!!.wert
           return Primitiv.Boolean(elemente.contains(element))
         }
 
         private fun fügeDenTypHinzu(umgebung: Umgebung<Wert>): Wert {
-          val element = umgebung.leseVariable("Typ")!!.wert
+          val element = umgebung.leseVariable("Element")!!.wert
           elemente.add(element)
           return Nichts
         }
