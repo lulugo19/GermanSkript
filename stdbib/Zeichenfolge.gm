@@ -1,13 +1,110 @@
 Deklination Femininum Singular(Länge) Plural(Längen)
 Deklination Femininum Singular(Zeichenfolge) Plural(Zeichenfolgen)
 Deklination Maskulinum Singular(Separator, Separators, Separator, Separator) Plural(Separatoren)
+Deklination Neutrum Singular(Zeichen, Zeichens, Zeichen, Zeichen) Plural(Zeichen)
+Deklination Maskulinum Singular(Code, Codes, Code, Code) Plural(Codes)
+Deklination Neutrum Singular(Ergebnis, Ergebnisses, Ergebnis, Ergebnis) Plural(Ergebnisse, Ergebnisse, Ergebnissen, Ergebnisse)
 
 Nomen Zeichenfolge:
     jene Länge ist 0
 .
 
+Modul Zeichenfolge:
+    Verb(Zeichenfolge) erstelle aus der Zahl Code: intern.
+.
+
 Implementiere die Zeichenfolge:
-    Verb(Zeichenfolge) buchstabiere mich groß: intern.
-    Verb(Zeichenfolge) buchstabiere mich klein: intern.
+    Verb(Zahl) code an der Zahl Index: intern.
     Verb(Zeichenfolgen) trenne mich zwischen der Zeichenfolge Separator: intern.
+
+    Verb(Zeichenfolge) buchstabiere mich groß:
+        die Zeichenfolge ist Ich
+        ein Ergebnis ist ""
+        ein Index ist 0
+        solange der Index < meine Länge ist:
+            das Zeichen ist die Zeichenfolge[Index]
+            der Code ist Zeichenfolge: code an dem Index!
+            wenn der Code >= 97 und der Code <= 122 ist:
+                ein Ergebnis ist das Ergebnis + Zeichenfolge::erstelle aus dem Code - 32
+            .
+            sonst wenn der Code = 228 ist:
+                ein Ergebnis ist das Ergebnis + "Ä"
+            .
+            sonst wenn der Code = 214 ist:
+                ein Ergebnis ist das Ergebnis + "Ö"
+            .
+            sonst wenn der Code = 252 ist:
+                ein Ergebnis ist das Ergebnis + "Ü"
+            .
+            sonst:
+                ein Ergebnis ist das Ergebnis + das Zeichen
+            .
+            ein Index ist der Index + 1
+        .
+        gebe das Ergebnis zurück
+    .
+
+    Verb(Zeichenfolge) buchstabiere mich klein:
+        die Zeichenfolge ist Ich
+        ein Ergebnis ist ""
+        ein Index ist 0
+        solange der Index < meine Länge ist:
+            das Zeichen ist die Zeichenfolge[Index]
+            der Code ist Zeichenfolge: code an dem Index!
+            wenn der Code >= 65 und der Code <= 90 ist:
+                ein Ergebnis ist das Ergebnis + Zeichenfolge::erstelle aus dem Code + 32
+            .
+            sonst wenn der Code = 196 ist:
+                ein Ergebnis ist das Ergebnis + "ä"
+            .
+            sonst wenn der Code = 214 ist:
+                ein Ergebnis ist das Ergebnis + "ö"
+            .
+            sonst wenn der Code = 220 ist:
+                ein Ergebnis ist das Ergebnis + "ü"
+            .
+            sonst:
+                ein Ergebnis ist das Ergebnis + das Zeichen
+            .
+            ein Index ist der Index + 1
+        .
+        gebe das Ergebnis zurück
+    .
+
+    Verb(Boolean) endet mit der ZeichenfolgeENDE:
+        die Zeichenfolge ist Ich
+        ein I ist meine Länge - die Länge der ZeichenfolgeENDE
+        wenn das I kleiner 0 ist: gebe falsch zurück.
+        solange das I kleiner als meine Länge ist:
+            wenn die Zeichenfolge[I] != die ZeichenfolgeENDE[I] ist:
+                gebe falsch zurück
+            .
+            ein I ist das I + 1
+        .
+        gebe wahr zurück
+    .
+
+    Verb(Boolean) startet mit der ZeichenfolgeSTART:
+        wenn die Länge der ZeichenfolgeSTART > meine Länge ist: gebe falsch zurück.
+        die Zeichenfolge ist Ich
+        ein I ist 0
+        solange das I kleiner als die Länge der ZeichenfolgeSTART ist:
+            wenn die Zeichenfolge[I] != die ZeichenfolgeSTART[I] ist:
+                gebe falsch zurück
+            .
+            ein I ist das I + 1
+        .
+        gebe wahr zurück
+    .
+
+    Eigenschaft(Zeichenfolgen) Zeichen:
+        die Zeichen sind einige Zeichenfolgen[]
+        die Zeichenfolge ist Ich
+        ein I ist 0
+        solange das I kleiner als meine Länge ist:
+            Zeichen: füge die Zeichenfolge[I] hinzu!
+            ein I ist das I + 1
+        .
+        gebe die Zeichen zurück
+    .
 .

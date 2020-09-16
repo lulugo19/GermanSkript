@@ -1154,15 +1154,14 @@ class GermanSkriptTest {
     fun testeSortierung(testListe: Array<Int>, erwarteteListe: Array<Int>, aufsteigend: Boolean) {
       val aufOderAbCode = if (aufsteigend) "die ZahlA - die ZahlB" else "die ZahlB - die ZahlA"
       val quellCode = """
-      die Zahlen sind einige Zahlen${formatiereListe(testListe)}
-      Zahlen:
-        sortiere dich mit etwas Vergleichbarem: gebe $aufOderAbCode zurück.
-      !
-      schreibe die Zeichenfolge (die Zahlen als Zeichenfolge)
-    """.trimIndent()
+        die Zahlen sind einige Zahlen${formatiereListe(testListe)}
+        Zahlen:
+          sortiere dich mit etwas Vergleichbarem: gebe $aufOderAbCode zurück.
+        !
+        schreibe die Zeichenfolge (die Zahlen als Zeichenfolge)
+      """.trimIndent()
 
-      //testeGermanSkriptCode(quellCode, formatiereListe(erwarteteListe))
-      führeGermanSkriptCodeAus(quellCode)
+      testeGermanSkriptCode(quellCode, formatiereListe(erwarteteListe))
     }
 
     testeSortierung(arrayOf(3, 2, 1), arrayOf(1, 2, 3), true)
@@ -1380,6 +1379,30 @@ class GermanSkriptTest {
       drucke die Elemente einige Zahlen[1, 2, 3]
     """.trimIndent()
 
-    führeGermanSkriptCodeAus(quellCode)
+    testeGermanSkriptCode(quellCode, "[1, 2, 3]\n")
   }
+
+  @Test
+  @DisplayName("Standardbibliothek Zeichenfolge")
+  fun standardBibZeichenfolge() {
+    val quellCode = """
+      eine Zeichenfolge ist "Hallo Welt!"
+      schreibe die Zeile (buchstabiere die Zeichenfolge groß)
+      schreibe die Zeile (buchstabiere die Zeichenfolge klein)
+      eine Zeichenfolge ist "Öl Überhänge Rüben"
+      schreibe die Zeile (buchstabiere die Zeichenfolge groß)
+      schreibe die Zeile (buchstabiere die Zeichenfolge klein)
+    """.trimIndent()
+
+    val erwarteteAusgabe = """
+      HALLO WELT!
+      hallo welt!
+      ÖL ÜBERHÄNGE RÜBEN
+      öl überhänge rüben
+      
+    """.trimIndent()
+
+    testeGermanSkriptCode(quellCode, erwarteteAusgabe)
+  }
+
 }

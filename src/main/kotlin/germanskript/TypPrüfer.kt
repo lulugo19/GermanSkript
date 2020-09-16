@@ -594,7 +594,7 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
     val zeichenfolge = evaluiereVariable(listenElement.singular.nominativ)
     // Bei einem Zugriff auf einen Listenindex kann es sich auch um eine Zeichenfolge handeln
     if (zeichenfolge != null) {
-      if (zeichenfolge !is Typ.Compound.KlassenTyp.Zeichenfolge) {
+      if (zeichenfolge != Typ.Compound.KlassenTyp.Zeichenfolge) {
         throw GermanSkriptFehler.TypFehler.FalscherTyp(
             listenElement.singular.bezeichner.toUntyped(), zeichenfolge, "Zeichenfolge")
       }
@@ -688,7 +688,7 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
   private fun holeNormaleEigenschaftAusKlasse(
       eigenschaftsName: AST.WortArt.Nomen,
       klasse: Typ.Compound.KlassenTyp,
-      numerus: Numerus = eigenschaftsName.numerus!!
+      numerus: Numerus = eigenschaftsName.numerus
   ): AST.Definition.Parameter {
     val eigName = eigenschaftsName.ganzesWort(Kasus.NOMINATIV, numerus)
     for (eigenschaft in klasse.definition.eigenschaften) {

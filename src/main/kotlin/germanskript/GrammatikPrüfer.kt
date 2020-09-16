@@ -52,8 +52,8 @@ class GrammatikPrüfer(startDatei: File): PipelineKomponente(startDatei) {
     val bezeichner = nomen.bezeichner.typ
     // Bezeichner mit nur Großbuchstaben sind Symbole
     if (bezeichner.istSymbol) {
-      nomen.numerus = Numerus.SINGULAR
-      nomen.fälle.addAll(fälle)
+      nomen.numera = EnumSet.of(Numerus.SINGULAR)
+      nomen.fälle = arrayOf(fälle, fälle)
     } else {
       val deklination = deklinierer.holeDeklination(nomen)
       val deklinationsNumerus = deklination.getNumerus(bezeichner.hauptWort!!)
@@ -66,22 +66,22 @@ class GrammatikPrüfer(startDatei: File): PipelineKomponente(startDatei) {
       }
       nomen.deklination = deklination
 
+
       for (numerus in deklinationsNumerus) {
-        nomen.numerus = numerus
         for (kasus in fälle) {
           val erwarteteForm = deklination.holeForm(kasus, numerus)
           if (bezeichner.hauptWort!! == erwarteteForm) {
-            nomen.fälle.add(kasus)
+            nomen.fälle[numerus.ordinal].add(kasus)
           }
         }
-        if (nomen.fälle.isNotEmpty()) {
-          break
+        if (nomen.fälle[numerus.ordinal].isNotEmpty()) {
+          nomen.numera.add(numerus)
         }
       }
-      if (nomen.fälle.isEmpty()) {
+      if (nomen.numera.isEmpty()) {
         // TODO: berücksichtige auch die möglichen anderen Fälle in der Fehlermeldung
         val kasus = fälle.first()
-        val erwarteteForm = bezeichner.ersetzeHauptWort(deklination.holeForm(kasus, nomen.numerus!!))
+        val erwarteteForm = bezeichner.ersetzeHauptWort(deklination.holeForm(kasus, numerus.first()))
         throw GermanSkriptFehler.GrammatikFehler.FormFehler.FalschesNomen(nomen.bezeichner.toUntyped(), kasus, nomen, erwarteteForm)
       }
     }
@@ -92,7 +92,7 @@ class GrammatikPrüfer(startDatei: File): PipelineKomponente(startDatei) {
     val endung = if (nomen == null) "" else when(nomen.vornomen?.typ) {
       is TokenTyp.VORNOMEN.ARTIKEL.BESTIMMT -> bestimmterArtikelAdjektivEndung
       else -> unbestimmterArtikelAdjektivEndung
-    }[if (nomen.numerus!! == Numerus.SINGULAR) nomen.genus.ordinal else 3][nomen.kasus.ordinal]
+    }[if (nomen.numerus == Numerus.SINGULAR) nomen.genus.ordinal else 3][nomen.kasus.ordinal]
 
     // prüfe die korrekte Endung
     if (!adjektiv.bezeichner.wert.endsWith(endung)) {
@@ -103,10 +103,10 @@ class GrammatikPrüfer(startDatei: File): PipelineKomponente(startDatei) {
     adjektiv.deklination = deklinierer.holeDeklination(adjektiv)
 
     if (nomen == null) {
-      adjektiv.numerus = Numerus.SINGULAR
-      adjektiv.fälle = EnumSet.of(Kasus.NOMINATIV)
+      adjektiv.numera = EnumSet.of(Numerus.SINGULAR)
+      adjektiv.fälle = arrayOf(EnumSet.of(Kasus.NOMINATIV), EnumSet.noneOf(Kasus::class.java))
     } else {
-      adjektiv.numerus = nomen.numerus
+      adjektiv.numera = nomen.numera
       adjektiv.fälle = nomen.fälle
     }
   }
@@ -124,17 +124,22 @@ class GrammatikPrüfer(startDatei: File): PipelineKomponente(startDatei) {
     }
     val vorNomen = nomen.vornomen!!
     val ersterFall = nomen.kasus
-    for (kasus in nomen.fälle) {
-      val erwartetesVornomen = holeVornomen(vorNomen.typ, kasus, nomen.genus, nomen.numerus!!)
-      if (vorNomen.wert == erwartetesVornomen) {
-        nomen.vornomenString = erwartetesVornomen
-      } else {
-        nomen.fälle.remove(kasus)
+    for (numerus in nomen.numera) {
+      for (kasus in nomen.fälle[numerus.ordinal]) {
+        val erwartetesVornomen = holeVornomen(vorNomen.typ, kasus, nomen.genus, numerus)
+        if (vorNomen.wert == erwartetesVornomen) {
+          nomen.vornomenString = erwartetesVornomen
+        } else {
+          nomen.fälle[numerus.ordinal].remove(kasus)
+        }
+      }
+      if (nomen.fälle[numerus.ordinal].isEmpty()) {
+        nomen.numera.remove(numerus)
       }
     }
 
     if (nomen.vornomenString == null) {
-      val erwartetesVornomen = holeVornomen(vorNomen.typ, ersterFall, nomen.genus, nomen.numerus!!)
+      val erwartetesVornomen = holeVornomen(vorNomen.typ, ersterFall, nomen.genus, nomen.numerus)
       throw GermanSkriptFehler.GrammatikFehler.FormFehler.FalschesVornomen(vorNomen.toUntyped(), ersterFall, nomen, erwartetesVornomen)
     }
   }
@@ -150,7 +155,7 @@ class GrammatikPrüfer(startDatei: File): PipelineKomponente(startDatei) {
   }
 
   private fun prüfeNumerus(nomen: AST.WortArt.Nomen, numerus: Numerus) {
-    if (nomen.numerus!! != numerus) {
+    if (nomen.numerus != numerus) {
       val numerusForm = deklinierer.holeDeklination(nomen).holeForm(nomen.kasus, numerus)
       throw GermanSkriptFehler.GrammatikFehler.FalscherNumerus(nomen.bezeichner.toUntyped(), numerus, numerusForm)
     }
@@ -246,7 +251,7 @@ class GrammatikPrüfer(startDatei: File): PipelineKomponente(startDatei) {
     }
     prüfeNomen(nomen, fälle, numerus)
     if (kontextNomen != null) {
-      prüfeNumerus(kontextNomen, nomen.numerus!!)
+      prüfeNumerus(kontextNomen, nomen.numerus)
     }
   }
 
@@ -279,11 +284,7 @@ class GrammatikPrüfer(startDatei: File): PipelineKomponente(startDatei) {
   // endregion
   private fun prüfeVariablendeklaration(variablenDeklaration: AST.Satz.VariablenDeklaration) {
     val nomen = variablenDeklaration.name
-    prüfeNomen(nomen, EnumSet.of(Kasus.NOMINATIV), Numerus.BEIDE)
-    // prüfe ob Numerus mit 'ist' oder 'sind' übereinstimmt
-    if (nomen.numerus != variablenDeklaration.zuweisung.typ.numerus) {
-      throw GermanSkriptFehler.GrammatikFehler.FalscheZuweisung(variablenDeklaration.zuweisung.toUntyped(), nomen.numerus!!)
-    }
+    prüfeNomen(nomen, EnumSet.of(Kasus.NOMINATIV), EnumSet.of(variablenDeklaration.zuweisung.typ.numerus))
     if (variablenDeklaration.neu != null) {
       if (nomen.genus != variablenDeklaration.neu.typ.genus) {
         throw GermanSkriptFehler.GrammatikFehler.FormFehler.FalschesVornomen(
@@ -299,7 +300,7 @@ class GrammatikPrüfer(startDatei: File): PipelineKomponente(startDatei) {
     val nomen = elementZuweisung.singular
     prüfeNomen(elementZuweisung.singular, EnumSet.of(Kasus.NOMINATIV), EnumSet.of(Numerus.SINGULAR))
     if (nomen.numerus != elementZuweisung.zuweisung.typ.numerus) {
-      throw GermanSkriptFehler.GrammatikFehler.FalscheZuweisung(elementZuweisung.zuweisung.toUntyped(), nomen.numerus!!)
+      throw GermanSkriptFehler.GrammatikFehler.FalscheZuweisung(elementZuweisung.zuweisung.toUntyped(), nomen.numerus)
     }
     prüfeKontextbasiertenAusdruck(elementZuweisung.index, null, EnumSet.of(Kasus.NOMINATIV), false)
     prüfeKontextbasiertenAusdruck(elementZuweisung.wert, nomen, EnumSet.of(Kasus.NOMINATIV), false)
@@ -353,7 +354,7 @@ class GrammatikPrüfer(startDatei: File): PipelineKomponente(startDatei) {
     prüfeTyp(parameter.typKnoten, fälle, Numerus.BEIDE, parameter.name)
     if (parameter.name.vornomenString == null) {
       val paramName = parameter.name
-      paramName.vornomenString = holeVornomen(TokenTyp.VORNOMEN.ARTIKEL.BESTIMMT, parameter.typKnoten.name.kasus, paramName.genus, paramName.numerus!!)
+      paramName.vornomenString = holeVornomen(TokenTyp.VORNOMEN.ARTIKEL.BESTIMMT, parameter.typKnoten.name.kasus, paramName.genus, paramName.numerus)
     }
   }
 

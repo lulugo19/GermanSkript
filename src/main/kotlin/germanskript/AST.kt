@@ -60,15 +60,16 @@ sealed class AST {
   sealed class WortArt: AST() {
     abstract val bezeichnerToken: Token
     abstract var deklination: Deklination?
-    abstract var numerus: Numerus?
-    abstract var fälle: EnumSet<Kasus>
+    abstract var numera: EnumSet<Numerus>
+    abstract var fälle: Array<EnumSet<Kasus>>
     abstract var vornomen: TypedToken<TokenTyp.VORNOMEN>?
     abstract val hauptWort: String
 
+    val numerus: Numerus get() = numera.first()
     val geprüft get() = deklination != null
     open val genus get() = deklination!!.genus
-    val nominativ: String get() = ganzesWort(Kasus.NOMINATIV, numerus!!)
-    val kasus: Kasus get() = fälle.first()
+    val nominativ: String get() = ganzesWort(Kasus.NOMINATIV, numerus)
+    val kasus: Kasus get() = fälle[numera.first().ordinal].first()
 
     val unveränderlich get() = vornomen == null || vornomen!!.typ ==
         TokenTyp.VORNOMEN.ARTIKEL.BESTIMMT || vornomen!!.typ == TokenTyp.VORNOMEN.DEMONSTRATIV_PRONOMEN.DIESE
@@ -82,8 +83,8 @@ sealed class AST {
     ): WortArt() {
       override val bezeichnerToken = bezeichner.toUntyped()
       override var deklination: Deklination? = null
-      override var numerus: Numerus? = null
-      override var fälle: EnumSet<Kasus> = EnumSet.noneOf(Kasus::class.java)
+      override var numera : EnumSet<Numerus> = EnumSet.noneOf(Numerus::class.java)
+      override var fälle: Array<EnumSet<Kasus>> = arrayOf(EnumSet.noneOf(Kasus::class.java), EnumSet.noneOf(Kasus::class.java))
 
       var vornomenString: String? = null
       val istSymbol get() = bezeichner.typ.istSymbol
@@ -110,7 +111,7 @@ sealed class AST {
        */
       fun tauscheHauptWortAus(deklination: Deklination): Nomen {
         val neuesNomen = this.copy()
-        neuesNomen.numerus = this.numerus
+        neuesNomen.numera = this.numera
         neuesNomen.deklination = deklination
         return neuesNomen
       }
@@ -120,9 +121,9 @@ sealed class AST {
         override var vornomen: TypedToken<TokenTyp.VORNOMEN>?,
         val bezeichner: TypedToken<TokenTyp.BEZEICHNER_KLEIN>): WortArt() {
 
-      override var numerus: Numerus? = null
+      override var numera : EnumSet<Numerus> = EnumSet.noneOf(Numerus::class.java)
       override var deklination: Deklination? = null
-      override var fälle: EnumSet<Kasus> = EnumSet.noneOf(Kasus::class.java)
+      override var fälle: Array<EnumSet<Kasus>> = arrayOf(EnumSet.noneOf(Kasus::class.java), EnumSet.noneOf(Kasus::class.java))
       override val bezeichnerToken = bezeichner.toUntyped()
       var normalisierung: String = ""
 

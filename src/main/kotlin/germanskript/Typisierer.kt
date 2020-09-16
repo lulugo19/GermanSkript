@@ -247,9 +247,9 @@ class Typisierer(startDatei: File): PipelineKomponente(startDatei) {
         is AST.WortArt.Nomen -> typKnoten.name.copy()
         is AST.WortArt.Adjektiv -> typKnoten.name.copy()
       }
-      nomen.numerus = Numerus.SINGULAR
+      nomen.numera = EnumSet.of(Numerus.SINGULAR)
       nomen.deklination = typKnoten.name.deklination
-      nomen.fälle = EnumSet.of(Kasus.NOMINATIV)
+      nomen.fälle = arrayOf(EnumSet.of(Kasus.NOMINATIV))
       val singularTypKnoten = AST.TypKnoten(typKnoten.modulPfad, nomen, emptyList())
       singularTypKnoten.typ = singularTyp
       Typ.Compound.KlassenTyp.Liste(listOf(singularTypKnoten))

@@ -86,7 +86,7 @@ sealed class Wert {
 
     sealed class InternesObjekt(typ: Typ.Compound.KlassenTyp): Objekt(typ) {
 
-      abstract fun rufeMethodeAuf(methodenName: String, umgebung: Umgebung<Wert>, aufrufCallback: AufrufCallback): Wert
+      abstract fun rufeMethodeAuf(aufruf: AST.IAufruf, aufrufStapel: Interpretierer.AufrufStapel, umgebung: Umgebung<Wert>, aufrufCallback: AufrufCallback): Wert
 
       class Liste(typ: Typ.Compound.KlassenTyp, val elemente: MutableList<Wert>): InternesObjekt(typ) {
         operator fun plus(liste: Liste) = Liste(typ, (this.elemente + liste.elemente).toMutableList())
@@ -106,8 +106,8 @@ sealed class Wert {
           // vielleicht kommt hier später mal was, sieht aber nicht danach aus
         }
 
-        override fun rufeMethodeAuf(methodenName: String, umgebung: Umgebung<Wert>, aufrufCallback: AufrufCallback): Wert {
-          return when (methodenName) {
+        override fun rufeMethodeAuf(aufruf: AST.IAufruf, aufrufStapel: Interpretierer.AufrufStapel, umgebung: Umgebung<Wert>, aufrufCallback: AufrufCallback): Wert {
+          return when (aufruf.vollerName!!) {
             "enthalten das Element" -> enthaltenDenTyp(umgebung)
             "füge das Element hinzu" -> fügeDenTypHinzu(umgebung)
             "entferne an dem Index" -> entferneAnDemIndex(umgebung)
@@ -157,12 +157,13 @@ sealed class Wert {
           }
         }
 
-        override fun rufeMethodeAuf(methodenName: String, umgebung: Umgebung<Wert>, aufrufCallback: AufrufCallback): Wert {
-          return when (methodenName) {
+        override fun rufeMethodeAuf(aufruf: AST.IAufruf, aufrufStapel: Interpretierer.AufrufStapel, umgebung: Umgebung<Wert>, aufrufCallback: AufrufCallback): Wert {
+          return when (aufruf.vollerName!!) {
+            "code an dem Index" -> codeAnDemIndex(aufruf, aufrufStapel, umgebung)
             "buchstabiere mich groß" -> buchstabiereMichGroß()
             "buchstabiere mich klein" -> buchstabierMichKlein()
             "trenne mich zwischen dem Separator" -> trenneMichZwischenDemSeperator(umgebung)
-            else -> throw Exception("Ungültige Methode '$methodenName' für die Klasse Zeichenfolge!")
+            else -> throw Exception("Ungültige Methode '${aufruf.vollerName!!}' für die Klasse Zeichenfolge!")
           }
         }
 
@@ -182,6 +183,14 @@ sealed class Wert {
         override fun setzeEigenschaft(eigenschaftsName: String, wert: Wert) {
           // Eine Zeichenfolge ist immutable
           TODO("Not yet implemented")
+        }
+
+        private fun codeAnDemIndex(aufruf: AST.IAufruf, aufrufStapel: Interpretierer.AufrufStapel, umgebung: Umgebung<Wert>): Wert {
+          val index = (umgebung.leseVariable("Index")!!.wert as Primitiv.Zahl).toInt()
+          if (index < 0 || index >= zeichenfolge.length)
+            throw GermanSkriptFehler.LaufzeitFehler(aufruf.token, aufrufStapel.toString(),
+                "Index außerhalb des Bereichs. Der Index ist $index, doch die Länge der Zeichenfolge ist ${zeichenfolge.length}.\n")
+          return Primitiv.Zahl(zeichenfolge[index].toDouble())
         }
 
         private fun buchstabiereMichGroß() = Zeichenfolge(zeichenfolge.toUpperCase())

@@ -50,14 +50,14 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
     ZURÜCK,
   }
 
-  private class AufrufStapelElement(val aufruf: AST.IAufruf, val objekt: Wert?, val umgebung: Umgebung<Wert>)
+  class AufrufStapelElement(val aufruf: AST.IAufruf, val objekt: Wert?, val umgebung: Umgebung<Wert>)
 
   object Konstanten {
      const val CALL_STACK_OUTPUT_LIMIT = 50
   }
 
-  private inner class AufrufStapel {
-    private val stapel = Stack<AufrufStapelElement>()
+  inner class AufrufStapel {
+    val stapel = Stack<AufrufStapelElement>()
 
     fun top(): AufrufStapelElement = stapel.peek()
     fun push(funktionsAufruf: AST.IAufruf, neueUmgebung: Umgebung<Wert>, aufrufObjekt: Wert.Objekt? = null) {
@@ -317,13 +317,13 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
   }
 
   override fun durchlaufeIntern(intern: AST.Satz.Intern): Wert {
-    val funktionsName = aufrufStapel.top().aufruf.vollerName!!
+    val aufruf = aufrufStapel.top().aufruf
     return when (val objekt = aufrufStapel.top().objekt) {
       is Wert.Objekt ->
-        (objekt as Wert.Objekt.InternesObjekt).rufeMethodeAuf(
-            funktionsName, umgebung, ::durchlaufeInternenSchnittstellenAufruf).also { rückgabeWert = it }
-      else -> interneFunktionen.getValue(funktionsName)().also { rückgabeWert = it }
-    }
+        (objekt as Wert.Objekt.InternesObjekt).rufeMethodeAuf(aufruf
+            ,aufrufStapel, umgebung, ::durchlaufeInternenSchnittstellenAufruf)
+      else -> interneFunktionen.getValue(aufruf.vollerName!!)()
+    }.also { rückgabeWert = it }
   }
 
   override fun bevorDurchlaufeMethodenBereich(methodenBereich: AST.MethodenBereich, blockObjekt: Wert?) {
@@ -580,6 +580,11 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
       val zahl = umgebung.leseVariable("Zahl")!!.wert as Wert.Primitiv.Zahl
       println(zahl)
       Wert.Nichts
+    },
+
+    "erstelle aus dem Code" to {
+      val zeichenfolge = umgebung.leseVariable("Code")!!.wert as Wert.Primitiv.Zahl
+      Wert.Objekt.InternesObjekt.Zeichenfolge(zeichenfolge.toInt().toChar().toString())
     },
 
     "lese" to {
