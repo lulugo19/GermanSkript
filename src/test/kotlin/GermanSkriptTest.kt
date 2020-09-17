@@ -1435,7 +1435,6 @@ class GermanSkriptTest {
       
     """.trimIndent()
 
-    // führeGermanSkriptCodeAus(quellCode)
     testeGermanSkriptCode(quellCode, erwarteteAusgabe)
   }
 }

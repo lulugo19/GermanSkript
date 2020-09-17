@@ -193,9 +193,10 @@ sealed class TokenTyp(val anzeigeName: String) {
 
     // Identifier
     data class BEZEICHNER_KLEIN(val name: String): TokenTyp("bezeichner")
-    data class BEZEICHNER_GROSS(val teilWörter: Array<String>, val symbol: String): TokenTyp("Bezeichner") {
+    data class BEZEICHNER_GROSS(val teilWörter: Array<String>, val symbol: String = "", val adjektiv: TypedToken<BEZEICHNER_KLEIN>?): TokenTyp("Bezeichner") {
         val istSymbol get() = teilWörter.isEmpty()
         val hatSymbol get() = symbol.isNotEmpty()
+        val hatAdjektiv get() = adjektiv != null
         val hauptWort: String? get() = if (teilWörter.isNotEmpty()) teilWörter[teilWörter.size-1] else null
 
         fun ersetzeHauptWort(wort: String): String {
@@ -467,16 +468,7 @@ class Lexer(startDatei: File): PipelineKomponente(startDatei) {
                     zeichen == '"' -> zeichenfolge(false).also { kannWortLesen = false }
                     kannWortLesen && zeichen.isLetter() -> wort().also { kannWortLesen = false }
                     zeichen == '}'&& inStringInterpolation -> beendeStringInterpolation()
-                    else -> throw GermanSkriptFehler.SyntaxFehler.LexerFehler(
-                        Token(
-                            TokenTyp.FEHLER,
-                            zeichen.toString(),
-                            currentFile,
-                            currentTokenPos,
-                            nextTokenPos
-                        ),
-                        null
-                    )
+                    else -> werfeLexerFehlerMitEinemZeichen(zeichen, "Unerwartetes Zeichen '${zeichen}'.")
                 })
             }
 
@@ -612,7 +604,7 @@ class Lexer(startDatei: File): PipelineKomponente(startDatei) {
         yield(Token(TokenTyp.GESCHLOSSENE_KLAMMER, ")", currentFile, currentTokenPos, currentTokenPos))
         yield(Token(TokenTyp.ALS_KLEIN, "als", currentFile, currentTokenPos, currentTokenPos))
         yield(Token(
-            TokenTyp.BEZEICHNER_GROSS(arrayOf("Zeichenfolge"), ""),
+            TokenTyp.BEZEICHNER_GROSS(arrayOf("Zeichenfolge"), "", null),
             "Zeichenfolge", currentFile, currentTokenPos, currentTokenPos)
         )
         yield(Token(TokenTyp.OPERATOR(Operator.PLUS), "+", currentFile, currentTokenPos, currentTokenPos))
@@ -648,12 +640,16 @@ class Lexer(startDatei: File): PipelineKomponente(startDatei) {
                             yield(Token(WORT_MAPPING.getValue(erstesWort), erstesWort, currentFile, firstWordStartPos, firstWordEndPos))
                             val tokenTyp = (WORT_MAPPING.getOrElse(nächstesWort, {
                                 when {
-                                    nächstesWort[0].isUpperCase() -> großerBezeichner(nächstesWort, nextWordStartPos, nextWordEndPos)
+                                    istGroßerBezeichner(erstesWort) -> großerBezeichner(nächstesWort, nextWordStartPos, nextWordEndPos)
                                     else -> TokenTyp.BEZEICHNER_KLEIN(nächstesWort)
                                 }
                             }))
                             val token = Token(tokenTyp, nächstesWort, currentFile, nextWordStartPos, nextWordEndPos)
-                            yieldAll(präpositionArtikelVerschmelzung(token))
+                            if (tokenTyp is TokenTyp.BEZEICHNER_KLEIN) {
+                                yieldAll(präpositionArtikelVerschmelzung(token))
+                            } else {
+                                yield(token)
+                            }
                         }
                     }
                     else {
@@ -662,10 +658,9 @@ class Lexer(startDatei: File): PipelineKomponente(startDatei) {
                 }
                 else -> yield(Token(WORT_MAPPING.getValue(erstesWort), erstesWort, currentFile, firstWordStartPos, firstWordEndPos))
             }
-            erstesWort[0].isUpperCase() -> yield(
+            istGroßerBezeichner(erstesWort) -> yield(
                 Token(großerBezeichner(erstesWort, firstWordStartPos, firstWordEndPos),
                     erstesWort, currentFile, firstWordStartPos, firstWordEndPos))
-
             else -> {
                 val token = Token(TokenTyp.BEZEICHNER_KLEIN(erstesWort), erstesWort, currentFile, firstWordStartPos, firstWordEndPos)
                 yieldAll(präpositionArtikelVerschmelzung(token))
@@ -673,10 +668,35 @@ class Lexer(startDatei: File): PipelineKomponente(startDatei) {
         }
     }
 
+    private fun werfeLexerFehlerMitEinemZeichen(wert: Char, details: String?): Nothing {
+        throw GermanSkriptFehler.SyntaxFehler.LexerFehler(
+            Token(
+                TokenTyp.FEHLER,
+                wert.toString(),
+                currentFile,
+                currentTokenPos,
+                nextTokenPos
+            ),
+            details
+        )
+    }
+
+    private fun istGroßerBezeichner(wort: String): Boolean {
+        return wort.any {it.isUpperCase()}
+    }
+
     private fun großerBezeichner(zeichenfolge: String, tokenStart: Token.Position, tokenEnd: Token.Position): TokenTyp.BEZEICHNER_GROSS {
-        val teilWörter = mutableListOf<String>()
         var i = 0
+        var adjektivString = ""
+        while (i < zeichenfolge.length && zeichenfolge[i].isLowerCase()) {
+            adjektivString += zeichenfolge[i++]
+        }
+        val adjektiv =
+            if (adjektivString.isEmpty()) null
+            else TypedToken(TokenTyp.BEZEICHNER_KLEIN(adjektivString), adjektivString, currentFile, tokenStart,
+                Token.Position(tokenStart.zeile, tokenStart.spalte + i))
         var teilWort = zeichenfolge[i++].toString()
+        val teilWörter = mutableListOf<String>()
         var symbol = ""
         while (i < zeichenfolge.length) {
             while (i < zeichenfolge.length && zeichenfolge[i].isLowerCase()) {
@@ -687,7 +707,7 @@ class Lexer(startDatei: File): PipelineKomponente(startDatei) {
               symbol.isEmpty() -> teilWörter.add(teilWort)
               else -> {
                   val token = Token(TokenTyp.FEHLER, zeichenfolge, currentFile, tokenStart, tokenEnd)
-                  throw GermanSkriptFehler.SyntaxFehler.LexerFehler(token, "Ein großer Bezeichner in GermanSkript darf einzelne Großbuchstaben" +
+                  throw GermanSkriptFehler.SyntaxFehler.LexerFehler(token, "Ein großer Bezeichner in GermanSkript darf einzelne Großbuchstaben und Ziffern" +
                       " (Symbole) nur am Ende haben.")
               }
             }
@@ -698,28 +718,32 @@ class Lexer(startDatei: File): PipelineKomponente(startDatei) {
         if (teilWort.length == 1) {
             symbol += teilWort
         }
-        return TokenTyp.BEZEICHNER_GROSS(teilWörter.toTypedArray(), symbol)
+        return TokenTyp.BEZEICHNER_GROSS(teilWörter.toTypedArray(), symbol, adjektiv)
     }
 
     private fun teilWort(): String {
         var wort = next()!!.toString()
-        val istGroßerBezeichner = wort[0].isUpperCase()
+        var istGroßerBezeichner = false
+        var ziffernAmEnde = false
         while (true) {
             val nächstesZeichen = peek()
-            if (nächstesZeichen?.isLetter() != true && nächstesZeichen != '_') {
+            if (nächstesZeichen?.isLetter() != true && nächstesZeichen?.isDigit() != true && nächstesZeichen != '_') {
                 break
             }
+            if (nächstesZeichen.isDigit()) {
+                ziffernAmEnde = true
+            }
+            if (nächstesZeichen.isUpperCase()) {
+                if (wort.contains('_')) {
+                    werfeLexerFehlerMitEinemZeichen(nächstesZeichen, "Ein kleiner Bezeichner mit Unterstrich '_' darf keinen Großbuchstaben haben.")
+                }
+                istGroßerBezeichner = true
+            }
+            else if (ziffernAmEnde && nächstesZeichen.isLetter()) {
+                werfeLexerFehlerMitEinemZeichen(nächstesZeichen, "Nach Ziffern dürfen bei Bezeichnern keine Buchstaben mehr stehen.")
+            }
             if (istGroßerBezeichner && nächstesZeichen == '_') {
-                throw GermanSkriptFehler.SyntaxFehler.LexerFehler(
-                    Token(
-                        TokenTyp.FEHLER,
-                        nächstesZeichen.toString(),
-                        currentFile,
-                        currentTokenPos,
-                        nextTokenPos
-                    ),
-                    "Ein großer Bezeichner darf keine Unterstriche '_' haben."
-                )
+                werfeLexerFehlerMitEinemZeichen(nächstesZeichen, "Ein großer Bezeichner darf keine Unterstriche '_' haben.")
             }
             wort += next()!!
         }

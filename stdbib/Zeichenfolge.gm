@@ -30,12 +30,12 @@ Implementiere die Zeichenfolge:
         wenn das N > das M ist: gebe -1 zurück.
         wenn das N gleich 0 ist: gebe -1 zurück.
 
-        das ErsteZeichen ist die ZeichenfolgeX[0]
+        das ersteZeichen ist die ZeichenfolgeX[0]
 
         ein I ist der IndexSTART
         solange das I kleiner als das M ist:
             // finde das erste Zeichen
-            solange das I kleiner als das M ist und die Zeichenfolge[I] ungleich dem ErsteZeichen ist:
+            solange das I kleiner als das M ist und die Zeichenfolge[I] ungleich dem erstenZeichen ist:
                 ein I ist das I plus 1
             .
             // nur wenn die gesuchte Zeichenfolge noch reinpasst
@@ -70,13 +70,13 @@ Implementiere die Zeichenfolge:
         wenn das N > das M ist: gebe -1 zurück.
         wenn das N gleich 0 ist: gebe -1 zurück.
 
-        das ErsteZeichen ist die ZeichenfolgeX[0]
+        das ersteZeichen ist die ZeichenfolgeX[0]
 
         ein I ist der IndexSTART
         ein Index ist -1
         solange das I kleiner als das M ist:
             // finde das erste Zeichen
-            solange das I kleiner als das M ist und die Zeichenfolge[I] ungleich dem ErsteZeichen ist:
+            solange das I kleiner als das M ist und die Zeichenfolge[I] ungleich dem erstenZeichen ist:
                 ein I ist das I plus 1
             .
             // nur wenn die gesuchte Zeichenfolge noch reinpasst

@@ -86,6 +86,17 @@ sealed class AST {
       override var numera : EnumSet<Numerus> = EnumSet.noneOf(Numerus::class.java)
       override var fälle: Array<EnumSet<Kasus>> = arrayOf(EnumSet.noneOf(Kasus::class.java), EnumSet.noneOf(Kasus::class.java))
 
+      private var _adjektiv: Adjektiv? = null
+      val adjektiv: Adjektiv? get() {
+        if (bezeichner.typ.adjektiv == null) {
+          return null
+        } else if (_adjektiv == null) {
+          _adjektiv = bezeichner.typ.adjektiv.let { Adjektiv(vornomen, it) }
+          _adjektiv!!.setParentNode(this)
+        }
+        return _adjektiv
+      }
+
       var vornomenString: String? = null
       val istSymbol get() = bezeichner.typ.istSymbol
       override val genus get() = if (istSymbol) Genus.NEUTRUM else deklination!!.genus
@@ -94,9 +105,9 @@ sealed class AST {
 
       override fun ganzesWort(kasus: Kasus, numerus: Numerus): String {
         if (istSymbol) {
-          return bezeichnerToken.wert
+          return adjektiv?.ganzesWort(kasus, numerus) ?: "" + bezeichnerToken.wert
         }
-        return bezeichner.typ.ersetzeHauptWort(deklination!!.holeForm(kasus, numerus))
+        return adjektiv?.ganzesWort(kasus, numerus) ?: "" + bezeichner.typ.ersetzeHauptWort(deklination!!.holeForm(kasus, numerus))
       }
 
       override fun hauptWort(kasus: Kasus, numerus: Numerus): String {

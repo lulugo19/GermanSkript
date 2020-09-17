@@ -86,21 +86,37 @@ class GrammatikPrüfer(startDatei: File): PipelineKomponente(startDatei) {
       }
     }
     prüfeVornomen(nomen)
+    if (nomen.adjektiv != null) {
+      prüfeAdjektiv(nomen.adjektiv!!, nomen)
+    }
   }
 
   private fun prüfeAdjektiv(adjektiv: AST.WortArt.Adjektiv, nomen: AST.WortArt.Nomen?) {
-    val endung = if (nomen == null) "" else when(nomen.vornomen?.typ) {
+    val endungen = when(nomen?.vornomen?.typ) {
       is TokenTyp.VORNOMEN.ARTIKEL.BESTIMMT -> bestimmterArtikelAdjektivEndung
       else -> unbestimmterArtikelAdjektivEndung
-    }[if (nomen.numerus == Numerus.SINGULAR) nomen.genus.ordinal else 3][nomen.kasus.ordinal]
+    }
+    val endung =
+        if (nomen == null) ""
+        else endungen[if (nomen.numerus == Numerus.SINGULAR) nomen.genus.ordinal else 3][nomen.kasus.ordinal]
 
     // prüfe die korrekte Endung
     if (!adjektiv.bezeichner.wert.endsWith(endung)) {
       throw GermanSkriptFehler.GrammatikFehler.FalscheAdjektivEndung(adjektiv.bezeichner.toUntyped(), endung)
     }
-    adjektiv.normalisierung = adjektiv.bezeichner.wert.capitalize().removeSuffix(endung) + "e"
-
-    adjektiv.deklination = deklinierer.holeDeklination(adjektiv)
+    // eine Nomenerweiterung ist daran zu erkennen, dass das Adjektiv ein Teil des Kontextnomens ist
+    if (adjektiv.parent === nomen) {
+      // Wenn es sich um eine Nomenerweiterung handelt, dann berechnen wir die Deklination selbst
+      val adjektivOhneEndung = adjektiv.bezeichner.wert.removeSuffix(endung)
+      val adjektivEndungenSingular = endungen[nomen!!.genus.ordinal]
+      val adjektivEndungenPlural = endungen[3]
+      val singular = adjektivEndungenSingular.map { adjektivOhneEndung + it }.toTypedArray()
+      val plural = adjektivEndungenPlural.map { adjektivOhneEndung + it }.toTypedArray()
+      adjektiv.deklination = Deklination(nomen.genus, singular, plural)
+    } else {
+      adjektiv.normalisierung = adjektiv.bezeichner.wert.capitalize().removeSuffix(endung) + "e"
+      adjektiv.deklination = deklinierer.holeDeklination(adjektiv)
+    }
 
     if (nomen == null) {
       adjektiv.numera = EnumSet.of(Numerus.SINGULAR)

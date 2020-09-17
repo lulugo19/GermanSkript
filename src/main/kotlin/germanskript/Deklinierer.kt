@@ -283,7 +283,7 @@ class Wörterbuch {
     TokenTyp.VORNOMEN.POSSESSIV_PRONOMEN.DEIN -> unbestimmterArtikelAdjektivEndungen
   }
 
-  private fun dekliniereAdjektiv(adjektiv: String, vornomen: TokenTyp.VORNOMEN?): Deklination {
+  fun dekliniereAdjektiv(adjektiv: String, vornomen: TokenTyp.VORNOMEN?): Deklination {
     val (singularEndungen, pluralEndungen) = holeEndungen(vornomen)
     val singular = adjektivMitEndungen(adjektiv, singularEndungen)
     val plural = adjektivMitEndungen(adjektiv, pluralEndungen)
