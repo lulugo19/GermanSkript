@@ -425,7 +425,7 @@ class Lexer(startDatei: File): PipelineKomponente(startDatei) {
         currentFile = datei.absolutePath
         bearbeiteteDateien.add(currentFile)
         var inMehrZeilenKommentar = false
-        for ((zeilenIndex, zeile) in datei.readLines().map(String::trim).withIndex()) {
+        for ((zeilenIndex, zeile) in datei.readLines().withIndex()) {
             this@Lexer.zeilenIndex = zeilenIndex + 1
             kannWortLesen = true
             if (zeile == "") {
