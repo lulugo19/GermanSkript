@@ -440,8 +440,10 @@ class Lexer(startDatei: File): PipelineKomponente(startDatei) {
                         next()
                         next()
                         inMehrZeilenKommentar = false
+                    } else {
+                        next()
                     }
-                    break
+                    continue
                 }
                 if (zeichen == '/' && peek(1) == '/') {
                     next()
@@ -452,7 +454,7 @@ class Lexer(startDatei: File): PipelineKomponente(startDatei) {
                     next()
                     next()
                     inMehrZeilenKommentar = true
-                    break
+                    continue
                 }
                 if (zeichen == ' ') {
                     next()

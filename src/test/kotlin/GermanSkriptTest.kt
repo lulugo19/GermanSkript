@@ -1404,7 +1404,7 @@ class GermanSkriptTest {
       der IndexC ist ZeichenfolgeX: letzter_index von der Zeichenfolge "Welt"!
       schreibe die Zahl IndexC
       schreibe die Zeile (teile die Zeichenfolge ab dem Index 6 zum Index (die Länge der Zeichenfolge - 1))
-      
+
       eine Zeichenfolge ist "Öl Überhänge Rüben"
       schreibe die Zeile (buchstabiere die Zeichenfolge groß)
       schreibe die Zeile (buchstabiere die Zeichenfolge klein)
