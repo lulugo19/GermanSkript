@@ -222,7 +222,8 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
   override fun durchlaufeZurückgabe(zurückgabe: AST.Satz.Zurückgabe): Wert {
     return evaluiereAusdruck(zurückgabe.ausdruck).also {
       flags.add(Flag.ZURÜCK)
-    }.also { rückgabeWert = it }
+      rückgabeWert = it
+    }
   }
 
   override fun durchlaufeBedingungsSatz(bedingungsSatz: AST.Satz.Bedingung) {
@@ -234,7 +235,7 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
   }
 
   override fun durchlaufeSolangeSchleife(schleife: AST.Satz.SolangeSchleife) {
-    while (!flags.contains(Flag.SCHLEIFE_ABBRECHEN) && (evaluiereAusdruck(schleife.bedingung.bedingung) as Wert.Primitiv.Boolean).boolean) {
+    while (!flags.contains(Flag.SCHLEIFE_ABBRECHEN) && !flags.contains(Flag.ZURÜCK) && (evaluiereAusdruck(schleife.bedingung.bedingung) as Wert.Primitiv.Boolean).boolean) {
       flags.remove(Flag.SCHLEIFE_FORTFAHREN)
       durchlaufeBereich(schleife.bedingung.bereich, true)
     }
@@ -274,7 +275,7 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
     flags.remove(Flag.SCHLEIFE_FORTFAHREN)
     umgebung.überschreibeVariable(schleife.binder, element)
     durchlaufeBereich(schleife.bereich, true)
-    if (flags.contains(Flag.SCHLEIFE_ABBRECHEN)) {
+    if (flags.contains(Flag.SCHLEIFE_ABBRECHEN) || flags.contains(Flag.ZURÜCK)) {
       flags.remove(Flag.SCHLEIFE_ABBRECHEN)
       return false
     }
@@ -522,7 +523,7 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
     val index = (evaluiereAusdruck(listenElement.index) as Wert.Primitiv.Zahl).toInt()
 
     if (listenElement.istZeichenfolgeZugriff) {
-      val zeichenfolge = (evaluiereVariable(listenElement.singular.hauptWort) as Wert.Objekt.InternesObjekt.Zeichenfolge).zeichenfolge
+      val zeichenfolge = (evaluiereVariable(listenElement.singular.nominativ) as Wert.Objekt.InternesObjekt.Zeichenfolge).zeichenfolge
       if (index >= zeichenfolge.length) {
         throw GermanSkriptFehler.LaufzeitFehler(holeErstesTokenVonAusdruck(listenElement.index),
             aufrufStapel.toString(), "Index außerhalb des Bereichs. Der Index ist $index, doch die Länge der Zeichenfolge ist ${zeichenfolge.length}.\n")

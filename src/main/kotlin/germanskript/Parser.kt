@@ -310,7 +310,7 @@ private sealed class SubParser<T: AST>() {
       while (peekType(i) is TokenTyp.NEUE_ZEILE) {
         i++
       }
-      var nächstesToken = peek(i)
+      val nächstesToken = peek(i)
       if (nächstesToken.typ is TokenTyp.BEZEICHNER_KLEIN && präpositionsFälle.containsKey(nächstesToken.wert)
           && peekType(i+1) is TokenTyp.VORNOMEN) {
         überspringeLeereZeilen()
@@ -665,7 +665,7 @@ private sealed class SubParser<T: AST>() {
         val operatorToken = expect<TokenTyp.OPERATOR>("Operator")
 
         // Hinter den Operatoren 'kleiner' und 'größer' kann optional das Wort 'als' kommen
-        if ((operator == Operator.KLEINER || operator == Operator.GRÖßER) && peekType() == TokenTyp.ALS_KLEIN) {
+        if (operator.klasse == OperatorKlasse.VERGLEICH_ALS && peekType() == TokenTyp.ALS_KLEIN) {
           next()
         }
 
@@ -674,7 +674,8 @@ private sealed class SubParser<T: AST>() {
         überspringeLeereZeilen()
 
         val rechts = parseBinärenAusdruck(rechteBindungsKraft, operator, mitVornomen = mitVornomen)
-        if (optionalesIstNachVergleich && operator.klasse == OperatorKlasse.VERGLEICH) {
+        if (optionalesIstNachVergleich &&
+            (operator.klasse == OperatorKlasse.VERGLEICH_GLEICH || operator.klasse == OperatorKlasse.VERGLEICH_ALS)) {
           val ist = parseOptional<TokenTyp.ZUWEISUNG>()
           if (ist != null && ist.typ.numerus != Numerus.SINGULAR) {
             throw GermanSkriptFehler.SyntaxFehler.ParseFehler(ist.toUntyped())

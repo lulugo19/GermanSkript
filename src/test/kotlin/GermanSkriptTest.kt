@@ -14,11 +14,13 @@ class GermanSkriptTest {
     tempFile.writeText(germanSkriptSource)
 
     val interpretierer = Interpretierer(tempFile)
-    interpretierer.interpretiere()
-
-
-    // lösche temporäre Datei
-    tempFile.delete()
+    try {
+      interpretierer.interpretiere()
+    }
+    finally {
+      // lösche temporäre Datei
+      tempFile.delete()
+    }
   }
 
   private fun testeGermanSkriptCode(quellCode: String, erwarteteAusgabe: String) {
@@ -704,7 +706,7 @@ class GermanSkriptTest {
         eine Zahl ist die ZahlA minus 1
         
         das Zählbare ist etwas Zählbares:
-          wenn die Zahl größer gleich die ZahlB ist:
+          wenn die Zahl größer gleich der ZahlB ist:
             eine Zahl ist die ZahlA minus 1
           .
           eine Zahl ist die Zahl plus 1
@@ -1389,20 +1391,51 @@ class GermanSkriptTest {
       eine Zeichenfolge ist "Hallo Welt!"
       schreibe die Zeile (buchstabiere die Zeichenfolge groß)
       schreibe die Zeile (buchstabiere die Zeichenfolge klein)
+      schreibe die Zeile (Zeichenfolge: startet mit der Zeichenfolge "Hallo"!) als Zeichenfolge
+      schreibe die Zeile (Zeichenfolge: startet mit der Zeichenfolge "Test"!) als Zeichenfolge
+      schreibe die Zeile (Zeichenfolge: enthält die Zeichenfolge "Welt"!) als Zeichenfolge
+      schreibe die Zeile (Zeichenfolge: enthält die Zeichenfolge "Test"!) als Zeichenfolge
+      die ZeichenfolgeX ist wiederhole die Zeichenfolge mit der AnZahl 3
+      schreibe die Zeile ZeichenfolgeX
+      der IndexA ist ZeichenfolgeX: index von der Zeichenfolge "Welt"!
+      schreibe die Zahl IndexA
+      der IndexB ist ZeichenfolgeX: index von der Zeichenfolge "Welt" ab dem IndexA + 1!
+      schreibe die Zahl IndexB
+      der IndexC ist ZeichenfolgeX: letzter_index von der Zeichenfolge "Welt"!
+      schreibe die Zahl IndexC
+      schreibe die Zeile (teile die Zeichenfolge ab dem Index 6 zum Index (die Länge der Zeichenfolge - 1))
+      
       eine Zeichenfolge ist "Öl Überhänge Rüben"
       schreibe die Zeile (buchstabiere die Zeichenfolge groß)
       schreibe die Zeile (buchstabiere die Zeichenfolge klein)
+      schreibe die Zeile (Zeichenfolge: startet mit der Zeichenfolge "Öl Ü"!) als Zeichenfolge
+      schreibe die Zeile (Zeichenfolge: startet mit der Zeichenfolge "ÖlT"!) als Zeichenfolge
+      schreibe die Zeile (Zeichenfolge: enthält die Zeichenfolge "Rüb"!) als Zeichenfolge
+      schreibe die Zeile (Zeichenfolge: enthält die Zeichenfolge "e Rük"!) als Zeichenfolge
     """.trimIndent()
 
     val erwarteteAusgabe = """
       HALLO WELT!
       hallo welt!
+      wahr
+      falsch
+      wahr
+      falsch
+      Hallo Welt!Hallo Welt!Hallo Welt!
+      6
+      17
+      28
+      Welt
       ÖL ÜBERHÄNGE RÜBEN
       öl überhänge rüben
+      wahr
+      falsch
+      wahr
+      falsch
       
     """.trimIndent()
 
+    // führeGermanSkriptCodeAus(quellCode)
     testeGermanSkriptCode(quellCode, erwarteteAusgabe)
   }
-
 }

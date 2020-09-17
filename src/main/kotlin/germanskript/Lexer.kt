@@ -11,19 +11,20 @@ enum class Assoziativität {
 
 enum class OperatorKlasse(val kasus: Kasus) {
     ARITHMETISCH(Kasus.AKKUSATIV),
-    VERGLEICH(Kasus.AKKUSATIV),
+    VERGLEICH_ALS(Kasus.NOMINATIV),
+    VERGLEICH_GLEICH(Kasus.DATIV),
     LOGISCH(Kasus.NOMINATIV),
 }
 
 enum class Operator(val bindungsKraft: Int, val assoziativität: Assoziativität, val klasse: OperatorKlasse) {
     ODER(1, Assoziativität.LINKS, OperatorKlasse.LOGISCH),
     UND(2, Assoziativität.LINKS, OperatorKlasse.LOGISCH),
-    GLEICH(3, Assoziativität.LINKS, OperatorKlasse.VERGLEICH),
-    UNGLEICH(3, Assoziativität.LINKS, OperatorKlasse.VERGLEICH),
-    GRÖßER(3, Assoziativität.LINKS, OperatorKlasse.VERGLEICH),
-    KLEINER(3, Assoziativität.LINKS, OperatorKlasse.VERGLEICH),
-    GRÖSSER_GLEICH(3, Assoziativität.LINKS, OperatorKlasse.VERGLEICH),
-    KLEINER_GLEICH(3, Assoziativität.LINKS, OperatorKlasse.VERGLEICH),
+    GLEICH(3, Assoziativität.LINKS, OperatorKlasse.VERGLEICH_GLEICH),
+    UNGLEICH(3, Assoziativität.LINKS, OperatorKlasse.VERGLEICH_GLEICH),
+    GRÖßER(3, Assoziativität.LINKS, OperatorKlasse.VERGLEICH_ALS),
+    KLEINER(3, Assoziativität.LINKS, OperatorKlasse.VERGLEICH_ALS),
+    GRÖSSER_GLEICH(3, Assoziativität.LINKS, OperatorKlasse.VERGLEICH_GLEICH),
+    KLEINER_GLEICH(3, Assoziativität.LINKS, OperatorKlasse.VERGLEICH_GLEICH),
     PLUS(4, Assoziativität.LINKS, OperatorKlasse.ARITHMETISCH),
     MINUS(4, Assoziativität.LINKS, OperatorKlasse.ARITHMETISCH),
     MAL(5, Assoziativität.LINKS, OperatorKlasse.ARITHMETISCH),

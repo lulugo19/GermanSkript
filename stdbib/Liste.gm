@@ -54,7 +54,7 @@ Modul Standard::Collections:
             ein J ist die ZahlM
             für jedes K von der ZahlB bis zur ZahlE:
                 wenn das I < die ZahlM und
-                  (das J >= die ZahlE oder (Vergleichbares: vergleiche das ElementA[I] mit dem ElementB[J]!) <= 0):
+                  (das J >= der ZahlE oder (Vergleichbares: vergleiche das ElementA[I] mit dem ElementB[J]!) <= 0):
                     das ElementB[K] ist das ElementA[I]
                     ein I ist das I + 1
                 .

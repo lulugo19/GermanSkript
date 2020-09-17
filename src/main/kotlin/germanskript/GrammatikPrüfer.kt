@@ -124,6 +124,7 @@ class GrammatikPrüfer(startDatei: File): PipelineKomponente(startDatei) {
     }
     val vorNomen = nomen.vornomen!!
     val ersterFall = nomen.kasus
+    val ersterNumerus = nomen.numerus
     for (numerus in nomen.numera) {
       for (kasus in nomen.fälle[numerus.ordinal]) {
         val erwartetesVornomen = holeVornomen(vorNomen.typ, kasus, nomen.genus, numerus)
@@ -139,7 +140,9 @@ class GrammatikPrüfer(startDatei: File): PipelineKomponente(startDatei) {
     }
 
     if (nomen.vornomenString == null) {
-      val erwartetesVornomen = holeVornomen(vorNomen.typ, ersterFall, nomen.genus, nomen.numerus)
+      val erwartetesVornomen = holeVornomen(vorNomen.typ, ersterFall, nomen.genus, ersterNumerus)
+      // weise hier den ersten Numerus wieder zu, sodass kein Fehler entsteht
+      nomen.numera.add(ersterNumerus)
       throw GermanSkriptFehler.GrammatikFehler.FormFehler.FalschesVornomen(vorNomen.toUntyped(), ersterFall, nomen, erwartetesVornomen)
     }
   }

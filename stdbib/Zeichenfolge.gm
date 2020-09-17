@@ -17,6 +17,105 @@ Implementiere die Zeichenfolge:
     Verb(Zahl) code an der Zahl Index: intern.
     Verb(Zeichenfolgen) trenne mich zwischen der Zeichenfolge Separator: intern.
 
+    Verb(Zahl) index von der ZeichenfolgeX:
+        die Zeichenfolge ist Ich
+        gebe (Zeichenfolge: index von der ZeichenfolgeX ab dem Index 0!) zurück
+    .
+
+    Verb(Zahl) index von der ZeichenfolgeX ab der Zahl IndexSTART:
+        die Zeichenfolge ist Ich
+        das M ist meine Länge
+        das N ist die Länge der ZeichenfolgeX
+
+        wenn das N > das M ist: gebe -1 zurück.
+        wenn das N gleich 0 ist: gebe -1 zurück.
+
+        das ErsteZeichen ist die ZeichenfolgeX[0]
+
+        ein I ist der IndexSTART
+        solange das I kleiner als das M ist:
+            // finde das erste Zeichen
+            solange das I kleiner als das M ist und die Zeichenfolge[I] ungleich dem ErsteZeichen ist:
+                ein I ist das I plus 1
+            .
+            // nur wenn die gesuchte Zeichenfolge noch reinpasst
+            wenn das N <= dem M - das I ist:
+                // überprüfe den Rest
+                ein J ist das I plus 1
+                ein K ist 1
+                solange das K kleiner als das N ist und die Zeichenfolge[J] = der ZeichenfolgeX[K] ist:
+                    ein J ist das J plus 1
+                    ein K ist das K plus 1
+                .
+                wenn das K gleich dem N ist:
+                    gebe das I zurück
+                .
+                ein I ist das I plus 1
+            .
+            sonst: gebe -1 zurück.
+        .
+        gebe -1 zurück
+    .
+
+    Verb(Zahl) letzter_index von der ZeichenfolgeX:
+        die Zeichenfolge ist Ich
+        gebe (Zeichenfolge: letzter_index von der ZeichenfolgeX ab dem Index 0!) zurück
+    .
+
+    Verb(Zahl) letzter_index von der ZeichenfolgeX ab der Zahl IndexSTART:
+        die Zeichenfolge ist Ich
+        das M ist meine Länge
+        das N ist die Länge der ZeichenfolgeX
+
+        wenn das N > das M ist: gebe -1 zurück.
+        wenn das N gleich 0 ist: gebe -1 zurück.
+
+        das ErsteZeichen ist die ZeichenfolgeX[0]
+
+        ein I ist der IndexSTART
+        ein Index ist -1
+        solange das I kleiner als das M ist:
+            // finde das erste Zeichen
+            solange das I kleiner als das M ist und die Zeichenfolge[I] ungleich dem ErsteZeichen ist:
+                ein I ist das I plus 1
+            .
+            // nur wenn die gesuchte Zeichenfolge noch reinpasst
+            wenn das N <= dem M - das I ist:
+                // überprüfe den Rest
+                ein J ist das I plus 1
+                ein K ist 1
+                solange das K kleiner  als das N ist und die Zeichenfolge[J] = der ZeichenfolgeX[K] ist:
+                    ein J ist das J plus 1
+                    ein K ist das K plus 1
+                .
+                wenn das K gleich dem N ist:
+                    ein Index ist das I
+                .
+                ein I ist das I plus 1
+            .
+            sonst: gebe den Index zurück.
+        .
+        gebe den Index zurück
+    .
+
+    Verb(Boolean) enthält die ZeichenfolgeX:
+        die Zeichenfolge ist Ich
+        wenn (Zeichenfolge: index von der ZeichenfolgeX!) gleich -1 ist: gebe falsch zurück.
+        sonst: gebe wahr zurück.
+    .
+
+
+    Verb(Zeichenfolge) teile mich ab der Zahl IndexSTART zu der Zahl IndexENDE:
+        die Zeichenfolge ist Ich
+        ein Ergebnis ist ""
+        ein Index ist der IndexSTART
+        solange der Index kleiner als der IndexENDE ist:
+            ein Ergebnis ist das Ergebnis + die Zeichenfolge[Index]
+            ein Index ist der Index + 1
+        .
+        gebe das Ergebnis zurück
+    .
+
     Verb(Zeichenfolge) buchstabiere mich groß:
         die Zeichenfolge ist Ich
         ein Ergebnis ist ""
@@ -76,7 +175,7 @@ Implementiere die Zeichenfolge:
         ein I ist meine Länge - die Länge der ZeichenfolgeENDE
         wenn das I kleiner 0 ist: gebe falsch zurück.
         solange das I kleiner als meine Länge ist:
-            wenn die Zeichenfolge[I] != die ZeichenfolgeENDE[I] ist:
+            wenn die Zeichenfolge[I] != der ZeichenfolgeENDE[I] ist:
                 gebe falsch zurück
             .
             ein I ist das I + 1
@@ -89,12 +188,20 @@ Implementiere die Zeichenfolge:
         die Zeichenfolge ist Ich
         ein I ist 0
         solange das I kleiner als die Länge der ZeichenfolgeSTART ist:
-            wenn die Zeichenfolge[I] != die ZeichenfolgeSTART[I] ist:
+            wenn die Zeichenfolge[I] != der ZeichenfolgeSTART[I] ist:
                 gebe falsch zurück
             .
             ein I ist das I + 1
         .
         gebe wahr zurück
+    .
+
+    Verb(Zeichenfolge) wiederhole mich mit der AnZahl:
+        ein Ergebnis ist ""
+        für jede Zahl von 0 bis zur AnZahl:
+            ein Ergebnis ist das Ergebnis + Ich
+        .
+        gebe das Ergebnis zurück
     .
 
     Eigenschaft(Zeichenfolgen) Zeichen:
