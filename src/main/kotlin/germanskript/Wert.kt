@@ -208,5 +208,9 @@ sealed class Wert {
     }
   }
 
-  class Closure(val schnittstelle: Typ.Compound.Schnittstelle, val körper: AST.Satz.Bereich, val umgebung: Umgebung<Wert>): Wert()
+  class Closure(
+      val schnittstelle: Typ.Compound.Schnittstelle,
+      val ausdruck: AST.Ausdruck.Closure,
+      val umgebung: Umgebung<Wert>
+  ): Wert()
 }

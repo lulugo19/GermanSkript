@@ -851,8 +851,14 @@ private sealed class SubParser<T: AST>() {
       override val id: ASTKnotenID = ASTKnotenID.CLOSURE
 
       override fun parseImpl(): AST.Ausdruck.Closure {
+        val bindings = if (peekType() is TokenTyp.OFFENE_KLAMMER) {
+          expect<TokenTyp.OFFENE_KLAMMER>("'('")
+          parseListeMitEnde<AST.WortArt.Nomen, TokenTyp.KOMMA, TokenTyp.GESCHLOSSENE_KLAMMER>(true) {
+            parseNomenOhneVornomen(true)
+          }.also { expect<TokenTyp.GESCHLOSSENE_KLAMMER>("')'") }
+        } else emptyList()
         val körper = parseSätze()
-        return AST.Ausdruck.Closure(typKnoten, körper)
+        return AST.Ausdruck.Closure(typKnoten, bindings, körper)
       }
     }
   }

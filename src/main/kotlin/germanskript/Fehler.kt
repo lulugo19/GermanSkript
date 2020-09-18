@@ -79,11 +79,18 @@ sealed class GermanSkriptFehler(private val fehlerName: String, val token: Token
       get() = "Es wird eine Schnittstelle erwartet. Eine Klasse oder ein primitiver Typ sind hier nicht erlaubt."
   }
 
-  class UngültigeClosureSchnittstelle(token: Token, private val schnittstelle: AST.Definition.Typdefinition.Schnittstelle):
-      GermanSkriptFehler("Ungültige Closure-Schnittstelle", token) {
-    override val nachricht: String
-      get() = "Die Schnittstelle '${schnittstelle.name.wert}' in ${schnittstelle.name.position} kann nicht für ein Closure verwendet werden,\n" +
-          "da sie genau eine Methode definieren muss."
+  sealed class ClosureFehler(token: Token): GermanSkriptFehler("Closure-Fehler", token) {
+    class UngültigeClosureSchnittstelle(token: Token, schnittstelle: AST.Definition.Typdefinition.Schnittstelle):
+        ClosureFehler(token) {
+      override val nachricht: String
+         = "Die Schnittstelle '${schnittstelle.name.wert}' in ${schnittstelle.name.position} kann nicht für ein Closure verwendet werden,\n" +
+            "da sie genau eine Methode definieren muss."
+    }
+
+    class ZuVieleBinder(token: Token,  maxAnzahlBinder: Int): ClosureFehler(token) {
+      override val nachricht: String = "Das Closure bindet zu viele Namen. Es dürfen maximal $maxAnzahlBinder Namen gebunden werden.\n"
+    }
+
   }
 
   class UnimplementierteSchnittstelle(

@@ -293,6 +293,7 @@ class GrammatikPrüfer(startDatei: File): PipelineKomponente(startDatei) {
     if (kontextNomen != null) {
       prüfeNumerus(kontextNomen, Numerus.SINGULAR)
     }
+    closure.bindings.forEach { binding -> prüfeNomen(binding, EnumSet.of(Kasus.NOMINATIV), Numerus.BEIDE)}
   }
 
   private fun prüfeKonvertierung(konvertierung: AST.Ausdruck.Konvertierung, kontextNomen: AST.WortArt.Nomen?, fälle: EnumSet<Kasus>, pluralErwartet: Boolean) {

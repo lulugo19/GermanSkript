@@ -1437,4 +1437,18 @@ class GermanSkriptTest {
 
     testeGermanSkriptCode(quellCode, erwarteteAusgabe)
   }
+
+  @Test
+  @DisplayName("Closure mit expliziten Parameternamen")
+  fun closureMitExplizitenParameterNamen() {
+    val quellCode = """
+      die Zahlen sind einige Zahlen[2, 3, 5, 7, 11, 13]
+      sortiere die Zahlen mit etwas Vergleichbarem(X, Y): gebe das Y - das X zurück.
+      schreibe die Zeile Zahlen als Zeichenfolge
+    """.trimIndent()
+
+    val erwarteteAusgabe = "[13, 11, 7, 5, 3, 2]\n"
+
+    testeGermanSkriptCode(quellCode, erwarteteAusgabe)
+  }
 }

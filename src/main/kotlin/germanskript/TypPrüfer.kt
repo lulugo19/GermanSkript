@@ -350,6 +350,8 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
           else -> throw Exception("Dieser Fall sollte nie eintreten, da der Grammatikprüfer dies überprüfen sollte. "
               + "${klassenTyp.bezeichner}")
         }
+        // Pushe das Methodenobjekt
+        umgebung.pushBereich(klasse)
         val methodenName = definierer.holeVollenNamenVonFunktionsAufruf(funktionsAufruf, reflexivPronomen)
         methoden[methodenName]?.also { methode ->
           funktionsSignatur = methoden.getValue(methodenName).signatur
@@ -383,6 +385,11 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
     }
     letzterFunktionsAufruf = null
 
+    if (funktionsAufruf.aufrufTyp == FunktionsAufrufTyp.METHODEN_OBJEKT_AUFRUF) {
+      // als kleiner Hack, damit das Objekt für die Methode bekannt ist, wird es auf den Stack gepusht
+      // und muss hier wieder entfernt werden
+      umgebung.popBereich()
+    }
     return funktionsSignatur!!.rückgabeTyp.typ!!
   }
 
@@ -757,14 +764,23 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
     }
     inferiereTypArgumente(schnittstelle)
     if (schnittstelle.definition.methodenSignaturen.size != 1) {
-      throw GermanSkriptFehler.UngültigeClosureSchnittstelle(closure.schnittstelle.name.bezeichnerToken, schnittstelle.definition)
+      throw GermanSkriptFehler.ClosureFehler.UngültigeClosureSchnittstelle(closure.schnittstelle.name.bezeichnerToken, schnittstelle.definition)
     }
     val prevRückgabeTyp = rückgabeTyp
     val prevRückgabeErreicht = rückgabeErreicht
     val signatur = schnittstelle.definition.methodenSignaturen[0]
+    if (closure.bindings.size > signatur.parameter.size) {
+      throw GermanSkriptFehler.ClosureFehler.ZuVieleBinder(
+          closure.bindings[signatur.parameter.size].bezeichner.toUntyped(),
+          signatur.parameter.size
+      )
+    }
     umgebung.pushBereich()
-    for (param in signatur.parameter) {
-      val paramName = holeParamName(param, schnittstelle.typArgumente)
+    for (paramIndex in signatur.parameter.indices) {
+      val param = signatur.parameter[paramIndex]
+      val paramName = closure.bindings.getOrElse(paramIndex) {
+        holeParamName(param, schnittstelle.typArgumente)
+      }
       val paramTyp = holeParamTyp(param, schnittstelle.typArgumente)
       umgebung.schreibeVariable(paramName, paramTyp, false)
     }

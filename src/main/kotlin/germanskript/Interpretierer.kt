@@ -167,8 +167,9 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
   private fun holeParameterNamenFürClosure(objekt: Wert.Closure): List<AST.WortArt.Nomen> {
     val typArgumente = objekt.schnittstelle.typArgumente
     val signatur = objekt.schnittstelle.definition.methodenSignaturen[0]
-    return signatur.parameter.map { param ->
-      when (val typ = param.typKnoten.typ!!) {
+    return signatur.parameter.mapIndexed { index, param ->
+      if (index < objekt.ausdruck.bindings.size) objekt.ausdruck.bindings[index]
+      else when (val typ = param.typKnoten.typ!!) {
         is Typ.Generic ->
           if (param.typIstName) param.name.tauscheHauptWortAus(typArgumente[typ.index].name.deklination!!) else param.name
         else -> param.name
@@ -204,7 +205,7 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
         }
         is Wert.Closure -> {
           funktionsUmgebung = methodenObjekt.umgebung
-          Pair(methodenObjekt.körper, holeParameterNamenFürClosure(methodenObjekt))
+          Pair(methodenObjekt.ausdruck.körper, holeParameterNamenFürClosure(methodenObjekt))
         }
         else -> throw Exception("Dieser Fall sollte nie eintreten.")
       }
@@ -541,7 +542,7 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
   }
 
   override fun evaluiereClosure(closure: AST.Ausdruck.Closure): Wert {
-    return Wert.Closure((closure.schnittstelle.typ as Typ.Compound.Schnittstelle), closure.körper, umgebung)
+    return Wert.Closure((closure.schnittstelle.typ as Typ.Compound.Schnittstelle), closure, umgebung)
   }
   // endregion
 
@@ -552,7 +553,7 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
         val methode = wert.typ.definition.methoden.getValue(name)
         Triple(Umgebung<Wert>(), methode.körper, methode.signatur.parameter.map { it.name })
       }
-      is Wert.Closure -> Triple(wert.umgebung, wert.körper, holeParameterNamenFürClosure(wert))
+      is Wert.Closure -> Triple(wert.umgebung, wert.ausdruck.körper, holeParameterNamenFürClosure(wert))
       else -> throw Exception("Dieser Fall sollte nie auftreten!")
     }
 

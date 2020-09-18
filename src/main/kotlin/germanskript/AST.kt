@@ -678,8 +678,12 @@ sealed class AST {
       }
     }
 
-    data class Closure(val schnittstelle: TypKnoten, val körper: Satz.Bereich): Ausdruck() {
-      override val children = sequenceOf(schnittstelle, körper)
+    data class Closure(val schnittstelle: TypKnoten, val bindings: List<WortArt.Nomen>, val körper: Satz.Bereich): Ausdruck() {
+      override val children = sequence {
+        yield(schnittstelle)
+        yieldAll(bindings)
+        yield(körper)
+      }
     }
 
     interface IEigenschaftsZugriff: IAufruf {
