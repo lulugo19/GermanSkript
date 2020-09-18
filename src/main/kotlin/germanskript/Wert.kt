@@ -210,7 +210,7 @@ sealed class Wert {
 
   class Closure(
       val schnittstelle: Typ.Compound.Schnittstelle,
-      val ausdruck: AST.Ausdruck.Closure,
+      val ausdruck: AST.Satz.Ausdruck.Closure,
       val umgebung: Umgebung<Wert>
   ): Wert()
 }

@@ -52,22 +52,22 @@ class KonstantenFalter(startDatei: File): ProgrammDurchlaufer<Wert?>(startDatei)
     }
   }
 
-  private fun falteKonstante(originalerAusdruck: AST.Ausdruck): AST.Ausdruck {
+  private fun falteKonstante(originalerAusdruck: AST.Satz.Ausdruck): AST.Satz.Ausdruck {
     return when (val konstanterWert = evaluiereAusdruck(originalerAusdruck)) {
-      is Wert.Primitiv.Zahl -> AST.Ausdruck.Zahl(TypedToken.imaginäresToken(TokenTyp.ZAHL(konstanterWert),""))
-      is Wert.Objekt.InternesObjekt.Zeichenfolge -> AST.Ausdruck.Zeichenfolge(TypedToken.imaginäresToken(TokenTyp.ZEICHENFOLGE(konstanterWert), ""))
-      is Wert.Primitiv.Boolean -> AST.Ausdruck.Boolean(TypedToken.imaginäresToken(TokenTyp.BOOLEAN(konstanterWert), ""))
+      is Wert.Primitiv.Zahl -> AST.Satz.Ausdruck.Zahl(TypedToken.imaginäresToken(TokenTyp.ZAHL(konstanterWert),""))
+      is Wert.Objekt.InternesObjekt.Zeichenfolge -> AST.Satz.Ausdruck.Zeichenfolge(TypedToken.imaginäresToken(TokenTyp.ZEICHENFOLGE(konstanterWert), ""))
+      is Wert.Primitiv.Boolean -> AST.Satz.Ausdruck.Boolean(TypedToken.imaginäresToken(TokenTyp.BOOLEAN(konstanterWert), ""))
       else -> originalerAusdruck
     }
   }
 
-  override fun bevorDurchlaufeMethodenBereich(methodenBereich: AST.MethodenBereich, blockObjekt: Wert?) {
+  override fun bevorDurchlaufeMethodenBereich(methodenBereich: AST.Satz.Ausdruck.MethodenBereich, blockObjekt: Wert?) {
     // hier muss nichts gemacht werden
   }
 
   override fun sollSätzeAbbrechen(): Boolean = false
 
-  override fun durchlaufeFunktionsAufruf(funktionsAufruf: AST.FunktionsAufruf, istAusdruck: Boolean): Wert? {
+  override fun durchlaufeFunktionsAufruf(funktionsAufruf: AST.Satz.Ausdruck.FunktionsAufruf, istAusdruck: Boolean): Wert? {
     funktionsAufruf.argumente.forEach {arg -> arg.ausdruck = falteKonstante(arg.ausdruck)}
     return  null
   }
@@ -120,21 +120,21 @@ class KonstantenFalter(startDatei: File): ProgrammDurchlaufer<Wert?>(startDatei)
     return super.evaluiereVariable(name)
   }
 
-  override fun evaluiereKonstante(konstante: AST.Ausdruck.Konstante): Wert? = evaluiereAusdruck(konstante.wert!!)
+  override fun evaluiereKonstante(konstante: AST.Satz.Ausdruck.Konstante): Wert? = evaluiereAusdruck(konstante.wert!!)
 
   override fun durchlaufeZurückgabe(zurückgabe: AST.Satz.Zurückgabe): Wert? {
     zurückgabe.ausdruck = falteKonstante(zurückgabe.ausdruck)
     return null
   }
 
-  override fun durchlaufeBedingungsSatz(bedingungsSatz: AST.Satz.Bedingung) {
+  override fun durchlaufeBedingungsSatz(bedingungsSatz: AST.Satz.Ausdruck.Bedingung, istAusdruck: Boolean): Wert? {
     // dead code elimination
     val eliminierteBedingungen = mutableListOf<AST.Satz.BedingungsTerm>()
     for (index in bedingungsSatz.bedingungen.indices) {
       val bedingung = bedingungsSatz.bedingungen[index]
       bedingung.bedingung = falteKonstante(bedingung.bedingung)
-      if (bedingung.bedingung is AST.Ausdruck.Boolean) {
-        if ((bedingung.bedingung as AST.Ausdruck.Boolean).boolean.typ.boolean.boolean) {
+      if (bedingung.bedingung is AST.Satz.Ausdruck.Boolean) {
+        if ((bedingung.bedingung as AST.Satz.Ausdruck.Boolean).boolean.typ.boolean.boolean) {
           eliminierteBedingungen.addAll(
               bedingungsSatz.bedingungen.takeLast(bedingungsSatz.bedingungen.size-1-index))
           bedingungsSatz.sonst = null
@@ -149,11 +149,13 @@ class KonstantenFalter(startDatei: File): ProgrammDurchlaufer<Wert?>(startDatei)
     }
     bedingungsSatz.bedingungen.removeAll(eliminierteBedingungen)
     val ersteBedingung = bedingungsSatz.bedingungen[0]
-    if (ersteBedingung.bedingung is AST.Ausdruck.Boolean &&
-        (ersteBedingung.bedingung as AST.Ausdruck.Boolean).boolean.typ.boolean.boolean) {
+    if (ersteBedingung.bedingung is AST.Satz.Ausdruck.Boolean &&
+        (ersteBedingung.bedingung as AST.Satz.Ausdruck.Boolean).boolean.typ.boolean.boolean) {
       val bereich = bedingungsSatz.parent as AST.Satz.Bereich
       bereich.sätze[bereich.sätze.indexOf(bedingungsSatz)] = AST.Satz.Bereich(ersteBedingung.bereich.sätze)
+      return durchlaufeBereich(ersteBedingung.bereich, true)
     }
+    return null
   }
 
   override fun durchlaufeAbbrechen() {
@@ -196,23 +198,23 @@ class KonstantenFalter(startDatei: File): ProgrammDurchlaufer<Wert?>(startDatei)
     return null
   }
 
-  override fun evaluiereZeichenfolge(ausdruck: AST.Ausdruck.Zeichenfolge): Wert? = ausdruck.zeichenfolge.typ.zeichenfolge
+  override fun evaluiereZeichenfolge(ausdruck: AST.Satz.Ausdruck.Zeichenfolge): Wert? = ausdruck.zeichenfolge.typ.zeichenfolge
 
-  override fun evaluiereZahl(ausdruck: AST.Ausdruck.Zahl): Wert? = ausdruck.zahl.typ.zahl
+  override fun evaluiereZahl(ausdruck: AST.Satz.Ausdruck.Zahl): Wert? = ausdruck.zahl.typ.zahl
 
-  override fun evaluiereBoolean(ausdruck: AST.Ausdruck.Boolean): Wert? = ausdruck.boolean.typ.boolean
+  override fun evaluiereBoolean(ausdruck: AST.Satz.Ausdruck.Boolean): Wert? = ausdruck.boolean.typ.boolean
 
-  override fun evaluiereListe(ausdruck: AST.Ausdruck.Liste): Wert? {
+  override fun evaluiereListe(ausdruck: AST.Satz.Ausdruck.Liste): Wert? {
     ausdruck.elemente = ausdruck.elemente.map(::falteKonstante)
     return null
   }
 
-  override fun evaluiereListenElement(listenElement: AST.Ausdruck.ListenElement): Wert? {
+  override fun evaluiereListenElement(listenElement: AST.Satz.Ausdruck.ListenElement): Wert? {
     listenElement.index = falteKonstante(listenElement.index)
     return null
   }
 
-  override fun evaluiereBinärenAusdruck(ausdruck: AST.Ausdruck.BinärerAusdruck): Wert? {
+  override fun evaluiereBinärenAusdruck(ausdruck: AST.Satz.Ausdruck.BinärerAusdruck): Wert? {
     val links = evaluiereAusdruck(ausdruck.links)
     val rechts = evaluiereAusdruck(ausdruck.rechts)
     val operator = ausdruck.operator.typ.operator
@@ -225,7 +227,7 @@ class KonstantenFalter(startDatei: File): ProgrammDurchlaufer<Wert?>(startDatei)
     }
   }
 
-  override fun evaluiereMinus(minus: AST.Ausdruck.Minus): Wert? {
+  override fun evaluiereMinus(minus: AST.Satz.Ausdruck.Minus): Wert? {
     val zahl = evaluiereAusdruck(minus.ausdruck) as Wert.Primitiv.Zahl?
     return if (zahl != null) {
       -zahl
@@ -234,17 +236,17 @@ class KonstantenFalter(startDatei: File): ProgrammDurchlaufer<Wert?>(startDatei)
     }
   }
 
-  override fun evaluiereKonvertierung(konvertierung: AST.Ausdruck.Konvertierung): Wert? {
+  override fun evaluiereKonvertierung(konvertierung: AST.Satz.Ausdruck.Konvertierung): Wert? {
     konvertierung.ausdruck = falteKonstante(konvertierung.ausdruck)
     return null
   }
 
-  override fun evaluiereObjektInstanziierung(instanziierung: AST.Ausdruck.ObjektInstanziierung): Wert? {
+  override fun evaluiereObjektInstanziierung(instanziierung: AST.Satz.Ausdruck.ObjektInstanziierung): Wert? {
     instanziierung.eigenschaftsZuweisungen.forEach {zuweisung -> zuweisung.ausdruck = falteKonstante(zuweisung.ausdruck)}
     return null
   }
 
-  override fun evaluiereClosure(closure: AST.Ausdruck.Closure): Wert? {
+  override fun evaluiereClosure(closure: AST.Satz.Ausdruck.Closure): Wert? {
     val signatur = (closure.schnittstelle.typ as Typ.Compound.Schnittstelle).definition.methodenSignaturen[0]
     umgebung.pushBereich()
     for (param in signatur.parameter) {
@@ -255,11 +257,11 @@ class KonstantenFalter(startDatei: File): ProgrammDurchlaufer<Wert?>(startDatei)
     return null
   }
 
-  override fun evaluiereEigenschaftsZugriff(eigenschaftsZugriff: AST.Ausdruck.EigenschaftsZugriff): Wert? = null
+  override fun evaluiereEigenschaftsZugriff(eigenschaftsZugriff: AST.Satz.Ausdruck.EigenschaftsZugriff): Wert? = null
 
-  override fun evaluiereSelbstEigenschaftsZugriff(eigenschaftsZugriff: AST.Ausdruck.SelbstEigenschaftsZugriff): Wert? = null
+  override fun evaluiereSelbstEigenschaftsZugriff(eigenschaftsZugriff: AST.Satz.Ausdruck.SelbstEigenschaftsZugriff): Wert? = null
 
-  override fun evaluiereMethodenBlockEigenschaftsZugriff(eigenschaftsZugriff: AST.Ausdruck.MethodenBereichEigenschaftsZugriff): Wert? = null
+  override fun evaluiereMethodenBlockEigenschaftsZugriff(eigenschaftsZugriff: AST.Satz.Ausdruck.MethodenBereichEigenschaftsZugriff): Wert? = null
 
   override fun evaluiereSelbstReferenz(): Wert? = null
 }

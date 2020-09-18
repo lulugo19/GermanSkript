@@ -88,9 +88,12 @@ sealed class GermanSkriptFehler(private val fehlerName: String, val token: Token
     }
 
     class ZuVieleBinder(token: Token,  maxAnzahlBinder: Int): ClosureFehler(token) {
-      override val nachricht: String = "Das Closure bindet zu viele Namen. Es dürfen maximal $maxAnzahlBinder Namen gebunden werden.\n"
+      override val nachricht: String = "Das Closure bindet zu viele Namen. Es dürfen maximal $maxAnzahlBinder Namen gebunden werden."
     }
+  }
 
+  class WennAusdruckBrauchtSonst(token: Token): GermanSkriptFehler("Wenn-Ausdruck-Fehler", token) {
+    override val nachricht: String = "Der Wenn-Ausdruck braucht einen Sonst-Fall, ansonsten kann er nicht als Ausdruck verwendet werden."
   }
 
   class UnimplementierteSchnittstelle(
@@ -125,7 +128,7 @@ sealed class GermanSkriptFehler(private val fehlerName: String, val token: Token
   sealed class GrammatikFehler(token: Token): GermanSkriptFehler("Grammatikfehler",token) {
 
     sealed class FormFehler(token: Token, protected val kasus: Kasus, protected val nomen: AST.WortArt.Nomen): GrammatikFehler(token) {
-      val form get() = "(${kasus.anzeigeName}, ${nomen.genus.anzeigeName}, ${nomen.numerus!!.anzeigeName})"
+      val form get() = "(${kasus.anzeigeName}, ${nomen.genus.anzeigeName}, ${nomen.numerus.anzeigeName})"
 
       class FalschesVornomen(token: Token, kasus: Kasus, nomen: AST.WortArt.Nomen, private val richtigesVornomen: String) : FormFehler(token, kasus, nomen) {
         override val nachricht: String
@@ -212,12 +215,12 @@ sealed class GermanSkriptFehler(private val fehlerName: String, val token: Token
   }
 
   sealed class Undefiniert(token: Token): GermanSkriptFehler("Undefiniert Fehler", token) {
-    class Funktion(token: Token, private val funktionsAufruf: AST.FunktionsAufruf): Undefiniert(token) {
+    class Funktion(token: Token, private val funktionsAufruf: AST.Satz.Ausdruck.FunktionsAufruf): Undefiniert(token) {
       override val nachricht: String
         get() = "Die Funktion '${funktionsAufruf.vollständigerName}' ist nicht definiert."
     }
 
-    class Methode(token: Token, private val methodenAufruf: AST.FunktionsAufruf, private val klassenName: String): Undefiniert(token) {
+    class Methode(token: Token, private val methodenAufruf: AST.Satz.Ausdruck.FunktionsAufruf, private val klassenName: String): Undefiniert(token) {
       override val nachricht: String
         get() = "Die Methode 'für $klassenName: ${methodenAufruf.vollerName!!}' ist nicht definiert."
     }
@@ -232,7 +235,7 @@ sealed class GermanSkriptFehler(private val fehlerName: String, val token: Token
           = "Der Typ '${typ.vollständigerName}' ist nicht definiert."
     }
 
-    class Konstante(token: Token, konstante: AST.Ausdruck.Konstante): Undefiniert(token) {
+    class Konstante(token: Token, konstante: AST.Satz.Ausdruck.Konstante): Undefiniert(token) {
       override val nachricht: String
         = "Die Konstante '${konstante.vollständigerName}' ist nicht definiert."
     }

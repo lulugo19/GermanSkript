@@ -26,9 +26,9 @@ abstract  class ProgrammDurchlaufer<T>(startDatei: File): PipelineKomponente(sta
       rückgabe = when (satz) {
         is AST.Satz.VariablenDeklaration -> durchlaufeVariablenDeklaration(satz)
         is AST.Satz.ListenElementZuweisung -> durchlaufeListenElementZuweisung(satz)
-        is AST.Satz.FunktionsAufruf -> durchlaufeFunktionsAufruf(satz.aufruf, false)
+        is AST.Satz.Ausdruck.FunktionsAufruf -> durchlaufeFunktionsAufruf(satz, false)
         is AST.Satz.Bereich -> durchlaufeBereich(satz, true)
-        is AST.Satz.MethodenBereich -> durchlaufeMethodenBereich(satz.methodenBereich)
+        is AST.Satz.Ausdruck.MethodenBereich -> durchlaufeMethodenBereich(satz)
         is AST.Satz.SuperBlock -> {
           val prevInSuperBlock = inSuperBlock
           inSuperBlock = true
@@ -37,7 +37,7 @@ abstract  class ProgrammDurchlaufer<T>(startDatei: File): PipelineKomponente(sta
           }
         }
         is AST.Satz.Zurückgabe -> durchlaufeZurückgabe(satz)
-        is AST.Satz.Bedingung -> durchlaufeBedingungsSatz(satz)
+        is AST.Satz.Ausdruck.Bedingung -> durchlaufeBedingungsSatz(satz, false)
         is AST.Satz.SolangeSchleife -> durchlaufeSolangeSchleife(satz)
         is AST.Satz.FürJedeSchleife -> durchlaufeFürJedeSchleife(satz)
         is AST.Satz.VersucheFange -> durchlaufeVersucheFange(satz)
@@ -45,6 +45,7 @@ abstract  class ProgrammDurchlaufer<T>(startDatei: File): PipelineKomponente(sta
         is AST.Satz.SchleifenKontrolle.Abbrechen -> durchlaufeAbbrechen()
         is AST.Satz.SchleifenKontrolle.Fortfahren -> durchlaufeFortfahren()
         is AST.Satz.Intern -> durchlaufeIntern(satz)
+        is AST.Satz.Ausdruck -> evaluiereAusdruck(satz)
         else -> throw Exception("Dieser Fall sollte nie eintreten!")
       }.let {
         @Suppress("UNCHECKED_CAST")
@@ -58,45 +59,46 @@ abstract  class ProgrammDurchlaufer<T>(startDatei: File): PipelineKomponente(sta
     return rückgabe
   }
 
-  protected fun holeErstesTokenVonAusdruck(ausdruck: AST.Ausdruck): Token {
+  protected fun holeErstesTokenVonAusdruck(ausdruck: AST.Satz.Ausdruck): Token {
     return when (ausdruck) {
-      is AST.Ausdruck.Zeichenfolge -> ausdruck.zeichenfolge.toUntyped()
-      is AST.Ausdruck.Liste -> ausdruck.pluralTyp.name.vornomen!!.toUntyped()
-      is AST.Ausdruck.Zahl -> ausdruck.zahl.toUntyped()
-      is AST.Ausdruck.Boolean -> ausdruck.boolean.toUntyped()
-      is AST.Ausdruck.Variable -> ausdruck.name.bezeichner.toUntyped()
-      is AST.Ausdruck.FunktionsAufruf -> ausdruck.aufruf.verb.toUntyped()
-      is AST.Ausdruck.ListenElement -> ausdruck.singular.vornomen!!.toUntyped()
-      is AST.Ausdruck.BinärerAusdruck -> holeErstesTokenVonAusdruck(ausdruck.links)
-      is AST.Ausdruck.Minus -> holeErstesTokenVonAusdruck(ausdruck.ausdruck)
-      is AST.Ausdruck.Konvertierung -> holeErstesTokenVonAusdruck(ausdruck.ausdruck)
-      is AST.Ausdruck.ObjektInstanziierung -> ausdruck.klasse.name.bezeichnerToken
-      is AST.Ausdruck.EigenschaftsZugriff -> ausdruck.eigenschaftsName.bezeichner.toUntyped()
-      is AST.Ausdruck.SelbstEigenschaftsZugriff -> ausdruck.eigenschaftsName.bezeichner.toUntyped()
-      is AST.Ausdruck.MethodenBereichEigenschaftsZugriff -> ausdruck.eigenschaftsName.bezeichner.toUntyped()
-      is AST.Ausdruck.SelbstReferenz -> ausdruck.ich.toUntyped()
-      is AST.Ausdruck.MethodenBereichReferenz -> ausdruck.du.toUntyped()
-      is AST.Ausdruck.Closure -> ausdruck.schnittstelle.name.bezeichnerToken
-      is AST.Ausdruck.Konstante -> ausdruck.name.toUntyped()
-      is AST.Ausdruck.MethodenBereich -> ausdruck.methodenBereich.name.bezeichnerToken
-      is AST.Ausdruck.Nichts -> ausdruck.nichts.toUntyped()
+      is AST.Satz.Ausdruck.Zeichenfolge -> ausdruck.zeichenfolge.toUntyped()
+      is AST.Satz.Ausdruck.Liste -> ausdruck.pluralTyp.name.vornomen!!.toUntyped()
+      is AST.Satz.Ausdruck.Zahl -> ausdruck.zahl.toUntyped()
+      is AST.Satz.Ausdruck.Boolean -> ausdruck.boolean.toUntyped()
+      is AST.Satz.Ausdruck.Variable -> ausdruck.name.bezeichner.toUntyped()
+      is AST.Satz.Ausdruck.FunktionsAufruf -> ausdruck.verb.toUntyped()
+      is AST.Satz.Ausdruck.ListenElement -> ausdruck.singular.vornomen!!.toUntyped()
+      is AST.Satz.Ausdruck.BinärerAusdruck -> holeErstesTokenVonAusdruck(ausdruck.links)
+      is AST.Satz.Ausdruck.Minus -> holeErstesTokenVonAusdruck(ausdruck.ausdruck)
+      is AST.Satz.Ausdruck.Konvertierung -> holeErstesTokenVonAusdruck(ausdruck.ausdruck)
+      is AST.Satz.Ausdruck.ObjektInstanziierung -> ausdruck.klasse.name.bezeichnerToken
+      is AST.Satz.Ausdruck.EigenschaftsZugriff -> ausdruck.eigenschaftsName.bezeichner.toUntyped()
+      is AST.Satz.Ausdruck.SelbstEigenschaftsZugriff -> ausdruck.eigenschaftsName.bezeichner.toUntyped()
+      is AST.Satz.Ausdruck.MethodenBereichEigenschaftsZugriff -> ausdruck.eigenschaftsName.bezeichner.toUntyped()
+      is AST.Satz.Ausdruck.SelbstReferenz -> ausdruck.ich.toUntyped()
+      is AST.Satz.Ausdruck.MethodenBereichReferenz -> ausdruck.du.toUntyped()
+      is AST.Satz.Ausdruck.Closure -> ausdruck.schnittstelle.name.bezeichnerToken
+      is AST.Satz.Ausdruck.Konstante -> ausdruck.name.toUntyped()
+      is AST.Satz.Ausdruck.MethodenBereich -> ausdruck.name.bezeichnerToken
+      is AST.Satz.Ausdruck.Nichts -> ausdruck.nichts.toUntyped()
+      is AST.Satz.Ausdruck.Bedingung -> holeErstesTokenVonAusdruck(ausdruck.bedingungen[0].bedingung)
     }
   }
 
-  private fun durchlaufeMethodenBereich(methodenBereich: AST.MethodenBereich): T{
+  private fun durchlaufeMethodenBereich(methodenBereich: AST.Satz.Ausdruck.MethodenBereich): T{
     val wert = evaluiereVariable(methodenBereich.name)
     bevorDurchlaufeMethodenBereich(methodenBereich, wert)
     umgebung.pushBereich(wert)
     return durchlaufeBereich(methodenBereich.bereich, false).also { umgebung.popBereich() }
   }
 
-  protected abstract fun bevorDurchlaufeMethodenBereich(methodenBereich: AST.MethodenBereich, blockObjekt: T?)
+  protected abstract fun bevorDurchlaufeMethodenBereich(methodenBereich: AST.Satz.Ausdruck.MethodenBereich, blockObjekt: T?)
   protected abstract fun sollSätzeAbbrechen(): Boolean
-  protected abstract fun durchlaufeFunktionsAufruf(funktionsAufruf: AST.FunktionsAufruf, istAusdruck: Boolean): T
+  protected abstract fun durchlaufeFunktionsAufruf(funktionsAufruf: AST.Satz.Ausdruck.FunktionsAufruf, istAusdruck: Boolean): T
   protected abstract fun durchlaufeVariablenDeklaration(deklaration: AST.Satz.VariablenDeklaration)
   protected abstract fun durchlaufeListenElementZuweisung(zuweisung: AST.Satz.ListenElementZuweisung)
   protected abstract fun durchlaufeZurückgabe(zurückgabe: AST.Satz.Zurückgabe): T
-  protected abstract fun durchlaufeBedingungsSatz(bedingungsSatz: AST.Satz.Bedingung)
+  protected abstract fun durchlaufeBedingungsSatz(bedingungsSatz: AST.Satz.Ausdruck.Bedingung, istAusdruck: Boolean): T
   protected abstract fun durchlaufeAbbrechen()
   protected abstract fun durchlaufeFortfahren()
   protected abstract fun durchlaufeSolangeSchleife(schleife: AST.Satz.SolangeSchleife)
@@ -108,32 +110,33 @@ abstract  class ProgrammDurchlaufer<T>(startDatei: File): PipelineKomponente(sta
   protected abstract fun beendeBereich(bereich: AST.Satz.Bereich)
 
   // endregion
-  protected fun evaluiereAusdruck(ausdruck: AST.Ausdruck): T {
+  protected fun evaluiereAusdruck(ausdruck: AST.Satz.Ausdruck): T {
     return when (ausdruck) {
-      is AST.Ausdruck.Zeichenfolge -> evaluiereZeichenfolge(ausdruck)
-      is AST.Ausdruck.Zahl -> evaluiereZahl(ausdruck)
-      is AST.Ausdruck.Boolean -> evaluiereBoolean(ausdruck)
-      is AST.Ausdruck.Variable -> evaluiereVariable(ausdruck)
-      is AST.Ausdruck.Liste -> evaluiereListe(ausdruck)
-      is AST.Ausdruck.ListenElement -> evaluiereListenElement(ausdruck)
-      is AST.Ausdruck.FunktionsAufruf -> durchlaufeFunktionsAufruf(ausdruck.aufruf, true)!!
-      is AST.Ausdruck.BinärerAusdruck -> evaluiereBinärenAusdruck(ausdruck)
-      is AST.Ausdruck.Minus -> evaluiereMinus(ausdruck)
-      is AST.Ausdruck.Konvertierung -> evaluiereKonvertierung(ausdruck)
-      is AST.Ausdruck.ObjektInstanziierung -> evaluiereObjektInstanziierung(ausdruck)
-      is AST.Ausdruck.EigenschaftsZugriff -> evaluiereEigenschaftsZugriff(ausdruck)
-      is AST.Ausdruck.SelbstEigenschaftsZugriff -> evaluiereSelbstEigenschaftsZugriff(ausdruck)
-      is AST.Ausdruck.MethodenBereichEigenschaftsZugriff -> evaluiereMethodenBlockEigenschaftsZugriff(ausdruck)
-      is AST.Ausdruck.SelbstReferenz -> evaluiereSelbstReferenz()
-      is AST.Ausdruck.MethodenBereichReferenz -> evaluiereMethodenBlockReferenz()
-      is AST.Ausdruck.Closure -> evaluiereClosure(ausdruck)
-      is AST.Ausdruck.Konstante -> evaluiereKonstante(ausdruck)
-      is AST.Ausdruck.MethodenBereich -> durchlaufeMethodenBereich(ausdruck.methodenBereich)
-      is AST.Ausdruck.Nichts -> nichts
+      is AST.Satz.Ausdruck.Zeichenfolge -> evaluiereZeichenfolge(ausdruck)
+      is AST.Satz.Ausdruck.Zahl -> evaluiereZahl(ausdruck)
+      is AST.Satz.Ausdruck.Boolean -> evaluiereBoolean(ausdruck)
+      is AST.Satz.Ausdruck.Variable -> evaluiereVariable(ausdruck)
+      is AST.Satz.Ausdruck.Liste -> evaluiereListe(ausdruck)
+      is AST.Satz.Ausdruck.ListenElement -> evaluiereListenElement(ausdruck)
+      is AST.Satz.Ausdruck.FunktionsAufruf -> durchlaufeFunktionsAufruf(ausdruck, true)!!
+      is AST.Satz.Ausdruck.BinärerAusdruck -> evaluiereBinärenAusdruck(ausdruck)
+      is AST.Satz.Ausdruck.Minus -> evaluiereMinus(ausdruck)
+      is AST.Satz.Ausdruck.Konvertierung -> evaluiereKonvertierung(ausdruck)
+      is AST.Satz.Ausdruck.ObjektInstanziierung -> evaluiereObjektInstanziierung(ausdruck)
+      is AST.Satz.Ausdruck.EigenschaftsZugriff -> evaluiereEigenschaftsZugriff(ausdruck)
+      is AST.Satz.Ausdruck.SelbstEigenschaftsZugriff -> evaluiereSelbstEigenschaftsZugriff(ausdruck)
+      is AST.Satz.Ausdruck.MethodenBereichEigenschaftsZugriff -> evaluiereMethodenBlockEigenschaftsZugriff(ausdruck)
+      is AST.Satz.Ausdruck.SelbstReferenz -> evaluiereSelbstReferenz()
+      is AST.Satz.Ausdruck.MethodenBereichReferenz -> evaluiereMethodenBlockReferenz()
+      is AST.Satz.Ausdruck.Closure -> evaluiereClosure(ausdruck)
+      is AST.Satz.Ausdruck.Konstante -> evaluiereKonstante(ausdruck)
+      is AST.Satz.Ausdruck.MethodenBereich -> durchlaufeMethodenBereich(ausdruck)
+      is AST.Satz.Ausdruck.Bedingung -> durchlaufeBedingungsSatz(ausdruck, true)
+      is AST.Satz.Ausdruck.Nichts -> nichts
     }
   }
 
-  protected open fun evaluiereVariable(variable: AST.Ausdruck.Variable): T {
+  protected open fun evaluiereVariable(variable: AST.Satz.Ausdruck.Variable): T {
     return if (variable.konstante != null) {
       evaluiereAusdruck(variable.konstante!!.wert!!)
     } else {
@@ -153,19 +156,19 @@ abstract  class ProgrammDurchlaufer<T>(startDatei: File): PipelineKomponente(sta
     return umgebung.holeMethodenBlockObjekt()!!
   }
 
-  protected abstract fun evaluiereZeichenfolge(ausdruck: AST.Ausdruck.Zeichenfolge): T
-  protected abstract fun evaluiereZahl(ausdruck: AST.Ausdruck.Zahl): T
-  protected abstract fun evaluiereBoolean(ausdruck: AST.Ausdruck.Boolean): T
-  protected abstract fun evaluiereListe(ausdruck: AST.Ausdruck.Liste): T
-  protected abstract fun evaluiereListenElement(listenElement: AST.Ausdruck.ListenElement): T
-  protected abstract fun evaluiereBinärenAusdruck(ausdruck: AST.Ausdruck.BinärerAusdruck): T
-  protected abstract fun evaluiereMinus(minus: AST.Ausdruck.Minus): T
-  protected abstract fun evaluiereKonvertierung(konvertierung: AST.Ausdruck.Konvertierung): T
-  protected abstract fun evaluiereObjektInstanziierung(instanziierung: AST.Ausdruck.ObjektInstanziierung): T
-  protected abstract fun evaluiereEigenschaftsZugriff(eigenschaftsZugriff: AST.Ausdruck.EigenschaftsZugriff): T
-  protected abstract fun evaluiereSelbstEigenschaftsZugriff(eigenschaftsZugriff: AST.Ausdruck.SelbstEigenschaftsZugriff): T
-  protected abstract fun evaluiereMethodenBlockEigenschaftsZugriff(eigenschaftsZugriff: AST.Ausdruck.MethodenBereichEigenschaftsZugriff): T
+  protected abstract fun evaluiereZeichenfolge(ausdruck: AST.Satz.Ausdruck.Zeichenfolge): T
+  protected abstract fun evaluiereZahl(ausdruck: AST.Satz.Ausdruck.Zahl): T
+  protected abstract fun evaluiereBoolean(ausdruck: AST.Satz.Ausdruck.Boolean): T
+  protected abstract fun evaluiereListe(ausdruck: AST.Satz.Ausdruck.Liste): T
+  protected abstract fun evaluiereListenElement(listenElement: AST.Satz.Ausdruck.ListenElement): T
+  protected abstract fun evaluiereBinärenAusdruck(ausdruck: AST.Satz.Ausdruck.BinärerAusdruck): T
+  protected abstract fun evaluiereMinus(minus: AST.Satz.Ausdruck.Minus): T
+  protected abstract fun evaluiereKonvertierung(konvertierung: AST.Satz.Ausdruck.Konvertierung): T
+  protected abstract fun evaluiereObjektInstanziierung(instanziierung: AST.Satz.Ausdruck.ObjektInstanziierung): T
+  protected abstract fun evaluiereEigenschaftsZugriff(eigenschaftsZugriff: AST.Satz.Ausdruck.EigenschaftsZugriff): T
+  protected abstract fun evaluiereSelbstEigenschaftsZugriff(eigenschaftsZugriff: AST.Satz.Ausdruck.SelbstEigenschaftsZugriff): T
+  protected abstract fun evaluiereMethodenBlockEigenschaftsZugriff(eigenschaftsZugriff: AST.Satz.Ausdruck.MethodenBereichEigenschaftsZugriff): T
   protected abstract fun evaluiereSelbstReferenz(): T
-  protected abstract fun evaluiereClosure(closure: AST.Ausdruck.Closure): T
-  protected abstract fun evaluiereKonstante(konstante: AST.Ausdruck.Konstante): T
+  protected abstract fun evaluiereClosure(closure: AST.Satz.Ausdruck.Closure): T
+  protected abstract fun evaluiereKonstante(konstante: AST.Satz.Ausdruck.Konstante): T
 }

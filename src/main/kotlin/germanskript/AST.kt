@@ -66,7 +66,7 @@ sealed class AST {
     abstract val hauptWort: String
 
     val numerus: Numerus get() = numera.first()
-    val geprüft get() = deklination != null
+    val geprüft get() = numera.size != 0
     open val genus get() = deklination!!.genus
     val nominativ: String get() = ganzesWort(Kasus.NOMINATIV, numerus)
     val kasus: Kasus get() = fälle[numera.first().ordinal].first()
@@ -200,56 +200,11 @@ sealed class AST {
     }
   }
 
-  data class FunktionsAufruf(
-      val typArgumente: List<TypKnoten>,
-      val modulPfad: List<TypedToken<TokenTyp.BEZEICHNER_GROSS>>,
-      val subjekt: Ausdruck?,
-      val verb: TypedToken<TokenTyp.BEZEICHNER_KLEIN>,
-      val objekt: Argument?,
-      val reflexivPronomen: TypedToken<TokenTyp.REFLEXIV_PRONOMEN>?,
-      val präpositionsArgumente: List<PräpositionsArgumente>,
-      val suffix: TypedToken<TokenTyp.BEZEICHNER_KLEIN>?
-  ) : AST(), IAufruf {
-    override val token = verb.toUntyped()
-
-    override var vollerName: String? = null
-    private val _argumente: MutableList<Argument> = mutableListOf()
-    val argumente: List<Argument> = _argumente
-    var funktionsDefinition: Definition.Funktion? = null
-    var aufrufTyp: FunktionsAufrufTyp = FunktionsAufrufTyp.FUNKTIONS_AUFRUF
-    val vollständigerName: String get() = modulPfad.joinToString("::") { it.wert } +
-        (if (modulPfad.isEmpty()) "" else "::") + vollerName
-
-    init {
-      if (objekt != null) {
-        _argumente.add(objekt)
-      }
-      for (präposition in präpositionsArgumente) {
-        _argumente.addAll(präposition.argumente)
-      }
-    }
-
-    override val children = sequence {
-      if (subjekt != null) {
-        yield(subjekt!!)
-      }
-      yieldAll(typArgumente)
-      if (objekt != null) {
-        yield(objekt!!)
-      }
-      yieldAll(präpositionsArgumente)
-    }
-  }
-
   data class Präposition(val präposition: TypedToken<TokenTyp.BEZEICHNER_KLEIN>) : AST() {
     val fälle = präpositionsFälle
         .getOrElse(präposition.wert) {
           throw GermanSkriptFehler.SyntaxFehler.ParseFehler(präposition.toUntyped(), "Präposition")
         }
-  }
-
-  data class MethodenBereich(val name: WortArt.Nomen, val bereich: Satz.Bereich): AST() {
-    override val children = sequenceOf(name, bereich)
   }
 
   sealed class Definition : AST() {
@@ -406,7 +361,7 @@ sealed class AST {
 
     data class Konstante(
         val name: TypedToken<TokenTyp.BEZEICHNER_GROSS>,
-        var wert: Ausdruck
+        var wert: Satz.Ausdruck
     ): Definition() {
       override val children = sequenceOf(wert)
       var typ: Typ? = null
@@ -476,18 +431,6 @@ sealed class AST {
       }
     }
 
-    data class Bedingung(
-        val bedingungen: MutableList<BedingungsTerm>,
-        var sonst: Bereich?
-    ): Satz() {
-      override val children = sequence {
-          yieldAll(bedingungen)
-          if (sonst != null) {
-            yield(sonst!!)
-          }
-        }
-    }
-
     data class SolangeSchleife(
         val bedingung: BedingungsTerm
     ) : Satz() {
@@ -549,14 +492,6 @@ sealed class AST {
       override val children = sequenceOf(anfang, ende)
     }
 
-    data class FunktionsAufruf(val aufruf: AST.FunktionsAufruf): Satz() {
-      override val children = sequenceOf(aufruf)
-    }
-
-    data class MethodenBereich(val methodenBereich: AST.MethodenBereich): Satz() {
-      override val children = sequenceOf(methodenBereich)
-    }
-
     data class SuperBlock(val bereich: Bereich): Satz() {
       override val children = sequenceOf(bereich)
     }
@@ -564,12 +499,199 @@ sealed class AST {
     data class Zurückgabe(val erstesToken: TypedToken<TokenTyp.BEZEICHNER_KLEIN>, var ausdruck: Ausdruck): Satz() {
       override val children = sequenceOf(ausdruck)
     }
+
+    sealed class Ausdruck : Satz() {
+      data class Nichts(val nichts: TypedToken<TokenTyp.NICHTS>): Ausdruck()
+
+      data class Zeichenfolge(val zeichenfolge: TypedToken<TokenTyp.ZEICHENFOLGE>) : Ausdruck()
+
+      data class Zahl(val zahl: TypedToken<TokenTyp.ZAHL>) : Ausdruck()
+
+      data class Boolean(val boolean: TypedToken<TokenTyp.BOOLEAN>) : Ausdruck()
+
+      data class Variable(val name: WortArt.Nomen) : Ausdruck() {
+        override val children = sequenceOf(name)
+        var konstante: Konstante? = null
+      }
+
+      data class FunktionsAufruf(
+          val typArgumente: List<TypKnoten>,
+          val modulPfad: List<TypedToken<TokenTyp.BEZEICHNER_GROSS>>,
+          val subjekt: Ausdruck?,
+          val verb: TypedToken<TokenTyp.BEZEICHNER_KLEIN>,
+          val objekt: Argument?,
+          val reflexivPronomen: TypedToken<TokenTyp.REFLEXIV_PRONOMEN>?,
+          val präpositionsArgumente: List<PräpositionsArgumente>,
+          val suffix: TypedToken<TokenTyp.BEZEICHNER_KLEIN>?
+      ) : Ausdruck(), IAufruf {
+        override val token = verb.toUntyped()
+
+        override var vollerName: String? = null
+        private val _argumente: MutableList<Argument> = mutableListOf()
+        val argumente: List<Argument> = _argumente
+        var funktionsDefinition: Definition.Funktion? = null
+        var aufrufTyp: FunktionsAufrufTyp = FunktionsAufrufTyp.FUNKTIONS_AUFRUF
+        val vollständigerName: String get() = modulPfad.joinToString("::") { it.wert } +
+            (if (modulPfad.isEmpty()) "" else "::") + vollerName
+
+        init {
+          if (objekt != null) {
+            _argumente.add(objekt)
+          }
+          for (präposition in präpositionsArgumente) {
+            _argumente.addAll(präposition.argumente)
+          }
+        }
+
+        override val children = sequence {
+          if (subjekt != null) {
+            yield(subjekt!!)
+          }
+          yieldAll(typArgumente)
+          if (objekt != null) {
+            yield(objekt!!)
+          }
+          yieldAll(präpositionsArgumente)
+        }
+      }
+
+      data class MethodenBereich(val name: WortArt.Nomen, val bereich: Bereich): Ausdruck() {
+        override val children = sequenceOf(name, bereich)
+      }
+
+      data class Konstante(
+          val modulPfad: List<TypedToken<TokenTyp.BEZEICHNER_GROSS>>,
+          val name: TypedToken<TokenTyp.BEZEICHNER_GROSS>
+      ): Ausdruck() {
+        val vollständigerName: String = modulPfad.joinToString("::") { it.wert } +
+            (if (modulPfad.isEmpty()) "" else "::")  + name.wert
+
+        var wert: Ausdruck? = null
+      }
+
+      data class Liste(val pluralTyp: TypKnoten, var elemente: List<Ausdruck>): Ausdruck() {
+        override val children = sequence {
+          yield(pluralTyp)
+          yieldAll( elemente)
+        }
+      }
+
+      data class ListenElement(
+          val singular: WortArt.Nomen,
+          var index: Ausdruck
+      ): Ausdruck() {
+        var istZeichenfolgeZugriff = false
+        override val children = sequenceOf(singular, index)
+      }
+
+      data class BinärerAusdruck(
+          val operator: TypedToken<TokenTyp.OPERATOR>,
+          val links: Ausdruck,
+          val rechts: Ausdruck,
+          val istAnfang: kotlin.Boolean,
+          val inStringInterpolation: kotlin.Boolean) : Ausdruck() {
+        override val children = sequenceOf(links, rechts)
+      }
+
+      data class Minus(val ausdruck: Ausdruck) : Ausdruck() {
+        override val children = sequenceOf(ausdruck)
+      }
+
+      data class Konvertierung(
+          var ausdruck: Ausdruck,
+          val typ: TypKnoten
+      ): Ausdruck(), IAufruf {
+        val typName = typ.name as WortArt.Nomen
+        override val token = typName.bezeichner.toUntyped()
+        override val vollerName get() = "als ${typName.nominativ}"
+
+        override val children = sequenceOf(ausdruck, typ)
+      }
+
+      data class ObjektInstanziierung(
+          val klasse: TypKnoten,
+          val eigenschaftsZuweisungen: List<Argument>
+      ): Ausdruck(), IAufruf {
+        override val children = sequence {
+          yield(klasse)
+          yieldAll(eigenschaftsZuweisungen)
+        }
+
+        private val klassenName = (klasse.name) as WortArt.Nomen
+        override val token: Token = klassenName.bezeichner.toUntyped()
+
+        override val vollerName: String get() {
+          val artikel = when (klasse.name.genus) {
+            Genus.MASKULINUM -> "den"
+            Genus.FEMININUM -> "die"
+            Genus.NEUTRUM -> "das"
+          }
+          return "erstelle $artikel ${klassenName.ganzesWort(Kasus.NOMINATIV, Numerus.SINGULAR)}"
+        }
+      }
+
+      data class Closure(val schnittstelle: TypKnoten, val bindings: List<WortArt.Nomen>, val körper: Bereich): Ausdruck() {
+        override val children = sequence {
+          yield(schnittstelle)
+          yieldAll(bindings)
+          yield(körper)
+        }
+      }
+
+      data class Bedingung(
+          val bedingungen: MutableList<BedingungsTerm>,
+          var sonst: Bereich?
+      ): Ausdruck() {
+        override val children = sequence {
+          yieldAll(bedingungen)
+          if (sonst != null) {
+            yield(sonst!!)
+          }
+        }
+      }
+
+      interface IEigenschaftsZugriff: IAufruf {
+        val eigenschaftsName: WortArt.Nomen
+        var aufrufName: String?
+      }
+
+      data class EigenschaftsZugriff(
+          override val eigenschaftsName: WortArt.Nomen,
+          val objekt: Ausdruck
+      ): Ausdruck(), IEigenschaftsZugriff {
+        override val children = sequenceOf(eigenschaftsName , objekt)
+        override val token = eigenschaftsName.bezeichner.toUntyped()
+        override var aufrufName: String? = null
+        override val vollerName get() = aufrufName
+      }
+
+      data class MethodenBereichEigenschaftsZugriff(
+          override val eigenschaftsName: WortArt.Nomen
+      ): Ausdruck(), IEigenschaftsZugriff {
+        override val children = sequenceOf(eigenschaftsName)
+        override val token = eigenschaftsName.bezeichner.toUntyped()
+        override var aufrufName: String? = null
+        override val vollerName get() = aufrufName
+      }
+
+      data class SelbstEigenschaftsZugriff(
+          override val eigenschaftsName: WortArt.Nomen
+      ): Ausdruck(), IEigenschaftsZugriff {
+        override val children = sequenceOf(eigenschaftsName)
+        override val token = eigenschaftsName.bezeichner.toUntyped()
+        override var aufrufName: String? = null
+        override val vollerName get() = aufrufName
+      }
+
+      data class SelbstReferenz(val ich: TypedToken<TokenTyp.REFERENZ.ICH>): Ausdruck()
+      data class MethodenBereichReferenz(val du: TypedToken<TokenTyp.REFERENZ.DU>): Ausdruck()
+    }
   }
 
   data class Argument(
       val adjektiv: WortArt.Adjektiv?,
       val name: WortArt.Nomen,
-      var ausdruck: Ausdruck
+      var ausdruck: Satz.Ausdruck
   ): AST() {
 
     override val children = sequence {
@@ -583,143 +705,5 @@ sealed class AST {
 
   data class PräpositionsArgumente(val präposition: Präposition, val argumente: List<Argument>): AST() {
     override val children = sequence { yieldAll(argumente) }
-  }
-
-  sealed class Ausdruck : AST() {
-    data class Nichts(val nichts: TypedToken<TokenTyp.NICHTS>): Ausdruck()
-
-    data class Zeichenfolge(val zeichenfolge: TypedToken<TokenTyp.ZEICHENFOLGE>) : Ausdruck()
-
-    data class Zahl(val zahl: TypedToken<TokenTyp.ZAHL>) : Ausdruck()
-
-    data class Boolean(val boolean: TypedToken<TokenTyp.BOOLEAN>) : Ausdruck()
-
-    data class Variable(val name: WortArt.Nomen) : Ausdruck() {
-      override val children = sequenceOf(name)
-      var konstante: Konstante? = null
-    }
-
-    data class Konstante(
-        val modulPfad: List<TypedToken<TokenTyp.BEZEICHNER_GROSS>>,
-        val name: TypedToken<TokenTyp.BEZEICHNER_GROSS>
-    ): Ausdruck() {
-      val vollständigerName: String = modulPfad.joinToString("::") { it.wert } +
-          (if (modulPfad.isEmpty()) "" else "::")  + name.wert
-
-      var wert: Ausdruck? = null
-    }
-
-    data class Liste(val pluralTyp: TypKnoten, var elemente: List<Ausdruck>): Ausdruck() {
-      override val children = sequence {
-        yield(pluralTyp)
-        yieldAll( elemente)
-      }
-    }
-
-    data class ListenElement(
-        val singular: WortArt.Nomen,
-        var index: Ausdruck
-    ): Ausdruck() {
-      var istZeichenfolgeZugriff = false
-      override val children = sequenceOf(singular, index)
-    }
-
-    data class FunktionsAufruf(val aufruf: AST.FunktionsAufruf): Ausdruck() {
-      override val children = sequenceOf(aufruf)
-    }
-
-    data class MethodenBereich(val methodenBereich: AST.MethodenBereich): Ausdruck() {
-      override val children = sequenceOf(methodenBereich)
-    }
-
-    data class BinärerAusdruck(
-        val operator: TypedToken<TokenTyp.OPERATOR>,
-        val links: Ausdruck,
-        val rechts: Ausdruck,
-        val istAnfang: kotlin.Boolean,
-        val inStringInterpolation: kotlin.Boolean) : Ausdruck() {
-      override val children = sequenceOf(links, rechts)
-    }
-
-    data class Minus(val ausdruck: Ausdruck) : Ausdruck() {
-      override val children = sequenceOf(ausdruck)
-    }
-
-    data class Konvertierung(
-        var ausdruck: Ausdruck,
-        val typ: TypKnoten
-    ): Ausdruck(), IAufruf {
-      val typName = typ.name as WortArt.Nomen
-      override val token = typName.bezeichner.toUntyped()
-      override val vollerName get() = "als ${typName.nominativ}"
-
-      override val children = sequenceOf(ausdruck, typ)
-    }
-
-    data class ObjektInstanziierung(
-        val klasse: TypKnoten,
-        val eigenschaftsZuweisungen: List<Argument>
-    ): Ausdruck(), IAufruf {
-      override val children = sequence {
-        yield(klasse)
-        yieldAll(eigenschaftsZuweisungen)
-      }
-
-      private val klassenName = (klasse.name) as WortArt.Nomen
-      override val token: Token = klassenName.bezeichner.toUntyped()
-
-      override val vollerName: String get() {
-        val artikel = when (klasse.name.genus) {
-          Genus.MASKULINUM -> "den"
-          Genus.FEMININUM -> "die"
-          Genus.NEUTRUM -> "das"
-        }
-        return "erstelle $artikel ${klassenName.ganzesWort(Kasus.NOMINATIV, Numerus.SINGULAR)}"
-      }
-    }
-
-    data class Closure(val schnittstelle: TypKnoten, val bindings: List<WortArt.Nomen>, val körper: Satz.Bereich): Ausdruck() {
-      override val children = sequence {
-        yield(schnittstelle)
-        yieldAll(bindings)
-        yield(körper)
-      }
-    }
-
-    interface IEigenschaftsZugriff: IAufruf {
-      val eigenschaftsName: WortArt.Nomen
-      var aufrufName: String?
-    }
-
-    data class EigenschaftsZugriff(
-        override val eigenschaftsName: WortArt.Nomen,
-        val objekt: Ausdruck
-    ): Ausdruck(), IEigenschaftsZugriff {
-      override val children = sequenceOf(eigenschaftsName , objekt)
-      override val token = eigenschaftsName.bezeichner.toUntyped()
-      override var aufrufName: String? = null
-      override val vollerName get() = aufrufName
-    }
-
-    data class MethodenBereichEigenschaftsZugriff(
-        override val eigenschaftsName: WortArt.Nomen
-    ): Ausdruck(), IEigenschaftsZugriff {
-      override val children = sequenceOf(eigenschaftsName)
-      override val token = eigenschaftsName.bezeichner.toUntyped()
-      override var aufrufName: String? = null
-      override val vollerName get() = aufrufName
-    }
-
-    data class SelbstEigenschaftsZugriff(
-        override val eigenschaftsName: WortArt.Nomen
-    ): Ausdruck(), IEigenschaftsZugriff {
-      override val children = sequenceOf(eigenschaftsName)
-      override val token = eigenschaftsName.bezeichner.toUntyped()
-      override var aufrufName: String? = null
-      override val vollerName get() = aufrufName
-    }
-
-    data class SelbstReferenz(val ich: TypedToken<TokenTyp.REFERENZ.ICH>): Ausdruck()
-    data class MethodenBereichReferenz(val du: TypedToken<TokenTyp.REFERENZ.DU>): Ausdruck()
   }
 }

@@ -26,7 +26,7 @@ class Definierer(startDatei: File): PipelineKomponente(startDatei) {
   }
 
   private fun durchlaufeDefinitionsContainer(knoten: AST): Sequence<AST.DefinitionsContainer> = sequence {
-    var node: AST.DefinitionsContainer? = knoten.findNodeInParents() ?:
+    var node: AST.DefinitionsContainer? = knoten.findNodeInParents<AST.DefinitionsContainer>() ?:
       knoten.findNodeInParents<AST.Programm>()!!.definitionen
     while (node != null) {
       yield(node!!)
@@ -34,7 +34,7 @@ class Definierer(startDatei: File): PipelineKomponente(startDatei) {
     }
   }
 
-  fun holeFunktionsDefinition(funktionsAufruf: AST.FunktionsAufruf): AST.Definition.Funktion {
+  fun holeFunktionsDefinition(funktionsAufruf: AST.Satz.Ausdruck.FunktionsAufruf): AST.Definition.Funktion {
     if (funktionsAufruf.vollerName == null) {
       funktionsAufruf.vollerName = holeVollenNamenVonFunktionsAufruf(funktionsAufruf, null)
     }
@@ -124,7 +124,7 @@ class Definierer(startDatei: File): PipelineKomponente(startDatei) {
     }
   }
 
-  fun holeKonstante(konstante: AST.Ausdruck.Konstante): AST.Definition.Konstante {
+  fun holeKonstante(konstante: AST.Satz.Ausdruck.Konstante): AST.Definition.Konstante {
     val konstName = konstante.name.wert
     if (konstante.modulPfad.isEmpty()) {
       var konstantenDef: AST.Definition.Konstante? = null
@@ -201,9 +201,9 @@ class Definierer(startDatei: File): PipelineKomponente(startDatei) {
         TokenTyp.VORNOMEN.ARTIKEL.BESTIMMT,
         param.typKnoten.name.kasus,
         paramName.genus,
-        param.name.numerus!!
+        param.name.numerus
     )
-    return " " + artikel + " " + paramName.hauptWort(param.name.kasus, param.name.numerus!!)
+    return " " + artikel + " " + paramName.hauptWort(param.name.kasus, param.name.numerus)
   }
 
   fun holeVollenNamenVonFunktionsSignatur(
@@ -225,7 +225,7 @@ class Definierer(startDatei: File): PipelineKomponente(startDatei) {
   }
 
   fun holeVollenNamenVonFunktionsAufruf(
-      funktionsAufruf: AST.FunktionsAufruf,
+      funktionsAufruf: AST.Satz.Ausdruck.FunktionsAufruf,
       ersetzeObjekt: String?,
       holeArgName: (AST.Argument) -> AST.WortArt.Nomen = {it.name}
   ): String {
@@ -267,7 +267,7 @@ class Definierer(startDatei: File): PipelineKomponente(startDatei) {
   }
 
   fun holeVollenNamenVonFunktionsAufruf(
-      funktionsAufruf: AST.FunktionsAufruf,
+      funktionsAufruf: AST.Satz.Ausdruck.FunktionsAufruf,
       typTypParams: List<AST.WortArt.Nomen>,
       typTypArgs: List<AST.TypKnoten>
   ): String {
@@ -280,17 +280,17 @@ class Definierer(startDatei: File): PipelineKomponente(startDatei) {
     val argName = holeArgName(argument)
     return if (argument.adjektiv != null) {
       val artikel = GrammatikPrüfer.holeVornomen(
-          TokenTyp.VORNOMEN.ARTIKEL.BESTIMMT, argument.name.kasus, Genus.NEUTRUM, argument.name.numerus!!)
-      " " + artikel + " " + argument.adjektiv.ganzesWort(argument.name.kasus, argument.name.numerus!!)
+          TokenTyp.VORNOMEN.ARTIKEL.BESTIMMT, argument.name.kasus, Genus.NEUTRUM, argument.name.numerus)
+      " " + artikel + " " + argument.adjektiv.ganzesWort(argument.name.kasus, argument.name.numerus)
     } else {
       val artikel = GrammatikPrüfer.holeVornomen(
           TokenTyp.VORNOMEN.ARTIKEL.BESTIMMT,
           argument.name.kasus,
           argName.genus,
-          argument.name.numerus!!
+          argument.name.numerus
       )
 
-      " " + artikel + " " + argName.hauptWort(argument.name.kasus, argument.name.numerus!!)
+      " " + artikel + " " + argName.hauptWort(argument.name.kasus, argument.name.numerus)
     }
   }
 

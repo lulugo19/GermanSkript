@@ -1451,4 +1451,28 @@ class GermanSkriptTest {
 
     testeGermanSkriptCode(quellCode, erwarteteAusgabe)
   }
+
+  @Test
+  @DisplayName("Bedingungen als Ausdruck")
+  fun bedingungenAlsAusdruck() {
+    val quellCode = """
+      eine Zahl ist 42
+      eine Zahl ist wenn die Zahl mod 2 gleich 0 ist: die Zahl / 2. sonst: die Zahl * 2.
+      schreibe die Zahl
+    """.trimIndent()
+
+    testeGermanSkriptCode(quellCode, "21\n")
+  }
+
+  @Test
+  @DisplayName("Ungültige Bedingung als Ausdruck")
+  fun ungültigeBedingungAlsAusdruck() {
+    val quellCode = """
+      eine Zahl ist wenn wahr: 32. sonst: "Hallo".
+    """.trimIndent()
+
+    assertThatExceptionOfType(GermanSkriptFehler.TypFehler.FalscherTyp::class.java).isThrownBy {
+      führeGermanSkriptCodeAus(quellCode)
+    }
+  }
 }

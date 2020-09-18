@@ -108,12 +108,11 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
   }
 
   // region Sätze
-  private fun durchlaufeBedingung(bedingung: AST.Satz.BedingungsTerm): Boolean {
+  private fun durchlaufeBedingung(bedingung: AST.Satz.BedingungsTerm): Wert? {
       return if ((evaluiereAusdruck(bedingung.bedingung) as Wert.Primitiv.Boolean).boolean) {
         durchlaufeBereich(bedingung.bereich, true)
-        true
       } else {
-        false
+        null
       }
   }
 
@@ -177,7 +176,7 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
     }
   }
 
-  override fun durchlaufeFunktionsAufruf(funktionsAufruf: AST.FunktionsAufruf, istAusdruck: Boolean): Wert {
+  override fun durchlaufeFunktionsAufruf(funktionsAufruf: AST.Satz.Ausdruck.FunktionsAufruf, istAusdruck: Boolean): Wert {
     var funktionsUmgebung = Umgebung<Wert>()
     var objekt: Wert.Objekt? = null
     val (körper, parameterNamen) = if (funktionsAufruf.aufrufTyp == FunktionsAufrufTyp.FUNKTIONS_AUFRUF) {
@@ -227,11 +226,15 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
     }
   }
 
-  override fun durchlaufeBedingungsSatz(bedingungsSatz: AST.Satz.Bedingung) {
-    val inBedingung = bedingungsSatz.bedingungen.any(::durchlaufeBedingung)
+  override fun durchlaufeBedingungsSatz(bedingungsSatz: AST.Satz.Ausdruck.Bedingung, istAusdruck: Boolean): Wert {
+    val inBedingung = bedingungsSatz.bedingungen.any { bedingung ->
+      durchlaufeBedingung(bedingung)?.also { return it } != null
+    }
 
-    if (!inBedingung && bedingungsSatz.sonst != null ) {
+    return if (!inBedingung && bedingungsSatz.sonst != null ) {
       durchlaufeBereich(bedingungsSatz.sonst!!, true)
+    } else {
+      return Wert.Nichts
     }
   }
 
@@ -328,7 +331,7 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
     }.also { rückgabeWert = it }
   }
 
-  override fun bevorDurchlaufeMethodenBereich(methodenBereich: AST.MethodenBereich, blockObjekt: Wert?) {
+  override fun bevorDurchlaufeMethodenBereich(methodenBereich: AST.Satz.Ausdruck.MethodenBereich, blockObjekt: Wert?) {
     // mache nichts hier, das ist eigentlich nur für den Typprüfer gedacht
   }
 
@@ -342,28 +345,28 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
   // endregion
 
   // region Ausdrücke
-  override fun evaluiereZeichenfolge(ausdruck: AST.Ausdruck.Zeichenfolge): Wert {
+  override fun evaluiereZeichenfolge(ausdruck: AST.Satz.Ausdruck.Zeichenfolge): Wert {
     return ausdruck.zeichenfolge.typ.zeichenfolge
   }
 
-  override fun evaluiereZahl(ausdruck: AST.Ausdruck.Zahl): Wert {
+  override fun evaluiereZahl(ausdruck: AST.Satz.Ausdruck.Zahl): Wert {
     return ausdruck.zahl.typ.zahl
   }
 
-  override fun evaluiereBoolean(ausdruck: AST.Ausdruck.Boolean): Wert {
+  override fun evaluiereBoolean(ausdruck: AST.Satz.Ausdruck.Boolean): Wert {
     return ausdruck.boolean.typ.boolean
   }
 
-  override fun evaluiereKonstante(konstante: AST.Ausdruck.Konstante): Wert = evaluiereAusdruck(konstante.wert!!)
+  override fun evaluiereKonstante(konstante: AST.Satz.Ausdruck.Konstante): Wert = evaluiereAusdruck(konstante.wert!!)
 
-  override fun evaluiereListe(ausdruck: AST.Ausdruck.Liste): Wert {
+  override fun evaluiereListe(ausdruck: AST.Satz.Ausdruck.Liste): Wert {
     return Wert.Objekt.InternesObjekt.Liste(
         Typ.Compound.KlassenTyp.Liste(listOf(ausdruck.pluralTyp)),
         ausdruck.elemente.map(::evaluiereAusdruck).toMutableList()
     )
   }
 
-  override fun evaluiereObjektInstanziierung(instanziierung: AST.Ausdruck.ObjektInstanziierung): Wert {
+  override fun evaluiereObjektInstanziierung(instanziierung: AST.Satz.Ausdruck.ObjektInstanziierung): Wert {
     val eigenschaften = hashMapOf<String, Wert>()
     for (zuweisung in instanziierung.eigenschaftsZuweisungen) {
       eigenschaften[zuweisung.name.nominativ] = evaluiereAusdruck(zuweisung.ausdruck)
@@ -383,7 +386,7 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
     return objekt
   }
 
-  private fun holeEigenschaft(zugriff: AST.Ausdruck.IEigenschaftsZugriff, objekt: Wert.Objekt): Wert {
+  private fun holeEigenschaft(zugriff: AST.Satz.Ausdruck.IEigenschaftsZugriff, objekt: Wert.Objekt): Wert {
     val eigName = zugriff.eigenschaftsName.nominativ
     return try {
       objekt.holeEigenschaft(eigName)
@@ -393,26 +396,26 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
     }
   }
 
-  override fun evaluiereEigenschaftsZugriff(eigenschaftsZugriff: AST.Ausdruck.EigenschaftsZugriff): Wert {
+  override fun evaluiereEigenschaftsZugriff(eigenschaftsZugriff: AST.Satz.Ausdruck.EigenschaftsZugriff): Wert {
     return when (val objekt = evaluiereAusdruck(eigenschaftsZugriff.objekt)) {
       is Wert.Objekt -> holeEigenschaft(eigenschaftsZugriff, objekt)
       else -> throw Exception("Dies sollte nie passieren, weil der Typprüfer diesen Fall schon überprüft")
     }
   }
 
-  override fun evaluiereSelbstEigenschaftsZugriff(eigenschaftsZugriff: AST.Ausdruck.SelbstEigenschaftsZugriff): Wert {
+  override fun evaluiereSelbstEigenschaftsZugriff(eigenschaftsZugriff: AST.Satz.Ausdruck.SelbstEigenschaftsZugriff): Wert {
     val objekt = aufrufStapel.top().objekt!! as Wert.Objekt
     return holeEigenschaft(eigenschaftsZugriff, objekt)
   }
 
-  override fun evaluiereMethodenBlockEigenschaftsZugriff(eigenschaftsZugriff: AST.Ausdruck.MethodenBereichEigenschaftsZugriff): Wert {
+  override fun evaluiereMethodenBlockEigenschaftsZugriff(eigenschaftsZugriff: AST.Satz.Ausdruck.MethodenBereichEigenschaftsZugriff): Wert {
     val objekt = umgebung.holeMethodenBlockObjekt()!! as Wert.Objekt
     return holeEigenschaft(eigenschaftsZugriff, objekt)
   }
 
   override fun evaluiereSelbstReferenz(): Wert = aufrufStapel.top().objekt!!
 
-  override  fun evaluiereBinärenAusdruck(ausdruck: AST.Ausdruck.BinärerAusdruck): Wert {
+  override  fun evaluiereBinärenAusdruck(ausdruck: AST.Satz.Ausdruck.BinärerAusdruck): Wert {
     val links = evaluiereAusdruck(ausdruck.links)
     val operator = ausdruck.operator.typ.operator
 
@@ -500,7 +503,7 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
     }
   }
 
-  override fun evaluiereMinus(minus: AST.Ausdruck.Minus): Wert.Primitiv.Zahl {
+  override fun evaluiereMinus(minus: AST.Satz.Ausdruck.Minus): Wert.Primitiv.Zahl {
     val ausdruck = evaluiereAusdruck(minus.ausdruck) as Wert.Primitiv.Zahl
     return -ausdruck
   }
@@ -520,7 +523,7 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
     }
   }
 
-  override fun evaluiereListenElement(listenElement: AST.Ausdruck.ListenElement): Wert {
+  override fun evaluiereListenElement(listenElement: AST.Satz.Ausdruck.ListenElement): Wert {
     val index = (evaluiereAusdruck(listenElement.index) as Wert.Primitiv.Zahl).toInt()
 
     if (listenElement.istZeichenfolgeZugriff) {
@@ -541,7 +544,7 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
     return liste.elemente[index]
   }
 
-  override fun evaluiereClosure(closure: AST.Ausdruck.Closure): Wert {
+  override fun evaluiereClosure(closure: AST.Satz.Ausdruck.Closure): Wert {
     return Wert.Closure((closure.schnittstelle.typ as Typ.Compound.Schnittstelle), closure, umgebung)
   }
   // endregion
@@ -634,7 +637,7 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
     }
   )
 
-  override fun evaluiereKonvertierung(konvertierung: AST.Ausdruck.Konvertierung): Wert {
+  override fun evaluiereKonvertierung(konvertierung: AST.Satz.Ausdruck.Konvertierung): Wert {
     val wert = evaluiereAusdruck(konvertierung.ausdruck)
     if (wert is Wert.Objekt && wert.typ.definition.konvertierungen.containsKey(konvertierung.typ.name.nominativ)) {
       val konvertierungsDefinition = wert.typ.definition.konvertierungen.getValue(konvertierung.typ.name.nominativ)
@@ -648,7 +651,7 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
     }
   }
 
-  private fun konvertiereZuZahl(konvertierung: AST.Ausdruck.Konvertierung, wert: Wert): Wert.Primitiv.Zahl {
+  private fun konvertiereZuZahl(konvertierung: AST.Satz.Ausdruck.Konvertierung, wert: Wert): Wert.Primitiv.Zahl {
     return when (wert) {
       is Wert.Primitiv.Zahl -> wert
       is Wert.Objekt.InternesObjekt.Zeichenfolge -> {
