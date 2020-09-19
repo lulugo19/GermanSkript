@@ -216,7 +216,6 @@ class GrammatikPrüfer(startDatei: File): PipelineKomponente(startDatei) {
       is AST.Satz.Ausdruck.Closure -> prüfeClosure(ausdruck, kontextNomen, fälle, pluralErwartet)
       is AST.Satz.Ausdruck.Minus -> prüfeMinus(ausdruck)
       is AST.Satz.Ausdruck.FunktionsAufruf -> prüfeFunktionsAufruf(ausdruck)
-      is AST.Satz.Ausdruck.MethodenBereich -> prüfeNomen(ausdruck.name, EnumSet.of(Kasus.NOMINATIV), Numerus.BEIDE)
     }
   }
 

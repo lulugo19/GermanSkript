@@ -1,7 +1,6 @@
 package germanskript
 
 import germanskript.util.Peekable
-import jdk.nashorn.internal.parser.TokenKind
 import java.io.File
 import java.util.*
 
@@ -362,7 +361,7 @@ private sealed class SubParser<T: AST>() {
     }
 
     fun parseEinzelnerAusdruck(mitArtikel: Boolean): AST.Satz.Ausdruck {
-      val ausdruck = when (val tokenTyp = peekType()) {
+      var ausdruck = when (val tokenTyp = peekType()) {
         is TokenTyp.ZEICHENFOLGE -> AST.Satz.Ausdruck.Zeichenfolge(next().toTyped())
         is TokenTyp.ZAHL -> AST.Satz.Ausdruck.Zahl(next().toTyped())
         is TokenTyp.BOOLEAN -> AST.Satz.Ausdruck.Boolean(next().toTyped())
@@ -410,17 +409,21 @@ private sealed class SubParser<T: AST>() {
         }
         is TokenTyp.BEZEICHNER_GROSS ->
           if (mitArtikel)  when (peekType(1)) {
-            is TokenTyp.DOPPELPUNKT -> subParse(Satz.MethodenBereich)
+            is TokenTyp.DOPPELPUNKT -> subParse(Satz.Ausdruck.MethodenBereich(
+                AST.Satz.Ausdruck.Variable(parseNomenOhneVornomen(true))
+            ))
             else -> parseFunktionOderKonstante()
           }
           else when (peekType(1)) {
-            is TokenTyp.DOPPELPUNKT -> subParse(Satz.MethodenBereich)
+            is TokenTyp.DOPPELPUNKT -> subParse(Satz.Ausdruck.MethodenBereich(
+                AST.Satz.Ausdruck.Variable(parseNomenOhneVornomen(true))
+            ))
             is TokenTyp.DOPPEL_DOPPELPUNKT -> parseFunktionOderKonstante()
             else ->  AST.Satz.Ausdruck.Variable(parseNomenOhneVornomen(true))
           }
         else -> throw GermanSkriptFehler.SyntaxFehler.ParseFehler(next())
       }
-      return when (peekType()) {
+      ausdruck = when (peekType()) {
         is TokenTyp.ALS_KLEIN -> {
           next()
           val typ = parseTypOhneArtikel(
@@ -431,6 +434,11 @@ private sealed class SubParser<T: AST>() {
         }
         else -> ausdruck
       }
+      // verkette mehrere Methodenbereiche hintereinander
+      while (ausdruck is AST.Satz.Ausdruck.MethodenBereich && peekType() is TokenTyp.DOPPELPUNKT) {
+        ausdruck = subParse(Satz.Ausdruck.MethodenBereich(ausdruck))
+      }
+      return ausdruck
     }
 
     // pratt parsing: https://matklad.github.io/2020/04/13/simple-but-powerful-pratt-parsing.html
@@ -823,17 +831,6 @@ private sealed class SubParser<T: AST>() {
       }
     }
 
-    object MethodenBereich: Satz<AST.Satz.Ausdruck.MethodenBereich>() {
-      override val id: ASTKnotenID
-        get() = ASTKnotenID.METHODEN_BLOCK
-
-      override fun parseImpl(): AST.Satz.Ausdruck.MethodenBereich {
-        val name = MethodenBereich.parseNomenOhneVornomen(true)
-        val sätze = MethodenBereich.parseSätze(TokenTyp.AUSRUFEZEICHEN)
-        return AST.Satz.Ausdruck.MethodenBereich(name, sätze)
-      }
-    }
-
     object ListenElementZuweisung: Satz<AST.Satz.ListenElementZuweisung>() {
       override val id = ASTKnotenID.LISTEN_ELEMENT_ZUWEISUNG
 
@@ -878,7 +875,6 @@ private sealed class SubParser<T: AST>() {
         if (!hierarchyContainsAnyNode(
                 ASTKnotenID.FUNKTIONS_DEFINITION,
                 ASTKnotenID.KONVERTIERUNGS_DEFINITION,
-                ASTKnotenID.CLOSURE,
                 ASTKnotenID.EIGENSCHAFTS_DEFINITION
             )) {
           throw GermanSkriptFehler.SyntaxFehler.ParseFehler(next(), null, "'gebe ... zurück' darf hier nicht stehen.")
@@ -1185,6 +1181,16 @@ private sealed class SubParser<T: AST>() {
             überspringeLeereZeilen()
           }
           return AST.Satz.Ausdruck.Bedingung(bedingungen, null)
+        }
+      }
+
+      class MethodenBereich(private val objektAusdruck: AST.Satz.Ausdruck): Ausdruck<AST.Satz.Ausdruck.MethodenBereich>() {
+        override val id: ASTKnotenID
+          get() = ASTKnotenID.METHODEN_BLOCK
+
+        override fun parseImpl(): AST.Satz.Ausdruck.MethodenBereich {
+          val sätze = parseSätze(TokenTyp.AUSRUFEZEICHEN)
+          return AST.Satz.Ausdruck.MethodenBereich(objektAusdruck, sätze)
         }
       }
     }

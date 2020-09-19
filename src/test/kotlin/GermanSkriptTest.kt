@@ -710,7 +710,7 @@ class GermanSkriptTest {
             eine Zahl ist die ZahlA minus 1
           .
           eine Zahl ist die Zahl plus 1
-          gebe die Zahl zurück
+          die Zahl
         .
         
         gebe das Zählbare zurück
@@ -1158,7 +1158,7 @@ class GermanSkriptTest {
       val quellCode = """
         die Zahlen sind einige Zahlen${formatiereListe(testListe)}
         Zahlen:
-          sortiere dich mit etwas Vergleichbarem: gebe $aufOderAbCode zurück.
+          sortiere dich mit etwas Vergleichbarem: $aufOderAbCode.
         !
         schreibe die Zeichenfolge (die Zahlen als Zeichenfolge)
       """.trimIndent()
@@ -1443,7 +1443,7 @@ class GermanSkriptTest {
   fun closureMitExplizitenParameterNamen() {
     val quellCode = """
       die Zahlen sind einige Zahlen[2, 3, 5, 7, 11, 13]
-      sortiere die Zahlen mit etwas Vergleichbarem(X, Y): gebe das Y - das X zurück.
+      sortiere die Zahlen mit etwas Vergleichbarem(X, Y): das Y - das X.
       schreibe die Zeile Zahlen als Zeichenfolge
     """.trimIndent()
 
@@ -1476,3 +1476,12 @@ class GermanSkriptTest {
     }
   }
 }
+
+/*
+Methodenblock-Chaining
+
+die Zahlen sind einige Zahlen[1,4,2,6,19]
+die sortierenZahlen sind Zahlen: filter euch mit etwas Bedingtem: gebe die Zahl % 2 gleich 0 zurück.!:
+        mappe euch mit etwas Mapbarem: die Zahl hoch 2.!:
+        sortiere euch mit etwas Vergleichbarem: die ZahlA - die ZahlB.
+ */

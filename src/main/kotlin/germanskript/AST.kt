@@ -555,8 +555,8 @@ sealed class AST {
         }
       }
 
-      data class MethodenBereich(val name: WortArt.Nomen, val bereich: Bereich): Ausdruck() {
-        override val children = sequenceOf(name, bereich)
+      data class MethodenBereich(val objekt: Ausdruck, val bereich: Bereich): Ausdruck() {
+        override val children = sequenceOf(objekt, bereich)
       }
 
       data class Konstante(

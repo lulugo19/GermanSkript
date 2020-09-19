@@ -29,7 +29,7 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
     definierer.funktionsDefinitionen.forEach(::prüfeFunktion)
 
     // neue germanskript.Umgebung
-    durchlaufeAufruf(ast.programmStart!!, ast.programm, Umgebung(), true,Typ.Nichts)
+    durchlaufeAufruf(ast.programmStart!!, ast.programm, Umgebung(), true, Typ.Nichts, true)
   }
 
   private fun ausdruckMussTypSein(
@@ -148,7 +148,7 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
     }
     val signatur = funktion.signatur
     funktionsTypParams = signatur.typParameter
-    durchlaufeAufruf(signatur.name.toUntyped(), funktion.körper, funktionsUmgebung, false, signatur.rückgabeTyp.typ!!)
+    durchlaufeAufruf(signatur.name.toUntyped(), funktion.körper, funktionsUmgebung, false, signatur.rückgabeTyp.typ!!, false)
     funktionsTypParams = null
   }
 
@@ -172,17 +172,17 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
       typKnoten.typ = Typ.Generic(index, TypParamKontext.Typ)
       typKnoten
     })
-    durchlaufeAufruf(klasse.name.bezeichner.toUntyped(), klasse.konstruktor, Umgebung(), true, Typ.Nichts)
+    durchlaufeAufruf(klasse.name.bezeichner.toUntyped(), klasse.konstruktor, Umgebung(), true, Typ.Nichts, false)
     klasse.methoden.values.forEach(::prüfeFunktion)
     klasse.konvertierungen.values.forEach {konvertierung ->
       durchlaufeAufruf(
           konvertierung.typ.name.bezeichnerToken,
-          konvertierung.definition, Umgebung(), true, konvertierung.typ.typ!!)
+          konvertierung.definition, Umgebung(), true, konvertierung.typ.typ!!, false)
     }
     klasse.berechneteEigenschaften.values.forEach {eigenschaft ->
       durchlaufeAufruf(eigenschaft.name.bezeichner.toUntyped(),
           eigenschaft.definition, Umgebung(),
-          true, eigenschaft.rückgabeTyp.typ!!)
+          true, eigenschaft.rückgabeTyp.typ!!, false)
     }
 
     fun fügeElternKlassenMethodenHinzu(elternKlasse: AST.Definition.Typdefinition.Klasse) {
@@ -202,12 +202,12 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
     }
   }
 
-  private fun durchlaufeAufruf(token: Token, bereich: AST.Satz.Bereich, umgebung: Umgebung<Typ>, neuerBereich: Boolean, rückgabeTyp: Typ): Typ {
+  private fun durchlaufeAufruf(token: Token, bereich: AST.Satz.Bereich, umgebung: Umgebung<Typ>, neuerBereich: Boolean, rückgabeTyp: Typ, impliziteRückgabe: Boolean): Typ {
     this.rückgabeTyp = rückgabeTyp
     this.umgebung = umgebung
     rückgabeErreicht = false
     return durchlaufeBereich(bereich, neuerBereich).also {
-      if (rückgabeTyp != Typ.Nichts && !rückgabeErreicht) {
+      if (!impliziteRückgabe && !rückgabeErreicht && rückgabeTyp != Typ.Nichts) {
         throw GermanSkriptFehler.RückgabeFehler.RückgabeVergessen(token, rückgabeTyp)
       }
     }
@@ -472,33 +472,33 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
 
     for (bedingung in bedingungsSatz.bedingungen) {
       val typ = prüfeBedingung(bedingung)
-      if (bedingungsTyp == null) {
-        bedingungsTyp = typ
+      bedingungsTyp = if (bedingungsTyp == null) {
+        typ
       } else {
-        if (typIstTyp(typ, bedingungsTyp))
+        if (typIstTyp(typ, bedingungsTyp)) continue
         else if (typIstTyp(bedingungsTyp, typ)) {
-          bedingungsTyp = typ
+          typ
         } else if (istAusdruck) {
           // TODO: Es ist unpräzise hier für die Fehlermeldung das Token der Bedingung zu nehmen
           throw GermanSkriptFehler.TypFehler.FalscherTyp(
               holeErstesTokenVonAusdruck(bedingung.bedingung), typ, bedingungsTyp.toString())
         } else {
-          bedingungsTyp = Typ.Nichts
+          Typ.Nichts
         }
       }
     }
 
     if (bedingungsSatz.sonst != null) {
       val typ = durchlaufeBereich(bedingungsSatz.sonst!!, true)
-      if (typIstTyp(typ, bedingungsTyp!!))
+      bedingungsTyp = if (typIstTyp(typ, bedingungsTyp!!)) bedingungsTyp
       else if (typIstTyp(bedingungsTyp, typ)) {
-        bedingungsTyp = typ
+        bedingungsTyp
       } else if (istAusdruck) {
         // TODO: Es ist unpräzise hier für die Fehlermeldung das Token der Bedingung zu nehmen
         throw GermanSkriptFehler.TypFehler.FalscherTyp(
             holeErstesTokenVonAusdruck(bedingungsSatz.bedingungen[0].bedingung), typ, bedingungsTyp.toString())
       } else {
-        bedingungsTyp = Typ.Nichts
+        Typ.Nichts
       }
     }
     return bedingungsTyp?: Typ.Nichts
@@ -562,7 +562,7 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
 
   override fun bevorDurchlaufeMethodenBereich(methodenBereich: AST.Satz.Ausdruck.MethodenBereich, blockObjekt: Typ?) {
     if (blockObjekt !is Typ.Compound && blockObjekt !is Typ.Compound.Schnittstelle) {
-      throw GermanSkriptFehler.TypFehler.ObjektErwartet(methodenBereich.name.bezeichner.toUntyped())
+      throw GermanSkriptFehler.TypFehler.ObjektErwartet(holeErstesTokenVonAusdruck(methodenBereich.objekt))
     }
   }
 
@@ -803,8 +803,6 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
     if (schnittstelle.definition.methodenSignaturen.size != 1) {
       throw GermanSkriptFehler.ClosureFehler.UngültigeClosureSchnittstelle(closure.schnittstelle.name.bezeichnerToken, schnittstelle.definition)
     }
-    val prevRückgabeTyp = rückgabeTyp
-    val prevRückgabeErreicht = rückgabeErreicht
     val signatur = schnittstelle.definition.methodenSignaturen[0]
     if (closure.bindings.size > signatur.parameter.size) {
       throw GermanSkriptFehler.ClosureFehler.ZuVieleBinder(
@@ -821,15 +819,17 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
       val paramTyp = holeParamTyp(param, schnittstelle.typArgumente)
       umgebung.schreibeVariable(paramName, paramTyp, false)
     }
-    durchlaufeAufruf(
+    val rückgabe = durchlaufeAufruf(
         closure.schnittstelle.name.bezeichnerToken,
         closure.körper, umgebung,
         false,
-        signatur.rückgabeTyp.typ!!
+        rückgabeTyp,
+        true
     )
+    if (signatur.rückgabeTyp.typ!! != Typ.Nichts && !typIstTyp(rückgabe, signatur.rückgabeTyp.typ!!)) {
+      throw GermanSkriptFehler.ClosureFehler.FalscheRückgabe(closure.schnittstelle.name.bezeichnerToken, rückgabe, signatur.rückgabeTyp.typ!!)
+    }
     umgebung.popBereich()
-    rückgabeTyp = prevRückgabeTyp
-    rückgabeErreicht = prevRückgabeErreicht
     return schnittstelle
   }
 }

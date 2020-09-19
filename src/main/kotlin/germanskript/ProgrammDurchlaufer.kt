@@ -79,14 +79,14 @@ abstract  class ProgrammDurchlaufer<T>(startDatei: File): PipelineKomponente(sta
       is AST.Satz.Ausdruck.MethodenBereichReferenz -> ausdruck.du.toUntyped()
       is AST.Satz.Ausdruck.Closure -> ausdruck.schnittstelle.name.bezeichnerToken
       is AST.Satz.Ausdruck.Konstante -> ausdruck.name.toUntyped()
-      is AST.Satz.Ausdruck.MethodenBereich -> ausdruck.name.bezeichnerToken
+      is AST.Satz.Ausdruck.MethodenBereich -> holeErstesTokenVonAusdruck(ausdruck.objekt)
       is AST.Satz.Ausdruck.Nichts -> ausdruck.nichts.toUntyped()
       is AST.Satz.Ausdruck.Bedingung -> holeErstesTokenVonAusdruck(ausdruck.bedingungen[0].bedingung)
     }
   }
 
   private fun durchlaufeMethodenBereich(methodenBereich: AST.Satz.Ausdruck.MethodenBereich): T{
-    val wert = evaluiereVariable(methodenBereich.name)
+    val wert = evaluiereAusdruck(methodenBereich.objekt)
     bevorDurchlaufeMethodenBereich(methodenBereich, wert)
     umgebung.pushBereich(wert)
     return durchlaufeBereich(methodenBereich.bereich, false).also { umgebung.popBereich() }

@@ -88,7 +88,12 @@ sealed class GermanSkriptFehler(private val fehlerName: String, val token: Token
     }
 
     class ZuVieleBinder(token: Token,  maxAnzahlBinder: Int): ClosureFehler(token) {
-      override val nachricht: String = "Das Closure bindet zu viele Namen. Es dürfen maximal $maxAnzahlBinder Namen gebunden werden."
+      override val nachricht = "Das Closure bindet zu viele Namen. Es dürfen maximal $maxAnzahlBinder Namen gebunden werden."
+    }
+
+    class FalscheRückgabe(token: Token, rückgabeTyp: Typ, erwarteterRückgabeTyp: Typ): ClosureFehler(token) {
+      override val nachricht = "Es wird erwartet, dass das Closure einen Wert des Typs '$erwarteterRückgabeTyp' zurückgibt.\n" +
+          "Es gibt jedoch einen Wert des Typs '$rückgabeTyp' zurück."
     }
   }
 
