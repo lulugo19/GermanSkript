@@ -1,6 +1,8 @@
 Deklination Femininum Singular(Liste) Plural(Listen)
 Deklination Neutrum Singular(Element) Plural(Elemente)
 Deklination Maskulinum Singular(Index) Plural(Indizes)
+Deklination Maskulinum Singular(Akkumulator, Akkumulators, Akkumulator, Akkumulator) Plural(Akkumulatoren)
+Deklination Maskulinum Singular(Wert, Werts, Wert, Wert) Plural(Werte)
 
 // der Listentyp ist in Germanskript ein so elementarer Typ (Plural, spezielle Syntax nur für Liste),
 // dass er außerhalb des Moduls definiert wird
@@ -8,8 +10,20 @@ Nomen<Element> Liste:
     jene AnZahl ist 0
 .
 
-Adjektiv<Element> vergleichbar:
-    Verb(Zahl) vergleiche das ElementA mit dem ElementB
+Adjektiv<Typ> vergleichbar:
+    Verb(Zahl) vergleiche den TypA mit dem TypB
+.
+
+Adjektiv<Typ> bedingt:
+    Verb(Boolean) bedinge den Typ
+.
+
+Adjektiv<Typ, ErgebnisTyp> mapbar:
+    Verb(ErgebnisTyp) mappe den Typ
+.
+
+Adjektiv<Typ, ErgebnisTyp> reduzierbar:
+    Verb(ErgebnisTyp) reduziere den ErgebnisTyp Akkumulator mit dem Typ
 .
 
 Modul Standard::Collections:
@@ -17,8 +31,41 @@ Modul Standard::Collections:
         Verb(Boolean) enthalten das Element: intern.
         Verb füge das Element hinzu: intern.
         Verb entferne an der Zahl Index: intern.
-        Verb sortiere mich mit dem Vergleichbaren<Element>:
-            merge_sortiere die Elemente Ich mit dem Vergleichbaren
+
+        Verb(Elemente) sortiere mich mit dem Vergleichbaren<Element>:
+            die ElementeKOPIE sind kopiere die Elemente Ich
+            merge_sortiere die ElementeKOPIE mit dem Vergleichbaren
+            gebe die ElementeKOPIE zurück
+        .
+
+        Verb(Elemente) filter mich mit dem Bedingten<Element>:
+            die Elemente sind Ich
+            die gefiltertenElemente sind einige Elemente[]
+            für jedes Element:
+                wenn (Bedingtes: bedinge den Typ Element!):
+                    gefilterteElemente: füge das Element hinzu!
+                .
+            .
+            gebe die gefiltertenElemente zurück
+        .
+
+        Verb<Typ>(Typen) mappe mich mit dem Mapbaren<Element, Typ>:
+            die Elemente sind Ich
+            die gemapptenElemente sind einige Typen[]
+            für jedes Element:
+                das gemappteElement ist Mapbares: mappe den Typ Element!
+                gemappteElemente: füge das gemappteElement hinzu!
+            .
+            gebe die gemapptenElemente zurück
+        .
+
+        Verb<Typ>(Typ) reduziere mich mit dem Reduzierbaren<Element, Typ> mit dem Typ AnfangsWert:
+            die Elemente sind Ich
+            ein Akkumulator ist der AnfangsWert
+            für jedes Element:
+                ein Akkumulator ist Reduzierbares: reduziere den Akkumulator mit dem Typ Element!
+            .
+            gebe den Akkumulator zurück
         .
     .
 
@@ -54,7 +101,7 @@ Modul Standard::Collections:
             ein J ist die ZahlM
             für jedes K von der ZahlB bis zur ZahlE:
                 wenn das I < die ZahlM und
-                  (das J >= der ZahlE oder (Vergleichbares: vergleiche das ElementA[I] mit dem ElementB[J]!) <= 0):
+                  (das J >= der ZahlE oder (Vergleichbares: vergleiche den Typ ElementA[I] mit dem Typ ElementB[J]!) <= 0):
                     das ElementB[K] ist das ElementA[I]
                     ein I ist das I + 1
                 .

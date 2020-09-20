@@ -160,7 +160,7 @@ class Typisierer(startDatei: File): PipelineKomponente(startDatei) {
     definierer.definiere()
 
     // hole die Typdefinitionen des Typen Zeichenfolge und Liste
-    Typ.Compound.KlassenTyp.Liste.definition= definierer.holeTypDefinition("Liste")
+    Typ.Compound.KlassenTyp.Liste.definition = definierer.holeTypDefinition("Liste")
         as AST.Definition.Typdefinition.Klasse
     Typ.Compound.KlassenTyp.Zeichenfolge.definition = definierer.holeTypDefinition("Zeichenfolge")
         as AST.Definition.Typdefinition.Klasse
@@ -185,16 +185,17 @@ class Typisierer(startDatei: File): PipelineKomponente(startDatei) {
   private fun holeTypDefinition(typKnoten: AST.TypKnoten, funktionsTypParams: TypParameter?, typTypParams: TypParameter?, aliasErlaubt: Boolean): Typ {
     val typArgumente = typKnoten.typArgumente
     val typName = typKnoten.name.hauptWort(Kasus.NOMINATIV, Numerus.SINGULAR)
+    val typNameNominativ = typKnoten.name.ganzesWort(Kasus.NOMINATIV, Numerus.SINGULAR, false)
 
     var typ: Typ? = null
     if (funktionsTypParams != null ) {
-      val funktionTypParamIndex = funktionsTypParams.indexOfFirst { param -> param.hauptWort(Kasus.NOMINATIV, Numerus.SINGULAR) == typName }
+      val funktionTypParamIndex = funktionsTypParams.indexOfFirst { param -> param.nominativ == typNameNominativ }
       if (funktionTypParamIndex != -1) {
         typ = Typ.Generic(funktionTypParamIndex, TypParamKontext.Funktion)
       }
     }
     if (typ == null && typTypParams != null) {
-      val typParamIndex = typTypParams.indexOfFirst { param -> param.hauptWort(Kasus.NOMINATIV, Numerus.SINGULAR) == typName }
+      val typParamIndex = typTypParams.indexOfFirst { param -> param.nominativ == typNameNominativ }
       if (typParamIndex != -1) {
         typ = Typ.Generic(typParamIndex, TypParamKontext.Typ)
       }
@@ -220,7 +221,7 @@ class Typisierer(startDatei: File): PipelineKomponente(startDatei) {
     }
     // Überprüfe hier die Anzahl der Typargumente
     when (typ) {
-      is Typ.Primitiv, is Typ.Generic -> if (typArgumente.isNotEmpty())
+      is Typ.Primitiv, is Typ.Nichts, is Typ.Niemals, is Typ.Generic -> if (typArgumente.isNotEmpty())
         throw GermanSkriptFehler.TypArgumentFehler(typKnoten.name.bezeichnerToken, typArgumente.size, 0)
       is Typ.Compound -> if (typArgumente.isNotEmpty() && typArgumente.size != typ.definition.typParameter.size)
         throw GermanSkriptFehler.TypArgumentFehler(
@@ -260,7 +261,6 @@ class Typisierer(startDatei: File): PipelineKomponente(startDatei) {
   private fun typisiereFunktionsSignatur(signatur: AST.Definition.FunktionsSignatur, typTypParameter: TypParameter?) {
     // kombiniere die Typparameter
     bestimmeTyp(signatur.rückgabeTyp, signatur.typParameter, typTypParameter, true)
-    bestimmeTyp(signatur.objekt?.typKnoten, signatur.typParameter, typTypParameter, true)
     for (parameter in signatur.parameter) {
       bestimmeTyp(parameter.typKnoten, signatur.typParameter, typTypParameter, true)
     }

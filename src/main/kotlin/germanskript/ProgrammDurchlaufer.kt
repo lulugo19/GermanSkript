@@ -85,7 +85,7 @@ abstract  class ProgrammDurchlaufer<T>(startDatei: File): PipelineKomponente(sta
     }
   }
 
-  private fun durchlaufeMethodenBereich(methodenBereich: AST.Satz.Ausdruck.MethodenBereich): T{
+  private fun durchlaufeMethodenBereich(methodenBereich: AST.Satz.Ausdruck.MethodenBereich): T {
     val wert = evaluiereAusdruck(methodenBereich.objekt)
     bevorDurchlaufeMethodenBereich(methodenBereich, wert)
     umgebung.pushBereich(wert)

@@ -199,11 +199,11 @@ sealed class TokenTyp(val anzeigeName: String) {
         val hatAdjektiv get() = adjektiv != null
         val hauptWort: String? get() = if (teilWörter.isNotEmpty()) teilWörter[teilWörter.size-1] else null
 
-        fun ersetzeHauptWort(wort: String): String {
+        fun ersetzeHauptWort(wort: String, mitSymbol: Boolean): String {
             return if (istSymbol) {
                 return symbol
             } else {
-                teilWörter.dropLast(1).joinToString() + wort + symbol
+                teilWörter.dropLast(1).joinToString() + wort + (if (mitSymbol) symbol else "")
             }
         }
     }

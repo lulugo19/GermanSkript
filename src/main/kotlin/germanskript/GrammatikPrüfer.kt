@@ -79,7 +79,7 @@ class GrammatikPrüfer(startDatei: File): PipelineKomponente(startDatei) {
       if (nomen.numera.isEmpty()) {
         // TODO: berücksichtige auch die möglichen anderen Fälle in der Fehlermeldung
         val kasus = fälle.first()
-        val erwarteteForm = bezeichner.ersetzeHauptWort(deklination.holeForm(kasus, numerus.first()))
+        val erwarteteForm = bezeichner.ersetzeHauptWort(deklination.holeForm(kasus, numerus.first()), true)
         throw GermanSkriptFehler.GrammatikFehler.FormFehler.FalschesNomen(nomen.bezeichner.toUntyped(), kasus, nomen, erwarteteForm)
       }
     }
@@ -90,13 +90,11 @@ class GrammatikPrüfer(startDatei: File): PipelineKomponente(startDatei) {
   }
 
   private fun prüfeAdjektiv(adjektiv: AST.WortArt.Adjektiv, nomen: AST.WortArt.Nomen?) {
-    val endungen = when(nomen?.vornomen?.typ) {
-      is TokenTyp.VORNOMEN.ARTIKEL.BESTIMMT -> bestimmterArtikelAdjektivEndung
-      else -> unbestimmterArtikelAdjektivEndung
-    }
-    val endung =
-        if (nomen == null) ""
-        else endungen[if (nomen.numerus == Numerus.SINGULAR) nomen.genus.ordinal else 3][nomen.kasus.ordinal]
+    val endung = if (nomen == null) "" else when(nomen.vornomen?.typ) {
+          is TokenTyp.VORNOMEN.ARTIKEL.BESTIMMT -> bestimmterArtikelAdjektivEndung
+          null -> keinArtikelEndungen
+          else -> unbestimmterArtikelAdjektivEndung
+      }[if (nomen.numerus == Numerus.SINGULAR) nomen.genus.ordinal else 3][nomen.kasus.ordinal]
 
     // prüfe die korrekte Endung
     if (!adjektiv.bezeichner.wert.endsWith(endung)) {
@@ -106,8 +104,8 @@ class GrammatikPrüfer(startDatei: File): PipelineKomponente(startDatei) {
     if (adjektiv.parent === nomen) {
       // Wenn es sich um eine Nomenerweiterung handelt, dann berechnen wir die Deklination selbst
       val adjektivOhneEndung = adjektiv.bezeichner.wert.removeSuffix(endung)
-      val adjektivEndungenSingular = endungen[nomen!!.genus.ordinal]
-      val adjektivEndungenPlural = endungen[3]
+      val adjektivEndungenSingular = bestimmterArtikelAdjektivEndung[nomen!!.genus.ordinal]
+      val adjektivEndungenPlural = bestimmterArtikelAdjektivEndung[3]
       val singular = adjektivEndungenSingular.map { adjektivOhneEndung + it }.toTypedArray()
       val plural = adjektivEndungenPlural.map { adjektivOhneEndung + it }.toTypedArray()
       adjektiv.deklination = Deklination(nomen.genus, singular, plural)
@@ -190,6 +188,13 @@ class GrammatikPrüfer(startDatei: File): PipelineKomponente(startDatei) {
      arrayOf("e", "", "", "e"),
      arrayOf("es", "en", "en", "es"),
      arrayOf("en", "en", "en", "en")
+  )
+
+  val keinArtikelEndungen = arrayOf(
+      arrayOf("er", "en", "em", "en"),
+      arrayOf("e", "er", "er", "e"),
+      arrayOf("es", "en", "em", "es"),
+      arrayOf("e", "er", "en", "e")
   )
 
   private fun prüfeTyp(typ: AST.TypKnoten, kasus: EnumSet<Kasus>, numerus: EnumSet<Numerus>, kontextNomen: AST.WortArt.Nomen?) {
@@ -464,7 +469,7 @@ class GrammatikPrüfer(startDatei: File): PipelineKomponente(startDatei) {
     for (präposition in funktionsAufruf.präpositionsArgumente) {
       prüfePräpositionsArgumente(präposition)
     }
-    // logger.addLine("geprüft: $funktionsAufruf")
+    funktionsAufruf.typArgumente.forEach {arg -> prüfeTyp(arg, EnumSet.of(Kasus.NOMINATIV), Numerus.BEIDE, null)}
   }
 
   private fun prüfeMinus(knoten: AST.Satz.Ausdruck.Minus) {

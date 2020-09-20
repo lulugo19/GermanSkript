@@ -68,14 +68,14 @@ sealed class AST {
     val numerus: Numerus get() = numera.first()
     val geprüft get() = numera.size != 0
     open val genus get() = deklination!!.genus
-    val nominativ: String get() = ganzesWort(Kasus.NOMINATIV, numerus)
+    val nominativ: String get() = ganzesWort(Kasus.NOMINATIV, numerus, true)
     val kasus: Kasus get() = fälle[numera.first().ordinal].first()
 
     val unveränderlich get() = vornomen == null || vornomen!!.typ ==
         TokenTyp.VORNOMEN.ARTIKEL.BESTIMMT || vornomen!!.typ == TokenTyp.VORNOMEN.DEMONSTRATIV_PRONOMEN.DIESE
 
     open fun hauptWort(kasus: Kasus, numerus: Numerus): String = deklination!!.holeForm(kasus, numerus)
-    abstract fun ganzesWort(kasus: Kasus, numerus: Numerus): String
+    abstract fun ganzesWort(kasus: Kasus, numerus: Numerus, mitErweiterung: Boolean): String
 
     data class Nomen(
         override var vornomen: TypedToken<TokenTyp.VORNOMEN>?,
@@ -103,11 +103,12 @@ sealed class AST {
 
       override val hauptWort = if (istSymbol) bezeichner.typ.symbol else bezeichner.typ.hauptWort!!
 
-      override fun ganzesWort(kasus: Kasus, numerus: Numerus): String {
+      override fun ganzesWort(kasus: Kasus, numerus: Numerus, mitErweiterung: Boolean): String {
         if (istSymbol) {
-          return adjektiv?.ganzesWort(kasus, numerus) ?: "" + bezeichnerToken.wert
+          return (adjektiv?.ganzesWort(kasus, numerus, true) ?: "") + bezeichnerToken.wert
         }
-        return adjektiv?.ganzesWort(kasus, numerus) ?: "" + bezeichner.typ.ersetzeHauptWort(deklination!!.holeForm(kasus, numerus))
+        val adjektiv =  if (mitErweiterung) (adjektiv?.ganzesWort(kasus, numerus, true) ?: "") else  ""
+        return adjektiv + bezeichner.typ.ersetzeHauptWort(deklination!!.holeForm(kasus, numerus), mitErweiterung)
       }
 
       override fun hauptWort(kasus: Kasus, numerus: Numerus): String {
@@ -139,7 +140,7 @@ sealed class AST {
       var normalisierung: String = ""
 
       override val hauptWort = bezeichner.wert.capitalize()
-      override fun ganzesWort(kasus: Kasus, numerus: Numerus): String = hauptWort(kasus, numerus)
+      override fun ganzesWort(kasus: Kasus, numerus: Numerus, mitErweiterung: Boolean): String = hauptWort(kasus, numerus)
     }
   }
 
@@ -626,7 +627,7 @@ sealed class AST {
             Genus.FEMININUM -> "die"
             Genus.NEUTRUM -> "das"
           }
-          return "erstelle $artikel ${klassenName.ganzesWort(Kasus.NOMINATIV, Numerus.SINGULAR)}"
+          return "erstelle $artikel ${klassenName.ganzesWort(Kasus.NOMINATIV, Numerus.SINGULAR, true)}"
         }
       }
 

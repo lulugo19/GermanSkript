@@ -10,7 +10,7 @@ enum class ASTKnotenID {
   VARIABLEN_DEKLARATION,
   FUNKTIONS_AUFRUF,
   FUNKTIONS_DEFINITION,
-  METHODEN_BLOCK,
+  METHODEN_BEREICH,
   INTERN,
   DEKLINATION,
   ZURÜCKGABE,
@@ -142,7 +142,7 @@ private sealed class SubParser<T: AST>() {
           }
         }
         is TokenTyp.VORNOMEN.POSSESSIV_PRONOMEN.DEIN -> {
-          if (!hierarchyContainsNode(ASTKnotenID.METHODEN_BLOCK)) {
+          if (!hierarchyContainsNode(ASTKnotenID.METHODEN_BEREICH)) {
             throw GermanSkriptFehler.SyntaxFehler.ParseFehler(vornomen.toUntyped(), null,
                 "Das Possessivpronomen '${vornomen.wert}' darf nur in Methodenblöcken verwendet werden.")
           }
@@ -361,7 +361,7 @@ private sealed class SubParser<T: AST>() {
     }
 
     fun parseEinzelnerAusdruck(mitArtikel: Boolean): AST.Satz.Ausdruck {
-      var ausdruck = when (val tokenTyp = peekType()) {
+      val ausdruck = when (val tokenTyp = peekType()) {
         is TokenTyp.ZEICHENFOLGE -> AST.Satz.Ausdruck.Zeichenfolge(next().toTyped())
         is TokenTyp.ZAHL -> AST.Satz.Ausdruck.Zahl(next().toTyped())
         is TokenTyp.BOOLEAN -> AST.Satz.Ausdruck.Boolean(next().toTyped())
@@ -385,7 +385,7 @@ private sealed class SubParser<T: AST>() {
           AST.Satz.Ausdruck.SelbstReferenz(next().toTyped())
         }
         is TokenTyp.REFERENZ.DU -> {
-          if (!hierarchyContainsNode(ASTKnotenID.METHODEN_BLOCK)) {
+          if (!hierarchyContainsNode(ASTKnotenID.METHODEN_BEREICH)) {
             throw GermanSkriptFehler.SyntaxFehler.ParseFehler(next(), null,
                 "Die Methodenblockreferenz 'Du' darf nur in einem Methodenblock verwendet werden.")
           }
@@ -408,7 +408,7 @@ private sealed class SubParser<T: AST>() {
           }
         }
         is TokenTyp.BEZEICHNER_GROSS ->
-          if (mitArtikel)  when (peekType(1)) {
+          if (mitArtikel) when (peekType(1)) {
             is TokenTyp.DOPPELPUNKT -> subParse(Satz.Ausdruck.MethodenBereich(
                 AST.Satz.Ausdruck.Variable(parseNomenOhneVornomen(true))
             ))
@@ -419,11 +419,12 @@ private sealed class SubParser<T: AST>() {
                 AST.Satz.Ausdruck.Variable(parseNomenOhneVornomen(true))
             ))
             is TokenTyp.DOPPEL_DOPPELPUNKT -> parseFunktionOderKonstante()
-            else ->  AST.Satz.Ausdruck.Variable(parseNomenOhneVornomen(true))
+            is TokenTyp.OFFENE_ECKIGE_KLAMMER -> subParse(Satz.Ausdruck.NomenAusdruck.ListenElement(parseNomenOhneVornomen(true)))
+            else -> AST.Satz.Ausdruck.Variable(parseNomenOhneVornomen(true))
           }
         else -> throw GermanSkriptFehler.SyntaxFehler.ParseFehler(next())
       }
-      ausdruck = when (peekType()) {
+      return when (peekType()) {
         is TokenTyp.ALS_KLEIN -> {
           next()
           val typ = parseTypOhneArtikel(
@@ -434,11 +435,6 @@ private sealed class SubParser<T: AST>() {
         }
         else -> ausdruck
       }
-      // verkette mehrere Methodenbereiche hintereinander
-      while (ausdruck is AST.Satz.Ausdruck.MethodenBereich && peekType() is TokenTyp.DOPPELPUNKT) {
-        ausdruck = subParse(Satz.Ausdruck.MethodenBereich(ausdruck))
-      }
-      return ausdruck
     }
 
     // pratt parsing: https://matklad.github.io/2020/04/13/simple-but-powerful-pratt-parsing.html
@@ -831,10 +827,10 @@ private sealed class SubParser<T: AST>() {
       }
     }
 
-    object ListenElementZuweisung: Satz<AST.Satz.ListenElementZuweisung>() {
+    object ListenElementZuweisung: Satz<AST.Satz>() {
       override val id = ASTKnotenID.LISTEN_ELEMENT_ZUWEISUNG
 
-      override fun parseImpl(): AST.Satz.ListenElementZuweisung {
+      override fun parseImpl(): AST.Satz {
         val name = parseNomenMitVornomen<TokenTyp.VORNOMEN>("Vornomen", true)
         if (name.vornomen!!.typ is TokenTyp.VORNOMEN.ARTIKEL.UNBESTIMMT) {
           throw GermanSkriptFehler.SyntaxFehler.ParseFehler(name.vornomen!!.toUntyped(), "Vornomen",
@@ -843,11 +839,14 @@ private sealed class SubParser<T: AST>() {
         expect<TokenTyp.OFFENE_ECKIGE_KLAMMER>("'['")
         val index = parseAusdruck(mitVornomen = false, optionalesIstNachVergleich = false)
         expect<TokenTyp.GESCHLOSSENE_ECKIGE_KLAMMER>("']'")
-        val zuweisung = expect<TokenTyp.ZUWEISUNG>("'ist'")
-        val wert = parseAusdruck(mitVornomen = true, optionalesIstNachVergleich = false)
-        return AST.Satz.ListenElementZuweisung(name, index, zuweisung, wert)
+        return if (peekType() !is TokenTyp.ZUWEISUNG) {
+          AST.Satz.Ausdruck.ListenElement(name, index)
+        } else {
+          val zuweisung = expect<TokenTyp.ZUWEISUNG>("'ist'")
+          val wert = parseAusdruck(mitVornomen = true, optionalesIstNachVergleich = false)
+          AST.Satz.ListenElementZuweisung(name, index, zuweisung, wert)
+        }
       }
-
     }
 
     object SuperBlock: Satz<AST.Satz.SuperBlock>() {
@@ -1130,9 +1129,9 @@ private sealed class SubParser<T: AST>() {
                 }
               }
               is TokenTyp.REFLEXIV_PRONOMEN.DICH -> {
-                if (!hierarchyContainsNode(ASTKnotenID.METHODEN_BLOCK)) {
+                if (!hierarchyContainsNode(ASTKnotenID.METHODEN_BEREICH)) {
                   throw GermanSkriptFehler.SyntaxFehler.UngültigerBereich(reflexivPronomen.toUntyped(),
-                      "Das Reflexivpronomen 'dich' kann nur in einem Methodenblock verwendet werden.")
+                      "Das Reflexivpronomen 'dich' kann nur in einem Methodenbereich verwendet werden.")
                 }
               }
             }
@@ -1186,11 +1185,17 @@ private sealed class SubParser<T: AST>() {
 
       class MethodenBereich(private val objektAusdruck: AST.Satz.Ausdruck): Ausdruck<AST.Satz.Ausdruck.MethodenBereich>() {
         override val id: ASTKnotenID
-          get() = ASTKnotenID.METHODEN_BLOCK
+          get() = ASTKnotenID.METHODEN_BEREICH
 
         override fun parseImpl(): AST.Satz.Ausdruck.MethodenBereich {
           val sätze = parseSätze(TokenTyp.AUSRUFEZEICHEN)
-          return AST.Satz.Ausdruck.MethodenBereich(objektAusdruck, sätze)
+          val methodenBereich = AST.Satz.Ausdruck.MethodenBereich(objektAusdruck, sätze)
+          return if (peekType() is TokenTyp.DOPPELPUNKT) {
+            // verkette mehrere Methodenbereiche hintereinander
+            subParse(MethodenBereich(methodenBereich))
+          } else {
+            methodenBereich
+          }
         }
       }
     }

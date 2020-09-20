@@ -281,7 +281,7 @@ class Definierer(startDatei: File): PipelineKomponente(startDatei) {
     return if (argument.adjektiv != null) {
       val artikel = GrammatikPrüfer.holeVornomen(
           TokenTyp.VORNOMEN.ARTIKEL.BESTIMMT, argument.name.kasus, Genus.NEUTRUM, argument.name.numerus)
-      " " + artikel + " " + argument.adjektiv.ganzesWort(argument.name.kasus, argument.name.numerus)
+      " " + artikel + " " + argument.adjektiv.ganzesWort(argument.name.kasus, argument.name.numerus, true)
     } else {
       val artikel = GrammatikPrüfer.holeVornomen(
           TokenTyp.VORNOMEN.ARTIKEL.BESTIMMT,

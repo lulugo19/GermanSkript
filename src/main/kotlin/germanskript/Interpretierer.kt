@@ -275,7 +275,7 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
       val liste = if (schleife.liste != null) {
         evaluiereAusdruck(schleife.liste) as Wert.Objekt.InternesObjekt.Liste
       } else {
-        evaluiereVariable(schleife.singular.ganzesWort(Kasus.NOMINATIV, Numerus.PLURAL))!! as Wert.Objekt.InternesObjekt.Liste
+        evaluiereVariable(schleife.singular.ganzesWort(Kasus.NOMINATIV, Numerus.PLURAL, true))!! as Wert.Objekt.InternesObjekt.Liste
       }
       umgebung.pushBereich()
       for (element in liste.elemente) {
@@ -521,16 +521,16 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
   }
 
   protected fun evaluiereListenSingular(singular: AST.WortArt.Nomen): Wert.Objekt.InternesObjekt.Liste {
-    return when (val vornomenTyp = singular.vornomen!!.typ) {
+    return when (val vornomenTyp = singular.vornomen?.typ) {
       is TokenTyp.VORNOMEN.POSSESSIV_PRONOMEN -> {
         val objekt = when (vornomenTyp) {
           TokenTyp.VORNOMEN.POSSESSIV_PRONOMEN.MEIN -> aufrufStapel.top().objekt!! as Wert.Objekt
           TokenTyp.VORNOMEN.POSSESSIV_PRONOMEN.DEIN -> umgebung.holeMethodenBlockObjekt()!! as Wert.Objekt
         }
-        objekt.holeEigenschaft(singular.ganzesWort(Kasus.NOMINATIV, Numerus.PLURAL)) as Wert.Objekt.InternesObjekt.Liste
+        objekt.holeEigenschaft(singular.ganzesWort(Kasus.NOMINATIV, Numerus.PLURAL, true)) as Wert.Objekt.InternesObjekt.Liste
       }
-      is TokenTyp.VORNOMEN.ARTIKEL.BESTIMMT ->
-        evaluiereVariable(singular.ganzesWort(Kasus.NOMINATIV, Numerus.PLURAL)) as Wert.Objekt.InternesObjekt.Liste
+      is TokenTyp.VORNOMEN.ARTIKEL.BESTIMMT, null ->
+        evaluiereVariable(singular.ganzesWort(Kasus.NOMINATIV, Numerus.PLURAL, true)) as Wert.Objekt.InternesObjekt.Liste
       else -> throw Exception("Dieser Fall sollte nie eintreten!")
     }
   }

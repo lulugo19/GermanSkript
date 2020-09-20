@@ -1157,10 +1157,10 @@ class GermanSkriptTest {
       val aufOderAbCode = if (aufsteigend) "die ZahlA - die ZahlB" else "die ZahlB - die ZahlA"
       val quellCode = """
         die Zahlen sind einige Zahlen${formatiereListe(testListe)}
-        Zahlen:
+        die sortiertenZahlen sind Zahlen:
           sortiere dich mit etwas Vergleichbarem: $aufOderAbCode.
         !
-        schreibe die Zeichenfolge (die Zahlen als Zeichenfolge)
+        schreibe die Zeichenfolge (die sortiertenZahlen als Zeichenfolge)
       """.trimIndent()
 
       testeGermanSkriptCode(quellCode, formatiereListe(erwarteteListe))
@@ -1443,8 +1443,8 @@ class GermanSkriptTest {
   fun closureMitExplizitenParameterNamen() {
     val quellCode = """
       die Zahlen sind einige Zahlen[2, 3, 5, 7, 11, 13]
-      sortiere die Zahlen mit etwas Vergleichbarem(X, Y): das Y - das X.
-      schreibe die Zeile Zahlen als Zeichenfolge
+      die sortiertenZahlen sind sortiere die Zahlen mit etwas Vergleichbarem(X, Y): das Y - das X.
+      schreibe die Zeile sortierteZahlen als Zeichenfolge
     """.trimIndent()
 
     val erwarteteAusgabe = "[13, 11, 7, 5, 3, 2]\n"
@@ -1475,13 +1475,21 @@ class GermanSkriptTest {
       führeGermanSkriptCodeAus(quellCode)
     }
   }
+
+  @Test
+  @DisplayName("Filter Map Reduce")
+  fun filterMapReduce() {
+    val quellCode = """
+      Deklination Femininum Singular(Summe) Plural(Summen)
+
+      die Zahlen sind einige Zahlen[1, 2, 3, 4, 5, 6, 7, 8, 10]
+      die quadratischeSumme ist Zahlen:
+        filter dich mit etwas Bedingtem: die Zahl mod 2 = 0.!:
+        mappe<Zahl> dich mit etwas Mapbarem<Zahl, Zahl>: die Zahl hoch 2.!:
+        reduziere<Zahl> dich mit etwas Reduzierbarem<Zahl, Zahl>: der Akkumulator + die Zahl. mit dem AnfangsWert 0!
+      schreibe die Zahl die quadratischeSumme
+    """.trimIndent()
+
+    testeGermanSkriptCode(quellCode, "220\n")
+  }
 }
-
-/*
-Methodenblock-Chaining
-
-die Zahlen sind einige Zahlen[1,4,2,6,19]
-die sortierenZahlen sind Zahlen: filter euch mit etwas Bedingtem: gebe die Zahl % 2 gleich 0 zurück.!:
-        mappe euch mit etwas Mapbarem: die Zahl hoch 2.!:
-        sortiere euch mit etwas Vergleichbarem: die ZahlA - die ZahlB.
- */
