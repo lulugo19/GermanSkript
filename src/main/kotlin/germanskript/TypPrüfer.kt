@@ -94,6 +94,16 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
     }
   }
 
+  private fun inferiereFunktionsTypArgumente(funktionsAufruf: AST.Satz.Ausdruck.FunktionsAufruf, signatur: AST.Definition.FunktionsSignatur) {
+    if (funktionsAufruf.typArgumente.isEmpty()) {
+      // inferiere die Typargumente aus den Parameter-Argumenten
+    } else {
+      funktionsAufruf.typArgumente.forEach { arg ->
+        typisierer.bestimmeTyp(arg, funktionsTypParams, zuÜberprüfendeKlasse?.definition?.typParameter, true)
+      }
+    }
+  }
+
   private fun holeParamName(param: AST.Definition.Parameter, typArgumente: List<AST.TypKnoten>): AST.WortArt.Nomen {
     return if (param.typKnoten.typ is Typ.Generic && param.typIstName) {
       param.name.tauscheHauptWortAus(typArgumente[(param.typKnoten.typ as Typ.Generic).index].name.deklination!!)
@@ -110,6 +120,14 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
         TypParamKontext.Funktion -> letzterFunktionsAufruf!!.typArgumente[generic.index].typ!!
       }
     } else param.typKnoten.typ!!
+  }
+
+  private fun vereineTypen(token: Token, typA: Typ, typB: Typ): Typ {
+    return when {
+      typIstTyp(typA, typB) -> typB
+      typIstTyp(typB, typA) -> typA
+      else -> throw GermanSkriptFehler.TypFehler.TypenUnvereinbar(token, typA, typB)
+    }
   }
 
   private fun prüfeKonstante(konstante: AST.Definition.Konstante) {
@@ -267,9 +285,8 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
     logger.addLine("prüfe Funktionsaufruf in ${funktionsAufruf.verb.position}: ${funktionsAufruf.vollerName!!}")
     val methodenBlockObjekt = umgebung.holeMethodenBlockObjekt()
 
-    var subjekt: Typ.Compound.KlassenTyp? = null
     if (funktionsAufruf.subjekt != null) {
-      subjekt = evaluiereAusdruck(funktionsAufruf.subjekt) as Typ.Compound.KlassenTyp
+      val subjekt = evaluiereAusdruck(funktionsAufruf.subjekt) as Typ.Compound.KlassenTyp
       funktionsSignatur = findeMethode(
           funktionsAufruf,
           subjekt,
@@ -281,6 +298,8 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
       if (funktionsSignatur == null ) {
         throw GermanSkriptFehler.Undefiniert.Funktion(funktionsAufruf.token, funktionsAufruf)
       }
+
+      umgebung.pushBereich(subjekt)
     }
 
     // ist Methodenaufruf von Bereich-Variable oder Subjekt
@@ -372,39 +391,45 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
       throw GermanSkriptFehler.SyntaxFehler.AnzahlDerParameterFehler(funktionsSignatur!!.name.toUntyped())
     }
 
-    funktionsAufruf.typArgumente.forEach { arg ->
-      typisierer.bestimmeTyp(arg, funktionsTypParams, zuÜberprüfendeKlasse?.definition?.typParameter, true)
-    }
+    inferiereFunktionsTypArgumente(funktionsAufruf, funktionsSignatur!!)
 
     val typKontext = when (funktionsAufruf.aufrufTyp) {
-      FunktionsAufrufTyp.METHODEN_BLOCK_AUFRUF -> (umgebung.holeMethodenBlockObjekt()!! as Typ.Compound).typArgumente
-      FunktionsAufrufTyp.METHODEN_SUBJEKT_AUFRUF -> subjekt!!.typArgumente
+      FunktionsAufrufTyp.METHODEN_BLOCK_AUFRUF,
+      FunktionsAufrufTyp.METHODEN_OBJEKT_AUFRUF,
+      FunktionsAufrufTyp.METHODEN_SUBJEKT_AUFRUF ->
+        (umgebung.holeMethodenBlockObjekt()!! as Typ.Compound).typArgumente
+      FunktionsAufrufTyp.METHODEN_SELBST_AUFRUF -> zuÜberprüfendeKlasse!!.typArgumente
       else -> null
     }
 
-    fun ersetzeGeneric(typ: Typ): Typ {
-      return if (typ is Typ.Generic) {
-        when (typ.kontext) {
-          TypParamKontext.Funktion -> funktionsAufruf.typArgumente[typ.index].typ!!
-          TypParamKontext.Typ -> typKontext!![typ.index].typ!!
+    fun ersetzeGeneric(typKnoten: AST.TypKnoten): AST.TypKnoten {
+      return when (val typ = typKnoten.typ!!) {
+        is Typ.Generic -> when (typ.kontext) {
+          TypParamKontext.Funktion -> funktionsAufruf.typArgumente[typ.index]
+          TypParamKontext.Typ -> typKontext!![typ.index]
         }
-      } else typ
+        is Typ.Compound -> {
+          typKnoten.copy(typArgumente = typ.typArgumente.map(::ersetzeGeneric))
+        }
+        else -> typKnoten
+      }
     }
 
-    val rückgabeTyp = ersetzeGeneric(funktionsSignatur!!.rückgabeTyp.typ!!)
+    val rückgabeTyp = ersetzeGeneric(funktionsSignatur!!.rückgabeTyp)
     // stimmen die Argument Typen mit den Parameter Typen überein?
     letzterFunktionsAufruf = funktionsAufruf
     for (i in parameter.indices) {
-      ausdruckMussTypSein(argumente[i+j].ausdruck, ersetzeGeneric(parameter[i].typKnoten.typ!!))
+      ausdruckMussTypSein(argumente[i+j].ausdruck, ersetzeGeneric(parameter[i].typKnoten).typ!!)
     }
     letzterFunktionsAufruf = null
 
-    if (funktionsAufruf.aufrufTyp == FunktionsAufrufTyp.METHODEN_OBJEKT_AUFRUF) {
+    if (funktionsAufruf.aufrufTyp == FunktionsAufrufTyp.METHODEN_OBJEKT_AUFRUF ||
+        funktionsAufruf.aufrufTyp == FunktionsAufrufTyp.METHODEN_SUBJEKT_AUFRUF) {
       // als kleiner Hack, damit das Objekt für die Methode bekannt ist, wird es auf den Stack gepusht
       // und muss hier wieder entfernt werden
       umgebung.popBereich()
     }
-    return rückgabeTyp
+    return rückgabeTyp.typ!!
   }
 
   private fun findeMethode(
@@ -486,32 +511,31 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
 
     for (bedingung in bedingungsSatz.bedingungen) {
       val typ = prüfeBedingung(bedingung)
-      bedingungsTyp = if (bedingungsTyp == null) {
-        typ
-      } else {
-        if (typIstTyp(typ, bedingungsTyp)) continue
-        else if (typIstTyp(bedingungsTyp, typ)) {
+      bedingungsTyp = try {
+        if (bedingungsTyp == null) {
           typ
-        } else if (istAusdruck) {
-          // TODO: Es ist unpräzise hier für die Fehlermeldung das Token der Bedingung zu nehmen
-          throw GermanSkriptFehler.TypFehler.FalscherTyp(
-              holeErstesTokenVonAusdruck(bedingung.bedingung), typ, bedingungsTyp.toString())
         } else {
-          Typ.Nichts
+          vereineTypen(holeErstesTokenVonAusdruck(bedingung.bedingung), bedingungsTyp, typ)
         }
+      } catch (fehler: GermanSkriptFehler.TypFehler.TypenUnvereinbar) {
+        if (istAusdruck) {
+          throw fehler
+        }
+        Typ.Nichts
       }
     }
 
     if (bedingungsSatz.sonst != null) {
-      val typ = durchlaufeBereich(bedingungsSatz.sonst!!, true)
-      bedingungsTyp = if (typIstTyp(typ, bedingungsTyp!!)) bedingungsTyp
-      else if (typIstTyp(bedingungsTyp, typ)) {
-        bedingungsTyp
-      } else if (istAusdruck) {
-        // TODO: Es ist unpräzise hier für die Fehlermeldung das Token der Bedingung zu nehmen
-        throw GermanSkriptFehler.TypFehler.FalscherTyp(
-            holeErstesTokenVonAusdruck(bedingungsSatz.bedingungen[0].bedingung), typ, bedingungsTyp.toString())
-      } else {
+      bedingungsTyp = try {
+        vereineTypen(
+            holeErstesTokenVonAusdruck(bedingungsSatz.bedingungen[0].bedingung),
+            bedingungsTyp!!,
+            durchlaufeBereich(bedingungsSatz.sonst!!, true)
+        )
+      } catch (fehler: GermanSkriptFehler.TypFehler.TypenUnvereinbar) {
+        if (istAusdruck) {
+          throw fehler
+        }
         Typ.Nichts
       }
     }
@@ -840,6 +864,7 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
       val paramTyp = holeParamTyp(param, schnittstelle.typArgumente)
       umgebung.schreibeVariable(paramName, paramTyp, false)
     }
+
     val rückgabe = durchlaufeAufruf(
         closure.schnittstelle.name.bezeichnerToken,
         closure.körper, umgebung,
@@ -849,7 +874,7 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
     )
     val erwarteterRückgabeTyp = when(val typ = signatur.rückgabeTyp.typ!!) {
       is Typ.Generic ->
-        if (typ.kontext == TypParamKontext.Typ) closure.schnittstelle.typArgumente[typ.index].typ!!
+        if (typ.kontext == TypParamKontext.Typ) schnittstelle.typArgumente[typ.index].typ!!
         else typ
       else -> typ
     }

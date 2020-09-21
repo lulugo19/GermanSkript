@@ -156,6 +156,15 @@ sealed class AST {
     }
     val vollständigerName: String get() = modulPfad.joinToString("::") { it.wert } +
         (if (modulPfad.isEmpty()) "" else "::")  + name.nominativ
+
+    fun copy(typArgumente: List<TypKnoten>): TypKnoten {
+      val kopie = TypKnoten(modulPfad, name, typArgumente)
+      kopie.typ = when (val meinTyp = this.typ) {
+        is Typ.Compound -> meinTyp.copy(typArgumente)
+        else -> meinTyp
+      }
+      return kopie
+    }
   }
 
   interface IAufruf {

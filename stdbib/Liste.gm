@@ -33,8 +33,8 @@ Modul Standard::Collections:
         Verb entferne an der Zahl Index: intern.
 
         Verb(Elemente) sortiere mich mit dem Vergleichbaren<Element>:
-            die ElementeKOPIE sind kopiere die Elemente Ich
-            merge_sortiere die ElementeKOPIE mit dem Vergleichbaren
+            die ElementeKOPIE sind kopiere<Element> die Elemente Ich
+            merge_sortiere<Element> die ElementeKOPIE mit dem Vergleichbaren
             gebe die ElementeKOPIE zurück
         .
 
@@ -70,8 +70,8 @@ Modul Standard::Collections:
     .
 
     Verb<Element> merge_sortiere die ElementeA mit dem Vergleichbaren<Element>:
-        die ElementeB sind kopiere die ElementeA
-        split_merge die ElementeB
+        die ElementeB sind kopiere<Element> die ElementeA
+        split_merge<Element> die ElementeB
             von der Zahl 0 zur AnZahl der ElementeA
             in die ElementeA mit dem Vergleichbaren
     .
@@ -83,13 +83,13 @@ Modul Standard::Collections:
             wenn die ZahlE - die ZahlB <= 1 ist: zurück.
             die ZahlM ist Mathe::runde die Zahl ((die ZahlB + die ZahlE) / 2) ab
 
-            split_merge die ElementeA von der ZahlB zur ZahlM
+            split_merge<Element> die ElementeA von der ZahlB zur ZahlM
                 in die ElementeB mit dem Vergleichbaren
 
-            split_merge die ElementeA von der ZahlM zur ZahlE
+            split_merge<Element> die ElementeA von der ZahlM zur ZahlE
                 in die ElementeB mit dem Vergleichbaren
 
-            merge die ElementeB von der ZahlB mit der ZahlM zur ZahlE
+            merge<Element> die ElementeB von der ZahlB mit der ZahlM zur ZahlE
                 in die ElementeA mit dem Vergleichbaren
     .
 

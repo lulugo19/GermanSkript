@@ -69,6 +69,8 @@ sealed class Typ() {
     abstract var typArgumente: List<AST.TypKnoten>
     override val name get() = typName + if (typArgumente.isEmpty()) "" else "<${typArgumente.joinToString(", ") {it.name.nominativ}}>"
 
+    abstract fun copy(typArgumente: List<AST.TypKnoten>): Compound
+
     override fun equals(other: Any?): Boolean {
       if (this === other) return true
       if (other !is Compound) return false
@@ -93,6 +95,10 @@ sealed class Typ() {
         override fun kannNachTypKonvertiertWerden(typ: Typ): Boolean {
           return typ.name == this.name || typ == Zeichenfolge || definition.konvertierungen.containsKey(typ.name)
         }
+
+        override fun copy(typArgumente: List<AST.TypKnoten>): Compound {
+          return Klasse(definition, typArgumente)
+        }
       }
 
       class Liste(
@@ -112,6 +118,10 @@ sealed class Typ() {
             Operator.GLEICH to Primitiv.Boolean
         )
         override fun kannNachTypKonvertiertWerden(typ: Typ) = typ.name == this.name || typ == Zeichenfolge
+
+        override fun copy(typArgumente: List<AST.TypKnoten>): Compound {
+          return Liste(typArgumente)
+        }
       }
 
       object Zeichenfolge : KlassenTyp("Zeichenfolge") {
@@ -129,6 +139,10 @@ sealed class Typ() {
               Operator.KLEINER_GLEICH to Primitiv.Boolean
           )
         override fun kannNachTypKonvertiertWerden(typ: Typ) = typ == Zeichenfolge || typ == Primitiv.Zahl || typ == Primitiv.Boolean
+
+        override fun copy(typArgumente: List<AST.TypKnoten>): Compound {
+          return Zeichenfolge
+        }
       }
     }
 
@@ -142,6 +156,10 @@ sealed class Typ() {
 
       override fun kannNachTypKonvertiertWerden(typ: Typ): Boolean {
         return typ.name == this.name || typ == KlassenTyp.Zeichenfolge
+      }
+
+      override fun copy(typArgumente: List<AST.TypKnoten>): Compound {
+        return Schnittstelle(definition, typArgumente)
       }
     }
   }

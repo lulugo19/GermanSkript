@@ -289,14 +289,16 @@ sealed class GermanSkriptFehler(private val fehlerName: String, val token: Token
   }
 
   sealed class TypFehler(token: Token): GermanSkriptFehler("Typfehler", token) {
-    class FalscherTyp(token: Token, private val falscherTyp: Typ, private val erwarteterTyp: String): TypFehler(token) {
-      override val nachricht: String
-        get() = "Falscher Typ '${falscherTyp.name}'. Erwartet wird der Typ '$erwarteterTyp'."
+    class FalscherTyp(token: Token, falscherTyp: Typ, erwarteterTyp: String): TypFehler(token) {
+      override val nachricht = "Falscher Typ '${falscherTyp.name}'. Erwartet wird der Typ '$erwarteterTyp'."
+    }
+
+    class TypenUnvereinbar(token: Token, typA: Typ, typB: Typ): TypFehler(token) {
+      override val nachricht = "Die Typen '$typA' und '$typB' können nicht in einen gemeinsamen Typen vereint werden."
     }
 
     class ObjektErwartet(token: Token): TypFehler(token) {
-      override val nachricht: String
-        get() = "Es wird ein Objekt erwartet und kein primitiver Typ (Zahl, Zeichenfolge, Boolean)."
+      override val nachricht = "Es wird ein Objekt erwartet und kein primitiver Typ (Zahl, Zeichenfolge, Boolean)."
     }
 
     class FalscherSchnittstellenTyp(

@@ -7,12 +7,18 @@ data class Variable<T>(val name: AST.WortArt.Nomen, val wert: T)
 
 class Bereich<T>(val methodenBlockObjekt: T?) {
   val variablen: HashMap<String, Variable<T>> = HashMap()
+
+  override fun toString(): String {
+    return variablen.entries.joinToString("\n", "[\n", "\n]") {"${it.key}: ${it.value}"}
+  }
 }
 
 class Umgebung<T>() {
   private val bereiche = Stack<Bereich<T>>()
 
   val istLeer get() = bereiche.empty()
+
+  fun top() = bereiche.last()
 
   fun leseVariable(varName: AST.WortArt.Nomen): Variable<T> {
     return  leseVariable(varName.nominativ)?: throw GermanSkriptFehler.Undefiniert.Variable(varName.bezeichner.toUntyped())
