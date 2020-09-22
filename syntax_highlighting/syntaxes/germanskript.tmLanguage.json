@@ -20,7 +20,7 @@
 		  "include": "#fundefs"
 		},
 		{
-      "include": "#moduls"
+		  "include": "#moduls"
 		},
 		{
 		  "include": "#vardecls"
@@ -39,247 +39,241 @@
 		}
 	  ],
 	  "repository": {
-		"keywords": {
-		  "patterns": [
-			{
-			  "name": "keyword.control.germanskript",
-			  "match": "\\b(wenn|dann|sonst|solange|für|jeden|jede|jedes|fortfahren|abbrechen|gebe|zurück|intern)\\b"
-			},
-		    {
-			  "name": "keyword.other.germanskript",
-			  "match": "\\b(importiere|verwende|Modul)\\b"
-		    }
-		  ]
-		},
-		"expressions": {
-		  "patterns": [
-				{
-					"include": "#strings"
-				},
-				{
-					"include": "#numbers"
-				},
-				{
-					"include": "#booleans"
-				},
-				{
-					"include": "#operators"
-				},
-				{
-					"include": "#objects"
-				},
-				{
-					"include": "#vars"
-				},
-				{
-					"include": "#functions"
-				}
-		  ]
-		},
-		"strings": {
-		  "name": "string.quoted.double.germanskript",
-		  "begin": "\"",
-		  "end": "\"",
-		  "patterns": [
-			{
-			  "name": "constant.character.escape.germanskript",
-			  "match": "\\\\."
-			},
-			{
-			  "name": "keyword.operator.interpolation.germanskript",
-			  "begin": "#\\{",
-			  "end": "\\}",
-			  "patterns": [
-				{
-				  "include": "#expressions"
-				}
-			  ]
-			}
-		  ]
-		},
-		"numbers": {
-		  "name": "constant.numeric.germanskript",
-		  "match": "-?([1-9]\\d{1,2}|\\d)(?:\\.\\d{3})*(?:,\\d+)?"
-		},
-		"booleans": {
-		  "name": "constant.language.germanskript",
-		  "match": "\\b(wahr|falsch)\\b"
-		},
-		"objects": {
-			"match": "\\b(ein|eine) *(([A-ZÖÄÜ][a-zöäüß]*)+) *(mit)?",
-			"captures": {
-				"1": {
-					"name": "entity.name.type.class"
-				},
-				"2": {
-					"name": "entity.name.type.class"
-				},
-				"4": {
-					"name": "keyword.operator"
-				}
-			}
-		},
-		"classdefs": {
-		  "name": "meta.class.germanskript",
-		  "begin": "\\s*(Nomen) *(([A-ZÖÄÜ][a-zöäüß]*)+) *(mit)?",
-		  "end": ":",
-		  "beginCaptures": {
-			"1": {
-			  "name": "storage.type.class.germanskript"
-			},
-			"2": {
-			  "name": "entity.name.type.class.germanskript"
-			},
-			"3": {
-			  "name": "keyword.other.germanskript"
-			}
-		  },
-		  "patterns": [
-			{
-			  "include": "#params"
-			}
-		  ]
-    },
-		"fundefs": {
-		  "name": "meta.function.germanskript",
-		  "begin": "\\s*(Verb)(\\s*\\( *(([A-ZÖÄÜ][a-zöäüß]*)+)\\s*\\))?( *(für) *(([A-ZÖÄÜ][a-zöäüß]*)+))?",
-		  "end": ":",
-		  "beginCaptures": {
-				"1": {
-					"name": "storage.type.function.germanskript"
-				},
-				"2": {
-					"name": "entity.name.type.germanskript"
-				},
-				"6": {
-					"name": "keyword.other.germanskript"
-				},
-				"7": {
-					"name": "entity.name.type.class.germanskript"
-				}
-		  },
-		  "patterns": [
-			{
-			  "include": "#params"
-			}, 
-			{
-			  "include": "#functions"
-			}
-		  ]
-    },
-    "moduls": {
-      "name": "meta.modul.germanskript",
-      "begin": "\\s*(Modul)\\s*((([A-ZÖÄÜ][a-zöäüß]*)+)::)*(([A-ZÖÄÜ][a-zöäüß]*)+)",
-      "end": ":",
-      "beginCaptures": {
+      "keywords": {
+        "patterns": [
+          {
+            "name": "keyword.control.germanskript",
+            "match": "\\b(wenn|dann|sonst|solange|für|jeden|jede|jedes|fortfahren|abbrechen|gebe|zurück|intern)\\b"
+          },
+          {
+          "name": "keyword.other.germanskript",
+          "match": "\\b(importiere|verwende|Modul)\\b"
+          }
+        ]
+      },
+      "expressions": {
+        "patterns": [
+          {
+            "include": "#strings"
+          },
+          {
+            "include": "#numbers"
+          },
+          {
+            "include": "#booleans"
+          },
+          {
+            "include": "#operators"
+          },
+          {
+            "include": "#objects"
+          },
+          {
+            "include": "#vars"
+          },
+          {
+            "include": "#functions"
+          }
+        ]
+      },
+      "strings": {
+        "name": "string.quoted.double.germanskript",
+        "begin": "\"",
+        "end": "\"",
+        "patterns": [
+        {
+          "name": "constant.character.escape.germanskript",
+          "match": "\\\\."
+        },
+        {
+          "name": "keyword.operator.interpolation.germanskript",
+          "begin": "#\\{",
+          "end": "\\}",
+          "patterns": [
+          {
+            "include": "#expressions"
+          }
+          ]
+        }
+        ]
+      },
+      "numbers": {
+        "name": "constant.numeric.germanskript",
+        "match": "-?([1-9]\\d{1,2}|\\d)(?:\\.\\d{3})*(?:,\\d+)?"
+      },
+      "booleans": {
+        "name": "constant.language.germanskript",
+        "match": "\\b(wahr|falsch)\\b"
+      },
+      "objects": {
+        "match": "\\b(ein|eine) *(([A-ZÖÄÜ][a-zöäüß]*)+) *(mit)?",
+        "captures": {
+          "1": {
+            "name": "entity.name.type.class"
+          },
+          "2": {
+            "name": "entity.name.type.class"
+          },
+          "4": {
+            "name": "keyword.operator"
+          }
+        }
+      },
+      "classdefs": {
+        "name": "meta.class.germanskript",
+        "begin": "\\s*(Nomen) *(([A-ZÖÄÜ][a-zöäüß]*)+) *(mit)?",
+        "end": ":",
+        "beginCaptures": {
         "1": {
-          "name": "keyword.other.modul.germanskript"
+          "name": "storage.type.class.germanskript"
+        },
+        "2": {
+          "name": "entity.name.type.class.germanskript"
         },
         "3": {
-          "name": "entity.name.modul.germanskript"
-        },
-        "5": {
-          "name": "entity.name.modul.germanskript"
+          "name": "keyword.other.germanskript"
         }
+        },
+        "patterns": [
+        {
+          "include": "#params"
+        }
+        ]
+      },
+      "fundefs": {
+        "name": "meta.function.germanskript",
+        "begin": "\\s*(Verb)(\\s*\\( *([a-zöäüß]*([A-ZÖÄÜ][a-zöäüß]*)+)\\s*\\))?",
+        "end": ":",
+        "beginCaptures": {
+          "1": {
+            "name": "storage.type.function.germanskript"
+          },
+          "2": {
+            "name": "entity.name.type.germanskript"
+          }
+        },
+        "patterns": [
+          {
+            "include": "#params"
+          }, 
+          {
+            "include": "#functions"
+          }
+        ]
+      },
+      "moduls": {
+        "name": "meta.modul.germanskript",
+        "begin": "\\s*(Modul)\\s*((([A-ZÖÄÜ][a-zöäüß]*)+)::)*(([A-ZÖÄÜ][a-zöäüß]*)+)",
+        "end": ":",
+        "beginCaptures": {
+          "1": {
+            "name": "keyword.other.modul.germanskript"
+          },
+          "3": {
+            "name": "entity.name.modul.germanskript"
+          },
+          "5": {
+            "name": "entity.name.modul.germanskript"
+          }
+        }
+      },
+      "vardecls": {
+        "name": "meta.vardecl.germanskript",
+        "match": "(?<=(^|;))\\s*(der|die|das|ein|eine|einige|mein|meine|jener|jene|jenes|dieser|diese|dieses) *((neue|neuer|neues) *)?([a-zöäüß]*([A-ZÖÄÜ][a-zöäüß]*)+) *(ist|sind)",
+        "captures": {
+          "2": {
+            "name": "storage.type.var.germanskript"
+          },
+          "4": {
+            "name": "storage.type.modifier.neu.germanskript"
+          },
+          "5": {
+            "name": "variable.other.germanskript"
+          },
+          "7": {
+            "name": "keyword.operator.germanskript"
+          }
+        }
+      },
+      "declinations": {
+        "name": "meta.declination",
+        "begin": "\\s*(Deklination) *(Maskulinum|Neutrum|Femininum)?",
+        "end": "$",
+        "beginCaptures": {
+          "1": {
+            "name": "storage.type.declination"
+          },
+          "2": {
+            "name": "keyword.other.genus"
+          }
+        },
+        "patterns": [
+          {
+            "name": "meta.declination.sub",
+            "begin": "\\b(Singular|Plural|Duden) *\\(",
+            "end": "\\)",
+            "beginCaptures": {
+              "1": {
+                "name": "keyword.other.germanskript"
+              }
+            },
+            "patterns": [
+              {
+                "name": "constant.other.word.germanskript",
+                "match": "\\b([A-ZÖÄÜ][a-zöäüß]*)"
+              }
+            ]
+        }
+      ]
+      },
+      "vars": {
+        "patterns": [
+        {
+          "name": "variable.other.germanskript",
+          "match": "(\\b(der|die|das|den|des|dem|ein|eine|eines|einer|einige|einigen|einiger|mein|meine|meines|meiner|meinem|meinen|dein|deine|deines|deiner|deinem|deinen))? *([a-zöäüß]*([A-ZÖÄÜ][a-zöäüß]*)+)"
+        },
+        {
+          "name": "variable.language.germanskript",
+          "match": "(Ich|Du)"
+        }
+        ]
+      },
+      "params": {
+        "match": "\\b(der|die|das|den|des|dem|ein|eine|eines|einer|einige|einigen|einiger) *([a-zöäüß]*([A-ZÖÄÜ][a-zöäüß]*)+) *([a-zöäüß]*([A-ZÖÄÜ][a-zöäüß]*)+)?",
+        "captures": {
+        "1": {
+          "name": "entity.name.type.germanskript"
+        },
+        "2": {
+          "name": "entity.name.type.germanskript"
+        },
+        "4": {
+          "name": "variable.parameter.germanskript"
+        }
+        }
+      },
+      "args": {
+        "name": "meta.argument",
+        "match": "\\b(der|die|das|den|des|dem|ein|eine|eines|einer|einige|einigen|einiger|mein|meine|meines|meiner|meinem|meinen|dein|deine|deines|deiner|deinem|deinen) *([a-zöäüß]*([A-ZÖÄÜ][a-zöäüß]*)+) *([a-zöäüß]*([A-ZÖÄÜ][a-zöäüß]*)+)?",
+        "captures": {
+        "1": {
+          "name": "variable.parameter.germanskript"
+        },
+        "2": {
+          "name": "variable.parameter.germanskript"
+        },
+        "4": {
+          "name": "variable.other.germanskript"
+        }
+        }
+      },
+      "operators": {
+        "name": "keyword.operator.germanskript",
+        "match": "(\\||&|=|!=|>|<|>=|<=|\\+|-|\\*|\\/|mod|\\^)|(\\b(ist|sind|oder|und|gleich|ungleich|größer|kleiner|mal|durch|modulo|hoch|als)\\b)"
+      },
+      "functions": {
+        "name": "entity.name.function",
+        "match": "\\b[a-zöäüß_]+"
       }
-    },
-		"vardecls": {
-		  "name": "meta.vardecl.germanskript",
-		  "match": "(?<=(^|;))\\s*(der|die|das|ein|eine|einige|mein|meine|jener|jene|jenes|dieser|diese|dieses) *((neue|neuer|neues) *)?([A-ZÖÄÜ][a-zöäüß]*)+ *(ist|sind)",
-		  "captures": {
-			"2": {
-			  "name": "storage.type.var.germanskript"
-			},
-			"4": {
-			  "name": "storage.type.modifier.neu.germanskript"
-			},
-			"5": {
-			  "name": "variable.other.germanskript"
-			},
-			"6": {
-			  "name": "keyword.operator.germanskript"
-			}
-		  }
-		},
-		"declinations": {
-			"name": "meta.declination",
-			"begin": "\\s*(Deklination) *(Maskulinum|Neutrum|Femininum)?",
-			"end": "$",
-			"beginCaptures": {
-				"1": {
-					"name": "storage.type.declination"
-				},
-				"2": {
-					"name": "keyword.other.genus"
-				}
-			},
-			"patterns": [
-				{
-					"name": "meta.declination.sub",
-					"begin": "\\b(Singular|Plural|Duden) *\\(",
-					"end": "\\)",
-					"beginCaptures": {
-						"1": {
-							"name": "keyword.other.germanskript"
-						}
-					},
-					"patterns": [
-						{
-							"name": "constant.other.word.germanskript",
-							"match": "\\b([A-ZÖÄÜ][a-zöäüß]*)"
-						}
-					]
-			}
-		]
-		},
-		"vars": {
-		  "patterns": [
-			{
-			  "name": "variable.other.germanskript",
-			  "match": "(\\b(der|die|das|den|des|dem|ein|eine|eines|einer|einige|einigen|einiger|mein|meine|meines|meiner|meinem|meinen|dein|deine|deines|deiner|deinem|deinen))? *(([A-ZÖÄÜ][a-zöäüß]*)+)"
-			},
-			{
-			  "name": "variable.language.germanskript",
-			  "match": "(Ich|Du)"
-			}
-		  ]
-		},
-		"params": {
-		  "match": "\\b(der|die|das|den|des|dem|ein|eine|eines|einer|einige|einigen|einiger) *(([A-ZÖÄÜ][a-zöäüß]*)+) *(([A-ZÖÄÜ][a-zöäüß]*)+)?",
-		  "captures": {
-			"1": {
-			  "name": "entity.name.type.germanskript"
-			},
-			"2": {
-			  "name": "entity.name.type.germanskript"
-			},
-			"4": {
-			  "name": "variable.parameter.germanskript"
-			}
-		  }
-		},
-		"args": {
-			"name": "meta.argument",
-		  "match": "\\b(der|die|das|den|des|dem|ein|eine|eines|einer|einige|einigen|einiger|mein|meine|meines|meiner|meinem|meinen|dein|deine|deines|deiner|deinem|deinen) *(([A-ZÖÄÜ][a-zöäüß]*)+) *(([A-ZÖÄÜ][a-zöäüß]*)+)?",
-		  "captures": {
-			"1": {
-			  "name": "variable.parameter.germanskript"
-			},
-			"2": {
-			  "name": "variable.parameter.germanskript"
-			},
-			"4": {
-			  "name": "variable.other.germanskript"
-			}
-		  }
-		},
-		"operators": {
-		  "name": "keyword.operator.germanskript",
-		  "match": "(\\||&|=|!=|>|<|>=|<=|\\+|-|\\*|\\/|mod|\\^)|(\\b(ist|sind|oder|und|gleich|ungleich|größer|kleiner|mal|durch|modulo|hoch|als)\\b)"
-		},
-		"functions": {
-		  "name": "entity.name.function",
-		  "match": "\\b[a-zöäüß]+"
-		}
 	  }
 }
