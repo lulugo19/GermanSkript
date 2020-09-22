@@ -9,12 +9,29 @@ sealed class Typ() {
 
   abstract val definierteOperatoren: Map<Operator, Typ>
   abstract fun kannNachTypKonvertiertWerden(typ: Typ): Boolean
+  abstract fun inTypKnoten(): AST.TypKnoten
 
   // äquivalent zu Kotlins Typen "Unit"
   object Nichts: Typ() {
     override val name = "Nichts"
     override val definierteOperatoren: Map<Operator, Typ> = mapOf()
     override fun kannNachTypKonvertiertWerden(typ: Typ) = false
+
+    private val typKnoten = AST.TypKnoten(
+        emptyList(), AST.WortArt.Nomen(null, TypedToken.imaginäresToken(
+        TokenTyp.BEZEICHNER_GROSS(arrayOf("Nichts"), "", null), "Nichts")), emptyList())
+
+    init {
+      typKnoten.name.numera.add(Numerus.SINGULAR)
+      typKnoten.name.deklination = Deklination(
+          Genus.NEUTRUM,
+          arrayOf("Nichts", "Nichts", "Nichts", "Nichts"),
+          arrayOf("Nichts", "Nichts", "Nichts", "Nichts")
+      )
+      typKnoten.typ = Nichts
+    }
+
+    override fun inTypKnoten(): AST.TypKnoten = typKnoten
   }
 
   // äquivalent zu Kotlins Typen "Nothing"
@@ -22,6 +39,22 @@ sealed class Typ() {
     override val name = "Niemals"
     override val definierteOperatoren: Map<Operator, Typ> = mapOf()
     override fun kannNachTypKonvertiertWerden(typ: Typ) = false
+
+    private val typKnoten = AST.TypKnoten(
+        emptyList(), AST.WortArt.Nomen(null, TypedToken.imaginäresToken(
+        TokenTyp.BEZEICHNER_GROSS(arrayOf("Niemals"), "", null), "Niemals")), emptyList())
+
+    init {
+      typKnoten.name.numera.add(Numerus.SINGULAR)
+      typKnoten.name.deklination = Deklination(
+          Genus.NEUTRUM,
+          arrayOf("Niemals", "Niemals", "Niemals", "Niemals"),
+          arrayOf("Niemals", "Niemals", "Niemals", "Niemals")
+      )
+      typKnoten.typ = Niemals
+    }
+
+    override fun inTypKnoten(): AST.TypKnoten = typKnoten
   }
 
   sealed class Primitiv(override val name: String): Typ() {
@@ -42,6 +75,22 @@ sealed class Typ() {
         )
 
       override fun kannNachTypKonvertiertWerden(typ: Typ) = typ == Zahl || typ == Compound.KlassenTyp.Zeichenfolge || typ == Boolean
+
+      private val typKnoten = AST.TypKnoten(
+          emptyList(), AST.WortArt.Nomen(null, TypedToken.imaginäresToken(
+          TokenTyp.BEZEICHNER_GROSS(arrayOf("Zahl"), "", null), "Zahl")), emptyList())
+
+      init {
+        typKnoten.name.numera.add(Numerus.SINGULAR)
+        typKnoten.name.deklination = Deklination(
+            Genus.NEUTRUM,
+            arrayOf("Zahl", "Zahl", "Zahl", "Zahl"),
+            arrayOf("Zahlen", "Zahlen", "Zahlen", "Zahlen")
+        )
+        typKnoten.typ = Zahl
+      }
+
+      override fun inTypKnoten(): AST.TypKnoten = typKnoten
     }
 
     object Boolean : Primitiv("Boolean") {
@@ -53,15 +102,38 @@ sealed class Typ() {
         )
 
       override fun kannNachTypKonvertiertWerden(typ: Typ) = typ == Boolean || typ == Compound.KlassenTyp.Zeichenfolge || typ == Zahl
+
+      private val typKnoten = AST.TypKnoten(
+          emptyList(), AST.WortArt.Nomen(null, TypedToken.imaginäresToken(
+          TokenTyp.BEZEICHNER_GROSS(arrayOf("Boolean"), "", null), "Boolean")), emptyList())
+
+      init {
+        typKnoten.name.numera.add(Numerus.SINGULAR)
+        typKnoten.name.deklination = Deklination(
+            Genus.NEUTRUM,
+            arrayOf("Boolean", "Boolean", "Boolean", "Boolean"),
+            arrayOf("Booleans", "Booleans", "Booleans", "Zahlen")
+        )
+        typKnoten.typ = Boolean
+      }
+
+      override fun inTypKnoten(): AST.TypKnoten = typKnoten
     }
   }
 
-  data class Generic(val index: Int, val kontext: TypParamKontext) : Typ() {
+  data class Generic(val binder: AST.WortArt.Nomen, val index: Int, val kontext: TypParamKontext) : Typ() {
     override val name = "Generic"
     override val definierteOperatoren: Map<Operator, Typ>
       get() = mapOf()
 
     override fun kannNachTypKonvertiertWerden(typ: Typ): Boolean = false
+
+
+    override fun inTypKnoten(): AST.TypKnoten {
+      val typKnoten = AST.TypKnoten(emptyList(), binder, emptyList())
+      typKnoten.typ = this
+      return typKnoten
+    }
   }
 
   sealed class Compound(private val typName: String): Typ() {
@@ -79,6 +151,12 @@ sealed class Typ() {
           && this.typArgumente.zip(other.typArgumente).all { (a, b) ->
         a.typ is Generic || b.typ is Generic || a.typ == b.typ
       }
+    }
+
+    override fun inTypKnoten(): AST.TypKnoten {
+      val typKnoten = AST.TypKnoten(emptyList(), definition.name, typArgumente)
+      typKnoten.typ = this
+      return typKnoten
     }
 
     sealed class KlassenTyp(name: String): Compound(name) {
@@ -149,7 +227,7 @@ sealed class Typ() {
     class Schnittstelle(
         override val definition: AST.Definition.Typdefinition.Schnittstelle,
         override var typArgumente: List<AST.TypKnoten>
-    ): Compound(definition.name.wert.capitalize()) {
+    ): Compound(definition.namensToken.wert.capitalize()) {
       override val definierteOperatoren: Map<Operator, Typ> = mapOf(
           Operator.GLEICH to Primitiv.Boolean
       )
@@ -209,13 +287,13 @@ class Typisierer(startDatei: File): PipelineKomponente(startDatei) {
     if (funktionsTypParams != null ) {
       val funktionTypParamIndex = funktionsTypParams.indexOfFirst { param -> param.nominativ == typNameNominativ }
       if (funktionTypParamIndex != -1) {
-        typ = Typ.Generic(funktionTypParamIndex, TypParamKontext.Funktion)
+        typ = Typ.Generic(funktionsTypParams[funktionTypParamIndex], funktionTypParamIndex, TypParamKontext.Funktion)
       }
     }
     if (typ == null && typTypParams != null) {
       val typParamIndex = typTypParams.indexOfFirst { param -> param.nominativ == typNameNominativ }
       if (typParamIndex != -1) {
-        typ = Typ.Generic(typParamIndex, TypParamKontext.Typ)
+        typ = Typ.Generic(typTypParams[typParamIndex], typParamIndex, TypParamKontext.Typ)
       }
     }
 

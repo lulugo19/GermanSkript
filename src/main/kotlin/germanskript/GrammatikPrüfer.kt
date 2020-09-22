@@ -101,10 +101,10 @@ class GrammatikPrüfer(startDatei: File): PipelineKomponente(startDatei) {
       throw GermanSkriptFehler.GrammatikFehler.FalscheAdjektivEndung(adjektiv.bezeichner.toUntyped(), endung)
     }
     // eine Nomenerweiterung ist daran zu erkennen, dass das Adjektiv ein Teil des Kontextnomens ist
-    if (adjektiv.parent === nomen) {
+    if (nomen !== null && adjektiv.parent === nomen) {
       // Wenn es sich um eine Nomenerweiterung handelt, dann berechnen wir die Deklination selbst
       val adjektivOhneEndung = adjektiv.bezeichner.wert.removeSuffix(endung)
-      val adjektivEndungenSingular = bestimmterArtikelAdjektivEndung[nomen!!.genus.ordinal]
+      val adjektivEndungenSingular = bestimmterArtikelAdjektivEndung[nomen.genus.ordinal]
       val adjektivEndungenPlural = bestimmterArtikelAdjektivEndung[3]
       val singular = adjektivEndungenSingular.map { adjektivOhneEndung + it }.toTypedArray()
       val plural = adjektivEndungenPlural.map { adjektivOhneEndung + it }.toTypedArray()
@@ -422,6 +422,7 @@ class GrammatikPrüfer(startDatei: File): PipelineKomponente(startDatei) {
 
   private fun prüfeSchnittstelle(schnittstelle: AST.Definition.Typdefinition.Schnittstelle) {
     prüfeTypParameter(schnittstelle.typParameter)
+    prüfeAdjektiv(schnittstelle.name, null)
     schnittstelle.methodenSignaturen.forEach(::prüfeFunktionsSignatur)
   }
 

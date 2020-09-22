@@ -71,8 +71,9 @@ sealed class AST {
     val nominativ: String get() = ganzesWort(Kasus.NOMINATIV, numerus, true)
     val kasus: Kasus get() = fälle[numera.first().ordinal].first()
 
-    val unveränderlich get() = vornomen == null || vornomen!!.typ ==
-        TokenTyp.VORNOMEN.ARTIKEL.BESTIMMT || vornomen!!.typ == TokenTyp.VORNOMEN.DEMONSTRATIV_PRONOMEN.DIESE
+    val unveränderlich
+      get() = vornomen == null || vornomen!!.typ ==
+          TokenTyp.VORNOMEN.ARTIKEL.BESTIMMT || vornomen!!.typ == TokenTyp.VORNOMEN.DEMONSTRATIV_PRONOMEN.DIESE
 
     open fun hauptWort(kasus: Kasus, numerus: Numerus): String = deklination!!.holeForm(kasus, numerus)
     abstract fun ganzesWort(kasus: Kasus, numerus: Numerus, mitErweiterung: Boolean): String
@@ -80,22 +81,23 @@ sealed class AST {
     data class Nomen(
         override var vornomen: TypedToken<TokenTyp.VORNOMEN>?,
         val bezeichner: TypedToken<TokenTyp.BEZEICHNER_GROSS>
-    ): WortArt() {
+    ) : WortArt() {
       override val bezeichnerToken = bezeichner.toUntyped()
       override var deklination: Deklination? = null
-      override var numera : EnumSet<Numerus> = EnumSet.noneOf(Numerus::class.java)
+      override var numera: EnumSet<Numerus> = EnumSet.noneOf(Numerus::class.java)
       override var fälle: Array<EnumSet<Kasus>> = arrayOf(EnumSet.noneOf(Kasus::class.java), EnumSet.noneOf(Kasus::class.java))
 
       private var _adjektiv: Adjektiv? = null
-      val adjektiv: Adjektiv? get() {
-        if (bezeichner.typ.adjektiv == null) {
-          return null
-        } else if (_adjektiv == null) {
-          _adjektiv = bezeichner.typ.adjektiv.let { Adjektiv(vornomen, it) }
-          _adjektiv!!.setParentNode(this)
+      val adjektiv: Adjektiv?
+        get() {
+          if (bezeichner.typ.adjektiv == null) {
+            return null
+          } else if (_adjektiv == null) {
+            _adjektiv = bezeichner.typ.adjektiv.let { Adjektiv(vornomen, it) }
+            _adjektiv!!.setParentNode(this)
+          }
+          return _adjektiv
         }
-        return _adjektiv
-      }
 
       var vornomenString: String? = null
       val istSymbol get() = bezeichner.typ.istSymbol
@@ -107,7 +109,7 @@ sealed class AST {
         if (istSymbol) {
           return (adjektiv?.ganzesWort(kasus, numerus, true) ?: "") + bezeichnerToken.wert
         }
-        val adjektiv =  if (mitErweiterung) (adjektiv?.ganzesWort(kasus, numerus, true) ?: "") else  ""
+        val adjektiv = if (mitErweiterung) (adjektiv?.ganzesWort(kasus, numerus, true) ?: "") else ""
         return adjektiv + bezeichner.typ.ersetzeHauptWort(deklination!!.holeForm(kasus, numerus), mitErweiterung)
       }
 
@@ -131,9 +133,9 @@ sealed class AST {
 
     data class Adjektiv(
         override var vornomen: TypedToken<TokenTyp.VORNOMEN>?,
-        val bezeichner: TypedToken<TokenTyp.BEZEICHNER_KLEIN>): WortArt() {
+        val bezeichner: TypedToken<TokenTyp.BEZEICHNER_KLEIN>) : WortArt() {
 
-      override var numera : EnumSet<Numerus> = EnumSet.noneOf(Numerus::class.java)
+      override var numera: EnumSet<Numerus> = EnumSet.noneOf(Numerus::class.java)
       override var deklination: Deklination? = null
       override var fälle: Array<EnumSet<Kasus>> = arrayOf(EnumSet.noneOf(Kasus::class.java), EnumSet.noneOf(Kasus::class.java))
       override val bezeichnerToken = bezeichner.toUntyped()
@@ -303,12 +305,13 @@ sealed class AST {
 
     sealed class Typdefinition: Definition() {
 
-      abstract val namensToken: Token
+      abstract val name: WortArt
+      val namensToken get() = name.bezeichnerToken
       abstract val typParameter: List<WortArt.Nomen>
 
       data class Klasse(
           override val typParameter: List<WortArt.Nomen>,
-          val name: WortArt.Nomen,
+          override val name: WortArt.Nomen,
           val elternKlasse: TypKnoten?,
           val eigenschaften: MutableList<Parameter>,
           val konstruktor: Satz.Bereich
@@ -319,8 +322,6 @@ sealed class AST {
         val implementierteSchnittstellen = mutableListOf<Typ.Compound.Schnittstelle>()
         val implementierungen = mutableListOf<Implementierung>()
         var geprüft = false
-
-        override val namensToken = name.bezeichner.toUntyped()
 
         override val children = sequence {
           yieldAll(typParameter)
@@ -335,20 +336,18 @@ sealed class AST {
 
       data class Schnittstelle(
           override val typParameter: List<WortArt.Nomen>,
-          val name: TypedToken<TokenTyp.BEZEICHNER_KLEIN>,
+          override val name: WortArt.Adjektiv,
           val methodenSignaturen: List<FunktionsSignatur>
       ): Typdefinition() {
 
-        override val namensToken = name.toUntyped()
-
         override val children = sequence {
           yieldAll(typParameter)
+          yield(name)
           yieldAll(methodenSignaturen)
         }
       }
 
-      data class Alias(val name: WortArt.Nomen, val typ: TypKnoten): Typdefinition() {
-        override val namensToken = name.bezeichner.toUntyped()
+      data class Alias(override val name: WortArt.Nomen, val typ: TypKnoten): Typdefinition() {
         override val typParameter = emptyList<WortArt.Nomen>()
         override val children = sequenceOf(name, typ)
       }
@@ -525,7 +524,7 @@ sealed class AST {
       }
 
       data class FunktionsAufruf(
-          val typArgumente: List<TypKnoten>,
+          var typArgumente: List<TypKnoten>,
           val modulPfad: List<TypedToken<TokenTyp.BEZEICHNER_GROSS>>,
           val subjekt: Ausdruck?,
           val verb: TypedToken<TokenTyp.BEZEICHNER_KLEIN>,

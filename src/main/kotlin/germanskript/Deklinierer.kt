@@ -134,7 +134,7 @@ class Deklinierer(startDatei: File): PipelineKomponente(startDatei) {
    * wird erst bei 'holeDeklination' geachtet.
    */
   private fun deklaniereAdjektiv(schnittstelle: AST.Definition.Typdefinition.Schnittstelle): Deklination {
-    val adjektiv = schnittstelle.name.wert.capitalize()
+    val adjektiv = schnittstelle.namensToken.wert.capitalize()
 
     // Placeholder Formen
     val formen = arrayOf(adjektiv, adjektiv, adjektiv, adjektiv)

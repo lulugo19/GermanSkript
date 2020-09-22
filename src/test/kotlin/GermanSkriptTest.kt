@@ -1379,10 +1379,11 @@ class GermanSkriptTest {
         schreibe die Zeile (die Elemente als Zeichenfolge)
       .
       
-      drucke<Zahl> die Elemente einige Zahlen[1, 2, 3]
+      drucke die Elemente einige Zahlen[1, 2, 3]
     """.trimIndent()
 
-    testeGermanSkriptCode(quellCode, "[1, 2, 3]\n")
+    führeGermanSkriptCodeAus(quellCode)
+    // testeGermanSkriptCode(quellCode, "[1, 2, 3]\n")
   }
 
   @Test
@@ -1484,14 +1485,15 @@ class GermanSkriptTest {
       Deklination Femininum Singular(Summe) Plural(Summen)
 
       die Zahlen sind einige Zahlen[1, 2, 3, 4, 5, 6, 7, 8, 10]
+      
       die quadratischeSumme ist Zahlen:
         filter dich mit etwas Bedingtem: die Zahl mod 2 = 0.!:
         mappe<Zahl> dich mit etwas Mapbarem: die Zahl hoch 2.!:
-        reduziere<Zahl> dich mit etwas Reduzierbarem: der Akkumulator + die Zahl. mit dem AnfangsWert 0!
+        reduziere<Zahl> dich mit dem AnfangsWert 0, etwas Reduzierbarem: der Akkumulator + die Zahl.!
+      
       schreibe die Zahl die quadratischeSumme
     """.trimIndent()
 
-    führeGermanSkriptCodeAus(quellCode)
-    // testeGermanSkriptCode(quellCode, "220\n")
+    testeGermanSkriptCode(quellCode, "220\n")
   }
 }

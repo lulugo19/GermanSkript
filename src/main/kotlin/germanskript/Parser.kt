@@ -1396,7 +1396,7 @@ private sealed class SubParser<T: AST>() {
       override fun parseImpl(): AST.Definition.Typdefinition.Schnittstelle {
         expect<TokenTyp.ADJEKTIV>("'Adjektiv'")
         val typParameter = parseTypParameter()
-        val name = expect<TokenTyp.BEZEICHNER_KLEIN>("bezeichner")
+        val name = AST.WortArt.Adjektiv(null, expect("Adjektiv"))
         val signaturen = mutableListOf<AST.Definition.FunktionsSignatur>()
         runParseBereich {
           signaturen += subParse(FunktionsSignatur(true))
