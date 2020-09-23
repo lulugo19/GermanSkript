@@ -252,15 +252,13 @@ class Typisierer(startDatei: File): PipelineKomponente(startDatei) {
   val definierer = Definierer(startDatei)
   val ast = definierer.ast
 
+  companion object {
+    lateinit var schreiberTyp: Typ.Compound.KlassenTyp.Klasse
+  }
+
   fun typisiere() {
     definierer.definiere()
-
-    // hole die Typdefinitionen des Typen Zeichenfolge und Liste
-    Typ.Compound.KlassenTyp.Liste.definition = definierer.holeTypDefinition("Liste")
-        as AST.Definition.Typdefinition.Klasse
-    Typ.Compound.KlassenTyp.Zeichenfolge.definition = definierer.holeTypDefinition("Zeichenfolge")
-        as AST.Definition.Typdefinition.Klasse
-
+    holeInterneTypDefinitionen()
     definierer.funktionsDefinitionen.forEach { typisiereFunktionsSignatur(it.signatur, null)}
     definierer.typDefinitionen.forEach {typDefinition ->
       // Klassen werden von Typprüfer typisiert, da die Reihenfolge und die Konstruktoren eine wichtige Rolle spielen
@@ -269,6 +267,17 @@ class Typisierer(startDatei: File): PipelineKomponente(startDatei) {
         is AST.Definition.Typdefinition.Alias -> bestimmeTyp(typDefinition.typ, null, null, false)
       }
     }
+  }
+
+  private fun holeInterneTypDefinitionen() {
+    // hole die Typdefinitionen des Typen Zeichenfolge und Liste
+    Typ.Compound.KlassenTyp.Liste.definition = definierer.holeTypDefinition("Liste")
+        as AST.Definition.Typdefinition.Klasse
+    Typ.Compound.KlassenTyp.Zeichenfolge.definition = definierer.holeTypDefinition("Zeichenfolge")
+        as AST.Definition.Typdefinition.Klasse
+    schreiberTyp = Typ.Compound.KlassenTyp.Klasse(
+        definierer.holeTypDefinition("Schreiber", arrayOf("IO")) as AST.Definition.Typdefinition.Klasse, emptyList()
+    )
   }
 
   fun bestimmeTyp(nomen: AST.WortArt.Nomen): Typ {

@@ -1,0 +1,23 @@
+Deklination Maskulinum Singular(Name, Namens, Namen, Namen) Plural(Namen)
+Deklination Femininum Singular(Datei) Plural(Dateien)
+Deklination Maskulinum Singular(Schreiber, Schreibers, Schreiber, Schreiber) Plural(Schreiber)
+Deklination Maskulinum Singular(Leser, Lesers, Leser, Leser) Plural(Leser)
+
+Modul IO:
+    Nomen Datei mit der Zeichenfolge DateiName:.
+
+    Implementiere die Datei:
+        Verb(Zeichenfolgen) lese_zeilen: intern.
+        Verb(Schreiber) hole_schreiber: intern.
+    .
+
+    Nomen Schreiber:.
+
+    Implementiere den Schreiber:
+        Verb schreibe die Zeichenfolge Zeile: intern.
+        Verb schreibe die Zeichenfolge: intern.
+        Verb füge die Zeichenfolge Zeile hinzu: intern.
+        Verb füge die Zeichenfolge hinzu: intern.
+        Verb schließe mich: intern.
+    .
+.

@@ -1,5 +1,7 @@
 package germanskript
 
+import java.io.BufferedWriter
+import java.io.File
 import java.text.*
 import java.math.*
 import kotlin.math.*
@@ -86,7 +88,23 @@ sealed class Wert {
 
     sealed class InternesObjekt(typ: Typ.Compound.KlassenTyp): Objekt(typ) {
 
-      abstract fun rufeMethodeAuf(aufruf: AST.IAufruf, aufrufStapel: Interpretierer.AufrufStapel, umgebung: Umgebung<Wert>, aufrufCallback: AufrufCallback): Wert
+      abstract fun rufeMethodeAuf(
+          aufruf: AST.IAufruf,
+          aufrufStapel: Interpretierer.AufrufStapel,
+          umgebung: Umgebung<Wert>,
+          aufrufCallback: AufrufCallback
+      ): Wert
+
+      companion object {
+        val zeichenFolgenTypArgument = AST.TypKnoten(emptyList(), AST.WortArt.Nomen(null,
+            TypedToken.imaginäresToken(TokenTyp.BEZEICHNER_GROSS(arrayOf("Zeichenfolge"),"", null), "Zeichenfolge")),
+            emptyList()
+        )
+
+        init {
+          zeichenFolgenTypArgument.typ = Typ.Compound.KlassenTyp.Zeichenfolge
+        }
+      }
 
       class Liste(typ: Typ.Compound.KlassenTyp, val elemente: MutableList<Wert>): InternesObjekt(typ) {
         operator fun plus(liste: Liste) = Liste(typ, (this.elemente + liste.elemente).toMutableList())
@@ -146,17 +164,6 @@ sealed class Wert {
 
       data class Zeichenfolge(val zeichenfolge: String): InternesObjekt(Typ.Compound.KlassenTyp.Zeichenfolge), Comparable<Zeichenfolge> {
 
-        companion object {
-          val zeichenFolgenTypArgument = AST.TypKnoten(emptyList(), AST.WortArt.Nomen(null,
-              TypedToken.imaginäresToken(TokenTyp.BEZEICHNER_GROSS(arrayOf("Zeichenfolge"),"", null), "Zeichenfolge")),
-              emptyList()
-          )
-
-          init {
-            zeichenFolgenTypArgument.typ = Typ.Compound.KlassenTyp.Zeichenfolge
-          }
-        }
-
         override fun rufeMethodeAuf(aufruf: AST.IAufruf, aufrufStapel: Interpretierer.AufrufStapel, umgebung: Umgebung<Wert>, aufrufCallback: AufrufCallback): Wert {
           return when (aufruf.vollerName!!) {
             "code an dem Index" -> codeAnDemIndex(aufruf, aufrufStapel, umgebung)
@@ -203,6 +210,92 @@ sealed class Wert {
 
           return Liste(Typ.Compound.KlassenTyp.Liste(listOf(zeichenFolgenTypArgument)),
               zeichenfolge.zeichenfolge.split(separator.zeichenfolge).map { Zeichenfolge(it) }.toMutableList())
+        }
+      }
+
+      class Datei(typ: Typ.Compound.KlassenTyp, val eigenschaften: MutableMap<String, Wert>): InternesObjekt(typ) {
+
+        val file = File((eigenschaften.getValue("DateiName") as Zeichenfolge).zeichenfolge)
+
+        override fun rufeMethodeAuf(
+            aufruf: AST.IAufruf,
+            aufrufStapel: Interpretierer.AufrufStapel,
+            umgebung: Umgebung<Wert>,
+            aufrufCallback: AufrufCallback): Wert {
+
+          return when (aufruf.vollerName!!) {
+            "lese_zeilen" -> leseZeilen()
+            "hole_schreiber" -> holeSchreiber()
+            else -> throw Exception("Die Methode '${aufruf.vollerName!!}' ist nicht definiert!")
+          }
+        }
+
+        override fun holeEigenschaft(eigenschaftsName: String): Wert {
+          return eigenschaften.getValue(eigenschaftsName)
+        }
+
+        override fun setzeEigenschaft(eigenschaftsName: String, wert: Wert) {
+
+        }
+
+        private fun leseZeilen(): Liste {
+          val zeilen = file.readLines().map<String, Wert> { zeile -> Zeichenfolge(zeile) }.toMutableList()
+          return Liste(Typ.Compound.KlassenTyp.Liste(listOf(zeichenFolgenTypArgument)), zeilen)
+        }
+
+        private fun holeSchreiber() : Schreiber {
+          return Schreiber(Typisierer.schreiberTyp, file.bufferedWriter())
+        }
+      }
+
+      class Schreiber(typ: Typ.Compound.KlassenTyp, private val writer: BufferedWriter): InternesObjekt(typ) {
+        override fun rufeMethodeAuf(aufruf: AST.IAufruf, aufrufStapel: Interpretierer.AufrufStapel, umgebung: Umgebung<Wert>, aufrufCallback: AufrufCallback): Wert {
+          return when(aufruf.vollerName!!) {
+            "schreibe die Zeile" -> schreibeDieZeile(umgebung)
+            "schreibe die Zeichenfolge" -> schreibeDieZeichenfolge(umgebung)
+            "füge die Zeile hinzu" -> fügeDieZeileHinzu(umgebung)
+            "füge die Zeichenfolge hinzu" -> fügeDieZeichenfolgeHinzu(umgebung)
+            "schließe mich" -> schließe()
+            else -> throw Exception("Die Methode '${aufruf.vollerName}' ist für die Klasse 'Schreiber' nicht definiert.")
+          }
+        }
+
+        override fun holeEigenschaft(eigenschaftsName: String): Wert {
+          throw Exception("Die Klasse Schreiber hat keine Eigenschaften!")
+        }
+
+        override fun setzeEigenschaft(eigenschaftsName: String, wert: Wert) {
+          TODO("Not yet implemented")
+        }
+
+        private fun schreibeDieZeichenfolge(umgebung: Umgebung<Wert>): Nichts {
+          val zeile = umgebung.leseVariable("Zeichenfolge")!!.wert as Zeichenfolge
+          writer.write(zeile.zeichenfolge)
+          return Nichts
+        }
+
+        private fun schreibeDieZeile(umgebung: Umgebung<Wert>): Nichts {
+          val zeile = umgebung.leseVariable("Zeile")!!.wert as Zeichenfolge
+          writer.write(zeile.zeichenfolge)
+          writer.newLine()
+          return Nichts
+        }
+
+        private fun fügeDieZeichenfolgeHinzu(umgebung: Umgebung<Wert>): Nichts {
+          val zeile = umgebung.leseVariable("Zeichenfolge")!!.wert as Zeichenfolge
+          writer.append(zeile.zeichenfolge)
+          return Nichts
+        }
+
+        private fun fügeDieZeileHinzu(umgebung: Umgebung<Wert>): Nichts {
+          val zeile = umgebung.leseVariable("Zeile")!!.wert as Zeichenfolge
+          writer.appendln(zeile.zeichenfolge)
+          return Nichts
+        }
+
+        private fun schließe(): Nichts {
+          writer.close()
+          return Nichts
         }
       }
     }

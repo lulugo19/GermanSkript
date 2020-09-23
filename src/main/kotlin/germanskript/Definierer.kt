@@ -355,8 +355,15 @@ class Definierer(startDatei: File): PipelineKomponente(startDatei) {
   inline fun<reified T: AST.Definition.Typdefinition> holeDefinitionen() = typDefinitionen.filter { it is T }.map {it as T}
 
   /** holt eine globale Klasse über den Namen der Klasse */
-  fun holeTypDefinition(klassenName: String): AST.Definition.Typdefinition {
-    return ast.definitionen.definierteTypen.getValue(klassenName)
+  fun holeTypDefinition(klassenName: String, modulPfad: Array<String>? = null): AST.Definition.Typdefinition {
+    if (modulPfad == null || modulPfad.isEmpty())
+      return ast.definitionen.definierteTypen.getValue(klassenName)
+
+    val modul: AST.DefinitionsContainer = modulPfad.fold<String, AST.DefinitionsContainer>(ast.definitionen) {
+      container, modul -> container.module.getValue(modul).definitionen
+    }
+
+    return modul.definierteTypen.getValue(klassenName)
   }
 
   fun gebeKlassenDefinitionenAus() {

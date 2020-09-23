@@ -219,6 +219,8 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
     if (klasse.elternKlasse != null) {
       fügeElternKlassenMethodenHinzu((klasse.elternKlasse.typ as Typ.Compound.KlassenTyp).definition)
     }
+
+    zuÜberprüfendeKlasse = null
   }
 
   private fun durchlaufeAufruf(token: Token, bereich: AST.Satz.Bereich, umgebung: Umgebung<Typ>, neuerBereich: Boolean, rückgabeTyp: Typ, impliziteRückgabe: Boolean): Typ {

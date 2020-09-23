@@ -94,7 +94,7 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
 
   private fun initKlassenDefinitionen() {
     for (klassenString in preloadedKlassenDefinitionen) {
-      val definition = typPrüfer.typisierer.definierer.holeTypDefinition(klassenString)
+      val definition = typPrüfer.typisierer.definierer.holeTypDefinition(klassenString, null)
           as AST.Definition.Typdefinition.Klasse
 
       klassenDefinitionen[klassenString] = definition
@@ -384,7 +384,11 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
       eigenschaften[zuweisung.name.nominativ] = evaluiereAusdruck(zuweisung.ausdruck)
     }
     val klassenTyp = (instanziierung.klasse.typ!! as Typ.Compound.KlassenTyp)
-    val objekt = Wert.Objekt.SkriptObjekt(klassenTyp, eigenschaften)
+
+    val objekt = when(klassenTyp.name) {
+      "Datei" -> Wert.Objekt.InternesObjekt.Datei(klassenTyp, eigenschaften)
+      else -> Wert.Objekt.SkriptObjekt(klassenTyp, eigenschaften)
+    }
 
     fun führeKonstruktorAus(definition: AST.Definition.Typdefinition.Klasse) {
       // Führe zuerst den Konstruktor der Elternklasse aus
