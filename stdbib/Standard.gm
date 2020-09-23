@@ -4,18 +4,21 @@ Deklination Femininum Singular(Zahl) Plural(Zahlen)
 Deklination Neutrum Singular(Boolean) Plural(Booleans)
 Deklination Femininum Singular(Zeile) Plural(Zeilen)
 Deklination Maskulinum Singular(Typ, Typs, Typ, Typ) Plural(Typen)
+Deklination Maskulinum Singular(Fehler, Fehlers, Fehler, Fehler) Plural(Fehler)
+Deklination Femininum Singular(Meldung) Plural(Meldungen)
 
 // Standardausgabe
 Verb schreibe die Zeichenfolge: intern. // print
 Verb schreibe die Zeichenfolge Zeile: intern. // println
 Verb schreibe die Zahl: intern.
 
+// Standardfehler-Ausgabe
+Verb schreibe die Zeichenfolge FehlerMeldung: intern. // System.err.println
+
 // Standardeingabe
 Verb(Zeichenfolge) lese: intern. // readline
 
-// Fehler
-Deklination Maskulinum Singular(Fehler, Fehlers, Fehler, Fehler) Plural(Fehler)
-Deklination Femininum Singular(Meldung) Plural(Meldungen)
+
 
 Nomen Fehler mit der Zeichenfolge FehlerMeldung:.
 Nomen KonvertierungsFehler als Fehler:.

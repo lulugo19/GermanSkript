@@ -70,7 +70,7 @@ Modul Standard::Collections:
     .
 
     Verb<Element> merge_sortiere die ElementeA mit dem Vergleichbaren<Element>:
-        die ElementeB sind kopiere<Element> die ElementeA
+        die ElementeB sind kopiere die ElementeA
         split_merge die ElementeB
             von der Zahl 0 zur AnZahl der ElementeA
             in die ElementeA mit dem Vergleichbaren
@@ -79,7 +79,6 @@ Modul Standard::Collections:
     Verb<Element> split_merge die ElementeB
         von der ZahlB zur ZahlE in die ElementeA
         mit dem Vergleichbaren<Element>:
-
             wenn die ZahlE - die ZahlB <= 1 ist: zurück.
             die ZahlM ist Mathe::runde die Zahl ((die ZahlB + die ZahlE) / 2) ab
 
@@ -101,7 +100,7 @@ Modul Standard::Collections:
             ein J ist die ZahlM
             für jedes K von der ZahlB bis zur ZahlE:
                 wenn das I < die ZahlM und
-                  (das J >= der ZahlE oder (Vergleichbares: vergleiche den Typ ElementA[I] mit dem Typ ElementB[J]!) <= 0):
+                  (das J >= der ZahlE oder (Vergleichbares: vergleiche den Typ ElementA[I] mit dem Typ ElementA[J]!) <= 0):
                     das ElementB[K] ist das ElementA[I]
                     ein I ist das I + 1
                 .

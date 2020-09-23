@@ -1,17 +1,20 @@
 importiere "./Nützlich.gm"
 
+Deklination Maskulinum Singular(Wert, Werts, Wert, Wert) Plural(Werte)
+// Deklination Duden(Wert)
+
 Verb(Zahl) fibonacci von der Zahl:
     eine ZahlA ist 1
     eine ZahlB ist 1
-
-    für jedes I von 0 bis zur Zahl:
+    für jeden Wert von 0 bis zur Zahl:
         die ZahlTEMP ist die ZahlB
-        eine ZahlB ist die ZahlA + die ZahlB
+        eine ZahlB ist die ZahlA plus die ZahlB
         eine ZahlA ist die ZahlTEMP
     .
-
     gebe die ZahlA zurück
 .
 
-die Zahl ist Nützlich::zahlen_eingabe mit dem Prompt "Gebe eine Zahl ein: "
-schreibe die Zeile "fib(#{die Zahl}) = #{fibonacci von der Zahl}"
+verwende Nützlich
+
+die Zahl ist zahlen_eingabe mit dem Prompt "Gebe eine Zahl ein: "
+schreibe die Zahl (fibonacci von der Zahl)

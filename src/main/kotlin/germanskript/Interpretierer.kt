@@ -606,6 +606,12 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
       Wert.Nichts
     },
 
+    "schreibe die Meldung" to {
+      val zeichenfolge = umgebung.leseVariable("FehlerMeldung")!!.wert as Wert.Objekt.InternesObjekt.Zeichenfolge
+      System.err.println(zeichenfolge)
+      Wert.Nichts
+    },
+
     "erstelle aus dem Code" to {
       val zeichenfolge = umgebung.leseVariable("Code")!!.wert as Wert.Primitiv.Zahl
       Wert.Objekt.InternesObjekt.Zeichenfolge(zeichenfolge.toInt().toChar().toString())

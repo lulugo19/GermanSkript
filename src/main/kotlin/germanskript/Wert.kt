@@ -205,11 +205,10 @@ sealed class Wert {
         private fun buchstabierMichKlein() = Zeichenfolge(zeichenfolge.toLowerCase())
 
         private fun trenneMichZwischenDemSeperator(umgebung: Umgebung<Wert>): Wert {
-          val zeichenfolge = umgebung.leseVariable("Zeichenfolge")!!.wert as Zeichenfolge
           val separator = umgebung.leseVariable("Separator")!!.wert as Zeichenfolge
 
           return Liste(Typ.Compound.KlassenTyp.Liste(listOf(zeichenFolgenTypArgument)),
-              zeichenfolge.zeichenfolge.split(separator.zeichenfolge).map { Zeichenfolge(it) }.toMutableList())
+              zeichenfolge.split(separator.zeichenfolge).map { Zeichenfolge(it) }.toMutableList())
         }
       }
 

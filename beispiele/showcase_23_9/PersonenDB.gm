@@ -17,19 +17,31 @@ Nomen Person mit
     der Zeichenfolge Email,
     der Adresse:.
 
+Implementiere die Person:
+    Eigenschaft(Zeichenfolge) Name:
+        gebe "#{mein VorName} #{mein NachName}" zurück
+    .
+
+    Als Zeichenfolge:
+        gebe "#{mein Name} (#{mein Alter} Jahre alt)" zurück
+    .
+.
+
 die Datei ist eine IO::Datei mit dem DateiNamen "personen.csv"
 
 die Zeilen sind Datei: lese_zeilen!
 
 die Personen sind Zeilen: mappe<Person> dich mit etwas Mapbarem(Zeile):
+
     die Zeichenfolgen sind Zeile: trenne dich zwischen dem Separator "|"!
-        der NachName ist die Zeichenfolge[0]
-        der VorName ist die Zeichenfolge[1]
-        das Alter ist die Zeichenfolge[2] als Zahl
-        die Straße ist die Zeichenfolge[3]
-        die PostLeitZahl ist die Zeichenfolge[4]
-        die Stadt ist die Zeichenfolge[5]
-        die Email ist die Zeichenfolge[6]
+
+    der NachName ist die Zeichenfolge[0]
+    der VorName ist die Zeichenfolge[1]
+    das Alter ist die Zeichenfolge[2] als Zahl
+    die Straße ist die Zeichenfolge[3]
+    die PostLeitZahl ist die Zeichenfolge[4]
+    die Stadt ist die Zeichenfolge[5]
+    die Email ist die Zeichenfolge[6]
 
     die Adresse ist eine Adresse mit der Straße, der PostLeitZahl, der Stadt
 
@@ -41,6 +53,22 @@ die Personen sind Zeilen: mappe<Person> dich mit etwas Mapbarem(Zeile):
             der Adresse
 .!
 
-für jede Person:
-    schreibe die Zeile (der VorName der Person)
+
+// Aufgabe: gebe alle Personen aus, sortiert nach dem Alter aus, deren Name mit 'B' anfangen
+die sortiertenPersonen sind Personen:
+    filter dich mit etwas Bedingtem:
+        der Name ist der Name der Person
+        Name: startet mit der Zeichenfolge "B"!
+    .!:
+    sortiere dich mit etwas Vergleichbarem: das Alter der PersonA - das Alter der PersonB.!
+
+für jede Person in den sortiertenPersonen:
+    schreibe die Zeile (die Person als Zeichenfolge)
 .
+
+// Aufgabe: wie alt sind die Personen zusammen?
+das gemeinsameAlter ist reduziere<Zahl> die sortiertenPersonen mit dem AnfangsWert 0, etwas Reduzierbarem:
+    der Akkumulator plus das Alter der Person
+.
+
+schreibe die Zeile "Das gemeinsame Alter der Personen ist #{das gemeinsameAlter}!"

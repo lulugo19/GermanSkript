@@ -64,3 +64,5 @@ Abweichung vom ursprünglichen Plan: Erstellung eines Language Servers usw.
 - Compiler-Fehlerausgabe verbessern
 - Erstellung eines REPL (Read-eval-print-loop)
 - an Dokumentation arbeiten
+
+### Notizen

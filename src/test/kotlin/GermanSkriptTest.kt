@@ -1154,6 +1154,8 @@ class GermanSkriptTest {
 
     fun formatiereListe(liste: Array<Int>) = "[${liste.joinToString(", ")}]"
 
+    fun generiereZahlen(anzahl: Int) = Array(anzahl) {(Math.random() * 100).toInt()}
+
     fun testeSortierung(testListe: Array<Int>, erwarteteListe: Array<Int>, aufsteigend: Boolean) {
       val aufOderAbCode = if (aufsteigend) "die ZahlA - die ZahlB" else "die ZahlB - die ZahlA"
       val quellCode = """
@@ -1170,7 +1172,12 @@ class GermanSkriptTest {
     testeSortierung(arrayOf(3, 2, 1), arrayOf(1, 2, 3), true)
     testeSortierung(arrayOf(1, 2, 3), arrayOf(3, 2, 1), false)
     testeSortierung(arrayOf(4, -99, -10, 100, 23, 11, 5, 42), arrayOf(-99, -10, 4, 5, 11, 23, 42, 100), true)
-    testeSortierung(arrayOf(), arrayOf(), true)
+
+    for (i in 0..10) {
+      val zahlen = generiereZahlen(i * 10)
+      testeSortierung(zahlen, zahlen.sortedArray(), true)
+    }
+
   }
 
   @Test

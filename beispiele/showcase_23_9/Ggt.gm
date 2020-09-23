@@ -1,14 +1,9 @@
 importiere "./Nützlich.gm"
 
 Verb(Zahl) ggt von der ZahlA, der ZahlB:
-    wenn die ZahlB gleich 0 ist:
-        gebe die ZahlA zurück
-    .
+    wenn die ZahlB = 0 ist: gebe die ZahlA zurück.
 
     gebe (ggt von der ZahlB, der ZahlA mod die ZahlB) zurück
 .
 
-die ZahlA ist Nützlich::zahlen_eingabe mit dem Prompt "Gebe die erste Zahl ein: "
-die ZahlB ist Nützlich::zahlen_eingabe mit dem Prompt "Gebe die zweite Zahl ein: "
-das Ergebnis ist ggt von der ZahlA, der ZahlB
-schreibe die Zeile "ggT(#{die ZahlA}, #{die ZahlB}) = #{das Ergebnis}."
+schreibe die Zahl (ggt von der Zahl 120, der Zahl 76)
