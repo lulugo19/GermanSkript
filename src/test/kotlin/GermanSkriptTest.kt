@@ -1,6 +1,5 @@
 import germanskript.GermanSkriptFehler
 import germanskript.Interpretierer
-import germanskript.Parser
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatExceptionOfType
 import org.junit.jupiter.api.DisplayName
@@ -355,7 +354,7 @@ class GermanSkriptTest {
   @Test
   @DisplayName("veränderliche Eigenschaften eines Objekt")
   fun veränderlicheEigenschaftenEinesObjekts() {
-    val source = """
+    val quellCode = """
       Deklination Maskulinum Singular(Zähler, Zählers, Zähler, Zähler) Plural(Zähler)
       
       Nomen Zähler:
@@ -369,7 +368,7 @@ class GermanSkriptTest {
           schreibe die Zahl (meine Zahl)
         .
       
-        Verb setze mich zurück:
+        Verb resette mich:
           meine Zahl ist 0
           schreibe die Zahl (meine Zahl)
         .
@@ -379,15 +378,15 @@ class GermanSkriptTest {
       
       erhöhe den Zähler um die Zahl 5
       erhöhe den Zähler um die Zahl 3
-      setze den Zähler zurück
+      resette den Zähler
       Zähler:
         erhöhe dich um die Zahl -5
         erhöhe dich um die Zahl 10
-        setze dich zurück
+        resette dich
       !
     """.trimIndent()
 
-    val expectedOutput = """
+    val erwarteteAusgabe = """
       0
       5
       8
@@ -398,7 +397,7 @@ class GermanSkriptTest {
       
     """.trimIndent()
 
-    testeGermanSkriptCode(source, expectedOutput)
+    testeGermanSkriptCode(quellCode, erwarteteAusgabe)
   }
 
   @Test
@@ -1389,8 +1388,7 @@ class GermanSkriptTest {
       drucke die Elemente einige Zahlen[1, 2, 3]
     """.trimIndent()
 
-    führeGermanSkriptCodeAus(quellCode)
-    // testeGermanSkriptCode(quellCode, "[1, 2, 3]\n")
+    testeGermanSkriptCode(quellCode, "[1, 2, 3]\n")
   }
 
   @Test
@@ -1502,5 +1500,24 @@ class GermanSkriptTest {
     """.trimIndent()
 
     testeGermanSkriptCode(quellCode, "220\n")
+  }
+
+  @Test
+  @DisplayName("Methoden-Subjekt-Aufruf")
+  fun methodenSubjektAufruf() {
+    val quellCode = """
+      die Zeichenfolge ist "Hallo Welt"
+      schreibe die Zeile (die Zeichenfolge: startet mit der Zeichenfolge "Hallo"!) als Zeichenfolge
+      schreibe die Zeile (die Zeichenfolge: endet mit der Zeichenfolge "Welt"!) als Zeichenfolge
+      
+    """.trimIndent()
+
+    val erwarteteAusgabe = """
+      wahr
+      wahr
+      
+    """.trimIndent()
+
+    testeGermanSkriptCode(quellCode, erwarteteAusgabe)
   }
 }

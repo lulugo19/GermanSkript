@@ -111,6 +111,7 @@ sealed class TokenTyp(val anzeigeName: String) {
     object ALS_KLEIN: TokenTyp("'als'")
     object FORTFAHREN: TokenTyp("'fortfahren'")
     object ABBRECHEN: TokenTyp("'abbrechen'")
+    object ZURÜCK: TokenTyp("'zurück'")
     object VERB: TokenTyp("'Verb'")
     object NOMEN: TokenTyp("'Nomen'")
     object ADJEKTIV: TokenTyp("'Adjektiv'")
@@ -274,6 +275,7 @@ private val WORT_MAPPING = mapOf<String, TokenTyp>(
     "solange" to TokenTyp.SOLANGE,
     "fortfahren" to TokenTyp.FORTFAHREN,
     "abbrechen" to TokenTyp.ABBRECHEN,
+    "zurück" to TokenTyp.ZURÜCK,
     "Modul" to TokenTyp.MODUL,
     "Super" to TokenTyp.SUPER,
     // Werte

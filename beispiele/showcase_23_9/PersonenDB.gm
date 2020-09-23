@@ -56,10 +56,7 @@ die Personen sind Zeilen: mappe<Person> dich mit etwas Mapbarem(Zeile):
 
 // Aufgabe: gebe alle Personen aus, sortiert nach dem Alter aus, deren Name mit 'B' anfangen
 die sortiertenPersonen sind Personen:
-    filter dich mit etwas Bedingtem:
-        der Name ist der Name der Person
-        Name: startet mit der Zeichenfolge "B"!
-    .!:
+    filter dich mit etwas Bedingtem: der Name der Person: startet mit der Zeichenfolge "L"!.!:
     sortiere dich mit etwas Vergleichbarem: das Alter der PersonA - das Alter der PersonB.!
 
 für jede Person in den sortiertenPersonen:

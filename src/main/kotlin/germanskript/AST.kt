@@ -505,7 +505,7 @@ sealed class AST {
       override val children = sequenceOf(bereich)
     }
 
-    data class Zurückgabe(val erstesToken: TypedToken<TokenTyp.BEZEICHNER_KLEIN>, var ausdruck: Ausdruck): Satz() {
+    data class Zurückgabe(val erstesToken: Token, var ausdruck: Ausdruck): Satz() {
       override val children = sequenceOf(ausdruck)
     }
 

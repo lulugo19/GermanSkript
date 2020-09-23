@@ -361,7 +361,7 @@ private sealed class SubParser<T: AST>() {
     }
 
     fun parseEinzelnerAusdruck(mitArtikel: Boolean): AST.Satz.Ausdruck {
-      val ausdruck = when (val tokenTyp = peekType()) {
+      var ausdruck = when (val tokenTyp = peekType()) {
         is TokenTyp.ZEICHENFOLGE -> AST.Satz.Ausdruck.Zeichenfolge(next().toTyped())
         is TokenTyp.ZAHL -> AST.Satz.Ausdruck.Zahl(next().toTyped())
         is TokenTyp.BOOLEAN -> AST.Satz.Ausdruck.Boolean(next().toTyped())
@@ -371,7 +371,7 @@ private sealed class SubParser<T: AST>() {
           val subjekt = parseNomenAusdruck<TokenTyp.VORNOMEN>("Vornomen", true, false).third
           val nächterTokenTyp = peekType()
           // prüfe hier ob ein bedingter Aufruf geparst werden soll
-          return if (inBedingungsTerm && (nächterTokenTyp is TokenTyp.VORNOMEN || nächterTokenTyp is TokenTyp.BEZEICHNER_KLEIN)) {
+          if (inBedingungsTerm && (nächterTokenTyp is TokenTyp.VORNOMEN || nächterTokenTyp is TokenTyp.BEZEICHNER_KLEIN)) {
             subParse(Satz.Ausdruck.FunktionsAufruf.FunktionsAufrufBedingung(subjekt))
           } else {
             subjekt
@@ -424,16 +424,28 @@ private sealed class SubParser<T: AST>() {
           }
         else -> throw GermanSkriptFehler.SyntaxFehler.ParseFehler(next())
       }
-      return when (peekType()) {
-        is TokenTyp.ALS_KLEIN -> {
-          next()
-          val typ = parseTypOhneArtikel(
-              namensErweiterungErlaubt = false, typArgumenteErlaubt = true,
-              nomenErlaubt = true, adjektivErlaubt = false
-          )
-          AST.Satz.Ausdruck.Konvertierung(ausdruck, typ)
+      while (true) {
+        ausdruck = when (peekType()) {
+          is TokenTyp.ALS_KLEIN -> {
+            next()
+            val typ = parseTypOhneArtikel(
+                namensErweiterungErlaubt = false, typArgumenteErlaubt = true,
+                nomenErlaubt = true, adjektivErlaubt = false
+            )
+            AST.Satz.Ausdruck.Konvertierung(ausdruck, typ)
+          }
+          is TokenTyp.DOPPELPUNKT -> {
+            if (
+                ausdruck !is AST.Satz.Ausdruck.Bedingung &&
+                ausdruck !is AST.Satz.Ausdruck.MethodenBereich &&
+                !hierarchyContainsAnyNode(ASTKnotenID.SCHLEIFE, ASTKnotenID.FÜR_JEDE_SCHLEIFE, ASTKnotenID.BEDINGUNG)) {
+
+              subParse(Satz.Ausdruck.MethodenBereich(ausdruck))
+            }
+            else return  ausdruck
+          }
+          else -> return ausdruck
         }
-        else -> ausdruck
       }
     }
 
@@ -660,9 +672,10 @@ private sealed class SubParser<T: AST>() {
         is TokenTyp.SUPER -> subParse(Satz.SuperBlock)
         is TokenTyp.SOLANGE -> subParse(Satz.SolangeSchleife)
         is TokenTyp.FORTFAHREN, is TokenTyp.ABBRECHEN -> subParse(Satz.SchleifenKontrolle)
+        is TokenTyp.ZURÜCK -> subParse(Satz.Zurückgabe)
         is TokenTyp.BEZEICHNER_KLEIN ->
           when (nextToken.wert) {
-            "gebe", "zurück" -> subParse(Satz.Zurückgabe)
+            "gebe" -> subParse(Satz.Zurückgabe)
             "für" -> subParse(Satz.FürJedeSchleife)
             "importiere" -> when {
               peekType(1) is TokenTyp.ZEICHENFOLGE -> null
@@ -881,13 +894,14 @@ private sealed class SubParser<T: AST>() {
       }
 
       override fun parseImpl(): AST.Satz.Zurückgabe {
-        val schlüsselWort = next().toTyped<TokenTyp.BEZEICHNER_KLEIN>()
-        return if (schlüsselWort.wert == "zurück") {
-          AST.Satz.Zurückgabe(schlüsselWort, AST.Satz.Ausdruck.Nichts(schlüsselWort.changeType(TokenTyp.NICHTS)))
+        val zurück = parseOptional<TokenTyp.ZURÜCK>()
+        return if (zurück != null) {
+          AST.Satz.Zurückgabe(zurück.toUntyped(), AST.Satz.Ausdruck.Nichts(zurück.changeType(TokenTyp.NICHTS)))
         } else {
+          val gebe = parseKleinesSchlüsselwort("gebe")
           val ausdruck = parseAusdruck(mitVornomen = true, optionalesIstNachVergleich = false)
-          parseKleinesSchlüsselwort("zurück")
-          AST.Satz.Zurückgabe(schlüsselWort, ausdruck)
+          expect<TokenTyp.ZURÜCK>("'zurück'")
+          AST.Satz.Zurückgabe(gebe.toUntyped(), ausdruck)
         }
       }
     }

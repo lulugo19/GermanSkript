@@ -171,11 +171,12 @@ Implementiere die Zeichenfolge:
     .
 
     Verb(Boolean) endet mit der ZeichenfolgeENDE:
+        wenn die Länge der ZeichenfolgeENDE > meine Länge ist: gebe falsch zurück.
         die Zeichenfolge ist Ich
-        ein I ist meine Länge - die Länge der ZeichenfolgeENDE
-        wenn das I kleiner 0 ist: gebe falsch zurück.
-        solange das I kleiner als meine Länge ist:
-            wenn die Zeichenfolge[I] != der ZeichenfolgeENDE[I] ist:
+        ein START ist meine Länge - die Länge der ZeichenfolgeENDE
+        ein I ist 0
+        solange das I kleiner als die Länge der ZeichenfolgeENDE ist:
+            wenn die Zeichenfolge[das START + das I] != der ZeichenfolgeENDE[I] ist:
                 gebe falsch zurück
             .
             ein I ist das I + 1
