@@ -1,8 +1,0 @@
-die Datei ist eine IO::Datei mit dem DateiNamen "Test.txt"
-der Schreiber ist Datei: hole_schreiber!
-Schreiber:
-    füge die Zeile "Hallo Welt!" hinzu
-    füge die Zeile "Die zweite Zeile!" hinzu
-    füge die Zeile "Das Ende!" hinzu
-    schließe dich
-!

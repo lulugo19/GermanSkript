@@ -1,0 +1,49 @@
+Deklination Neutrum Singular(Eck, Ecks, Eck, Eck) Plural(Ecke)
+Deklination Neutrum Singular(Quadrat, Quadrats, Quadrat, Quadrat) Plural(Quadrate)
+Deklination Maskulinum Singular(Kreis, Kreises, Kreis, Kreis) Plural(Kreise)
+Deklination Maskulinum Singular(Radius) Plural(Radien)
+Deklination Femininum Singular(Höhe) Plural(Höhen)
+Deklination Femininum Singular(Breite) Plural(Breiten)
+Deklination Femininum Singular(Fläche) Plural(Flächen)
+Deklination Femininum Singular(Länge) Plural(Längen)
+
+Adjektiv flächig:
+    Verb(Zahl) berechne_fläche
+.
+
+Nomen RechtEck mit
+    der Zahl Breite,
+    der Zahl Höhe:.
+
+Implementiere das flächige RechtEck:
+    Verb(Zahl) berechne_fläche:
+        gebe meine Breite mal meine Höhe zurück
+    .
+.
+
+
+Nomen Quadrat als RechtEck mit der Zahl Länge:.
+/* Das hier ist noch nicht möglich
+Nomen Quadrat mit der Zahl Länge
+    als das RechtEck mit der Zahl Länge, der Höhe Länge:.
+*/
+// das ist noch irgendwie doof!
+das Quadrat ist ein Quadrat mit der Breite 3, der Höhe 3, der Länge 3
+
+Nomen Kreis mit der Zahl Radius:.
+
+Implementiere den flächigen Kreis:
+    Verb(Zahl) berechne_fläche:
+        gebe Mathe::PI * (meinen Radius) hoch 2 zurück
+    .
+.
+
+die Flächigen sind einige Flächige [
+    (ein Kreis mit dem Radius 1),
+    (ein RechtEck mit der Breite 5, der Höhe 6),
+    (ein Kreis mit dem Radius 2,5),
+    (ein RechtEck mit der Breite 4, der Höhe 6)]
+
+für jedes Flächiges in den Flächigen:
+    schreibe die Zahl (Flächiges: berechne_fläche!)
+.

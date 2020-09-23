@@ -1,0 +1,46 @@
+Deklination Femininum Singular(Person) Plural(Personen)
+Deklination Neutrum Singular(Alter, Alters, Alter, Alter) Plural(Alter)
+Deklination Femininum Singular(Email) Plural(Emails)
+Deklination Femininum Singular(Adresse) Plural(Adressen)
+Deklination Femininum Singular(Straße) Plural(Straßen)
+Deklination Femininum Singular(Stadt) Plural(Städte)
+
+Nomen Adresse mit
+    der Zeichenfolge Straße,
+    der Zeichenfolge PostLeitZahl,
+    der Zeichenfolge Stadt:.
+
+Nomen Person mit
+    der Zeichenfolge NachName,
+    der Zeichenfolge VorName,
+    der Zahl Alter,
+    der Zeichenfolge Email,
+    der Adresse:.
+
+die Datei ist eine IO::Datei mit dem DateiNamen "personen.csv"
+
+die Zeilen sind Datei: lese_zeilen!
+
+die Personen sind Zeilen: mappe<Person> dich mit etwas Mapbarem(Zeile):
+    die Zeichenfolgen sind Zeile: trenne dich zwischen dem Separator "|"!
+        der NachName ist die Zeichenfolge[0]
+        der VorName ist die Zeichenfolge[1]
+        das Alter ist die Zeichenfolge[2] als Zahl
+        die Straße ist die Zeichenfolge[3]
+        die PostLeitZahl ist die Zeichenfolge[4]
+        die Stadt ist die Zeichenfolge[5]
+        die Email ist die Zeichenfolge[6]
+
+    die Adresse ist eine Adresse mit der Straße, der PostLeitZahl, der Stadt
+
+    eine Person mit
+            dem NachNamen,
+            dem VorNamen,
+            dem Alter,
+            der Email,
+            der Adresse
+.!
+
+für jede Person:
+    schreibe die Zeile (der VorName der Person)
+.

@@ -2,6 +2,8 @@ Modul Mathe:
     Deklination Neutrum Singular(Minimum, Minimums, Minimum, Minimum) Plural(Maxima)
     Deklination Neutrum Singular(Maximum, Maximums, Maximum, Maximum) Plural(Maxima)
 
+    Konstante PI ist 3,1415926
+
     // mathematische Funktionen
     Verb(Zahl) runde die Zahl: intern.
     Verb(Zahl) runde die Zahl auf: intern.
