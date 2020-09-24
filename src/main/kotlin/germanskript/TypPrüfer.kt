@@ -12,6 +12,9 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
   val ast: AST.Programm get() = typisierer.ast
 
   // ganz viele veränderliche Variablen :(
+  // Da wir von der abstrakten Klasse 'ProgrammDurchlaufer' erben und dieser die Funktionen vorgibt, brauchen wir sie leider.
+  // Alternativ könnte man sich überlegen, sich von dem ProgrammDurchlaufer zu trennen
+  // und Funktionsparameter für den Kontext zu verwenden.
   private var zuÜberprüfendeKlasse: Typ.Compound.KlassenTyp? = null
   private var rückgabeTyp: Typ = Typ.Nichts
   private var funktionsTypParams: List<AST.WortArt.Nomen>? = null
@@ -19,6 +22,7 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
   private var rückgabeErreicht = false
   private var evaluiereKonstante = false
   private var erwarteterTyp: Typ? = null
+  private var methodenObjekt: Typ.Compound? = null
 
   fun prüfe() {
     typisierer.typisiere()
@@ -93,7 +97,7 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
           when (val argTyp = arg.typ) {
             // TODO: Gucke dir das nochmal genauer an. Braucht man diese Ersetzung wirklich? Welche Probleme können enstehen?
             is Typ.Generic -> when (argTyp.kontext) {
-              TypParamKontext.Typ -> (umgebung.holeMethodenBlockObjekt()!! as Typ.Compound).typArgumente[argTyp.index]
+              TypParamKontext.Typ -> methodenObjekt!!.typArgumente[argTyp.index]
               TypParamKontext.Funktion -> letzterFunktionsAufruf!!.typArgumente[argTyp.index]
             }
             else -> arg
@@ -295,7 +299,7 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
           funktionsAufruf,
           subjekt,
           FunktionsAufrufTyp.METHODEN_SUBJEKT_AUFRUF,
-          TokenTyp.REFLEXIV_PRONOMEN.DICH,
+          TokenTyp.REFLEXIV_PRONOMEN.ZWEITE_FORM.DICH,
           true
       )
 
@@ -303,41 +307,44 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
         throw GermanSkriptFehler.Undefiniert.Funktion(funktionsAufruf.token, funktionsAufruf)
       }
 
-      umgebung.pushBereich(subjekt)
+      methodenObjekt = subjekt
     }
 
-    // ist Methodenaufruf von Bereich-Variable oder Subjekt
+    // ist Methodenaufruf von Bereich-Variable
     if (funktionsSignatur == null &&
         methodenBlockObjekt is Typ.Compound.KlassenTyp &&
-        funktionsAufruf.reflexivPronomen?.typ != TokenTyp.REFLEXIV_PRONOMEN.MICH
+        funktionsAufruf.reflexivPronomen?.typ !is TokenTyp.REFLEXIV_PRONOMEN.ERSTE_FORM
     ) {
       funktionsSignatur = findeMethode(
           funktionsAufruf,
           methodenBlockObjekt,
           FunktionsAufrufTyp.METHODEN_BLOCK_AUFRUF,
-          TokenTyp.REFLEXIV_PRONOMEN.DICH,
+          TokenTyp.REFLEXIV_PRONOMEN.ZWEITE_FORM.DICH,
           true
       )
+      methodenObjekt = methodenBlockObjekt
     }
 
     // Schnittstellen Aufruf
-    if (funktionsSignatur == null && methodenBlockObjekt is Typ.Compound.Schnittstelle && funktionsAufruf.reflexivPronomen?.typ != TokenTyp.REFLEXIV_PRONOMEN.MICH) {
+    if (funktionsSignatur == null && methodenBlockObjekt is Typ.Compound.Schnittstelle && funktionsAufruf.reflexivPronomen?.typ != TokenTyp.REFLEXIV_PRONOMEN.ERSTE_FORM.MICH) {
       funktionsSignatur = methodenBlockObjekt.definition.methodenSignaturen.find { signatur -> signatur.vollerName!! == funktionsAufruf.vollerName!! }
       if (funktionsSignatur != null) {
         funktionsAufruf.vollerName = funktionsSignatur.vollerName
         funktionsAufruf.aufrufTyp = FunktionsAufrufTyp.METHODEN_BLOCK_AUFRUF
       }
+      methodenObjekt = methodenBlockObjekt
     }
 
     // ist Methoden-Selbst-Aufruf
-    if (funktionsSignatur == null && zuÜberprüfendeKlasse != null && funktionsAufruf.reflexivPronomen?.typ != TokenTyp.REFLEXIV_PRONOMEN.DICH) {
+    if (funktionsSignatur == null && zuÜberprüfendeKlasse != null && funktionsAufruf.reflexivPronomen?.typ != TokenTyp.REFLEXIV_PRONOMEN.ZWEITE_FORM.DICH) {
       funktionsSignatur = findeMethode(
           funktionsAufruf,
           zuÜberprüfendeKlasse!!,
           FunktionsAufrufTyp.METHODEN_SELBST_AUFRUF,
-          TokenTyp.REFLEXIV_PRONOMEN.MICH,
+          TokenTyp.REFLEXIV_PRONOMEN.ERSTE_FORM.MICH,
           true
       )
+      methodenObjekt = zuÜberprüfendeKlasse
     }
 
     // ist normale Funktion
@@ -365,20 +372,14 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
       }
       if (klasse is Typ.Compound.KlassenTyp) {
         val methoden = klasse.definition.methoden
-        val klassenTyp = klasse.definition.name
-        val reflexivPronomen = when (funktionsAufruf.objekt.name.kasus) {
-          Kasus.AKKUSATIV -> "mich"
-          Kasus.DATIV -> "mir"
-          else -> throw Exception("Dieser Fall sollte nie eintreten, da der Grammatikprüfer dies überprüfen sollte. "
-              + "${klassenTyp.bezeichner}")
-        }
-        // Pushe das Methodenobjekt
-        umgebung.pushBereich(klasse)
+        val objektName = funktionsAufruf.objekt.name
+        val reflexivPronomen = holeReflexivPronomenForm(false, objektName.kasus, objektName.numerus).pronomen
+        methodenObjekt = klasse
         val methodenName = definierer.holeVollenNamenVonFunktionsAufruf(funktionsAufruf, reflexivPronomen)
         methoden[methodenName]?.also { methode ->
           funktionsSignatur = methoden.getValue(methodenName).signatur
           funktionsAufruf.vollerName = methode.signatur.vollerName
-          funktionsAufruf.aufrufTyp = FunktionsAufrufTyp.METHODEN_OBJEKT_AUFRUF
+          funktionsAufruf.aufrufTyp = FunktionsAufrufTyp.METHODEN_REFLEXIV_AUFRUF
         }
       }
     }
@@ -387,22 +388,30 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
       throw undefiniertFehler!!
     }
 
+    // hier kommt noch ein nachträglicher Grammatik-Check ob der Numerus des Reflexivpronomens
+    // auch mit dem Objekt übereinstimmt
+    if (methodenObjekt != null && funktionsAufruf.reflexivPronomen != null) {
+      val reflexivPronomen = funktionsAufruf.reflexivPronomen.typ
+      if (methodenObjekt is Typ.Compound.KlassenTyp.Liste && funktionsAufruf.reflexivPronomen.typ.numerus == Numerus.SINGULAR) {
+        val erwartetesPronomen = holeReflexivPronomenForm(true, reflexivPronomen.kasus.first(), Numerus.PLURAL)
+        throw GermanSkriptFehler.GrammatikFehler.FalschesReflexivPronomen(
+            funktionsAufruf.reflexivPronomen.toUntyped(), reflexivPronomen, erwartetesPronomen)
+      } else if (methodenObjekt !is Typ.Compound.KlassenTyp.Liste && funktionsAufruf.reflexivPronomen.typ.numerus == Numerus.PLURAL) {
+        val erwartetesPronomen = holeReflexivPronomenForm(true, reflexivPronomen.kasus.first(), Numerus.SINGULAR)
+        throw GermanSkriptFehler.GrammatikFehler.FalschesReflexivPronomen(
+            funktionsAufruf.reflexivPronomen.toUntyped(), reflexivPronomen, erwartetesPronomen)
+      }
+    }
+
     val parameter = funktionsSignatur!!.parameter
     val argumente = funktionsAufruf.argumente
-    val j = if (funktionsAufruf.aufrufTyp == FunktionsAufrufTyp.METHODEN_OBJEKT_AUFRUF) 1 else 0
+    val j = if (funktionsAufruf.aufrufTyp == FunktionsAufrufTyp.METHODEN_REFLEXIV_AUFRUF) 1 else 0
     val anzahlArgumente = argumente.size - j
     if (anzahlArgumente != parameter.size) {
       throw GermanSkriptFehler.SyntaxFehler.AnzahlDerParameterFehler(funktionsSignatur!!.name.toUntyped())
     }
 
-    val typKontext = when (funktionsAufruf.aufrufTyp) {
-      FunktionsAufrufTyp.METHODEN_BLOCK_AUFRUF,
-      FunktionsAufrufTyp.METHODEN_OBJEKT_AUFRUF,
-      FunktionsAufrufTyp.METHODEN_SUBJEKT_AUFRUF ->
-        (umgebung.holeMethodenBlockObjekt()!! as Typ.Compound).typArgumente
-      FunktionsAufrufTyp.METHODEN_SELBST_AUFRUF -> zuÜberprüfendeKlasse!!.typArgumente
-      else -> null
-    }
+    val typKontext = methodenObjekt?.typArgumente
 
     val genericsMüssenInferiertWerden = funktionsSignatur!!.typParameter.isNotEmpty()
         && funktionsAufruf.typArgumente.isEmpty()
@@ -469,16 +478,9 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
       funktionsAufruf.typArgumente = inferierteGenerics.map { it!! }
     }
     letzterFunktionsAufruf = null
-
-    if (funktionsAufruf.aufrufTyp == FunktionsAufrufTyp.METHODEN_OBJEKT_AUFRUF ||
-        funktionsAufruf.aufrufTyp == FunktionsAufrufTyp.METHODEN_SUBJEKT_AUFRUF) {
-      // als kleiner Hack, damit das Objekt für die Methode bekannt ist, wird es auf den Stack gepusht
-      // und muss hier wieder entfernt werden
-      umgebung.popBereich()
-    }
+    methodenObjekt = null
 
     val rückgabeTyp = ersetzeGenerics(funktionsSignatur!!.rückgabeTyp)
-
     return rückgabeTyp.typ!!
   }
 

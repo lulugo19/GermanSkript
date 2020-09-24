@@ -42,7 +42,7 @@ data class Deklination(
   val fallSequenz get() = singular.asSequence() + plural.asSequence()
 
   override fun toString(): String {
-    val anfang = "Deklination ${genus.anzeigeName}"
+    val anfang = "Deklination $genus"
     val allesGleichBeiSingular = singular.all { it == singular[0] }
     val sing = if (allesGleichBeiSingular) "Singular(${singular[0]})" else "Singular(${singular.joinToString(", ")})"
     val allesGleichBeiPlural = plural.all { it == plural[0] }

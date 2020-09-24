@@ -599,7 +599,7 @@ private sealed class SubParser<T: AST>() {
     überspringeLeereZeilen()
     val endToken = next()
     if (endToken.typ != erwartetesEndToken){
-      throw GermanSkriptFehler.SyntaxFehler.ParseFehler(endToken, erwartetesEndToken.anzeigeName)
+      throw GermanSkriptFehler.SyntaxFehler.ParseFehler(endToken, erwartetesEndToken.toString())
     }
     return result
   }
@@ -1136,16 +1136,16 @@ private sealed class SubParser<T: AST>() {
             val objekt = parseOptional<AST.Argument, TokenTyp.VORNOMEN>(::parseArgument)
             val reflexivPronomen = if (objekt == null) parseOptional<TokenTyp.REFLEXIV_PRONOMEN>() else null
             when (reflexivPronomen?.typ) {
-              is TokenTyp.REFLEXIV_PRONOMEN.MICH -> {
+              is TokenTyp.REFLEXIV_PRONOMEN.ERSTE_FORM -> {
                 if (!hierarchyContainsAnyNode(ASTKnotenID.IMPLEMENTIERUNG, ASTKnotenID.KLASSEN_DEFINITION)) {
                   throw GermanSkriptFehler.SyntaxFehler.UngültigerBereich(reflexivPronomen.toUntyped(),
-                      "Das Reflexivpronomen 'mich' kann nur innerhalb einer Klassen-Implementierung verwendet werden.")
+                      "Das Reflexivpronomen '${reflexivPronomen.typ.pronomen}' kann nur innerhalb einer Klassen-Implementierung verwendet werden.")
                 }
               }
-              is TokenTyp.REFLEXIV_PRONOMEN.DICH -> {
+              is TokenTyp.REFLEXIV_PRONOMEN.ZWEITE_FORM -> {
                 if (!hierarchyContainsNode(ASTKnotenID.METHODEN_BEREICH)) {
                   throw GermanSkriptFehler.SyntaxFehler.UngültigerBereich(reflexivPronomen.toUntyped(),
-                      "Das Reflexivpronomen 'dich' kann nur in einem Methodenbereich verwendet werden.")
+                      "Das Reflexivpronomen '${reflexivPronomen.typ.pronomen}' kann nur in einem Methodenbereich verwendet werden.")
                 }
               }
             }
@@ -1336,7 +1336,7 @@ private sealed class SubParser<T: AST>() {
           AST.TypKnoten(emptyList(), nichts, emptyList())
         }
         val name = expect<TokenTyp.BEZEICHNER_KLEIN>("bezeichner")
-        val reflexivPronomen = if (erlaubeReflexivPronomen) parseOptional<TokenTyp.REFLEXIV_PRONOMEN>() else null
+        val reflexivPronomen = if (erlaubeReflexivPronomen) parseOptional<TokenTyp.REFLEXIV_PRONOMEN.ERSTE_FORM>() else null
         val objekt = if (reflexivPronomen == null) {
           parseOptional<AST.Definition.Parameter, TokenTyp.VORNOMEN.ARTIKEL.BESTIMMT> {
             parseParameter<TokenTyp.VORNOMEN.ARTIKEL.BESTIMMT>("bestimmter Artikel") }

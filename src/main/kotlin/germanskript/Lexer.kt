@@ -39,7 +39,11 @@ enum class Operator(val bindungsKraft: Int, val assoziativität: Assoziativität
 enum class Genus(val anzeigeName: String) {
     MASKULINUM("Maskulinum"),
     FEMININUM("Femininum"),
-    NEUTRUM("Neutrum")
+    NEUTRUM("Neutrum");
+
+    override fun toString(): String {
+        return anzeigeName
+    }
 }
 
 // Kasus (Fall)
@@ -47,13 +51,21 @@ enum class Kasus(val anzeigeName: String) {
     NOMINATIV("Nominativ"),
     GENITIV("Genitiv"),
     DATIV("Dativ"),
-    AKKUSATIV("Akkusativ"),
+    AKKUSATIV("Akkusativ");
+
+    override fun toString(): String {
+        return anzeigeName
+    }
 }
 
 // Numerus (Anzahl)
 enum class Numerus(val anzeigeName: String, val zuweisung: String) {
     SINGULAR("Singular", "ist"),
     PLURAL("Plural", "sind");
+
+    override fun toString(): String {
+        return anzeigeName
+    }
 
     companion object  {
         val BEIDE: EnumSet<Numerus> get() = EnumSet.of(SINGULAR, PLURAL)
@@ -91,7 +103,7 @@ data class TypedToken<out T : TokenTyp>(val typ: T, val wert: String, val dateiP
 }
 
 sealed class TokenTyp(val anzeigeName: String) {
-    override fun toString(): String = javaClass.simpleName
+    override fun toString(): String = anzeigeName
 
     object FEHLER: TokenTyp("'Fehler'")
     object HAUPT_PROGRAMM_START: TokenTyp("Programmstart")
@@ -145,9 +157,18 @@ sealed class TokenTyp(val anzeigeName: String) {
         object ETWAS: VORNOMEN("'etwas'")
     }
 
-    sealed class REFLEXIV_PRONOMEN(pronomen: String): TokenTyp("Reflexivpronomen ('$pronomen')") {
-        object MICH: REFLEXIV_PRONOMEN("'Ich'")
-        object DICH: REFLEXIV_PRONOMEN("'Du'")
+    sealed class REFLEXIV_PRONOMEN(val pronomen: String, val kasus: EnumSet<Kasus>, val numerus: Numerus): TokenTyp("Reflexivpronomen ('$pronomen')") {
+        sealed class ERSTE_FORM(pronomen: String, kasus: EnumSet<Kasus>, numerus: Numerus): REFLEXIV_PRONOMEN(pronomen, kasus, numerus) {
+            object MIR: ERSTE_FORM("mir", EnumSet.of(Kasus.DATIV), Numerus.SINGULAR)
+            object MICH: ERSTE_FORM("mich", EnumSet.of(Kasus.AKKUSATIV), Numerus.SINGULAR)
+            object UNS: ERSTE_FORM("uns", EnumSet.of(Kasus.AKKUSATIV, Kasus.DATIV), Numerus.PLURAL)
+        }
+
+        sealed class ZWEITE_FORM(pronomen: String, kasus: EnumSet<Kasus>, numerus: Numerus): REFLEXIV_PRONOMEN(pronomen, kasus, numerus) {
+            object DIR: ZWEITE_FORM("dir", EnumSet.of(Kasus.DATIV), Numerus.SINGULAR)
+            object DICH: ZWEITE_FORM("dich", EnumSet.of(Kasus.AKKUSATIV), Numerus.SINGULAR)
+            object EUCH: ZWEITE_FORM("euch", EnumSet.of(Kasus.AKKUSATIV, Kasus.DATIV), Numerus.PLURAL)
+        }
     }
 
     sealed class REFERENZ(anzeigeName: String): TokenTyp(anzeigeName) {
@@ -216,6 +237,26 @@ sealed class TokenTyp(val anzeigeName: String) {
     data class ZEICHENFOLGE(val zeichenfolge: Wert.Objekt.InternesObjekt.Zeichenfolge): TokenTyp("Zeichenfolge")
 
     object UNDEFINIERT: TokenTyp("undefiniert")
+}
+
+fun reflexivPronomenZweiteFromZuErsteForm(pronomen: TokenTyp.REFLEXIV_PRONOMEN.ZWEITE_FORM):
+    TokenTyp.REFLEXIV_PRONOMEN.ERSTE_FORM {
+    return when (pronomen) {
+        TokenTyp.REFLEXIV_PRONOMEN.ZWEITE_FORM.DICH -> TokenTyp.REFLEXIV_PRONOMEN.ERSTE_FORM.MICH
+        TokenTyp.REFLEXIV_PRONOMEN.ZWEITE_FORM.DIR -> TokenTyp.REFLEXIV_PRONOMEN.ERSTE_FORM.MIR
+        TokenTyp.REFLEXIV_PRONOMEN.ZWEITE_FORM.EUCH -> TokenTyp.REFLEXIV_PRONOMEN.ERSTE_FORM.UNS
+    }
+}
+
+private val reflexivPronomenFormen = arrayOf(
+    arrayOf(TokenTyp.REFLEXIV_PRONOMEN.ERSTE_FORM.MIR, TokenTyp.REFLEXIV_PRONOMEN.ERSTE_FORM.MICH, TokenTyp.REFLEXIV_PRONOMEN.ERSTE_FORM.UNS),
+    arrayOf(TokenTyp.REFLEXIV_PRONOMEN.ZWEITE_FORM.DIR, TokenTyp.REFLEXIV_PRONOMEN.ZWEITE_FORM.DICH, TokenTyp.REFLEXIV_PRONOMEN.ZWEITE_FORM.EUCH)
+)
+
+fun holeReflexivPronomenForm(zweiteForm: Boolean, kasus: Kasus, numerus: Numerus): TokenTyp.REFLEXIV_PRONOMEN {
+    val formIndex = if (zweiteForm) 1 else 0
+    val spaltenIndex = if (numerus == Numerus.SINGULAR) kasus.ordinal-2 else 2
+    return reflexivPronomenFormen[formIndex][spaltenIndex]
 }
 
 
@@ -348,10 +389,13 @@ private val WORT_MAPPING = mapOf<String, TokenTyp>(
     "jenes" to TokenTyp.VORNOMEN.DEMONSTRATIV_PRONOMEN.JENE,
 
     // Reflexivpronomen
-    "mich" to TokenTyp.REFLEXIV_PRONOMEN.MICH,
-    "mir" to TokenTyp.REFLEXIV_PRONOMEN.MICH,
-    "dich" to TokenTyp.REFLEXIV_PRONOMEN.DICH,
-    "dir" to TokenTyp.REFLEXIV_PRONOMEN.DICH,
+    "mir" to TokenTyp.REFLEXIV_PRONOMEN.ERSTE_FORM.MIR,
+    "mich" to TokenTyp.REFLEXIV_PRONOMEN.ERSTE_FORM.MICH,
+    "uns" to TokenTyp.REFLEXIV_PRONOMEN.ERSTE_FORM.UNS,
+
+    "dir" to TokenTyp.REFLEXIV_PRONOMEN.ZWEITE_FORM.DIR,
+    "dich" to TokenTyp.REFLEXIV_PRONOMEN.ZWEITE_FORM.DICH,
+    "euch" to TokenTyp.REFLEXIV_PRONOMEN.ZWEITE_FORM.EUCH,
 
     "jeden" to TokenTyp.JEDE(Genus.MASKULINUM),
     "jede" to TokenTyp.JEDE(Genus.FEMININUM),

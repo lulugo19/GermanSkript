@@ -239,14 +239,9 @@ class Definierer(startDatei: File): PipelineKomponente(startDatei) {
       }
     } else if (funktionsAufruf.reflexivPronomen != null) {
       val reflexivPronomen = funktionsAufruf.reflexivPronomen
-      val pronomen = if(reflexivPronomen.typ == TokenTyp.REFLEXIV_PRONOMEN.MICH) {
-        reflexivPronomen.wert
-      } else {
-        when (reflexivPronomen.wert) {
-          "dich" -> "mich"
-          "dir" -> "mir"
-          else -> throw Exception("Dieser Fall sollte nie auftreten.")
-        }
+      val pronomen = when (reflexivPronomen.typ) {
+        is TokenTyp.REFLEXIV_PRONOMEN.ERSTE_FORM -> reflexivPronomen.typ.pronomen
+        is TokenTyp.REFLEXIV_PRONOMEN.ZWEITE_FORM -> reflexivPronomenZweiteFromZuErsteForm(reflexivPronomen.typ).pronomen
       }
       vollerName += " $pronomen"
     }

@@ -32,13 +32,13 @@ Modul Standard::Collections:
         Verb füge das Element hinzu: intern.
         Verb entferne an der Zahl Index: intern.
 
-        Verb(Elemente) sortiere mich mit dem Vergleichbaren<Element>:
+        Verb(Elemente) sortiere uns mit dem Vergleichbaren<Element>:
             die ElementeKOPIE sind kopiere die Elemente Ich
             merge_sortiere die ElementeKOPIE mit dem Vergleichbaren
             gebe die ElementeKOPIE zurück
         .
 
-        Verb(Elemente) filter mich mit dem Bedingten<Element>:
+        Verb(Elemente) filter uns mit dem Bedingten<Element>:
             die Elemente sind Ich
             die gefiltertenElemente sind einige Elemente[]
             für jedes Element:
@@ -49,7 +49,7 @@ Modul Standard::Collections:
             gebe die gefiltertenElemente zurück
         .
 
-        Verb<Typ>(Typen) mappe mich mit dem Mapbaren<Element, Typ>:
+        Verb<Typ>(Typen) mappe uns mit dem Mapbaren<Element, Typ>:
             die Elemente sind Ich
             die gemapptenElemente sind einige Typen[]
             für jedes Element:
@@ -59,7 +59,7 @@ Modul Standard::Collections:
             gebe die gemapptenElemente zurück
         .
 
-        Verb<Typ>(Typ) reduziere mich mit dem Typ AnfangsWert, dem Reduzierbaren<Element, Typ>:
+        Verb<Typ>(Typ) reduziere uns mit dem Typ AnfangsWert, dem Reduzierbaren<Element, Typ>:
             die Elemente sind Ich
             ein Akkumulator ist der AnfangsWert
             für jedes Element:

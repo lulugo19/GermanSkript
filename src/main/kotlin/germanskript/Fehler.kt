@@ -133,38 +133,43 @@ sealed class GermanSkriptFehler(private val fehlerName: String, val token: Token
   sealed class GrammatikFehler(token: Token): GermanSkriptFehler("Grammatikfehler",token) {
 
     sealed class FormFehler(token: Token, protected val kasus: Kasus, protected val nomen: AST.WortArt.Nomen): GrammatikFehler(token) {
-      val form get() = "(${kasus.anzeigeName}, ${nomen.genus.anzeigeName}, ${nomen.numerus.anzeigeName})"
+      val form get() = "($kasus, ${nomen.genus}, ${nomen.numerus})"
 
       class FalschesVornomen(token: Token, kasus: Kasus, nomen: AST.WortArt.Nomen, private val richtigesVornomen: String) : FormFehler(token, kasus, nomen) {
         override val nachricht: String
-          get() = "Falsches Vornomen (${token.typ.anzeigeName}) '${token.wert} ${nomen.bezeichner.wert}'.\n" +
+          get() = "Falsches Vornomen (${token.typ}) '${token.wert} ${nomen.bezeichner.wert}'.\n" +
               "Das richtige Vornomen $form ist '$richtigesVornomen ${nomen.bezeichner.wert}'."
       }
 
-      class FalschesNomen(token: Token, kasus: Kasus, nomen: AST.WortArt.Nomen, private val richtigeForm: String) : FormFehler(token, kasus, nomen) {
-        override val nachricht: String
-          get() = "Falsche Form des Nomens '${token.wert}'. Die richtige Form $form ist '$richtigeForm'."
+      class FalschesNomen(token: Token, kasus: Kasus, nomen: AST.WortArt.Nomen, richtigeForm: String) : FormFehler(token, kasus, nomen) {
+        override val nachricht = "Falsche Form des Nomens '${token.wert}'. Die richtige Form $form ist '$richtigeForm'."
       }
     }
 
-    class FalscheAdjektivEndung(token: Token, private val richtigeEndung: String): GrammatikFehler(token) {
-      override val nachricht: String
-        get() = "Das Adjektiv '${token.wert}' steht in der falschen Form. Es muss mit '-${richtigeEndung}' enden."
+    class FalschesReflexivPronomen(
+        token: Token,
+        reflexivPronomen: TokenTyp.REFLEXIV_PRONOMEN,
+        erwartet: TokenTyp.REFLEXIV_PRONOMEN
+    ): GrammatikFehler(token) {
+      override val nachricht = "Falsches Reflexivpronomen '${reflexivPronomen.pronomen}'.\n" +
+          "Es wird das Reflexivpronomen '${erwartet.pronomen}' " +
+          "(${reflexivPronomen.kasus.joinToString(" | ") {it.anzeigeName}}, ${erwartet.numerus}) erwartet."
     }
 
-    class FalscheZuweisung(token: Token, private val numerus: Numerus) : GrammatikFehler(token) {
-      override val nachricht: String
-        get() = "Falsche Zuweisung '${token.wert}'. Die richtige Form der Zuweisung im ${numerus.anzeigeName} ist '${numerus.zuweisung}'."
+    class FalscheAdjektivEndung(token: Token, richtigeEndung: String): GrammatikFehler(token) {
+      override val nachricht = "Das Adjektiv '${token.wert}' steht in der falschen Form. Es muss mit '-$richtigeEndung' enden."
     }
 
-    class FalscherNumerus(token: Token, private  val numerus: Numerus, private val erwartetesNomen: String): GrammatikFehler(token) {
-      override val nachricht: String
-        get() = "Falscher Numerus. Das Nomen muss im ${numerus.anzeigeName} '$erwartetesNomen' stehen."
+    class FalscheZuweisung(token: Token, numerus: Numerus) : GrammatikFehler(token) {
+      override val nachricht = "Falsche Zuweisung '${token.wert}'. Die richtige Form der Zuweisung im $numerus ist '${numerus.zuweisung}'."
+    }
+
+    class FalscherNumerus(token: Token, numerus: Numerus, erwartetesNomen: String): GrammatikFehler(token) {
+      override val nachricht = "Falscher Numerus. Das Nomen muss im $numerus '$erwartetesNomen' stehen."
     }
 
     class PluralErwartet(token: Token): GrammatikFehler(token) {
-      override val nachricht: String
-        get() = "Es wird ein Ausdruck im Plural erwartet. Doch der Ausdruck '${token.wert}' ist im Singular."
+      override val nachricht = "Es wird ein Ausdruck im Plural erwartet. Doch der Ausdruck '${token.wert}' ist im Singular."
     }
   }
 

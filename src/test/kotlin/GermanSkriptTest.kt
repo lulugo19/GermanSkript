@@ -1160,7 +1160,7 @@ class GermanSkriptTest {
       val quellCode = """
         die Zahlen sind einige Zahlen${formatiereListe(testListe)}
         die sortiertenZahlen sind Zahlen:
-          sortiere dich mit etwas Vergleichbarem: $aufOderAbCode.
+          sortiere euch mit etwas Vergleichbarem: $aufOderAbCode.
         !
         schreibe die Zeichenfolge (die sortiertenZahlen als Zeichenfolge)
       """.trimIndent()
@@ -1492,9 +1492,9 @@ class GermanSkriptTest {
       die Zahlen sind einige Zahlen[1, 2, 3, 4, 5, 6, 7, 8, 10]
       
       die quadratischeSumme ist Zahlen:
-        filter dich mit etwas Bedingtem: die Zahl mod 2 = 0.!:
-        mappe<Zahl> dich mit etwas Mapbarem: die Zahl hoch 2.!:
-        reduziere<Zahl> dich mit dem AnfangsWert 0, etwas Reduzierbarem: der Akkumulator + die Zahl.!
+        filter euch mit etwas Bedingtem: die Zahl mod 2 = 0.!:
+        mappe<Zahl> euch mit etwas Mapbarem: die Zahl hoch 2.!:
+        reduziere<Zahl> euch mit dem AnfangsWert 0, etwas Reduzierbarem: der Akkumulator + die Zahl.!
       
       schreibe die Zahl die quadratischeSumme
     """.trimIndent()
