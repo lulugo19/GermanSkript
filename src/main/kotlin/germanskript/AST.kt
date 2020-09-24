@@ -304,10 +304,10 @@ sealed class AST {
     }
 
     sealed class Typdefinition: Definition() {
-
       abstract val name: WortArt
       val namensToken get() = name.bezeichnerToken
       abstract val typParameter: List<WortArt.Nomen>
+      abstract fun findeMethode(methodenName: String): FunktionsSignatur?
 
       data class Klasse(
           override val typParameter: List<WortArt.Nomen>,
@@ -332,6 +332,8 @@ sealed class AST {
           yieldAll(eigenschaften)
           yield(konstruktor)
         }
+
+        override fun findeMethode(methodenName: String): FunktionsSignatur? = methoden[methodenName]?.signatur
       }
 
       data class Schnittstelle(
@@ -345,11 +347,15 @@ sealed class AST {
           yield(name)
           yieldAll(methodenSignaturen)
         }
+
+        override fun findeMethode(methodenName: String): FunktionsSignatur? =
+          methodenSignaturen.find { signatur -> signatur.vollerName!! == methodenName }
       }
 
       data class Alias(override val name: WortArt.Nomen, val typ: TypKnoten): Typdefinition() {
         override val typParameter = emptyList<WortArt.Nomen>()
         override val children = sequenceOf(name, typ)
+        override fun findeMethode(methodenName: String): FunktionsSignatur? = null
       }
     }
 

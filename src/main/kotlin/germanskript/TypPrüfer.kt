@@ -294,7 +294,10 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
     val methodenBlockObjekt = umgebung.holeMethodenBlockObjekt()
 
     if (funktionsAufruf.subjekt != null) {
-      val subjekt = evaluiereAusdruck(funktionsAufruf.subjekt) as Typ.Compound.KlassenTyp
+      val subjekt = evaluiereAusdruck(funktionsAufruf.subjekt)
+      if (subjekt !is Typ.Compound) {
+        throw GermanSkriptFehler.TypFehler.ObjektErwartet(holeErstesTokenVonAusdruck(funktionsAufruf.subjekt))
+      }
       funktionsSignatur = findeMethode(
           funktionsAufruf,
           subjekt,
@@ -312,7 +315,7 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
 
     // ist Methodenaufruf von Bereich-Variable
     if (funktionsSignatur == null &&
-        methodenBlockObjekt is Typ.Compound.KlassenTyp &&
+        methodenBlockObjekt is Typ.Compound &&
         funktionsAufruf.reflexivPronomen?.typ !is TokenTyp.REFLEXIV_PRONOMEN.ERSTE_FORM
     ) {
       funktionsSignatur = findeMethode(
@@ -325,18 +328,9 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
       methodenObjekt = methodenBlockObjekt
     }
 
-    // Schnittstellen Aufruf
-    if (funktionsSignatur == null && methodenBlockObjekt is Typ.Compound.Schnittstelle && funktionsAufruf.reflexivPronomen?.typ != TokenTyp.REFLEXIV_PRONOMEN.ERSTE_FORM.MICH) {
-      funktionsSignatur = methodenBlockObjekt.definition.methodenSignaturen.find { signatur -> signatur.vollerName!! == funktionsAufruf.vollerName!! }
-      if (funktionsSignatur != null) {
-        funktionsAufruf.vollerName = funktionsSignatur.vollerName
-        funktionsAufruf.aufrufTyp = FunktionsAufrufTyp.METHODEN_BLOCK_AUFRUF
-      }
-      methodenObjekt = methodenBlockObjekt
-    }
-
     // ist Methoden-Selbst-Aufruf
-    if (funktionsSignatur == null && zuÜberprüfendeKlasse != null && funktionsAufruf.reflexivPronomen?.typ != TokenTyp.REFLEXIV_PRONOMEN.ZWEITE_FORM.DICH) {
+    if (funktionsSignatur == null && zuÜberprüfendeKlasse != null
+        && funktionsAufruf.reflexivPronomen?.typ !is TokenTyp.REFLEXIV_PRONOMEN.ZWEITE_FORM) {
       funktionsSignatur = findeMethode(
           funktionsAufruf,
           zuÜberprüfendeKlasse!!,
@@ -486,14 +480,14 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
 
   private fun findeMethode(
       funktionsAufruf: AST.Satz.Ausdruck.FunktionsAufruf,
-      typ: Typ.Compound.KlassenTyp,
+      typ: Typ.Compound,
       aufrufTyp: FunktionsAufrufTyp,
       reflexivPronomen: TokenTyp.REFLEXIV_PRONOMEN,
       erlaubeHoleElternDefinition: Boolean
   ): AST.Definition.FunktionsSignatur? {
 
     // versuche Methode in der Elternklasse zu finden
-    if (aufrufTyp == FunktionsAufrufTyp.METHODEN_SELBST_AUFRUF &&
+    if (typ is Typ.Compound.KlassenTyp && aufrufTyp == FunktionsAufrufTyp.METHODEN_SELBST_AUFRUF &&
         erlaubeHoleElternDefinition && inSuperBlock && typ.definition.elternKlasse != null) {
       val signatur = findeMethode(
           funktionsAufruf, typ.definition.elternKlasse!!.typ!! as Typ.Compound.KlassenTyp,
@@ -505,13 +499,13 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
     }
 
     // ist Methodenaufruf von Block-Variable
-    typ.definition.methoden[funktionsAufruf.vollerName!!]?.also { methode ->
-      if (aufrufTyp == FunktionsAufrufTyp.METHODEN_SELBST_AUFRUF) {
-        funktionsAufruf.funktionsDefinition = methode
+    typ.definition.findeMethode(funktionsAufruf.vollerName!!)?.also { methode ->
+      if (typ is Typ.Compound.KlassenTyp && aufrufTyp == FunktionsAufrufTyp.METHODEN_SELBST_AUFRUF) {
+        funktionsAufruf.funktionsDefinition = typ.definition.methoden[funktionsAufruf.vollerName!!]
         funktionsAufruf.vollerName = "für ${typ}: ${funktionsAufruf.vollerName}"
       }
       funktionsAufruf.aufrufTyp = aufrufTyp
-      return methode.signatur
+      return methode
     }
 
     if (typ.definition.typParameter.isNotEmpty()) {
@@ -519,21 +513,19 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
       val ersetzeTypArgsName = definierer.holeVollenNamenVonFunktionsAufruf(
           funktionsAufruf, typ.definition.typParameter, typ.typArgumente)
 
-      typ.definition.methoden[ersetzeTypArgsName]?.also { methode ->
+      typ.definition.findeMethode(ersetzeTypArgsName)?.also { methode ->
         // TODO: Die Typparameternamen müssen für den Interpreter später hier ersetzt werden
         funktionsAufruf.vollerName = ersetzeTypArgsName
-        if (aufrufTyp == FunktionsAufrufTyp.METHODEN_SELBST_AUFRUF) {
-          funktionsAufruf.funktionsDefinition = methode
+        if (typ is Typ.Compound.KlassenTyp && aufrufTyp == FunktionsAufrufTyp.METHODEN_SELBST_AUFRUF) {
+          funktionsAufruf.funktionsDefinition = typ.definition.methoden[funktionsAufruf.vollerName!!]
           funktionsAufruf.vollerName = "für ${typ}: ${funktionsAufruf.vollerName}"
         }
         funktionsAufruf.aufrufTyp = aufrufTyp
-        return methode.signatur
+        return methode
       }
     }
 
-    if (funktionsAufruf.reflexivPronomen != null &&
-        funktionsAufruf.reflexivPronomen.typ == reflexivPronomen &&
-        typ.definition.elternKlasse == null) {
+    if (funktionsAufruf.reflexivPronomen != null && funktionsAufruf.reflexivPronomen.typ == reflexivPronomen) {
       throw GermanSkriptFehler.Undefiniert.Methode(funktionsAufruf.verb.toUntyped(),
           funktionsAufruf,
           typ.definition.name.nominativ)
