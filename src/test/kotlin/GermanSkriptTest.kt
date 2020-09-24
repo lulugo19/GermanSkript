@@ -237,7 +237,7 @@ class GermanSkriptTest {
   @Test
   @DisplayName("Klassendefinition und Objektinstanziierung")
   fun klasseDefinitionUndObjekte() {
-    val source = """
+    val quellCode = """
       Deklination Maskulinum Singular(Name, Namens, Namen, Namen) Plural(Namen)
       Deklination Neutrum Singular(Alter, Alters, Alter, Alter) Plural(Alter)
       Deklination Femininum Singular(Person) Plural(Personen)
@@ -255,13 +255,13 @@ class GermanSkriptTest {
       die PersonJANE ist eine Person mit dem VorNamen "Jane", dem NachNamen "Doe", dem Alter 41
     """.trimIndent()
 
-    val expectedOutput = """
+    val erwarteteAusgabe = """
       Max Mustermann (23 Jahre alt) wurde erstellt!
       Jane Doe (41 Jahre alt) wurde erstellt!
       
     """.trimIndent()
 
-    testeGermanSkriptCode(source, expectedOutput)
+    testeGermanSkriptCode(quellCode, erwarteteAusgabe)
   }
 
   @Test
@@ -626,7 +626,12 @@ class GermanSkriptTest {
         schreibe die Zeile "#{mein Name} (#{mein Alter} Jahre alt) wurde erstellt!"
       .
       
-      Nomen Student als Person mit der Zeichenfolge Studiengang:
+      Nomen Student mit
+          der Zeichenfolge VorName,
+          der Zeichenfolge NachName,
+          einer Zahl Alter,
+          der Zeichenfolge Studiengang
+          als Person mit dem VorNamen, dem NachNamen, dem Alter:
         schreibe die Zeile "#{mein VorName} #{mein NachName} ist ein #{mein Studiengang}-Student!"
       .
       

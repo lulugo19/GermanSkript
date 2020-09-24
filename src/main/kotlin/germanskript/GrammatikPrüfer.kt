@@ -416,7 +416,7 @@ class GrammatikPrüfer(startDatei: File): PipelineKomponente(startDatei) {
     klasse.eigenschaften.forEach {eigenschaft -> prüfeParameter(eigenschaft, EnumSet.of(Kasus.DATIV))}
 
     if (klasse.elternKlasse != null) {
-      prüfeTyp(klasse.elternKlasse, EnumSet.of(Kasus.NOMINATIV), EnumSet.of(Numerus.SINGULAR), null)
+      prüfeObjektinstanziierung(klasse.elternKlasse, null, EnumSet.of(Kasus.NOMINATIV), false)
     }
   }
 

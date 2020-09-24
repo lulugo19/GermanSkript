@@ -414,13 +414,17 @@ private sealed class SubParser<T: AST>() {
             ))
             else -> parseFunktionOderKonstante()
           }
-          else when (peekType(1)) {
-            is TokenTyp.DOPPELPUNKT -> subParse(Satz.Ausdruck.MethodenBereich(
-                AST.Satz.Ausdruck.Variable(parseNomenOhneVornomen(true))
-            ))
-            is TokenTyp.DOPPEL_DOPPELPUNKT -> parseFunktionOderKonstante()
-            is TokenTyp.OFFENE_ECKIGE_KLAMMER -> subParse(Satz.Ausdruck.NomenAusdruck.ListenElement(parseNomenOhneVornomen(true)))
-            else -> AST.Satz.Ausdruck.Variable(parseNomenOhneVornomen(true))
+          else {
+            if (!hierarchyContainsAnyNode(ASTKnotenID.KLASSEN_DEFINITION) && peekType(1) is TokenTyp.DOPPELPUNKT) {
+              subParse(Satz.Ausdruck.MethodenBereich(
+                  AST.Satz.Ausdruck.Variable(parseNomenOhneVornomen(true))
+              ))
+            }
+            else when (peekType(1)) {
+              is TokenTyp.DOPPEL_DOPPELPUNKT -> parseFunktionOderKonstante()
+              is TokenTyp.OFFENE_ECKIGE_KLAMMER -> subParse(Satz.Ausdruck.NomenAusdruck.ListenElement(parseNomenOhneVornomen(true)))
+              else -> AST.Satz.Ausdruck.Variable(parseNomenOhneVornomen(true))
+            }
           }
         else -> throw GermanSkriptFehler.SyntaxFehler.ParseFehler(next())
       }
@@ -438,8 +442,12 @@ private sealed class SubParser<T: AST>() {
             if (
                 ausdruck !is AST.Satz.Ausdruck.Bedingung &&
                 ausdruck !is AST.Satz.Ausdruck.MethodenBereich &&
-                !hierarchyContainsAnyNode(ASTKnotenID.SCHLEIFE, ASTKnotenID.FÜR_JEDE_SCHLEIFE, ASTKnotenID.BEDINGUNG)) {
-
+                !hierarchyContainsAnyNode(
+                    ASTKnotenID.SCHLEIFE,
+                    ASTKnotenID.FÜR_JEDE_SCHLEIFE,
+                    ASTKnotenID.BEDINGUNG,
+                    ASTKnotenID.KLASSEN_DEFINITION)
+            ) {
               subParse(Satz.Ausdruck.MethodenBereich(ausdruck))
             }
             else return  ausdruck
@@ -578,7 +586,9 @@ private sealed class SubParser<T: AST>() {
   }
 
   fun parseArgument(): AST.Argument {
-    var (adjektiv, nomen, wert) = parseNomenAusdruck<TokenTyp.VORNOMEN>("Vornomen", false, true)
+    var (adjektiv, nomen, wert) = parseNomenAusdruck<TokenTyp.VORNOMEN>(
+        "Vornomen", inBinärenAusdruck = false, adjektivErlaubt = true)
+
     if (adjektiv == null && wert is AST.Satz.Ausdruck.Variable) {
       wert = when(peekType()) {
         is TokenTyp.NEUE_ZEILE,
@@ -586,6 +596,7 @@ private sealed class SubParser<T: AST>() {
         is TokenTyp.AUSRUFEZEICHEN,
         is TokenTyp.KOMMA,
         is TokenTyp.BEZEICHNER_KLEIN,
+        is TokenTyp.DOPPELPUNKT,
         is TokenTyp.GESCHLOSSENE_KLAMMER -> wert
         else -> parseAusdruck(mitVornomen = false, optionalesIstNachVergleich = false)
       }
@@ -1375,19 +1386,13 @@ private sealed class SubParser<T: AST>() {
     }
 
     object Klasse: Definition<AST.Definition.Typdefinition.Klasse>() {
-      override val id: ASTKnotenID
-        get() = ASTKnotenID.KLASSEN_DEFINITION
+      override var id: ASTKnotenID = ASTKnotenID.KLASSEN_DEFINITION
 
       override fun parseImpl(): AST.Definition.Typdefinition.Klasse {
         expect<TokenTyp.NOMEN>("'Nomen'")
         val typParameter = parseTypParameter()
         val name = parseNomenOhneVornomen(false)
 
-        val elternKlasse = when (peekType()) {
-          TokenTyp.ALS_KLEIN -> next().let {
-            parseTypOhneArtikel(namensErweiterungErlaubt = false, typArgumenteErlaubt = true, nomenErlaubt = true, adjektivErlaubt = false ) }
-          else -> null
-        }
         val eingenschaften = when(peekType()) {
           is TokenTyp.BEZEICHNER_KLEIN -> {
             parseKleinesSchlüsselwort("mit")
@@ -1399,7 +1404,20 @@ private sealed class SubParser<T: AST>() {
           else -> emptyList()
         }
 
+        überspringeLeereZeilen()
+
+        val elternKlasse = when (peekType()) {
+          TokenTyp.ALS_KLEIN -> next().let {
+            val elternKlasse = parseTypOhneArtikel(namensErweiterungErlaubt = false, typArgumenteErlaubt = true, nomenErlaubt = true, adjektivErlaubt = false )
+            subParse(Satz.Ausdruck.NomenAusdruck.ObjektInstanziierung(elternKlasse))
+          }
+          else -> null
+        }
+
+        überspringeLeereZeilen()
+        id = ASTKnotenID.IMPLEMENTIERUNG
         val konstruktorSätze = parseSätze()
+        id = ASTKnotenID.KLASSEN_DEFINITION
         return AST.Definition.Typdefinition.Klasse(typParameter, name, elternKlasse, eingenschaften.toMutableList(), konstruktorSätze)
       }
     }

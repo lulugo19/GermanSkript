@@ -312,7 +312,7 @@ sealed class AST {
       data class Klasse(
           override val typParameter: List<WortArt.Nomen>,
           override val name: WortArt.Nomen,
-          val elternKlasse: TypKnoten?,
+          val elternKlasse: Satz.Ausdruck.ObjektInstanziierung?,
           val eigenschaften: MutableList<Parameter>,
           val konstruktor: Satz.Bereich
       ): Typdefinition() {

@@ -380,26 +380,36 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
 
   override fun evaluiereObjektInstanziierung(instanziierung: AST.Satz.Ausdruck.ObjektInstanziierung): Wert {
     val eigenschaften = hashMapOf<String, Wert>()
-    for (zuweisung in instanziierung.eigenschaftsZuweisungen) {
-      eigenschaften[zuweisung.name.nominativ] = evaluiereAusdruck(zuweisung.ausdruck)
-    }
     val klassenTyp = (instanziierung.klasse.typ!! as Typ.Compound.KlassenTyp)
-
     val objekt = when(klassenTyp.name) {
       "Datei" -> Wert.Objekt.InternesObjekt.Datei(klassenTyp, eigenschaften)
       else -> Wert.Objekt.SkriptObjekt(klassenTyp, eigenschaften)
     }
 
-    fun führeKonstruktorAus(definition: AST.Definition.Typdefinition.Klasse) {
+    fun führeKonstruktorAus(definition: AST.Definition.Typdefinition.Klasse, eigenschaftsZuweisungen: List<AST.Argument>) {
       // Führe zuerst den Konstruktor der Elternklasse aus
+      val evaluierteAusdrücke = eigenschaftsZuweisungen.map { evaluiereAusdruck(it.ausdruck) }
       if (definition.elternKlasse != null) {
-        führeKonstruktorAus((definition.elternKlasse.typ!! as Typ.Compound.KlassenTyp).definition)
+        val konstruktorUmgebung = Umgebung<Wert>()
+        konstruktorUmgebung.pushBereich()
+        for (index in eigenschaftsZuweisungen.indices) {
+          konstruktorUmgebung.schreibeVariable(eigenschaftsZuweisungen[index].name, evaluierteAusdrücke[index], false)
+        }
+        aufrufStapel.push(definition.elternKlasse, konstruktorUmgebung)
+        führeKonstruktorAus(
+            (definition.elternKlasse.klasse.typ!! as Typ.Compound.KlassenTyp).definition,
+            definition.elternKlasse.eigenschaftsZuweisungen
+        )
+        aufrufStapel.pop()
+      }
+      for (index in eigenschaftsZuweisungen.indices) {
+        eigenschaften[eigenschaftsZuweisungen[index].name.nominativ] = evaluierteAusdrücke[index]
       }
       durchlaufeAufruf(instanziierung, definition.konstruktor, Umgebung(), true, objekt, false)
     }
 
-    führeKonstruktorAus(klassenTyp.definition)
-    return objekt
+    führeKonstruktorAus(klassenTyp.definition, instanziierung.eigenschaftsZuweisungen)
+    return  objekt
   }
 
   private fun holeEigenschaft(zugriff: AST.Satz.Ausdruck.IEigenschaftsZugriff, objekt: Wert.Objekt): Wert {

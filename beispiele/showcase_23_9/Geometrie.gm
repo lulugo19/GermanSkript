@@ -22,15 +22,8 @@ Implementiere das flächige RechtEck:
 .
 
 
-Nomen Quadrat als RechtEck mit der Zahl Länge:.
 
-/*
-Nomen Quadrat mit der Zahl Länge
-    als das RechtEck mit der Breite Länge, der Höhe Länge:.
-*/
-
-// das ist noch irgendwie doof!
-das Quadrat ist ein Quadrat mit der Breite 3, der Höhe 3, der Länge 3
+Nomen Quadrat mit der Zahl Länge als RechtEck mit der Breite Länge, der Höhe Länge:.
 
 Nomen Kreis mit der Zahl Radius:.
 
@@ -43,7 +36,7 @@ Implementiere den flächigen Kreis:
 die Flächigen sind einige Flächige [
     (ein Kreis mit dem Radius 1),
     (ein RechtEck mit der Breite 5, der Höhe 6),
-    (ein Kreis mit dem Radius 2,5),
+    (ein Quadrat mit der Länge 5),
     (ein RechtEck mit der Breite 4, der Höhe 6)]
 
 für jedes Flächiges in den Flächigen:

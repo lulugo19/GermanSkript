@@ -66,8 +66,16 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
   }
 
   fun typIstTyp(typ: Typ, sollTyp: Typ): Boolean {
-    fun überprüfeSchnittstelle(klasse: Typ.Compound.KlassenTyp, schnittstelle: Typ.Compound.Schnittstelle): Boolean =
-      klasse.definition.implementierteSchnittstellen.contains(schnittstelle)
+    fun überprüfeSchnittstelle(klasse: Typ.Compound.KlassenTyp, schnittstelle: Typ.Compound.Schnittstelle): Boolean {
+      if (klasse.definition.implementierteSchnittstellen.contains(schnittstelle)) {
+        return true
+      }
+      if (klasse.definition.elternKlasse != null) {
+        return überprüfeSchnittstelle(klasse.definition.elternKlasse!!.klasse.typ!! as Typ.Compound.KlassenTyp, schnittstelle)
+      }
+      return false
+    }
+
 
     fun überprüfeKlassenHierarchie(klasse: Typ.Compound.KlassenTyp, elternKlasse: Typ.Compound.KlassenTyp): Boolean {
       var laufTyp: Typ.Compound.KlassenTyp? = klasse
@@ -75,7 +83,7 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
         if (laufTyp == elternKlasse) {
           return true
         }
-        laufTyp = laufTyp.definition.elternKlasse?.typ as Typ.Compound.KlassenTyp?
+        laufTyp = laufTyp.definition.elternKlasse?.klasse?.typ as Typ.Compound.KlassenTyp?
       }
       return false
     }
@@ -183,12 +191,11 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
     typisierer.typisiereKlasse(klasse)
     // Da die Kindklasse abhängig von der Elternklasse ist, muss zuerst die Elternklasse geprüft werden
     if (klasse.elternKlasse != null) {
-      if (klasse.elternKlasse.typ == null) {
-        typisierer.bestimmeTyp(klasse.elternKlasse, null, null, true)
+      if (klasse.elternKlasse.klasse.typ == null) {
+        typisierer.bestimmeTyp(klasse.elternKlasse.klasse, null, null, true)
       }
-      val elternKlasse = klasse.elternKlasse.typ as Typ.Compound.KlassenTyp
+      val elternKlasse = klasse.elternKlasse.klasse.typ as Typ.Compound.KlassenTyp
       prüfeKlasse(elternKlasse.definition)
-      klasse.eigenschaften.addAll(0, elternKlasse.definition.eigenschaften)
     }
     zuÜberprüfendeKlasse = when (klasse) {
       Typ.Compound.KlassenTyp.Liste.definition -> Typ.Compound.KlassenTyp.Liste(erstelleGenerischeTypArgumente((klasse.typParameter)))
@@ -216,12 +223,12 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
         klasse.konvertierungen.putIfAbsent(konvertierungsTyp, konvertierung)
       }
       if (elternKlasse.elternKlasse != null) {
-        fügeElternKlassenMethodenHinzu((elternKlasse.elternKlasse.typ as Typ.Compound.KlassenTyp).definition)
+        fügeElternKlassenMethodenHinzu((elternKlasse.elternKlasse.klasse.typ as Typ.Compound.KlassenTyp).definition)
       }
     }
 
     if (klasse.elternKlasse != null) {
-      fügeElternKlassenMethodenHinzu((klasse.elternKlasse.typ as Typ.Compound.KlassenTyp).definition)
+      fügeElternKlassenMethodenHinzu((klasse.elternKlasse.klasse.typ as Typ.Compound.KlassenTyp).definition)
     }
 
     zuÜberprüfendeKlasse = null
@@ -490,7 +497,7 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
     if (typ is Typ.Compound.KlassenTyp && aufrufTyp == FunktionsAufrufTyp.METHODEN_SELBST_AUFRUF &&
         erlaubeHoleElternDefinition && inSuperBlock && typ.definition.elternKlasse != null) {
       val signatur = findeMethode(
-          funktionsAufruf, typ.definition.elternKlasse!!.typ!! as Typ.Compound.KlassenTyp,
+          funktionsAufruf, typ.definition.elternKlasse!!.klasse.typ!! as Typ.Compound.KlassenTyp,
           aufrufTyp, reflexivPronomen, false
       )
       if (signatur != null) {
@@ -830,6 +837,15 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
         return eigenschaft
       }
     }
+    if (klasse.definition.elternKlasse != null) {
+      try {
+        return holeNormaleEigenschaftAusKlasse(eigenschaftsName,
+          klasse.definition.elternKlasse!!.klasse.typ!! as Typ.Compound.KlassenTyp, numerus)
+      }
+      catch (fehler: GermanSkriptFehler.Undefiniert) {
+        // mache nichts hier
+      }
+    }
     throw GermanSkriptFehler.Undefiniert.Eigenschaft(eigenschaftsName.bezeichner.toUntyped(), eigName, klasse.definition.name.nominativ)
   }
 
@@ -840,6 +856,15 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
       holeNormaleEigenschaftAusKlasse(eigenschaftsName, klasse).typKnoten.typ!!
     } catch (fehler: GermanSkriptFehler.Undefiniert.Eigenschaft) {
       if (!klassenDefinition.berechneteEigenschaften.containsKey(eigenschaftsName.nominativ)) {
+        if (klasse.definition.elternKlasse != null) {
+          try {
+            return holeEigenschaftAusKlasse(eigenschaftsZugriff,
+                klasse.definition.elternKlasse!!.klasse.typ!! as Typ.Compound.KlassenTyp
+            )
+          } catch (_: GermanSkriptFehler.Undefiniert.Eigenschaft) {
+            throw fehler
+          }
+        }
         throw fehler
       } else {
         eigenschaftsZugriff.aufrufName = "${eigenschaftsName.nominativ} von ${klassenDefinition.namensToken.wert}"
