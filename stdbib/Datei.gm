@@ -4,11 +4,11 @@ Deklination Maskulinum Singular(Schreiber, Schreibers, Schreiber, Schreiber) Plu
 Deklination Maskulinum Singular(Leser, Lesers, Leser, Leser) Plural(Leser)
 
 Modul IO:
-    Nomen Datei mit der Zeichenfolge DateiName:.
+    Nomen Datei mit der Zeichenfolge DateiName: intern.
 
     Implementiere die Datei:
-        Verb(Zeichenfolgen) lese_zeilen: intern.
-        Verb(Schreiber) hole_schreiber: intern.
+        Verb lese (die Zeichenfolgen Zeilen): intern.
+        Verb hole (den Schreiber): intern.
     .
 
     Nomen Schreiber:.

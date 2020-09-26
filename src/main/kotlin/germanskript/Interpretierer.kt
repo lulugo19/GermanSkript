@@ -175,7 +175,7 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
   private fun holeParameterNamenFürClosure(objekt: Wert.Closure): List<AST.WortArt.Nomen> {
     val typArgumente = objekt.schnittstelle.typArgumente
     val signatur = objekt.schnittstelle.definition.methodenSignaturen[0]
-    return signatur.parameter.mapIndexed { index, param ->
+    return signatur.parameter.toList().mapIndexed { index, param ->
       if (index < objekt.ausdruck.bindings.size) objekt.ausdruck.bindings[index]
       else when (val typ = param.typKnoten.typ!!) {
         is Typ.Generic ->
@@ -191,7 +191,7 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
     var impliziterRückgabeTyp = false
     val (körper, parameterNamen) = if (funktionsAufruf.aufrufTyp == FunktionsAufrufTyp.FUNKTIONS_AUFRUF) {
       val definition = funktionsAufruf.funktionsDefinition!!
-      Pair(definition.körper, definition.signatur.parameter.map{it.name})
+      Pair(definition.körper, definition.signatur.parameter.map{it.name}.toList())
     } else {
       // dynamisches Binden von Methoden
       val methodenObjekt = when(funktionsAufruf.aufrufTyp) {
@@ -203,14 +203,14 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
       objekt = if (methodenObjekt is Wert.Objekt) methodenObjekt else null
       if (funktionsAufruf.funktionsDefinition != null) {
         val definition = funktionsAufruf.funktionsDefinition!!
-        Pair(definition.körper, definition.signatur.parameter.map{it.name})
+        Pair(definition.körper, definition.signatur.parameter.map{it.name}.toList())
       } else when (methodenObjekt)
       {
         is Wert.Objekt -> {
           val methode = methodenObjekt.typ.definition.methoden.getValue(funktionsAufruf.vollerName!!)
           // funktionsAufruf.vollerName = "für ${objekt.typ.definition.name.nominativ}: ${methode.signatur.vollerName}"
           val signatur = methode.signatur
-          Pair(methode.körper, signatur.parameter.map {it.name})
+          Pair(methode.körper, signatur.parameter.map {it.name}.toList())
         }
         is Wert.Closure -> {
           impliziterRückgabeTyp = true
@@ -222,7 +222,7 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
     }
     funktionsUmgebung.pushBereich()
     val j = if (funktionsAufruf.aufrufTyp == FunktionsAufrufTyp.METHODEN_REFLEXIV_AUFRUF) 1 else 0
-    val argumente = funktionsAufruf.argumente
+    val argumente = funktionsAufruf.argumente.toList()
     for (i in parameterNamen.indices) {
       funktionsUmgebung.schreibeVariable(parameterNamen[i], evaluiereAusdruck(argumente[i+j].ausdruck), false)
     }
@@ -580,7 +580,7 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
     val (funktionsUmgebung, körper, parameterNamen) = when (wert) {
       is Wert.Objekt -> {
         val methode = wert.typ.definition.methoden.getValue(name)
-        Triple(Umgebung<Wert>(), methode.körper, methode.signatur.parameter.map { it.name })
+        Triple(Umgebung<Wert>(), methode.körper, methode.signatur.parameter.map { it.name }.toList())
       }
       is Wert.Closure -> Triple(wert.umgebung, wert.ausdruck.körper, holeParameterNamenFürClosure(wert))
       else -> throw Exception("Dieser Fall sollte nie auftreten!")

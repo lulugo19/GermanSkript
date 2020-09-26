@@ -352,7 +352,11 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
     val undefiniertFehler = try {
       if (funktionsSignatur == null) {
         funktionsAufruf.funktionsDefinition = definierer.holeFunktionsDefinition(funktionsAufruf)
-        funktionsSignatur = funktionsAufruf.funktionsDefinition!!.signatur
+        funktionsSignatur = überprüfePassendeFunktionsSignatur(
+            funktionsAufruf,
+            funktionsAufruf.funktionsDefinition!!.signatur,
+            FunktionsAufrufTyp.FUNKTIONS_AUFRUF, null
+        )
         null
       } else {
         null
@@ -404,8 +408,8 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
       }
     }
 
-    val parameter = funktionsSignatur!!.parameter
-    val argumente = funktionsAufruf.argumente
+    val parameter = funktionsSignatur!!.parameter.toList()
+    val argumente = funktionsAufruf.argumente.toList()
     val j = if (funktionsAufruf.aufrufTyp == FunktionsAufrufTyp.METHODEN_REFLEXIV_AUFRUF) 1 else 0
     val anzahlArgumente = argumente.size - j
     if (anzahlArgumente != parameter.size) {
@@ -485,6 +489,27 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
     return rückgabeTyp.typ!!
   }
 
+  /**
+   * Hier wird überprüft, ob der Funktionsaufruf wirklich zur Funktionssignatur passt.
+   * Wenn die Signatur ein Rückgabeobjekt hat, muss das Objekt des Funktionsaufrufs nicht mehr als Argument,
+   * sondern als Name gesehen werden. Ob dies möglich ist wird mit dem Attribut 'rückgabeObjektMöglich' ausgedrückt.
+   */
+  private fun überprüfePassendeFunktionsSignatur(
+      funktionsAufruf: AST.Satz.Ausdruck.FunktionsAufruf,
+      signatur: AST.Definition.FunktionsSignatur?,
+      aufrufTyp: FunktionsAufrufTyp,
+      typ: Typ?
+  ): AST.Definition.FunktionsSignatur? {
+    return if (signatur != null && (!signatur.hatRückgabeObjekt || funktionsAufruf.rückgabeObjektMöglich)) {
+      if (typ is Typ.Compound.KlassenTyp && aufrufTyp == FunktionsAufrufTyp.METHODEN_SELBST_AUFRUF) {
+        funktionsAufruf.funktionsDefinition = typ.definition.methoden[funktionsAufruf.vollerName!!]
+      }
+      funktionsAufruf.hatRückgabeObjekt = signatur.hatRückgabeObjekt
+      funktionsAufruf.aufrufTyp = aufrufTyp
+      signatur
+    } else null
+  }
+
   private fun findeMethode(
       funktionsAufruf: AST.Satz.Ausdruck.FunktionsAufruf,
       typ: Typ.Compound,
@@ -492,27 +517,20 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
       reflexivPronomen: TokenTyp.REFLEXIV_PRONOMEN,
       erlaubeHoleElternDefinition: Boolean
   ): AST.Definition.FunktionsSignatur? {
-
     // versuche Methode in der Elternklasse zu finden
     if (typ is Typ.Compound.KlassenTyp && aufrufTyp == FunktionsAufrufTyp.METHODEN_SELBST_AUFRUF &&
         erlaubeHoleElternDefinition && inSuperBlock && typ.definition.elternKlasse != null) {
+      val elternKlasse = typ.definition.elternKlasse!!.klasse.typ!! as Typ.Compound.KlassenTyp
       val signatur = findeMethode(
-          funktionsAufruf, typ.definition.elternKlasse!!.klasse.typ!! as Typ.Compound.KlassenTyp,
+          funktionsAufruf, elternKlasse,
           aufrufTyp, reflexivPronomen, false
       )
-      if (signatur != null) {
-        return signatur
-      }
+      überprüfePassendeFunktionsSignatur(funktionsAufruf, signatur, aufrufTyp, elternKlasse)?.also { return it }
     }
 
     // ist Methodenaufruf von Block-Variable
-    typ.definition.findeMethode(funktionsAufruf.vollerName!!)?.also { methode ->
-      if (typ is Typ.Compound.KlassenTyp && aufrufTyp == FunktionsAufrufTyp.METHODEN_SELBST_AUFRUF) {
-        funktionsAufruf.funktionsDefinition = typ.definition.methoden[funktionsAufruf.vollerName!!]
-        funktionsAufruf.vollerName = "für ${typ}: ${funktionsAufruf.vollerName}"
-      }
-      funktionsAufruf.aufrufTyp = aufrufTyp
-      return methode
+    typ.definition.findeMethode(funktionsAufruf.vollerName!!)?.also { signatur ->
+      überprüfePassendeFunktionsSignatur(funktionsAufruf, signatur, aufrufTyp, typ)?.also { return it }
     }
 
     if (typ.definition.typParameter.isNotEmpty()) {
@@ -520,15 +538,10 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
       val ersetzeTypArgsName = definierer.holeVollenNamenVonFunktionsAufruf(
           funktionsAufruf, typ.definition.typParameter, typ.typArgumente)
 
-      typ.definition.findeMethode(ersetzeTypArgsName)?.also { methode ->
+      typ.definition.findeMethode(ersetzeTypArgsName)?.also { signatur ->
         // TODO: Die Typparameternamen müssen für den Interpreter später hier ersetzt werden
         funktionsAufruf.vollerName = ersetzeTypArgsName
-        if (typ is Typ.Compound.KlassenTyp && aufrufTyp == FunktionsAufrufTyp.METHODEN_SELBST_AUFRUF) {
-          funktionsAufruf.funktionsDefinition = typ.definition.methoden[funktionsAufruf.vollerName!!]
-          funktionsAufruf.vollerName = "für ${typ}: ${funktionsAufruf.vollerName}"
-        }
-        funktionsAufruf.aufrufTyp = aufrufTyp
-        return methode
+        überprüfePassendeFunktionsSignatur(funktionsAufruf, signatur, aufrufTyp, typ)?.also { return it }
       }
     }
 
@@ -918,15 +931,16 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
       throw GermanSkriptFehler.ClosureFehler.UngültigeClosureSchnittstelle(closure.schnittstelle.name.bezeichnerToken, schnittstelle.definition)
     }
     val signatur = schnittstelle.definition.methodenSignaturen[0]
-    if (closure.bindings.size > signatur.parameter.size) {
+    val parameter = signatur.parameter.toList()
+    if (closure.bindings.size > signatur.parameter.count()) {
       throw GermanSkriptFehler.ClosureFehler.ZuVieleBinder(
-          closure.bindings[signatur.parameter.size].bezeichner.toUntyped(),
-          signatur.parameter.size
+          closure.bindings[parameter.size].bezeichner.toUntyped(),
+          parameter.size
       )
     }
     umgebung.pushBereich()
-    for (paramIndex in signatur.parameter.indices) {
-      val param = signatur.parameter[paramIndex]
+    for (paramIndex in parameter.indices) {
+      val param = parameter[paramIndex]
       val paramName = closure.bindings.getOrElse(paramIndex) {
         holeParamName(param, schnittstelle.typArgumente)
       }

@@ -316,6 +316,18 @@ sealed class GermanSkriptFehler(private val fehlerName: String, val token: Token
       override val nachricht = "Um die Methode '${methodenName}' für die Schnittstelle '${schnittstelle}' zu implementieren,\n" +
           "muss der Typ '${erwarteterTyp}' und nicht '${falscherTyp}' sein."
     }
+
+    class RückgabeObjektErwartet(
+        token: Token,
+        schnittstelle: Typ.Compound.Schnittstelle,
+        methodenName: String,
+        rückgabeObjektWirdErwartet: Boolean,
+        objekt: AST.Definition.Parameter
+    ): TypFehler(token) {
+      override val nachricht = "Um die Methode '${methodenName}' für die Schnittstelle '${schnittstelle}' zu implementieren,\n" +
+          if (rückgabeObjektWirdErwartet) "muss das Objekt ein Rückgabe-Objekt sein, also mit Klammern '(${objekt.anzeigeName})' geschrieben werden."
+          else  "darf das Objekt kein Rückgabe-Objekt sein, muss also ohne Klammern geschrieben werden."
+    }
   }
 
   sealed class EigenschaftsFehler(token: Token): GermanSkriptFehler("Eigenschaftsfehler", token) {

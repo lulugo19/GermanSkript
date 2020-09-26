@@ -432,9 +432,19 @@ class Typisierer(startDatei: File): PipelineKomponente(startDatei) {
         )
       }
 
+      if (signatur.hatRückgabeObjekt != methode.signatur.hatRückgabeObjekt) {
+        throw GermanSkriptFehler.TypFehler.RückgabeObjektErwartet(
+            methode.signatur.objekt!!.name.bezeichnerToken,
+            schnittstelle,
+            methodenName,
+            signatur.hatRückgabeObjekt,
+            methode.signatur.objekt
+        )
+      }
+
       // überprüfe Parameter
-      val schnittstellenParameter = signatur.parameter
-      val methodenParameter = methode.signatur.parameter
+      val schnittstellenParameter = signatur.parameter.toList()
+      val methodenParameter = methode.signatur.parameter.toList()
       for (pIndex in methodenParameter.indices) {
         val erwarteterTyp = holeErwartetenTypen(schnittstellenParameter[pIndex])
         if (methodenParameter[pIndex].typKnoten.typ != erwarteterTyp) {

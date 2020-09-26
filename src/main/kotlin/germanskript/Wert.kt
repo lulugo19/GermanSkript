@@ -214,7 +214,7 @@ sealed class Wert {
 
       class Datei(typ: Typ.Compound.KlassenTyp, val eigenschaften: MutableMap<String, Wert>): InternesObjekt(typ) {
 
-        val file = File((eigenschaften.getValue("DateiName") as Zeichenfolge).zeichenfolge)
+        lateinit var file: File
 
         override fun rufeMethodeAuf(
             aufruf: AST.IAufruf,
@@ -223,8 +223,9 @@ sealed class Wert {
             aufrufCallback: AufrufCallback): Wert {
 
           return when (aufruf.vollerName!!) {
-            "lese_zeilen" -> leseZeilen()
-            "hole_schreiber" -> holeSchreiber()
+            "erstelle die Datei" -> konstruktor()
+            "lese die Zeilen" -> leseZeilen()
+            "hole den Schreiber" -> holeSchreiber()
             else -> throw Exception("Die Methode '${aufruf.vollerName!!}' ist nicht definiert!")
           }
         }
@@ -235,6 +236,11 @@ sealed class Wert {
 
         override fun setzeEigenschaft(eigenschaftsName: String, wert: Wert) {
 
+        }
+
+        private fun konstruktor(): Nichts {
+          file = File((eigenschaften.getValue("DateiName") as Zeichenfolge).zeichenfolge)
+          return Nichts
         }
 
         private fun leseZeilen(): Liste {

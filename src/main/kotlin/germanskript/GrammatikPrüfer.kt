@@ -401,7 +401,10 @@ class GrammatikPrüfer(startDatei: File): PipelineKomponente(startDatei) {
 
   private fun prüfeFunktionsSignatur(signatur: AST.Definition.FunktionsSignatur) {
     prüfeTypParameter(signatur.typParameter)
-    prüfeTyp(signatur.rückgabeTyp, EnumSet.of(Kasus.NOMINATIV), Numerus.BEIDE, null)
+    if (!signatur.hatRückgabeObjekt) {
+      // Ansonsten ist der Rückgabetyp ja das Objekt
+      prüfeTyp(signatur.rückgabeTyp, EnumSet.of(Kasus.NOMINATIV), Numerus.BEIDE, null)
+    }
     if (signatur.objekt != null) {
       prüfeParameter(signatur.objekt, EnumSet.of(Kasus.DATIV, Kasus.AKKUSATIV))
     }

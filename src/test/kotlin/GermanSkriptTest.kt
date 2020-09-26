@@ -1525,4 +1525,43 @@ class GermanSkriptTest {
 
     testeGermanSkriptCode(quellCode, erwarteteAusgabe)
   }
+
+  @Test
+  @DisplayName("Rückgabetyp als Objekt")
+  fun rückgabeTypAlsObjekt() {
+    val quellCode = """
+      Verb lese (eine Zahl):
+        gebe 42 zurück
+      .
+      
+      die Zahl ist lese eine Zahl
+      schreibe die Zahl
+    """.trimIndent()
+
+    testeGermanSkriptCode(quellCode, "42\n")
+  }
+
+  @Test
+  @DisplayName("Überprüfe Schnittstelle mit Objekt-Rückgabetyp")
+  fun schnittstelleMitObjektRückgabeTyp() {
+    val quellCode = """
+      Adjektiv testbar:
+        Verb teste (die Zeichenfolge)
+      .
+      
+      Deklination Maskulinum Singular(Test, Tests, Test, Test) Plural(Tests)
+      
+      Nomen Test:.
+      
+      Implementiere den testbaren Test:
+        Verb(Zeichenfolge) teste die Zeichenfolge:
+          gebe "Test" zurück
+        .
+      .
+    """.trimIndent()
+
+    assertThatExceptionOfType(GermanSkriptFehler.TypFehler.RückgabeObjektErwartet::class.java).isThrownBy {
+      führeGermanSkriptCodeAus(quellCode)
+    }
+  }
 }

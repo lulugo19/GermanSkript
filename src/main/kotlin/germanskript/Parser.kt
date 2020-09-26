@@ -813,7 +813,7 @@ private sealed class SubParser<T: AST>() {
 
       override fun bewacheKnoten() {
         super.bewacheKnoten()
-        if (!hierarchyContainsNode(ASTKnotenID.FUNKTIONS_DEFINITION)) {
+        if (!hierarchyContainsAnyNode(ASTKnotenID.FUNKTIONS_DEFINITION, ASTKnotenID.IMPLEMENTIERUNG)) {
           throw GermanSkriptFehler.SyntaxFehler.ParseFehler(next(), null, "Das Schlüsselwort 'intern' darf nur in einer Funktionsdefinition stehen.")
         }
       }
@@ -1335,22 +1335,31 @@ private sealed class SubParser<T: AST>() {
       override fun parseImpl(): AST.Definition.FunktionsSignatur {
         val verb = expect<TokenTyp.VERB>("'Verb'")
         val typParameter = parseTypParameter()
-        val rückgabeTyp = if (peekType() is TokenTyp.OFFENE_KLAMMER) {
+        var rückgabeTyp: AST.TypKnoten? = if (peekType() is TokenTyp.OFFENE_KLAMMER) {
           expect<TokenTyp.OFFENE_KLAMMER>("'('")
           parseTypOhneArtikel(
               namensErweiterungErlaubt = false, typArgumenteErlaubt = true,
               nomenErlaubt = true, adjektivErlaubt = true
           ).also { expect<TokenTyp.GESCHLOSSENE_KLAMMER>("')'") }
         } else {
-          // Wenn kein Rückgabetyp angegeben ist dann ist der Rückgabetyp Nichts
-          val nichts = AST.WortArt.Nomen(null, verb.changeType(TokenTyp.BEZEICHNER_GROSS(arrayOf("Nichts"),"", null)))
-          AST.TypKnoten(emptyList(), nichts, emptyList())
+          null
         }
         val name = expect<TokenTyp.BEZEICHNER_KLEIN>("bezeichner")
         val reflexivPronomen = if (erlaubeReflexivPronomen) parseOptional<TokenTyp.REFLEXIV_PRONOMEN.ERSTE_FORM>() else null
+
+        var hatRückgabeTypObjekt = false
         val objekt = if (reflexivPronomen == null) {
-          parseOptional<AST.Definition.Parameter, TokenTyp.VORNOMEN.ARTIKEL.BESTIMMT> {
-            parseParameter<TokenTyp.VORNOMEN.ARTIKEL.BESTIMMT>("bestimmter Artikel") }
+          if (rückgabeTyp == null && peekType() is TokenTyp.OFFENE_KLAMMER) {
+            next()
+            hatRückgabeTypObjekt = true
+            parseParameter<TokenTyp.VORNOMEN.ARTIKEL>("Artikel").also {
+              rückgabeTyp = it.typKnoten
+              expect<TokenTyp.GESCHLOSSENE_KLAMMER>("')'")
+            }
+          } else {
+            parseOptional<AST.Definition.Parameter, TokenTyp.VORNOMEN.ARTIKEL.BESTIMMT> {
+              parseParameter<TokenTyp.VORNOMEN.ARTIKEL.BESTIMMT>("bestimmter Artikel") }
+          }
         } else {
          null
         }
@@ -1358,7 +1367,18 @@ private sealed class SubParser<T: AST>() {
         val präpositionsParameter = parsePräpositionsParameter()
         val suffix = parseOptional<TokenTyp.BEZEICHNER_KLEIN>()
 
-        return AST.Definition.FunktionsSignatur(typParameter, rückgabeTyp, name, reflexivPronomen, objekt, präpositionsParameter, suffix)
+        // impliziter Rückgabetyp ist null
+        if (rückgabeTyp == null) {
+          // Wenn kein Rückgabetyp angegeben ist dann ist der Rückgabetyp Nichts
+          val nichts = AST.WortArt.Nomen(null, verb.changeType(TokenTyp.BEZEICHNER_GROSS(arrayOf("Nichts"),"", null)))
+          rückgabeTyp = AST.TypKnoten(emptyList(), nichts, emptyList())
+        }
+
+        return AST.Definition.FunktionsSignatur(
+            typParameter, rückgabeTyp!!, name,
+            reflexivPronomen, objekt, hatRückgabeTypObjekt,
+            präpositionsParameter, suffix
+        )
       }
 
       fun parsePräpositionsParameter(): List<AST.Definition.PräpositionsParameter> {

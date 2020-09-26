@@ -1,5 +1,6 @@
 package germanskript
 
+import kotlinx.coroutines.yield
 import java.util.*
 import kotlin.collections.HashMap
 
@@ -233,6 +234,18 @@ sealed class AST {
       val istPrivat get() = typKnoten.name.vornomen!!.typ is TokenTyp.VORNOMEN.DEMONSTRATIV_PRONOMEN
       val typIstName get() = typKnoten.name === name
       override val children = sequenceOf(typKnoten, name)
+
+      val anzeigeName: String get() {
+        var anzeigeName = ""
+        if (typKnoten.name.vornomen != null) {
+          anzeigeName += typKnoten.name.vornomen!!.wert + " "
+        }
+        anzeigeName += typKnoten.name.bezeichnerToken.wert
+        if (!typIstName) {
+          anzeigeName += " " + name.bezeichnerToken.wert
+        }
+        return anzeigeName
+      }
     }
 
     data class PräpositionsParameter(
@@ -253,21 +266,11 @@ sealed class AST {
         val name: TypedToken<TokenTyp.BEZEICHNER_KLEIN>,
         val reflexivPronomen: TypedToken<TokenTyp.REFLEXIV_PRONOMEN>?,
         val objekt: Parameter?,
+        val hatRückgabeObjekt: Boolean,
         val präpositionsParameter: List<PräpositionsParameter>,
         val suffix: TypedToken<TokenTyp.BEZEICHNER_KLEIN>?,
         var vollerName: String? = null
     ): Definition() {
-      private val _parameter: MutableList<Parameter> = mutableListOf()
-      val parameter: List<Parameter> = _parameter
-
-      init {
-        if (objekt != null) {
-          _parameter.add(objekt)
-        }
-        for (präposition in präpositionsParameter) {
-          _parameter.addAll(präposition.parameter)
-        }
-      }
 
       override val children = sequence {
         yieldAll(typParameter)
@@ -276,6 +279,15 @@ sealed class AST {
           yield(objekt!!)
         }
         yieldAll(präpositionsParameter)
+      }
+
+      val parameter get() = sequence {
+        if (objekt != null && !hatRückgabeObjekt) {
+          yield(objekt!!)
+        }
+        for (präposition in präpositionsParameter) {
+          yieldAll(präposition.parameter)
+        }
       }
     }
 
@@ -542,21 +554,12 @@ sealed class AST {
         override val token = verb.toUntyped()
 
         override var vollerName: String? = null
-        private val _argumente: MutableList<Argument> = mutableListOf()
-        val argumente: List<Argument> = _argumente
         var funktionsDefinition: Definition.Funktion? = null
         var aufrufTyp: FunktionsAufrufTyp = FunktionsAufrufTyp.FUNKTIONS_AUFRUF
         val vollständigerName: String get() = modulPfad.joinToString("::") { it.wert } +
             (if (modulPfad.isEmpty()) "" else "::") + vollerName
 
-        init {
-          if (objekt != null) {
-            _argumente.add(objekt)
-          }
-          for (präposition in präpositionsArgumente) {
-            _argumente.addAll(präposition.argumente)
-          }
-        }
+        var hatRückgabeObjekt: kotlin.Boolean = false
 
         override val children = sequence {
           if (subjekt != null) {
@@ -567,6 +570,31 @@ sealed class AST {
             yield(objekt!!)
           }
           yieldAll(präpositionsArgumente)
+        }
+
+        val argumente get() = sequence {
+          if (objekt != null && !hatRückgabeObjekt) {
+            yield(objekt!!)
+          }
+          for (präposition in präpositionsArgumente) {
+            yieldAll(präposition.argumente)
+          }
+        }
+
+        var rückgabeObjektMöglich: kotlin.Boolean
+          private set
+
+        init {
+          rückgabeObjektMöglich = if (objekt == null) {
+            false
+          }
+          else when (val ausdruck = objekt.ausdruck) {
+            is Variable -> ausdruck.name == objekt.name
+            is ObjektInstanziierung -> ausdruck.eigenschaftsZuweisungen.isEmpty() &&
+                ausdruck.klasse.modulPfad.isEmpty()
+                && ausdruck.klasse.name == objekt.name
+            else -> false
+          }
         }
       }
 

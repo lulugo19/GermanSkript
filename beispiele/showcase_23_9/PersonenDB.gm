@@ -29,9 +29,9 @@ Implementiere die Person:
 
 die Datei ist eine IO::Datei mit dem DateiNamen "personen.csv"
 
-die Zeilen sind Datei: lese_zeilen!
+die Zeilen sind Datei: lese die Zeilen!
 
-die Personen sind Zeilen: mappe<Person> dich mit etwas Mapbarem(Zeile):
+die Personen sind Zeilen: mappe<Person> euch mit etwas Mapbarem(Zeile):
 
     die Zeichenfolgen sind Zeile: trenne dich zwischen dem Separator "|"!
 
@@ -56,8 +56,8 @@ die Personen sind Zeilen: mappe<Person> dich mit etwas Mapbarem(Zeile):
 
 // Aufgabe: gebe alle Personen aus, sortiert nach dem Alter aus, deren Name mit 'B' anfangen
 die sortiertenPersonen sind Personen:
-    filter dich mit etwas Bedingtem: der Name der Person: startet mit der Zeichenfolge "L"!.!:
-    sortiere dich mit etwas Vergleichbarem: das Alter der PersonA - das Alter der PersonB.!
+    filter euch mit etwas Bedingtem: der Name der Person: startet mit der Zeichenfolge "L"!.!:
+    sortiere euch mit etwas Vergleichbarem: das Alter der PersonA - das Alter der PersonB.!
 
 für jede Person in den sortiertenPersonen:
     schreibe die Zeile (die Person als Zeichenfolge)
