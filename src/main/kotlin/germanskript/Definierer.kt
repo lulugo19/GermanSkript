@@ -264,9 +264,10 @@ class Definierer(startDatei: File): PipelineKomponente(startDatei) {
   fun holeVollenNamenVonFunktionsAufruf(
       funktionsAufruf: AST.Satz.Ausdruck.FunktionsAufruf,
       typTypParams: List<AST.WortArt.Nomen>,
-      typTypArgs: List<AST.TypKnoten>
+      typTypArgs: List<AST.TypKnoten>,
+      ersetzeObjekt: String? = null
   ): String {
-    return holeVollenNamenVonFunktionsAufruf(funktionsAufruf, null) { argument ->
+    return holeVollenNamenVonFunktionsAufruf(funktionsAufruf, ersetzeObjekt) { argument ->
       holeArgName(argument, typTypParams, typTypArgs)
     }
   }

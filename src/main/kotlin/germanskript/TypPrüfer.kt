@@ -297,7 +297,6 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
       funktionsAufruf.vollerName = definierer.holeVollenNamenVonFunktionsAufruf(funktionsAufruf, null)
     }
     var funktionsSignatur: AST.Definition.FunktionsSignatur? = null
-    logger.addLine("prüfe Funktionsaufruf in ${funktionsAufruf.verb.position}: ${funktionsAufruf.vollerName!!}")
     val methodenBlockObjekt = umgebung.holeMethodenBlockObjekt()
 
     if (funktionsAufruf.subjekt != null) {
@@ -308,9 +307,7 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
       funktionsSignatur = findeMethode(
           funktionsAufruf,
           subjekt,
-          FunktionsAufrufTyp.METHODEN_SUBJEKT_AUFRUF,
-          TokenTyp.REFLEXIV_PRONOMEN.ZWEITE_FORM.DICH,
-          true
+          FunktionsAufrufTyp.METHODEN_SUBJEKT_AUFRUF
       )
 
       if (funktionsSignatur == null ) {
@@ -328,9 +325,7 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
       funktionsSignatur = findeMethode(
           funktionsAufruf,
           methodenBlockObjekt,
-          FunktionsAufrufTyp.METHODEN_BLOCK_AUFRUF,
-          TokenTyp.REFLEXIV_PRONOMEN.ZWEITE_FORM.DICH,
-          true
+          FunktionsAufrufTyp.METHODEN_BLOCK_AUFRUF
       )
       methodenObjekt = methodenBlockObjekt
     }
@@ -338,14 +333,26 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
     // ist Methoden-Selbst-Aufruf
     if (funktionsSignatur == null && zuÜberprüfendeKlasse != null
         && funktionsAufruf.reflexivPronomen?.typ !is TokenTyp.REFLEXIV_PRONOMEN.ZWEITE_FORM) {
-      funktionsSignatur = findeMethode(
-          funktionsAufruf,
-          zuÜberprüfendeKlasse!!,
-          FunktionsAufrufTyp.METHODEN_SELBST_AUFRUF,
-          TokenTyp.REFLEXIV_PRONOMEN.ERSTE_FORM.MICH,
-          true
-      )
-      methodenObjekt = zuÜberprüfendeKlasse
+
+      // Wenn man in einem Super-Block ist, wird die Eltern-Methode aufgerufen
+      funktionsSignatur = if (inSuperBlock && zuÜberprüfendeKlasse!!.definition.elternKlasse != null) {
+        val elternKlasse = zuÜberprüfendeKlasse!!.definition.elternKlasse!!.klasse.typ!! as Typ.Compound.KlassenTyp
+        findeMethode(
+            funktionsAufruf,
+            elternKlasse,
+            FunktionsAufrufTyp.METHODEN_SELBST_AUFRUF
+        )
+      } else {
+        findeMethode(
+            funktionsAufruf,
+            zuÜberprüfendeKlasse!!,
+            FunktionsAufrufTyp.METHODEN_SELBST_AUFRUF
+        )
+      }
+
+      if (funktionsSignatur != null) {
+        methodenObjekt = zuÜberprüfendeKlasse
+      }
     }
 
     // ist normale Funktion
@@ -367,7 +374,6 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
 
     // ist Methoden-Objekt-Aufruf als letzte Möglichkeit
     // das bedeutet Funktionsnamen gehen vor Methoden-Objekt-Aufrufen
-    // TODO: kombiniere dies mit der Ersetzung von Parameternamen mit generische Parameter
     if (funktionsSignatur == null && funktionsAufruf.objekt != null) {
       val klasse = try {
         typisierer.bestimmeTyp(funktionsAufruf.objekt.name)
@@ -376,16 +382,15 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
         null
       }
       if (klasse is Typ.Compound.KlassenTyp) {
-        val methoden = klasse.definition.methoden
         val objektName = funktionsAufruf.objekt.name
         val reflexivPronomen = holeReflexivPronomenForm(false, objektName.kasus, objektName.numerus).pronomen
+        funktionsSignatur = findeMethode(
+            funktionsAufruf,
+            klasse,
+            FunktionsAufrufTyp.METHODEN_REFLEXIV_AUFRUF,
+            reflexivPronomen
+        )
         methodenObjekt = klasse
-        val methodenName = definierer.holeVollenNamenVonFunktionsAufruf(funktionsAufruf, reflexivPronomen)
-        methoden[methodenName]?.also { methode ->
-          funktionsSignatur = methoden.getValue(methodenName).signatur
-          funktionsAufruf.vollerName = methode.signatur.vollerName
-          funktionsAufruf.aufrufTyp = FunktionsAufrufTyp.METHODEN_REFLEXIV_AUFRUF
-        }
       }
     }
 
@@ -408,19 +413,19 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
       }
     }
 
-    val parameter = funktionsSignatur!!.parameter.toList()
+    val parameter = funktionsSignatur.parameter.toList()
     val argumente = funktionsAufruf.argumente.toList()
     val j = if (funktionsAufruf.aufrufTyp == FunktionsAufrufTyp.METHODEN_REFLEXIV_AUFRUF) 1 else 0
     val anzahlArgumente = argumente.size - j
     if (anzahlArgumente != parameter.size) {
-      throw GermanSkriptFehler.SyntaxFehler.AnzahlDerParameterFehler(funktionsSignatur!!.name.toUntyped())
+      throw GermanSkriptFehler.SyntaxFehler.AnzahlDerParameterFehler(funktionsSignatur.name.toUntyped())
     }
 
     val typKontext = methodenObjekt?.typArgumente
 
-    val genericsMüssenInferiertWerden = funktionsSignatur!!.typParameter.isNotEmpty()
+    val genericsMüssenInferiertWerden = funktionsSignatur.typParameter.isNotEmpty()
         && funktionsAufruf.typArgumente.isEmpty()
-    val inferierteGenerics: MutableList<AST.TypKnoten?> = MutableList(funktionsSignatur!!.typParameter.size) {null}
+    val inferierteGenerics: MutableList<AST.TypKnoten?> = MutableList(funktionsSignatur.typParameter.size) {null}
 
     if (!genericsMüssenInferiertWerden) {
       funktionsAufruf.typArgumente.forEach { arg ->
@@ -485,7 +490,7 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
     letzterFunktionsAufruf = null
     methodenObjekt = null
 
-    val rückgabeTyp = ersetzeGenerics(funktionsSignatur!!.rückgabeTyp)
+    val rückgabeTyp = ersetzeGenerics(funktionsSignatur.rückgabeTyp)
     return rückgabeTyp.typ!!
   }
 
@@ -514,18 +519,10 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
       funktionsAufruf: AST.Satz.Ausdruck.FunktionsAufruf,
       typ: Typ.Compound,
       aufrufTyp: FunktionsAufrufTyp,
-      reflexivPronomen: TokenTyp.REFLEXIV_PRONOMEN,
-      erlaubeHoleElternDefinition: Boolean
+      ersetzeObjekt: String? = null
   ): AST.Definition.FunktionsSignatur? {
-    // versuche Methode in der Elternklasse zu finden
-    if (typ is Typ.Compound.KlassenTyp && aufrufTyp == FunktionsAufrufTyp.METHODEN_SELBST_AUFRUF &&
-        erlaubeHoleElternDefinition && inSuperBlock && typ.definition.elternKlasse != null) {
-      val elternKlasse = typ.definition.elternKlasse!!.klasse.typ!! as Typ.Compound.KlassenTyp
-      val signatur = findeMethode(
-          funktionsAufruf, elternKlasse,
-          aufrufTyp, reflexivPronomen, false
-      )
-      überprüfePassendeFunktionsSignatur(funktionsAufruf, signatur, aufrufTyp, elternKlasse)?.also { return it }
+    if (ersetzeObjekt != null) {
+      funktionsAufruf.vollerName = definierer.holeVollenNamenVonFunktionsAufruf(funktionsAufruf, ersetzeObjekt)
     }
 
     // ist Methodenaufruf von Block-Variable
@@ -534,9 +531,9 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
     }
 
     if (typ.definition.typParameter.isNotEmpty()) {
-      // TODO: hier müssen nicht nur TypTypParameter sondern auch die FunktionTypParameter berücksichtigt werden
+      // Die Funktionstypparameter werden nicht ersetzt, da sie möglicherweise erst inferiert werden müssen.
       val ersetzeTypArgsName = definierer.holeVollenNamenVonFunktionsAufruf(
-          funktionsAufruf, typ.definition.typParameter, typ.typArgumente)
+          funktionsAufruf, typ.definition.typParameter, typ.typArgumente, ersetzeObjekt)
 
       typ.definition.findeMethode(ersetzeTypArgsName)?.also { signatur ->
         // TODO: Die Typparameternamen müssen für den Interpreter später hier ersetzt werden
@@ -545,7 +542,7 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
       }
     }
 
-    if (funktionsAufruf.reflexivPronomen != null && funktionsAufruf.reflexivPronomen.typ == reflexivPronomen) {
+    if (funktionsAufruf.reflexivPronomen != null) {
       throw GermanSkriptFehler.Undefiniert.Methode(funktionsAufruf.verb.toUntyped(),
           funktionsAufruf,
           typ.definition.name.nominativ)
