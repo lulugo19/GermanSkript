@@ -1498,8 +1498,8 @@ class GermanSkriptTest {
       
       die quadratischeSumme ist Zahlen:
         filter euch mit etwas Bedingtem: die Zahl mod 2 = 0.!:
-        mappe<Zahl> euch mit etwas Mapbarem: die Zahl hoch 2.!:
-        reduziere<Zahl> euch mit dem AnfangsWert 0, etwas Reduzierbarem: der Akkumulator + die Zahl.!
+        transformiere<Zahl> euch mit etwas Transformierendem: die Zahl hoch 2.!:
+        reduziere<Zahl> euch mit dem AnfangsWert 0, etwas Reduzierendem: der Akkumulator + die Zahl.!
       
       schreibe die Zahl die quadratischeSumme
     """.trimIndent()
@@ -1564,4 +1564,9 @@ class GermanSkriptTest {
       führeGermanSkriptCodeAus(quellCode)
     }
   }
+
+  /*
+  @Test
+  @DisplayName("Type-Inference von Rückgabetyp von Closuren")
+  */
 }

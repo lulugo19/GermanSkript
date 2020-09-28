@@ -31,7 +31,7 @@ die Datei ist eine IO::Datei mit dem DateiNamen "personen.csv"
 
 die Zeilen sind Datei: lese die Zeilen!
 
-die Personen sind Zeilen: mappe<Person> euch mit etwas Mapbarem(Zeile):
+die Personen sind Zeilen: transformiere<Person> euch mit etwas Transformierendem(Zeile):
 
     die Zeichenfolgen sind Zeile: trenne dich zwischen dem Separator "|"!
 
@@ -64,7 +64,7 @@ für jede Person in den sortiertenPersonen:
 .
 
 // Aufgabe: wie alt sind die Personen zusammen?
-das gemeinsameAlter ist reduziere<Zahl> die sortiertenPersonen mit dem AnfangsWert 0, etwas Reduzierbarem:
+das gemeinsameAlter ist reduziere<Zahl> die sortiertenPersonen mit dem AnfangsWert 0, etwas Reduzierendem:
     der Akkumulator plus das Alter der Person
 .
 

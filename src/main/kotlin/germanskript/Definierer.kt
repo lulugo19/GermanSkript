@@ -355,7 +355,7 @@ class Definierer(startDatei: File): PipelineKomponente(startDatei) {
     if (modulPfad == null || modulPfad.isEmpty())
       return ast.definitionen.definierteTypen.getValue(klassenName)
 
-    val modul: AST.DefinitionsContainer = modulPfad.fold<String, AST.DefinitionsContainer>(ast.definitionen) {
+    val modul: AST.DefinitionsContainer = modulPfad.fold(ast.definitionen) {
       container, modul -> container.module.getValue(modul).definitionen
     }
 

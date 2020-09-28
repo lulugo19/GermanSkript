@@ -15,14 +15,14 @@ Adjektiv<Typ> vergleichbar:
 .
 
 Adjektiv<Typ> bedingt:
-    Verb(Boolean) bedinge den Typ
+    Verb(Boolean) überprüfe den Typ
 .
 
-Adjektiv<Typ, ErgebnisTyp> mapbar:
-    Verb(ErgebnisTyp) mappe den Typ
+Adjektiv<Typ, ErgebnisTyp> transformierend:
+    Verb(ErgebnisTyp) transformiere den Typ
 .
 
-Adjektiv<Typ, ErgebnisTyp> reduzierbar:
+Adjektiv<Typ, ErgebnisTyp> reduzierend:
     Verb(ErgebnisTyp) reduziere den ErgebnisTyp Akkumulator mit dem Typ
 .
 
@@ -42,28 +42,28 @@ Modul Standard::Collections:
             die Elemente sind Ich
             die gefiltertenElemente sind einige Elemente[]
             für jedes Element:
-                wenn (Bedingtes: bedinge den Typ Element!):
+                wenn (Bedingtes: überprüfe den Typ Element!):
                     gefilterteElemente: füge das Element hinzu!
                 .
             .
             gebe die gefiltertenElemente zurück
         .
 
-        Verb<Typ>(Typen) mappe uns mit dem Mapbaren<Element, Typ>:
+        Verb<Typ>(Typen) transformiere uns mit dem Transformierenden<Element, Typ>:
             die Elemente sind Ich
-            die gemapptenElemente sind einige Typen[]
+            die transformiertenElemente sind einige Typen[]
             für jedes Element:
-                das gemappteElement ist Mapbares: mappe den Typ Element!
-                gemappteElemente: füge das gemappteElement hinzu!
+                das transformierteElement ist Transformierendes: transformiere den Typ Element!
+                transformierteElemente: füge das transformierteElement hinzu!
             .
-            gebe die gemapptenElemente zurück
+            gebe die transformiertenElemente zurück
         .
 
-        Verb<Typ>(Typ) reduziere uns mit dem Typ AnfangsWert, dem Reduzierbaren<Element, Typ>:
+        Verb<Typ>(Typ) reduziere uns mit dem Typ AnfangsWert, dem Reduzierenden<Element, Typ>:
             die Elemente sind Ich
             ein Akkumulator ist der AnfangsWert
             für jedes Element:
-                ein Akkumulator ist Reduzierbares: reduziere den Akkumulator mit dem Typ Element!
+                ein Akkumulator ist Reduzierendes: reduziere den Akkumulator mit dem Typ Element!
             .
             gebe den Akkumulator zurück
         .
