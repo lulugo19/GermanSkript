@@ -147,6 +147,12 @@ private sealed class SubParser<T: AST>() {
                 "Das Possessivpronomen '${vornomen.wert}' darf nur in Methodenblöcken verwendet werden.")
           }
         }
+        is TokenTyp.VORNOMEN.JEDE -> {
+          if (id != ASTKnotenID.FÜR_JEDE_SCHLEIFE) {
+            throw GermanSkriptFehler.SyntaxFehler.ParseFehler(vornomen.toUntyped(), null,
+            "Das Vornomen 'jeden', 'jeder', 'jedes' darf nur in einer Für-Jede-Schleife verwendet werden.")
+          }
+        }
       }
     }
     if (vornomen is TokenTyp.VORNOMEN.DEMONSTRATIV_PRONOMEN) {
@@ -318,7 +324,7 @@ private sealed class SubParser<T: AST>() {
       }
       val nächstesToken = peek(i)
       if (nächstesToken.typ is TokenTyp.BEZEICHNER_KLEIN && präpositionsFälle.containsKey(nächstesToken.wert)
-          && peekType(i+1) is TokenTyp.VORNOMEN) {
+          && peekType(i+1) is TokenTyp.VORNOMEN && peekType(i+1) !is TokenTyp.VORNOMEN.JEDE) {
         überspringeLeereZeilen()
         list += combiner(expect("Präposition"), parser())
       } else {
@@ -943,8 +949,7 @@ private sealed class SubParser<T: AST>() {
 
       override fun parseImpl(): AST.Satz.FürJedeSchleife {
         parseKleinesSchlüsselwort("für")
-        val jede = expect<TokenTyp.JEDE>("'jeden', 'jede' oder 'jedes'")
-        val singular = parseNomenOhneVornomen(true)
+        val singular = parseNomenMitVornomen<TokenTyp.VORNOMEN.JEDE>("'jeden', 'jede' oder 'jedes'", true)
         val binder = when (peekType()) {
           is TokenTyp.BEZEICHNER_GROSS -> parseNomenOhneVornomen(true)
           else -> singular
@@ -977,7 +982,7 @@ private sealed class SubParser<T: AST>() {
               "In der Für-Jede-Schleife ohne 'in' oder 'von ... bis' ist ein Singular, dass nur aus einem Symbol besteht nicht erlaubt.")
         }
         val sätze = parseSätze()
-        return AST.Satz.FürJedeSchleife(jede, singular, binder, liste, reichweite, sätze)
+        return AST.Satz.FürJedeSchleife(singular, binder, liste, reichweite, sätze)
       }
     }
 

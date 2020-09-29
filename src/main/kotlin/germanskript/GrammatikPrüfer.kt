@@ -82,19 +82,43 @@ class GrammatikPrüfer(startDatei: File): PipelineKomponente(startDatei) {
         val erwarteteForm = bezeichner.ersetzeHauptWort(deklination.holeForm(kasus, numerus.first()), true)
         throw GermanSkriptFehler.GrammatikFehler.FormFehler.FalschesNomen(nomen.bezeichner.toUntyped(), kasus, nomen, erwarteteForm)
       }
+
     }
+
     prüfeVornomen(nomen)
     if (nomen.adjektiv != null) {
       prüfeAdjektiv(nomen.adjektiv!!, nomen)
     }
+
+    if (nomen.deklination?.istNominalisiertesAdjektiv == true) {
+      // Sonderfall beachten: 'einige' bei einem nominalisiertem Adjektiv
+      val endung = if (nomen.numerus == Numerus.PLURAL && nomen.vornomen?.typ is TokenTyp.VORNOMEN.ARTIKEL.UNBESTIMMT)
+        "e"
+        else holeAdjektivEndung(nomen)
+      nomen.deklination = holeNormalisierteAdjektivDeklination(nomen.hauptWort.removeSuffix(endung) ,nomen)
+    }
+  }
+
+  private fun holeNormalisierteAdjektivDeklination(adjektivOhneEndung: String, nomen: AST.WortArt.Nomen): Deklination {
+    val adjektivEndungenSingular = bestimmterArtikelAdjektivEndung[nomen.genus.ordinal]
+    val adjektivEndungenPlural = bestimmterArtikelAdjektivEndung[3]
+    val singular = adjektivEndungenSingular.map { adjektivOhneEndung + it }.toTypedArray()
+    val plural = adjektivEndungenPlural.map { adjektivOhneEndung + it }.toTypedArray()
+    return Deklination(nomen.genus, singular, plural)
+  }
+
+  private fun holeAdjektivEndung(nomen: AST.WortArt.Nomen): String {
+    return when(nomen.vornomen?.typ) {
+      null, TokenTyp.VORNOMEN.ETWAS -> keinArtikelEndungen
+      is TokenTyp.VORNOMEN.ARTIKEL.BESTIMMT,
+      is TokenTyp.VORNOMEN.JEDE,
+      is TokenTyp.VORNOMEN.DEMONSTRATIV_PRONOMEN -> bestimmterArtikelAdjektivEndung
+      else -> unbestimmterArtikelAdjektivEndung
+    }[if (nomen.numerus == Numerus.SINGULAR) nomen.genus.ordinal else 3][nomen.kasus.ordinal]
   }
 
   private fun prüfeAdjektiv(adjektiv: AST.WortArt.Adjektiv, nomen: AST.WortArt.Nomen?) {
-    val endung = if (nomen == null) "" else when(nomen.vornomen?.typ) {
-          is TokenTyp.VORNOMEN.ARTIKEL.BESTIMMT -> bestimmterArtikelAdjektivEndung
-          null -> keinArtikelEndungen
-          else -> unbestimmterArtikelAdjektivEndung
-      }[if (nomen.numerus == Numerus.SINGULAR) nomen.genus.ordinal else 3][nomen.kasus.ordinal]
+    val endung = if (nomen == null) "" else holeAdjektivEndung(nomen)
 
     // prüfe die korrekte Endung
     if (!adjektiv.bezeichner.wert.endsWith(endung)) {
@@ -103,12 +127,7 @@ class GrammatikPrüfer(startDatei: File): PipelineKomponente(startDatei) {
     // eine Nomenerweiterung ist daran zu erkennen, dass das Adjektiv ein Teil des Kontextnomens ist
     if (nomen !== null && adjektiv.parent === nomen) {
       // Wenn es sich um eine Nomenerweiterung handelt, dann berechnen wir die Deklination selbst
-      val adjektivOhneEndung = adjektiv.bezeichner.wert.removeSuffix(endung)
-      val adjektivEndungenSingular = bestimmterArtikelAdjektivEndung[nomen.genus.ordinal]
-      val adjektivEndungenPlural = bestimmterArtikelAdjektivEndung[3]
-      val singular = adjektivEndungenSingular.map { adjektivOhneEndung + it }.toTypedArray()
-      val plural = adjektivEndungenPlural.map { adjektivOhneEndung + it }.toTypedArray()
-      adjektiv.deklination = Deklination(nomen.genus, singular, plural)
+      adjektiv.deklination = holeNormalisierteAdjektivDeklination(adjektiv.bezeichner.wert.removeSuffix(endung), nomen)
     } else {
       adjektiv.normalisierung = adjektiv.bezeichner.wert.capitalize().removeSuffix(endung) + "e"
       adjektiv.deklination = deklinierer.holeDeklination(adjektiv)
@@ -126,9 +145,6 @@ class GrammatikPrüfer(startDatei: File): PipelineKomponente(startDatei) {
   private fun prüfeVornomen(nomen: AST.WortArt.Nomen)
   {
     if (nomen.vornomen == null || nomen.vornomen!!.typ == TokenTyp.VORNOMEN.ETWAS) {
-      if (nomen.deklination?.istNominalisiertesAdjektiv == true) {
-        nomen.deklination = zuBestimmterDeklination(nomen.deklination!!)
-      }
       if (nomen.vornomen?.typ == TokenTyp.VORNOMEN.ETWAS) {
         nomen.vornomenString = "etwas"
       }
@@ -157,16 +173,6 @@ class GrammatikPrüfer(startDatei: File): PipelineKomponente(startDatei) {
       nomen.numera.add(ersterNumerus)
       throw GermanSkriptFehler.GrammatikFehler.FormFehler.FalschesVornomen(vorNomen.toUntyped(), ersterFall, nomen, erwartetesVornomen)
     }
-  }
-
-  private fun zuBestimmterDeklination(deklination: Deklination): Deklination {
-    val singularEndungen = arrayOf("e", "en", "en", "e")
-    return Deklination(
-        deklination.genus,
-        deklination.singular.mapIndexed { i, form -> form.dropLast(2) + singularEndungen[i]}.toTypedArray(),
-        // Der Plural ist in diesem Fall übernommen werden, weil er sowieso nie verwendet werden sollte
-        deklination.plural
-    )
   }
 
   private fun prüfeNumerus(nomen: AST.WortArt.Nomen, numerus: Numerus) {
@@ -345,13 +351,6 @@ class GrammatikPrüfer(startDatei: File): PipelineKomponente(startDatei) {
 
   private fun prüfeFürJedeSchleife(fürJedeSchleife: AST.Satz.FürJedeSchleife) {
     prüfeNomen(fürJedeSchleife.singular, EnumSet.of(Kasus.AKKUSATIV), EnumSet.of(Numerus.SINGULAR))
-    if (fürJedeSchleife.jede.typ.genus != fürJedeSchleife.singular.genus) {
-      throw GermanSkriptFehler.GrammatikFehler.FormFehler.FalschesVornomen(
-          fürJedeSchleife.jede.toUntyped(), Kasus.NOMINATIV, fürJedeSchleife.singular,
-          TokenTyp.JEDE.holeForm(fürJedeSchleife.singular.genus)
-      )
-    }
-
     prüfeNomen(fürJedeSchleife.binder, EnumSet.of(Kasus.NOMINATIV), EnumSet.of(Numerus.SINGULAR))
     prüfeNumerus(fürJedeSchleife.binder, Numerus.SINGULAR)
 
@@ -524,6 +523,13 @@ private val VORNOMEN_TABELLE = mapOf<TokenTyp.VORNOMEN, Array<Array<String>>>(
         arrayOf("jenes", "jener", "jenes", "jener"),
         arrayOf("jenem", "jener", "jenem", "jenen"),
         arrayOf("jenen", "jene", "jenes", "jene")
+    ),
+
+    TokenTyp.VORNOMEN.JEDE to arrayOf(
+        arrayOf("jeden", "jede", "jedes", "jede"),
+        arrayOf("jeden", "jede", "jedes", "jede"),
+        arrayOf("jeden", "jede", "jedes", "jede"),
+        arrayOf("jeden", "jede", "jedes", "jede")
     )
 
 )

@@ -535,7 +535,7 @@ class GermanSkriptTest {
       .
 
       Verb zeichne das Zeichenbare mit der Zeichenfolge Farbe: 
-          Zeichenbare: zeichne dich mit der Farbe!
+          Zeichenbares: zeichne dich mit der Farbe!
       .
 
       Nomen Dreieck:.
@@ -1236,7 +1236,7 @@ class GermanSkriptTest {
       .
       
       Verb fütter das Gefräßige:
-        Gefräßige: fütter dich!
+        Gefräßiges: fütter dich!
       .
       
       der HundKIRA ist ein Hund

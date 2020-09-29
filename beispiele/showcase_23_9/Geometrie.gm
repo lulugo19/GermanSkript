@@ -39,6 +39,6 @@ die Flächigen sind einige Flächige [
     (ein Quadrat mit der Länge 5),
     (ein RechtEck mit der Breite 4, der Höhe 6)]
 
-für jedes Flächiges in den Flächigen:
+für jedes Flächige:
     schreibe die Zahl (Flächiges: berechne_fläche!)
 .

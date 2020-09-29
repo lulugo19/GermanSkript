@@ -750,7 +750,7 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
   private fun evaluiereListenSingular(singular: AST.WortArt.Nomen): Typ {
     val plural = singular.ganzesWort(Kasus.NOMINATIV, Numerus.PLURAL, true)
     val liste = when (singular.vornomen?.typ) {
-        TokenTyp.VORNOMEN.ARTIKEL.BESTIMMT, null -> evaluiereVariable(plural)?:
+        TokenTyp.VORNOMEN.ARTIKEL.BESTIMMT, TokenTyp.VORNOMEN.JEDE, null -> evaluiereVariable(plural)?:
           throw GermanSkriptFehler.Undefiniert.Variable(singular.bezeichner.toUntyped(), plural)
         TokenTyp.VORNOMEN.POSSESSIV_PRONOMEN.MEIN ->
           holeNormaleEigenschaftAusKlasse(singular, zuÜberprüfendeKlasse!!, Numerus.PLURAL).typKnoten.typ!!

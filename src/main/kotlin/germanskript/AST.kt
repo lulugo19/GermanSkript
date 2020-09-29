@@ -1,6 +1,5 @@
 package germanskript
 
-import kotlinx.coroutines.yield
 import java.util.*
 import kotlin.collections.HashMap
 
@@ -467,7 +466,6 @@ sealed class AST {
     }
 
     data class FürJedeSchleife(
-        val jede: TypedToken<TokenTyp.JEDE>,
         val singular: WortArt.Nomen,
         val binder: WortArt.Nomen,
         val liste: Ausdruck?,

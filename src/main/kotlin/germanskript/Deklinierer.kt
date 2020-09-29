@@ -275,8 +275,8 @@ class Wörterbuch {
   private fun holeEndungen(vornomen: TokenTyp.VORNOMEN?) = when (vornomen) {
     null, TokenTyp.VORNOMEN.ETWAS -> ohneArtikelAdjektivEndungen
     TokenTyp.VORNOMEN.ARTIKEL.BESTIMMT,
-    TokenTyp.VORNOMEN.DEMONSTRATIV_PRONOMEN.DIESE,
-    TokenTyp.VORNOMEN.DEMONSTRATIV_PRONOMEN.JENE -> bestimmterArtikelAdjektivEndungen
+    is TokenTyp.VORNOMEN.DEMONSTRATIV_PRONOMEN,
+    TokenTyp.VORNOMEN.JEDE -> bestimmterArtikelAdjektivEndungen
     // 'einige' ist ein spezieller Fall, wo dann die unbestimmten Adjektivendungen verwendet werden
     TokenTyp.VORNOMEN.ARTIKEL.UNBESTIMMT -> Pair(unbestimmterArtikelAdjektivEndungen.first, ohneArtikelAdjektivEndungen.second)
     TokenTyp.VORNOMEN.POSSESSIV_PRONOMEN.MEIN,
