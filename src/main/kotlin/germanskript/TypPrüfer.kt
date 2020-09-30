@@ -964,6 +964,11 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
     umgebung.popBereich()
     return schnittstelle
   }
+
+  override fun evaluiereTypÜberprüfung(typÜberprüfung: AST.Satz.Ausdruck.TypÜberprüfung): Typ {
+    typisierer.bestimmeTyp(typÜberprüfung.typ, funktionsTypParams, zuÜberprüfendeKlasse?.definition?.typParameter, true)
+    return Typ.Primitiv.Boolean
+  }
 }
 
 fun main() {

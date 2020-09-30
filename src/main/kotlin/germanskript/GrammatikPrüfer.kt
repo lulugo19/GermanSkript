@@ -227,6 +227,7 @@ class GrammatikPrüfer(startDatei: File): PipelineKomponente(startDatei) {
       is AST.Satz.Ausdruck.Closure -> prüfeClosure(ausdruck, kontextNomen, fälle, pluralErwartet)
       is AST.Satz.Ausdruck.Minus -> prüfeMinus(ausdruck)
       is AST.Satz.Ausdruck.FunktionsAufruf -> prüfeFunktionsAufruf(ausdruck)
+      is AST.Satz.Ausdruck.TypÜberprüfung -> prüfeTypÜberprüfung(ausdruck)
     }
   }
 
@@ -333,6 +334,21 @@ class GrammatikPrüfer(startDatei: File): PipelineKomponente(startDatei) {
     }
     prüfeKontextbasiertenAusdruck(elementZuweisung.index, null, EnumSet.of(Kasus.NOMINATIV), false)
     prüfeKontextbasiertenAusdruck(elementZuweisung.wert, nomen, EnumSet.of(Kasus.NOMINATIV), false)
+  }
+
+  private fun prüfeTypÜberprüfung(typÜberprüfung: AST.Satz.Ausdruck.TypÜberprüfung) {
+    prüfeTyp(typÜberprüfung.typ, EnumSet.of(Kasus.NOMINATIV), EnumSet.of(typÜberprüfung.ist.typ.numerus), null)
+    val pluralErwartet = typÜberprüfung.ist.typ.numerus == Numerus.PLURAL
+    when (typÜberprüfung.typ.name) {
+      is AST.WortArt.Nomen -> {
+        prüfeKontextbasiertenAusdruck(typÜberprüfung.ausdruck, typÜberprüfung.typ.name,
+            EnumSet.of(Kasus.NOMINATIV), pluralErwartet)
+      }
+      is AST.WortArt.Adjektiv -> {
+        prüfeKontextbasiertenAusdruck(typÜberprüfung.ausdruck, null,
+            EnumSet.of(Kasus.NOMINATIV), pluralErwartet)
+      }
+    }
   }
 
   private fun prüfeBinärenAusdruck(binärerAusdruck: AST.Satz.Ausdruck.BinärerAusdruck, kontextNomen: AST.WortArt.Nomen?, fälle: EnumSet<Kasus>, pluralErwartet: Boolean) {

@@ -691,6 +691,14 @@ sealed class AST {
         }
       }
 
+      data class TypÜberprüfung(
+          val ausdruck: Ausdruck,
+          val typ: TypKnoten,
+          val ist: TypedToken<TokenTyp.ZUWEISUNG>
+      ): Ausdruck() {
+        override val children = sequenceOf(ausdruck, typ)
+      }
+
       interface IEigenschaftsZugriff: IAufruf {
         val eigenschaftsName: WortArt.Nomen
         var aufrufName: String?

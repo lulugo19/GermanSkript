@@ -573,6 +573,13 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
   override fun evaluiereClosure(closure: AST.Satz.Ausdruck.Closure): Wert {
     return Wert.Closure((closure.schnittstelle.typ as Typ.Compound.Schnittstelle), closure, umgebung)
   }
+
+  override fun evaluiereTypÜberprüfung(typÜberprüfung: AST.Satz.Ausdruck.TypÜberprüfung): Wert {
+    val ausdruckTyp = typeOf(evaluiereAusdruck(typÜberprüfung.ausdruck))
+    val istTyp = typPrüfer.typIstTyp(ausdruckTyp, typÜberprüfung.typ.typ!!)
+    return Wert.Primitiv.Boolean(istTyp)
+  }
+
   // endregion
 
 

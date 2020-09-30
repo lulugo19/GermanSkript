@@ -1565,8 +1565,21 @@ class GermanSkriptTest {
     }
   }
 
-  /*
   @Test
-  @DisplayName("Type-Inference von Rückgabetyp von Closuren")
-  */
+  @DisplayName("Typ-Check")
+  fun typCheck() {
+    val quellCode = """
+      die Zahl ist 5
+      wenn die Zahl eine Zahl ist:
+        schreibe die Zeile "Die Zahl ist eine Zahl!"
+      .
+      sonst wenn die Zahl eine Zeichenfolge ist:
+        schreibe die Zeile "Die Zahl ist eine Zeichenfolge!"
+      .
+    """.trimIndent()
+
+    führeGermanSkriptCodeAus(quellCode)
+    //testeGermanSkriptCode(quellCode, "Die Zahl ist eine Zahl!\n")
+  }
+
 }

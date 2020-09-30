@@ -82,6 +82,7 @@ abstract  class ProgrammDurchlaufer<T>(startDatei: File): PipelineKomponente(sta
       is AST.Satz.Ausdruck.MethodenBereich -> holeErstesTokenVonAusdruck(ausdruck.objekt)
       is AST.Satz.Ausdruck.Nichts -> ausdruck.nichts.toUntyped()
       is AST.Satz.Ausdruck.Bedingung -> holeErstesTokenVonAusdruck(ausdruck.bedingungen[0].bedingung)
+      is AST.Satz.Ausdruck.TypÜberprüfung -> holeErstesTokenVonAusdruck(ausdruck.ausdruck)
     }
   }
 
@@ -130,6 +131,7 @@ abstract  class ProgrammDurchlaufer<T>(startDatei: File): PipelineKomponente(sta
       is AST.Satz.Ausdruck.MethodenBereichReferenz -> evaluiereMethodenBlockReferenz()
       is AST.Satz.Ausdruck.Closure -> evaluiereClosure(ausdruck)
       is AST.Satz.Ausdruck.Konstante -> evaluiereKonstante(ausdruck)
+      is AST.Satz.Ausdruck.TypÜberprüfung -> evaluiereTypÜberprüfung(ausdruck)
       is AST.Satz.Ausdruck.MethodenBereich -> durchlaufeMethodenBereich(ausdruck)
       is AST.Satz.Ausdruck.Bedingung -> durchlaufeBedingungsSatz(ausdruck, true)
       is AST.Satz.Ausdruck.Nichts -> nichts
@@ -171,4 +173,5 @@ abstract  class ProgrammDurchlaufer<T>(startDatei: File): PipelineKomponente(sta
   protected abstract fun evaluiereSelbstReferenz(): T
   protected abstract fun evaluiereClosure(closure: AST.Satz.Ausdruck.Closure): T
   protected abstract fun evaluiereKonstante(konstante: AST.Satz.Ausdruck.Konstante): T
+  protected abstract fun evaluiereTypÜberprüfung(typÜberprüfung: AST.Satz.Ausdruck.TypÜberprüfung): T
 }

@@ -37,7 +37,8 @@ enum class ASTKnotenID {
   FUNKTIONS_SIGNATUR,
   IMPLEMENTIERUNG,
   BEDINGUNGS_TERM,
-  LISTEN_ELEMENT_ZUWEISUNG
+  LISTEN_ELEMENT_ZUWEISUNG,
+  TYP_ÜBERPRÜFUNG
 }
 
 class Parser(startDatei: File): PipelineKomponente(startDatei) {
@@ -360,7 +361,7 @@ private sealed class SubParser<T: AST>() {
     fun parseFunktionOderKonstante(): AST.Satz.Ausdruck {
       val modulPfad = parseModulPfad()
       return when (peekType()) {
-        is TokenTyp.BEZEICHNER_KLEIN -> subParse(Satz.Ausdruck.FunktionsAufruf.FunktionsAufrufImperativ(modulPfad))
+        is TokenTyp.BEZEICHNER_KLEIN -> subParse(Satz.Ausdruck.FunktionsAufruf(modulPfad))
         is TokenTyp.BEZEICHNER_GROSS -> AST.Satz.Ausdruck.Konstante(modulPfad, parseGroßenBezeichner(true))
         else -> throw GermanSkriptFehler.SyntaxFehler.ParseFehler(next(), "Bezeichner")
       }
@@ -371,14 +372,14 @@ private sealed class SubParser<T: AST>() {
         is TokenTyp.ZEICHENFOLGE -> AST.Satz.Ausdruck.Zeichenfolge(next().toTyped())
         is TokenTyp.ZAHL -> AST.Satz.Ausdruck.Zahl(next().toTyped())
         is TokenTyp.BOOLEAN -> AST.Satz.Ausdruck.Boolean(next().toTyped())
-        is TokenTyp.BEZEICHNER_KLEIN -> subParse(Satz.Ausdruck.FunktionsAufruf.FunktionsAufrufImperativ(emptyList()))
+        is TokenTyp.BEZEICHNER_KLEIN -> subParse(Satz.Ausdruck.FunktionsAufruf(emptyList()))
         is TokenTyp.WENN -> subParse(Satz.Ausdruck.Bedingung)
         is TokenTyp.VORNOMEN -> {
           val subjekt = parseNomenAusdruck<TokenTyp.VORNOMEN>("Vornomen", true, false).third
           val nächterTokenTyp = peekType()
           // prüfe hier ob ein bedingter Aufruf geparst werden soll
           if (inBedingungsTerm && (nächterTokenTyp is TokenTyp.VORNOMEN || nächterTokenTyp is TokenTyp.BEZEICHNER_KLEIN)) {
-            subParse(Satz.Ausdruck.FunktionsAufruf.FunktionsAufrufBedingung(subjekt))
+            subParse(Satz.Ausdruck.BedingungsAusdruck(subjekt))
           } else {
             subjekt
           }
@@ -696,15 +697,15 @@ private sealed class SubParser<T: AST>() {
             "für" -> subParse(Satz.FürJedeSchleife)
             "importiere" -> when {
               peekType(1) is TokenTyp.ZEICHENFOLGE -> null
-              else -> subParse(Satz.Ausdruck.FunktionsAufruf.FunktionsAufrufImperativ(emptyList()))
+              else -> subParse(Satz.Ausdruck.FunktionsAufruf(emptyList()))
             }
             "verwende" -> when {
               peekType(1) is TokenTyp.BEZEICHNER_GROSS -> null
-              else -> subParse(Satz.Ausdruck.FunktionsAufruf.FunktionsAufrufImperativ(emptyList()))
+              else -> subParse(Satz.Ausdruck.FunktionsAufruf(emptyList()))
             }
             "versuche" -> subParse(Satz.VersucheFange)
             "werfe" -> subParse(Satz.Werfe)
-            else -> subParse(Satz.Ausdruck.FunktionsAufruf.FunktionsAufrufImperativ(emptyList()))
+            else -> subParse(Satz.Ausdruck.FunktionsAufruf(emptyList()))
           }
         is TokenTyp.EOF, TokenTyp.PUNKT, TokenTyp.AUSRUFEZEICHEN, TokenTyp.HAUPT_PROGRAMM_ENDE -> null
         else -> parseAusdruck(mitVornomen = true, optionalesIstNachVergleich = false, linkerAusdruck = null)
@@ -1049,6 +1050,14 @@ private sealed class SubParser<T: AST>() {
 
     sealed class Ausdruck<T: AST.Satz.Ausdruck>: SubParser<T>() {
 
+      fun parsePräpositionsArgumente(): List<AST.PräpositionsArgumente> {
+        return parsePräpositionsListe(
+            { parseListeMitStart<AST.Argument, TokenTyp.KOMMA, TokenTyp.VORNOMEN.ARTIKEL.BESTIMMT>(false, ::parseArgument) }
+        ) { präposition, argumente ->
+          AST.PräpositionsArgumente(AST.Präposition(präposition), argumente)
+        }
+      }
+
       sealed class NomenAusdruck<T: AST.Satz.Ausdruck>(protected val nomen: AST.WortArt.Nomen): Ausdruck<T>() {
         class Liste(protected val pluralTyp: AST.TypKnoten)
           : NomenAusdruck<AST.Satz.Ausdruck.Liste>(pluralTyp.name as AST.WortArt.Nomen) {
@@ -1132,59 +1141,32 @@ private sealed class SubParser<T: AST>() {
         }
       }
 
-      sealed class FunktionsAufruf: Ausdruck<AST.Satz.Ausdruck.FunktionsAufruf>() {
 
-        override val id: ASTKnotenID
-          get() = ASTKnotenID.FUNKTIONS_AUFRUF
+      class FunktionsAufruf(val modulPfad: List<TypedToken<TokenTyp.BEZEICHNER_GROSS>>): Ausdruck<AST.Satz.Ausdruck.FunktionsAufruf>() {
+        override val id: ASTKnotenID = ASTKnotenID.FUNKTIONS_AUFRUF
 
-        fun parsePräpositionsArgumente(): List<AST.PräpositionsArgumente> {
-          return parsePräpositionsListe(
-              { parseListeMitStart<AST.Argument, TokenTyp.KOMMA, TokenTyp.VORNOMEN.ARTIKEL.BESTIMMT>(false, ::parseArgument) }
-          ) { präposition, argumente ->
-            AST.PräpositionsArgumente(AST.Präposition(präposition), argumente)
-          }
-        }
-
-        class FunktionsAufrufImperativ(val modulPfad: List<TypedToken<TokenTyp.BEZEICHNER_GROSS>>): FunktionsAufruf() {
-          override fun parseImpl(): AST.Satz.Ausdruck.FunktionsAufruf {
-            val verb = expect<TokenTyp.BEZEICHNER_KLEIN>("bezeichner")
-            val typArgumente = parseTypArgumente()
-            val objekt = parseOptional<AST.Argument, TokenTyp.VORNOMEN>(::parseArgument)
-            val reflexivPronomen = if (objekt == null) parseOptional<TokenTyp.REFLEXIV_PRONOMEN>() else null
-            when (reflexivPronomen?.typ) {
-              is TokenTyp.REFLEXIV_PRONOMEN.ERSTE_FORM -> {
-                if (!hierarchyContainsAnyNode(ASTKnotenID.IMPLEMENTIERUNG, ASTKnotenID.KLASSEN_DEFINITION)) {
-                  throw GermanSkriptFehler.SyntaxFehler.UngültigerBereich(reflexivPronomen.toUntyped(),
-                      "Das Reflexivpronomen '${reflexivPronomen.typ.pronomen}' kann nur innerhalb einer Klassen-Implementierung verwendet werden.")
-                }
-              }
-              is TokenTyp.REFLEXIV_PRONOMEN.ZWEITE_FORM -> {
-                if (!hierarchyContainsNode(ASTKnotenID.METHODEN_BEREICH)) {
-                  throw GermanSkriptFehler.SyntaxFehler.UngültigerBereich(reflexivPronomen.toUntyped(),
-                      "Das Reflexivpronomen '${reflexivPronomen.typ.pronomen}' kann nur in einem Methodenbereich verwendet werden.")
-                }
+        override fun parseImpl(): AST.Satz.Ausdruck.FunktionsAufruf {
+          val verb = expect<TokenTyp.BEZEICHNER_KLEIN>("bezeichner")
+          val typArgumente = parseTypArgumente()
+          val objekt = parseOptional<AST.Argument, TokenTyp.VORNOMEN>(::parseArgument)
+          val reflexivPronomen = if (objekt == null) parseOptional<TokenTyp.REFLEXIV_PRONOMEN>() else null
+          when (reflexivPronomen?.typ) {
+            is TokenTyp.REFLEXIV_PRONOMEN.ERSTE_FORM -> {
+              if (!hierarchyContainsAnyNode(ASTKnotenID.IMPLEMENTIERUNG, ASTKnotenID.KLASSEN_DEFINITION)) {
+                throw GermanSkriptFehler.SyntaxFehler.UngültigerBereich(reflexivPronomen.toUntyped(),
+                    "Das Reflexivpronomen '${reflexivPronomen.typ.pronomen}' kann nur innerhalb einer Klassen-Implementierung verwendet werden.")
               }
             }
-            val präpositionen = parsePräpositionsArgumente()
-            val suffix = parseOptional<TokenTyp.BEZEICHNER_KLEIN>()
-            return AST.Satz.Ausdruck.FunktionsAufruf(typArgumente, modulPfad, null, verb, objekt, reflexivPronomen, präpositionen, suffix)
-          }
-        }
-
-        class FunktionsAufrufBedingung(val subjekt: AST.Satz.Ausdruck): FunktionsAufruf() {
-          override fun parseImpl(): AST.Satz.Ausdruck.FunktionsAufruf {
-            val objekt = parseOptional<AST.Argument, TokenTyp.VORNOMEN>(::parseArgument)
-            // Reflexivpronomen sind hier nicht erlaubt
-            val präpositionen = parsePräpositionsArgumente()
-            var suffix: TypedToken<TokenTyp.BEZEICHNER_KLEIN>? = expect("bezeichner")
-            var verb = parseOptional<TokenTyp.BEZEICHNER_KLEIN>()
-            if (verb == null) {
-              verb = suffix
-              suffix = null
+            is TokenTyp.REFLEXIV_PRONOMEN.ZWEITE_FORM -> {
+              if (!hierarchyContainsNode(ASTKnotenID.METHODEN_BEREICH)) {
+                throw GermanSkriptFehler.SyntaxFehler.UngültigerBereich(reflexivPronomen.toUntyped(),
+                    "Das Reflexivpronomen '${reflexivPronomen.typ.pronomen}' kann nur in einem Methodenbereich verwendet werden.")
+              }
             }
-            val typArgumente = parseTypArgumente()
-            return AST.Satz.Ausdruck.FunktionsAufruf(typArgumente, emptyList(), subjekt, verb!!, objekt, null, präpositionen, suffix)
           }
+          val präpositionen = parsePräpositionsArgumente()
+          val suffix = parseOptional<TokenTyp.BEZEICHNER_KLEIN>()
+          return AST.Satz.Ausdruck.FunktionsAufruf(typArgumente, modulPfad, null, verb, objekt, reflexivPronomen, präpositionen, suffix)
         }
       }
 
@@ -1214,8 +1196,7 @@ private sealed class SubParser<T: AST>() {
       }
 
       class MethodenBereich(private val objektAusdruck: AST.Satz.Ausdruck): Ausdruck<AST.Satz.Ausdruck.MethodenBereich>() {
-        override val id: ASTKnotenID
-          get() = ASTKnotenID.METHODEN_BEREICH
+        override val id: ASTKnotenID = ASTKnotenID.METHODEN_BEREICH
 
         override fun parseImpl(): AST.Satz.Ausdruck.MethodenBereich {
           val sätze = parseSätze(TokenTyp.AUSRUFEZEICHEN)
@@ -1227,6 +1208,54 @@ private sealed class SubParser<T: AST>() {
             methodenBereich
           }
         }
+      }
+
+      // Bedingungs-Ausdrücke sind etweder ein Subjekt-Funktionsaufruf oder eine Typüberprüfung
+      class BedingungsAusdruck(private val subjekt: AST.Satz.Ausdruck): Ausdruck<AST.Satz.Ausdruck>() {
+
+        private var _id: ASTKnotenID = ASTKnotenID.TYP_ÜBERPRÜFUNG
+        override val id: ASTKnotenID get() = _id
+
+        override fun parseImpl(): AST.Satz.Ausdruck {
+          val objekt = parseOptional<AST.Argument, TokenTyp.VORNOMEN>(::parseArgument)
+          return if (objekt != null) {
+            val objektAusdruck = objekt.ausdruck
+            if (objektAusdruck is AST.Satz.Ausdruck.ObjektInstanziierung &&
+                objektAusdruck.eigenschaftsZuweisungen.isEmpty() &&
+                objektAusdruck.klasse.name == objekt.name &&
+                peekType() is TokenTyp.ZUWEISUNG) {
+              AST.Satz.Ausdruck.TypÜberprüfung(subjekt, objektAusdruck.klasse, expect("'ist' oder 'sind'"))
+            } else {
+              parseFunktionsAufruf(objekt)
+            }
+          } else {
+            val modulPfad = parseModulPfad()
+            val tokenTyp = peekType(1)
+            if (modulPfad.isNotEmpty() || tokenTyp is TokenTyp.ZUWEISUNG || (tokenTyp is TokenTyp.OPERATOR && tokenTyp.operator == Operator.KLEINER)) {
+              val adjektiv = expect<TokenTyp.BEZEICHNER_KLEIN>("Adjektiv")
+              val typArgumente = parseTypArgumente()
+              val typ = AST.TypKnoten(modulPfad, AST.WortArt.Adjektiv(null, adjektiv), typArgumente)
+              AST.Satz.Ausdruck.TypÜberprüfung(subjekt, typ, expect("'ist' oder 'sind'"))
+            } else {
+              parseFunktionsAufruf(null)
+            }
+          }
+        }
+
+        fun parseFunktionsAufruf(objekt: AST.Argument?): AST.Satz.Ausdruck.FunktionsAufruf {
+          _id = ASTKnotenID.FUNKTIONS_AUFRUF
+          // Reflexivpronomen sind hier nicht erlaubt
+          val präpositionen = parsePräpositionsArgumente()
+          var suffix: TypedToken<TokenTyp.BEZEICHNER_KLEIN>? = expect("bezeichner")
+          var verb = parseOptional<TokenTyp.BEZEICHNER_KLEIN>()
+          if (verb == null) {
+            verb = suffix
+            suffix = null
+          }
+          val typArgumente = parseTypArgumente()
+          return AST.Satz.Ausdruck.FunktionsAufruf(typArgumente, emptyList(), subjekt, verb!!, objekt, null, präpositionen, suffix)
+        }
+
       }
     }
   }
