@@ -1527,9 +1527,13 @@ class GermanSkriptTest {
   }
 
   @Test
-  @DisplayName("Rückgabetyp als Objekt")
-  fun rückgabeTypAlsObjekt() {
+  @DisplayName("Rückgabetyp mit Name")
+  fun rückgabeTypMitName() {
     val quellCode = """
+      Verb(Zahl) lese_zahl:
+        gebe 42 zurück
+      .
+      
       Verb lese (eine Zahl):
         gebe 42 zurück
       .
@@ -1566,8 +1570,8 @@ class GermanSkriptTest {
   }
 
   @Test
-  @DisplayName("Typ-Check")
-  fun typCheck() {
+  @DisplayName("Typ-Check Nomen")
+  fun typCheckNomen() {
     val quellCode = """
       die Zahl ist 5
       wenn die Zahl eine Zahl ist:
@@ -1578,8 +1582,34 @@ class GermanSkriptTest {
       .
     """.trimIndent()
 
-    führeGermanSkriptCodeAus(quellCode)
-    //testeGermanSkriptCode(quellCode, "Die Zahl ist eine Zahl!\n")
+    testeGermanSkriptCode(quellCode, "Die Zahl ist eine Zahl!\n")
+  }
+
+  @Test
+  @DisplayName("Typ-Check Adjektiv")
+  fun typCheckAdjektiv() {
+    val quellCode = """
+      Adjektiv testbar:.
+      
+      Deklination Maskulinum Singular(Test, Tests, Test, Test) Plural(Tests)
+      
+      Nomen Test:.
+      
+      Implementiere den testbaren Test:.
+      
+      der Test ist ein Test
+      
+      wenn der Test testbar ist:
+        schreibe die Zeile "Der Test ist testbar!"
+      .
+      sonst:
+        schreibe die Zeile "Der Test ist untestbar!"
+      .
+    """.trimIndent()
+
+    val erwarteteAusgabe = "Der Test ist testbar!\n"
+
+    testeGermanSkriptCode(quellCode, erwarteteAusgabe)
   }
 
 }

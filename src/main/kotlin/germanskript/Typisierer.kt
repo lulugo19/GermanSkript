@@ -457,9 +457,9 @@ class Typisierer(startDatei: File): PipelineKomponente(startDatei) {
           )
         }
       }
-      // füge die Schnittstelle als implementierte Schnittstelle für die Klasse hinzu
-      klasse.implementierteSchnittstellen += schnittstelle
     }
+    // füge die Schnittstelle als implementierte Schnittstelle für die Klasse hinzu
+    klasse.implementierteSchnittstellen += schnittstelle
   }
 
   private fun typisiereSchnittstelle(schnittstelle: AST.Definition.Typdefinition.Schnittstelle) {
