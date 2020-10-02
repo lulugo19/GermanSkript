@@ -183,7 +183,7 @@ class GrammatikPrüfer(startDatei: File): PipelineKomponente(startDatei) {
   }
 
   val bestimmterArtikelAdjektivEndung = arrayOf(
-      arrayOf("e", "", "", "en"),     // Maskulinum
+      arrayOf("e", "en", "en", "en"),     // Maskulinum
       arrayOf("e", "en", "en", "e"),  // Femininum
       arrayOf("e", "en", "en", "e"),  // Neutrum
       arrayOf("en", "en", "en", "en") // Plural

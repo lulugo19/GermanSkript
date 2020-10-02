@@ -400,7 +400,11 @@ private sealed class SubParser<T: AST>() {
         }
         is TokenTyp.OFFENE_KLAMMER -> {
           next()
-          parseAusdruck(mitVornomen, optionalesIstNachVergleich, null, inBedingungsTerm).also { expect<TokenTyp.GESCHLOSSENE_KLAMMER>("')'") }
+          überspringeLeereZeilen()
+          parseAusdruck(mitVornomen, optionalesIstNachVergleich, null, inBedingungsTerm).also {
+            überspringeLeereZeilen()
+            expect<TokenTyp.GESCHLOSSENE_KLAMMER>("')'")
+          }
         }
         is TokenTyp.OPERATOR -> {
           if (currentToken != null &&

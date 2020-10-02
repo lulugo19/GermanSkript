@@ -1,0 +1,42 @@
+Deklination Maskulinum Singular(Baum, Baums, Baum, Baum) Plural(Bäume)
+Deklination Maskulinum Singular(Knoten, Knotens, Knoten, Knoten) Plural(Knoten)
+Deklination Neutrum Singular (Blatt, Blatts, Blatt, Blatt) Plural(Blätter)
+Deklination Maskulinum Singular (Wert, Werts, Wert, Wert) Plural(Werte)
+
+Nomen Baum:.
+
+Implementiere den Baum:
+    Verb durchlaufe mich:.
+.
+
+Nomen Knoten mit
+    der Zeichenfolge Wert,
+    dem linkenBaum,
+    dem rechtenBaum
+    als Baum:.
+
+Implementiere den Knoten:
+    Verb durchlaufe mich:
+        // in order traversal
+        durchlaufe meinen linkenBaum
+        schreibe die Zeile (mein Wert)
+        durchlaufe meinen rechtenBaum
+    .
+.
+
+Nomen Blatt als Baum:.
+
+der Baum ist ein Knoten mit
+    dem Wert "Hallo",
+    dem linkenBaum (
+        ein Knoten mit dem Wert "Welt",
+        dem linkenBaum (
+            ein Knoten mit dem Wert "!",
+            dem linkenBaum (ein Blatt),
+            dem rechtenBaum (ein Blatt)
+        ),
+        dem rechtenBaum (ein Blatt)
+    ),
+    dem rechtenBaum (ein Blatt)
+
+durchlaufe den Baum
