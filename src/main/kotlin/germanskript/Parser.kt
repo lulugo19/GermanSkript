@@ -1073,6 +1073,7 @@ private sealed class SubParser<T: AST>() {
             expect<TokenTyp.OFFENE_ECKIGE_KLAMMER>("'['")
             val elemente = parseListeMitEnde<AST.Satz.Ausdruck, TokenTyp.KOMMA, TokenTyp.GESCHLOSSENE_ECKIGE_KLAMMER>(true)
               { parseAusdruck(mitVornomen = true, optionalesIstNachVergleich = false) }
+            überspringeLeereZeilen()
             expect<TokenTyp.GESCHLOSSENE_ECKIGE_KLAMMER>("']'")
             return AST.Satz.Ausdruck.Liste(pluralTyp, elemente)
           }

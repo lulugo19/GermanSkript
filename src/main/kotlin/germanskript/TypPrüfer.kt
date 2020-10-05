@@ -736,11 +736,7 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
     ausdruckMussTypSein(listenElement.index, Typ.Primitiv.Zahl)
     val zeichenfolge = evaluiereVariable(listenElement.singular.nominativ)
     // Bei einem Zugriff auf einen Listenindex kann es sich auch um eine Zeichenfolge handeln
-    if (zeichenfolge != null) {
-      if (zeichenfolge != Typ.Compound.KlassenTyp.Zeichenfolge) {
-        throw GermanSkriptFehler.TypFehler.FalscherTyp(
-            listenElement.singular.bezeichner.toUntyped(), zeichenfolge, "Zeichenfolge")
-      }
+    if (zeichenfolge != null && zeichenfolge == Typ.Compound.KlassenTyp.Zeichenfolge) {
       listenElement.istZeichenfolgeZugriff = true
       return Typ.Compound.KlassenTyp.Zeichenfolge
     }

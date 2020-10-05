@@ -689,8 +689,25 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
       is Typ.Primitiv.Zahl -> konvertiereZuZahl(konvertierung, wert)
       is Typ.Primitiv.Boolean -> konvertiereZuBoolean(wert)
       is Typ.Compound.KlassenTyp.Zeichenfolge -> konvertiereZuZeichenfolge(wert)
+      is Typ.Compound.KlassenTyp -> if (typeOf(wert) == konvertierung.typ.typ!!) {
+        wert
+      } else {
+        val fehlerMeldung = "Ungültige Konvertierung!\n" +
+            "Die Klasse '${wert}' kann nicht nach '${konvertierung.typ.typ!!}' konvertiert werden."
+        werfeFehler(fehlerMeldung, "KonvertierungsFehler", konvertierung.token)
+
+      }
       else -> throw Exception("Typprüfer sollte diesen Fall schon überprüfen!")
     }
+  }
+
+  private fun werfeFehler(fehlerMeldung: String, fehlerKlassenName: String, token: Token): Nothing {
+    val fehlerObjekt = Wert.Objekt.SkriptObjekt(Typ.Compound.KlassenTyp.Klasse(klassenDefinitionen.getValue(fehlerKlassenName), emptyList()),
+        mutableMapOf(
+            "FehlerMeldung" to Wert.Objekt.InternesObjekt.Zeichenfolge(fehlerMeldung)
+        ))
+
+    throw GermanSkriptFehler.UnbehandelterFehler(token, aufrufStapel.toString(), fehlerMeldung, fehlerObjekt)
   }
 
   private fun konvertiereZuZahl(konvertierung: AST.Satz.Ausdruck.Konvertierung, wert: Wert): Wert.Primitiv.Zahl {
@@ -701,12 +718,7 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
           Wert.Primitiv.Zahl(wert.zeichenfolge)
         }
         catch (parseFehler: ParseException) {
-          val fehlerMeldung = "Die Zeichenfolge '${wert.zeichenfolge}' kann nicht in eine Zahl konvertiert werden."
-          val fehlerObjekt = Wert.Objekt.SkriptObjekt(Typ.Compound.KlassenTyp.Klasse(klassenDefinitionen.getValue("KonvertierungsFehler"), emptyList()),
-              mutableMapOf(
-                  "FehlerMeldung" to Wert.Objekt.InternesObjekt.Zeichenfolge(fehlerMeldung)
-              ))
-          throw GermanSkriptFehler.UnbehandelterFehler(konvertierung.token, aufrufStapel.toString(), fehlerMeldung, fehlerObjekt)
+          werfeFehler("Die Zeichenfolge '${wert.zeichenfolge}' kann nicht in eine Zahl konvertiert werden.", "KonvertierungsFehler", konvertierung.token)
         }
       }
       is Wert.Primitiv.Boolean -> Wert.Primitiv.Zahl(if (wert.boolean) 1.0 else 0.0)

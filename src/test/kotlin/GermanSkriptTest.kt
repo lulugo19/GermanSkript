@@ -1612,4 +1612,38 @@ class GermanSkriptTest {
     testeGermanSkriptCode(quellCode, erwarteteAusgabe)
   }
 
+  @Test
+  @DisplayName("Typecasting Vererbung")
+  fun typeCastingVererbung() {
+    val quellCode = """
+      Deklination Femininum Singular(Klasse) Plural(Klassen)
+
+      Nomen ElternKlasse:.
+      
+      Nomen KindKlasse mit der Zeichenfolge als ElternKlasse:.
+      
+      die Klassen sind einige ElternKlassen [
+        eine ElternKlasse, 
+        eine KindKlasse mit der Zeichenfolge "Hallo"
+      ]
+      
+      eine Klasse ist die Klasse[1] als KindKlasse
+      schreibe die Zeile (die Zeichenfolge der Klasse)
+      
+      versuche:
+        eine Klasse ist die Klasse[0] als KindKlasse
+      .
+      fange den KonvertierungsFehler:
+        schreibe die Zeile "Fehler gefangen!"
+      .
+    """.trimIndent()
+
+    val erwarteteAusgabe = """
+      Hallo
+      Fehler gefangen!
+      
+    """.trimIndent()
+
+    testeGermanSkriptCode(quellCode, erwarteteAusgabe)
+  }
 }
