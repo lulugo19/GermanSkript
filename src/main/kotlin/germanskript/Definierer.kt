@@ -263,7 +263,7 @@ class Definierer(startDatei: File): PipelineKomponente(startDatei) {
 
   fun holeVollenNamenVonFunktionsAufruf(
       funktionsAufruf: AST.Satz.Ausdruck.FunktionsAufruf,
-      typTypParams: List<AST.WortArt.Nomen>,
+      typTypParams: List<AST.Definition.TypParam>,
       typTypArgs: List<AST.TypKnoten>,
       ersetzeObjekt: String? = null
   ): String {
@@ -292,12 +292,12 @@ class Definierer(startDatei: File): PipelineKomponente(startDatei) {
 
   private fun holeArgName(
       argument: AST.Argument,
-      typTypParams: List<AST.WortArt.Nomen>,
+      typTypParams: List<AST.Definition.TypParam>,
       typTypArgs: List<AST.TypKnoten>
   ): AST.WortArt.Nomen {
     val ersetzeArgIndex = typTypArgs.indexOfFirst { arg -> arg.name.nominativ == argument.name.nominativ }
     if (ersetzeArgIndex != -1) {
-      return typTypParams[ersetzeArgIndex]
+      return typTypParams[ersetzeArgIndex].binder
     }
     return argument.name
   }

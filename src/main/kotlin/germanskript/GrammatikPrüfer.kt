@@ -408,9 +408,15 @@ class GrammatikPrüfer(startDatei: File): PipelineKomponente(startDatei) {
     }
   }
 
-  private fun prüfeTypParameter(typParameter: TypParameter) {
+  private fun prüfeTypParameter(typParameter: List<AST.Definition.TypParam>) {
     for (param in typParameter) {
-      prüfeNomen(param, EnumSet.of(Kasus.NOMINATIV), EnumSet.of(Numerus.SINGULAR))
+      prüfeNomen(param.binder, EnumSet.of(Kasus.NOMINATIV), EnumSet.of(Numerus.SINGULAR))
+      param.schnittstellen.forEach { schnittstelle ->
+        prüfeTyp(schnittstelle, EnumSet.of(Kasus.NOMINATIV), EnumSet.of(Numerus.SINGULAR), param.binder)
+      }
+      if (param.elternKlasse != null) {
+        prüfeTyp(param.elternKlasse, EnumSet.of(Kasus.NOMINATIV), EnumSet.of(Numerus.SINGULAR), null)
+      }
     }
   }
 
@@ -451,8 +457,19 @@ class GrammatikPrüfer(startDatei: File): PipelineKomponente(startDatei) {
 
   private fun prüfeImplementierung(implementierung: AST.Definition.Implementierung) {
     prüfeTyp(implementierung.klasse, EnumSet.of(Kasus.AKKUSATIV), EnumSet.of(Numerus.SINGULAR), null)
+    prüfeTypParameter(implementierung.typParameter)
     implementierung.schnittstellen.forEach { schnittstelle ->
-      prüfeTyp(schnittstelle, EnumSet.of(Kasus.NOMINATIV), Numerus.BEIDE , implementierung.klasse.name as AST.WortArt.Nomen)}
+      prüfeTyp(schnittstelle, EnumSet.of(Kasus.NOMINATIV), EnumSet.of(Numerus.SINGULAR) , implementierung.klasse.name as AST.WortArt.Nomen)}
+  }
+
+  private fun prüfeGenericDefinition(typParameter: AST.Definition.TypParam) {
+    prüfeNomen(typParameter.binder, EnumSet.of(Kasus.NOMINATIV), EnumSet.of(Numerus.SINGULAR))
+    typParameter.schnittstellen.forEach { schnittstelle ->
+      prüfeTyp(schnittstelle, EnumSet.of(Kasus.NOMINATIV), EnumSet.of(Numerus.SINGULAR), typParameter.binder)
+    }
+    if (typParameter.elternKlasse != null) {
+      prüfeTyp(typParameter.elternKlasse, EnumSet.of(Kasus.NOMINATIV), EnumSet.of(Numerus.SINGULAR), null)
+    }
   }
 
   private fun prüfeKonvertierungsDefinition(konvertierung: AST.Definition.Konvertierung) {

@@ -129,7 +129,7 @@ sealed class Wert {
             "enthalten das Element" -> enthaltenDenTyp(umgebung)
             "füge das Element hinzu" -> fügeDenTypHinzu(umgebung)
             "entferne an dem Index" -> entferneAnDemIndex(umgebung)
-            "sortiere mich mit dem Vergleichbaren" -> sortiereMichMitDemVergleichbaren(umgebung, aufrufCallback)
+            "sortiere mich mit dem Vergleichenden" -> sortiereMichMitDemVergleichbaren(umgebung, aufrufCallback)
             else -> throw Exception("Undefinierte Methode für Liste")
           }
         }

@@ -103,13 +103,13 @@ sealed class GermanSkriptFehler(private val fehlerName: String, val token: Token
 
   class UnimplementierteSchnittstelle(
       token: Token,
-      private val klasse: AST.Definition.Typdefinition.Klasse,
+      private val implementierung: AST.Definition.Implementierung,
       private val typ: Typ.Compound.Schnittstelle): GermanSkriptFehler("Unimplementierte Schnittstelle", token) {
     override val nachricht: String get() {
-      val uninplementierteMethoden = typ.definition.methodenSignaturen.filter {
-        !klasse.methoden.containsKey(it.vollerName!!)
+      val uninplementierteMethoden = typ.definition.methodenSignaturen.filter { signatur ->
+        implementierung.methoden.find { it.signatur.vollerName == signatur.vollerName } == null
       }.map {it.vollerName }
-      return "Die Klasse '${klasse.name.nominativ}' implementiert die Schnittstelle '${typ}' nicht.\n" +
+      return "Die Klasse '${implementierung.klasse.name.nominativ}' implementiert die Schnittstelle '${typ}' nicht.\n" +
           "Folgende Methoden müssen implementiert werden:\n" + uninplementierteMethoden.joinToString("\n\t")
     }
   }

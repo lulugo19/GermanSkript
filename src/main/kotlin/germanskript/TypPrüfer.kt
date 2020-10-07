@@ -17,7 +17,9 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
   // und Funktionsparameter für den Kontext zu verwenden.
   private var zuÜberprüfendeKlasse: Typ.Compound.KlassenTyp? = null
   private var rückgabeTyp: Typ = Typ.Nichts
-  private var funktionsTypParams: List<AST.WortArt.Nomen>? = null
+  private var funktionsTypParams: List<AST.Definition.TypParam>? = null
+  private var klassenTypParams: List<AST.Definition.TypParam>? = null
+  private var implementierungTypArgs: List<Typ>? = null
   private var letzterFunktionsAufruf: AST.Satz.Ausdruck.FunktionsAufruf? = null
   private var rückgabeErreicht = false
   private var evaluiereKonstante = false
@@ -113,7 +115,7 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
         }
       } else {
         typ.typArgumente.forEach {arg ->
-          typisierer.bestimmeTyp(arg, funktionsTypParams, zuÜberprüfendeKlasse?.definition?.typParameter, true)}
+          typisierer.bestimmeTyp(arg, funktionsTypParams, klassenTypParams, true)}
       }
     }
   }
@@ -175,9 +177,9 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
     funktionsTypParams = null
   }
 
-  private fun erstelleGenerischeTypArgumente(typParameter: TypParameter): List<AST.TypKnoten> {
+  private fun erstelleGenerischeTypArgumente(typParameter: List<AST.Definition.TypParam>): List<AST.TypKnoten> {
     return typParameter.mapIndexed { index, param ->
-      val typKnoten = AST.TypKnoten(emptyList(), param, emptyList())
+      val typKnoten = AST.TypKnoten(emptyList(), param.binder, emptyList())
       typKnoten.typ = Typ.Generic(param, index, TypParamKontext.Typ)
       typKnoten
     }
@@ -197,23 +199,11 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
       val elternKlasse = klasse.elternKlasse.klasse.typ as Typ.Compound.KlassenTyp
       prüfeKlasse(elternKlasse.definition)
     }
-    zuÜberprüfendeKlasse = when (klasse) {
-      Typ.Compound.KlassenTyp.Liste.definition -> Typ.Compound.KlassenTyp.Liste(erstelleGenerischeTypArgumente((klasse.typParameter)))
-      Typ.Compound.KlassenTyp.Zeichenfolge.definition -> Typ.Compound.KlassenTyp.Zeichenfolge
-      else -> Typ.Compound.KlassenTyp.Klasse(klasse, erstelleGenerischeTypArgumente(klasse.typParameter))
-    }
+    zuÜberprüfendeKlasse = typAusKlassenDefinition(klasse, erstelleGenerischeTypArgumente(klasse.typParameter))
+    klassenTypParams = klasse.typParameter
     durchlaufeAufruf(klasse.name.bezeichner.toUntyped(), klasse.konstruktor, Umgebung(), true, Typ.Nichts, false)
-    klasse.methoden.values.forEach(::prüfeFunktion)
-    klasse.konvertierungen.values.forEach {konvertierung ->
-      durchlaufeAufruf(
-          konvertierung.typ.name.bezeichnerToken,
-          konvertierung.definition, Umgebung(), true, konvertierung.typ.typ!!, false)
-    }
-    klasse.berechneteEigenschaften.values.forEach {eigenschaft ->
-      durchlaufeAufruf(eigenschaft.name.bezeichner.toUntyped(),
-          eigenschaft.definition, Umgebung(),
-          true, eigenschaft.rückgabeTyp.typ!!, false)
-    }
+    klasse.implementierungen.forEach {implementierung -> prüfeImplementierung(klasse, implementierung)}
+    klassenTypParams = null
 
     fun fügeElternKlassenMethodenHinzu(elternKlasse: AST.Definition.Typdefinition.Klasse) {
       for ((methodenName, methode) in elternKlasse.methoden) {
@@ -232,6 +222,38 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
     }
 
     zuÜberprüfendeKlasse = null
+  }
+
+  private fun prüfeImplementierung(klasse: AST.Definition.Typdefinition.Klasse, implementierung: AST.Definition.Implementierung) {
+    klassenTypParams = implementierung.typParameter
+    if (klasse.typParameter.size != implementierung.klasse.typArgumente.size) {
+      throw GermanSkriptFehler.TypArgumentFehler(
+          implementierung.klasse.name.bezeichnerToken,
+          implementierung.klasse.typArgumente.size,
+          klasse.typParameter.size
+      )
+    }
+    zuÜberprüfendeKlasse = typAusKlassenDefinition(klasse, implementierung.klasse.typArgumente)
+    implementierung.methoden.forEach(::prüfeFunktion)
+    implementierung.konvertierungen.forEach {konvertierung ->
+      durchlaufeAufruf(
+          konvertierung.typ.name.bezeichnerToken,
+          konvertierung.definition, Umgebung(), true, konvertierung.typ.typ!!, false)
+    }
+    implementierung.eigenschaften.forEach {eigenschaft ->
+      durchlaufeAufruf(eigenschaft.name.bezeichner.toUntyped(),
+          eigenschaft.definition, Umgebung(),
+          true, eigenschaft.rückgabeTyp.typ!!, false)
+    }
+    zuÜberprüfendeKlasse = null
+  }
+
+  private fun typAusKlassenDefinition(klasse: AST.Definition.Typdefinition.Klasse, typArgumente: List<AST.TypKnoten>): Typ.Compound.KlassenTyp {
+    return when (klasse) {
+      Typ.Compound.KlassenTyp.Liste.definition -> Typ.Compound.KlassenTyp.Liste(typArgumente)
+      Typ.Compound.KlassenTyp.Zeichenfolge.definition -> Typ.Compound.KlassenTyp.Zeichenfolge
+      else -> Typ.Compound.KlassenTyp.Klasse(klasse, typArgumente)
+    }
   }
 
   private fun durchlaufeAufruf(token: Token, bereich: AST.Satz.Bereich, umgebung: Umgebung<Typ>, neuerBereich: Boolean, rückgabeTyp: Typ, impliziteRückgabe: Boolean): Typ {
@@ -301,33 +323,30 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
 
     if (funktionsAufruf.subjekt != null) {
       val subjekt = evaluiereAusdruck(funktionsAufruf.subjekt)
-      if (subjekt !is Typ.Compound) {
-        throw GermanSkriptFehler.TypFehler.ObjektErwartet(holeErstesTokenVonAusdruck(funktionsAufruf.subjekt))
-      }
-      funktionsSignatur = findeMethode(
+      val fund = findeMethode(
           funktionsAufruf,
           subjekt,
           FunktionsAufrufTyp.METHODEN_SUBJEKT_AUFRUF
       )
-
+      funktionsSignatur = fund?.first
+      methodenObjekt = fund?.second
       if (funktionsSignatur == null ) {
         throw GermanSkriptFehler.Undefiniert.Funktion(funktionsAufruf.token, funktionsAufruf)
       }
-
-      methodenObjekt = subjekt
     }
 
     // ist Methodenaufruf von Bereich-Variable
     if (funktionsSignatur == null &&
-        methodenBlockObjekt is Typ.Compound &&
+        methodenBlockObjekt != null &&
         funktionsAufruf.reflexivPronomen?.typ !is TokenTyp.REFLEXIV_PRONOMEN.ERSTE_FORM
     ) {
-      funktionsSignatur = findeMethode(
+      val fund = findeMethode(
           funktionsAufruf,
           methodenBlockObjekt,
           FunktionsAufrufTyp.METHODEN_BLOCK_AUFRUF
       )
-      methodenObjekt = methodenBlockObjekt
+      funktionsSignatur = fund?.first
+      methodenObjekt = fund?.second
     }
 
     // ist Methoden-Selbst-Aufruf
@@ -337,21 +356,21 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
       // Wenn man in einem Super-Block ist, wird die Eltern-Methode aufgerufen
       funktionsSignatur = if (inSuperBlock && zuÜberprüfendeKlasse!!.definition.elternKlasse != null) {
         val elternKlasse = zuÜberprüfendeKlasse!!.definition.elternKlasse!!.klasse.typ!! as Typ.Compound.KlassenTyp
-        findeMethode(
+        val fund = findeMethode(
             funktionsAufruf,
             elternKlasse,
             FunktionsAufrufTyp.METHODEN_SELBST_AUFRUF
         )
+        methodenObjekt = fund?.second
+        fund?.first
       } else {
-        findeMethode(
+        val fund = findeMethode(
             funktionsAufruf,
             zuÜberprüfendeKlasse!!,
             FunktionsAufrufTyp.METHODEN_SELBST_AUFRUF
         )
-      }
-
-      if (funktionsSignatur != null) {
-        methodenObjekt = zuÜberprüfendeKlasse
+        methodenObjekt = fund?.second
+        fund?.first
       }
     }
 
@@ -375,23 +394,25 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
     // ist Methoden-Objekt-Aufruf als letzte Möglichkeit
     // das bedeutet Funktionsnamen gehen vor Methoden-Objekt-Aufrufen
     if (funktionsSignatur == null && funktionsAufruf.objekt != null) {
-      val klasse = try {
-        typisierer.bestimmeTyp(funktionsAufruf.objekt.name)
+      val objektTyp = try {
+        typisierer.bestimmeTyp(funktionsAufruf.objekt.name, funktionsTypParams, klassenTypParams)
       }
       catch (fehler: GermanSkriptFehler.Undefiniert.Typ) {
         null
       }
-      if (klasse is Typ.Compound.KlassenTyp) {
+      if (objektTyp != null) {
         val objektName = funktionsAufruf.objekt.name
         val reflexivPronomen = holeReflexivPronomenForm(false, objektName.kasus, objektName.numerus).pronomen
-        funktionsSignatur = findeMethode(
+        val fund = findeMethode(
             funktionsAufruf,
-            klasse,
+            objektTyp,
             FunktionsAufrufTyp.METHODEN_REFLEXIV_AUFRUF,
             reflexivPronomen
         )
-        methodenObjekt = klasse
+        funktionsSignatur = fund?.first
+        methodenObjekt = fund?.second
       }
+
     }
 
     if (funktionsSignatur == null) {
@@ -429,7 +450,7 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
 
     if (!genericsMüssenInferiertWerden) {
       funktionsAufruf.typArgumente.forEach { arg ->
-        typisierer.bestimmeTyp(arg, funktionsTypParams, zuÜberprüfendeKlasse?.definition?.typParameter, true)
+        typisierer.bestimmeTyp(arg, funktionsTypParams, klassenTypParams, true)
       }
     }
 
@@ -517,17 +538,30 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
 
   private fun findeMethode(
       funktionsAufruf: AST.Satz.Ausdruck.FunktionsAufruf,
-      typ: Typ.Compound,
+      typ: Typ,
       aufrufTyp: FunktionsAufrufTyp,
       ersetzeObjekt: String? = null
-  ): AST.Definition.FunktionsSignatur? {
+  ): Pair<AST.Definition.FunktionsSignatur, Typ.Compound>? {
     if (ersetzeObjekt != null) {
       funktionsAufruf.vollerName = definierer.holeVollenNamenVonFunktionsAufruf(funktionsAufruf, ersetzeObjekt)
     }
 
+    if (typ is Typ.Generic) {
+      for (schnittstelle in typ.typParam.schnittstellen) {
+        findeMethode(funktionsAufruf, schnittstelle.typ!!, aufrufTyp, ersetzeObjekt)?.also { return it }
+      }
+      typ.typParam.elternKlasse?.also {
+        klasse -> findeMethode(funktionsAufruf, klasse.typ!!, aufrufTyp, ersetzeObjekt)?.also { return it }
+      }
+    }
+
+    if (typ !is Typ.Compound) {
+      return null
+    }
+
     // ist Methodenaufruf von Block-Variable
     typ.definition.findeMethode(funktionsAufruf.vollerName!!)?.also { signatur ->
-      überprüfePassendeFunktionsSignatur(funktionsAufruf, signatur, aufrufTyp, typ)?.also { return it }
+      überprüfePassendeFunktionsSignatur(funktionsAufruf, signatur, aufrufTyp, typ)?.also { return Pair(it, typ) }
     }
 
     if (typ.definition.typParameter.isNotEmpty()) {
@@ -538,7 +572,7 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
       typ.definition.findeMethode(ersetzeTypArgsName)?.also { signatur ->
         // TODO: Die Typparameternamen müssen für den Interpreter später hier ersetzt werden
         funktionsAufruf.vollerName = ersetzeTypArgsName
-        überprüfePassendeFunktionsSignatur(funktionsAufruf, signatur, aufrufTyp, typ)?.also { return it }
+        überprüfePassendeFunktionsSignatur(funktionsAufruf, signatur, aufrufTyp, typ)?.also { return Pair(it, typ) }
       }
     }
 
@@ -638,7 +672,7 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
       umgebung.pushBereich()
       // TODO: hole aus dem Kontext die Typparameter
       val typ = typisierer.bestimmeTyp(
-          fange.param.typKnoten, funktionsTypParams, zuÜberprüfendeKlasse?.definition?.typParameter, true)!!
+          fange.param.typKnoten, funktionsTypParams, klassenTypParams, true)!!
       umgebung.schreibeVariable(fange.param.name, typ, true)
       durchlaufeBereich(fange.bereich, true)
       umgebung.popBereich()
@@ -724,7 +758,7 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
     val listenTyp = typisierer.bestimmeTyp(
         ausdruck.pluralTyp,
         funktionsTypParams,
-        zuÜberprüfendeKlasse?.definition?.typParameter,
+        klassenTypParams,
         true
     ) as Typ.Compound.KlassenTyp.Liste
     ausdruck.elemente.forEach {element -> ausdruckMussTypSein(element, listenTyp.typArgumente[0].typ!!)}
@@ -762,7 +796,7 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
     val klasse = typisierer.bestimmeTyp(
         instanziierung.klasse,
         funktionsTypParams,
-        zuÜberprüfendeKlasse?.definition?.typParameter,
+        klassenTypParams,
         true
     )!!
     if (klasse !is Typ.Compound.KlassenTyp) {
@@ -913,7 +947,7 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
     val schnittstelle = typisierer.bestimmeTyp(
         closure.schnittstelle,
         funktionsTypParams,
-        zuÜberprüfendeKlasse?.definition?.typParameter,
+        klassenTypParams,
         true
     )
     if (schnittstelle !is Typ.Compound.Schnittstelle) {
@@ -962,7 +996,7 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
   }
 
   override fun evaluiereTypÜberprüfung(typÜberprüfung: AST.Satz.Ausdruck.TypÜberprüfung): Typ {
-    typisierer.bestimmeTyp(typÜberprüfung.typ, funktionsTypParams, zuÜberprüfendeKlasse?.definition?.typParameter, true)
+    typisierer.bestimmeTyp(typÜberprüfung.typ, funktionsTypParams, klassenTypParams, true)
     return Typ.Primitiv.Boolean
   }
 }

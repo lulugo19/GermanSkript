@@ -3,6 +3,7 @@ Deklination Neutrum Singular(Element) Plural(Elemente)
 Deklination Maskulinum Singular(Index) Plural(Indizes)
 Deklination Maskulinum Singular(Akkumulator, Akkumulators, Akkumulator, Akkumulator) Plural(Akkumulatoren)
 Deklination Maskulinum Singular(Wert, Werts, Wert, Wert) Plural(Werte)
+Deklination Femininum Singular(Summe) Plural(Summen)
 
 // der Listentyp ist in Germanskript ein so elementarer Typ (Plural, spezielle Syntax nur für Liste),
 // dass er außerhalb des Moduls definiert wird
@@ -11,6 +12,10 @@ Nomen<Element> Liste:
 .
 
 Adjektiv<Typ> vergleichbar:
+    Verb(Zahl) vergleiche mich mit dem Typ
+.
+
+Adjektiv<Typ> vergleichend:
     Verb(Zahl) vergleiche den TypA mit dem TypB
 .
 
@@ -27,14 +32,14 @@ Adjektiv<Typ, ErgebnisTyp> reduzierend:
 .
 
 Modul Standard::Collections:
-    Implementiere die Liste:
+    Implementiere<Element> die Liste<Element>:
         Verb(Boolean) enthalten das Element: intern.
         Verb füge das Element hinzu: intern.
         Verb entferne an der Zahl Index: intern.
 
-        Verb(Elemente) sortiere uns mit dem Vergleichbaren<Element>:
+        Verb(Elemente) sortiere uns mit dem Vergleichenden<Element>:
             die ElementeKOPIE sind kopiere die Elemente Ich
-            merge_sortiere die ElementeKOPIE mit dem Vergleichbaren
+            merge_sortiere die ElementeKOPIE mit dem Vergleichenden
             gebe die ElementeKOPIE zurück
         .
 
@@ -69,38 +74,67 @@ Modul Standard::Collections:
         .
     .
 
-    Verb<Element> merge_sortiere die ElementeA mit dem Vergleichbaren<Element>:
+    Implementiere<vergleichbares<Element> Element> die Liste<Element>:
+        Verb(Elemente) sortiere mich:
+            gebe sortiere uns mit etwas Vergleichendem:
+                vergleiche das ElementA mit dem Typ ElementB.
+            zurück
+        .
+
+        Verb (Elemente) sortiere mich absteigend:
+            gebe sortiere uns mit etwas Vergleichendem:
+                vergleiche das ElementB mit dem Typ ElementA.
+            zurück
+        .
+    .
+
+    Implementiere die Liste<Zahl>:
+        Verb(Zahl) summiere uns:
+            eine Summe ist 0
+            die Zahlen sind Ich
+            für jede Zahl:
+                eine Summe ist die Summe plus die Zahl
+            .
+            gebe die Summe zurück
+        .
+
+        Eigenschaft(Zahl) Summe:
+            gebe summiere uns zurück
+        .
+    .
+
+    Verb<Element> merge_sortiere die ElementeA mit dem Vergleichenden<Element>:
         die ElementeB sind kopiere die ElementeA
         split_merge die ElementeB
             von der Zahl 0 zur AnZahl der ElementeA
-            in die ElementeA mit dem Vergleichbaren
+            in die ElementeA mit dem Vergleichenden
     .
 
     Verb<Element> split_merge die ElementeB
         von der ZahlB zur ZahlE in die ElementeA
-        mit dem Vergleichbaren<Element>:
+        mit dem Vergleichenden<Element>:
             wenn die ZahlE - die ZahlB <= 1 ist: zurück.
             die ZahlM ist Mathe::runde die Zahl ((die ZahlB + die ZahlE) / 2) ab
 
             split_merge die ElementeA von der ZahlB zur ZahlM
-                in die ElementeB mit dem Vergleichbaren
+                in die ElementeB mit dem Vergleichenden
 
             split_merge die ElementeA von der ZahlM zur ZahlE
-                in die ElementeB mit dem Vergleichbaren
+                in die ElementeB mit dem Vergleichenden
 
             merge die ElementeB von der ZahlB mit der ZahlM zur ZahlE
-                in die ElementeA mit dem Vergleichbaren
+                in die ElementeA mit dem Vergleichenden
     .
 
     Verb<Element> merge die ElementeA
         von der ZahlB mit der ZahlM zur ZahlE
         in die ElementeB
-        mit dem Vergleichbaren<Element>:
+        mit dem Vergleichenden<Element>:
             ein I ist die ZahlB
             ein J ist die ZahlM
             für jedes K von der ZahlB bis zur ZahlE:
                 wenn das I < die ZahlM und
-                  (das J >= der ZahlE oder (Vergleichbares: vergleiche den Typ ElementA[I] mit dem Typ ElementA[J]!) <= 0):
+                  (das J >= der ZahlE oder (Vergleichendes: vergleiche den Typ ElementA[I] mit dem Typ ElementA[J]!) <= 0):
                     das ElementB[K] ist das ElementA[I]
                     ein I ist das I + 1
                 .

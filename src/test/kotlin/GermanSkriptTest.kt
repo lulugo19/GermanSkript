@@ -1137,22 +1137,6 @@ class GermanSkriptTest {
   }
 
   @Test
-  @DisplayName("Bei Implementierungsgsbereich keine Typargumente erlaubt")
-  fun implementierungsBereichKeineTypArgumente() {
-    val quellCode = """
-      Deklination Maskulinum Singular(Test, Tests, Test, Test) Plural(Tests)
-      Nomen<Typ> Test mit dem Typ:.
-      
-      // Das hier sollte einen Parser-Fehler auslösen
-      Implementiere den Test<Zahl>:.
-    """.trimIndent()
-
-    assertThatExceptionOfType(GermanSkriptFehler.SyntaxFehler.ParseFehler::class.java).isThrownBy {
-      führeGermanSkriptCodeAus(quellCode)
-    }
-  }
-
-  @Test
   @DisplayName("Liste sortieren")
   fun listeSortieren() {
 
@@ -1165,7 +1149,7 @@ class GermanSkriptTest {
       val quellCode = """
         die Zahlen sind einige Zahlen${formatiereListe(testListe)}
         die sortiertenZahlen sind Zahlen:
-          sortiere euch mit etwas Vergleichbarem: $aufOderAbCode.
+          sortiere euch mit etwas Vergleichendem: $aufOderAbCode.
         !
         schreibe die Zeichenfolge (die sortiertenZahlen als Zeichenfolge)
       """.trimIndent()
@@ -1455,7 +1439,7 @@ class GermanSkriptTest {
   fun closureMitExplizitenParameterNamen() {
     val quellCode = """
       die Zahlen sind einige Zahlen[2, 3, 5, 7, 11, 13]
-      die sortiertenZahlen sind sortiere die Zahlen mit etwas Vergleichbarem(X, Y): das Y - das X.
+      die sortiertenZahlen sind sortiere die Zahlen mit etwas Vergleichendem(X, Y): das Y - das X.
       schreibe die Zeile sortierteZahlen als Zeichenfolge
     """.trimIndent()
 
@@ -1643,6 +1627,20 @@ class GermanSkriptTest {
       Fehler gefangen!
       
     """.trimIndent()
+
+    testeGermanSkriptCode(quellCode, erwarteteAusgabe)
+  }
+
+  @Test
+  @DisplayName("Summe")
+  fun summe() {
+    val quellCode = """
+      die Zahlen sind einige Zahlen[1, 2, 3, 4, 5]
+      die Summe ist summiere die Zahlen
+      schreibe die Zeile (Summe als Zeichenfolge)
+    """.trimIndent()
+
+    val erwarteteAusgabe = "15\n"
 
     testeGermanSkriptCode(quellCode, erwarteteAusgabe)
   }

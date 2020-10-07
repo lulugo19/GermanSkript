@@ -260,7 +260,7 @@ sealed class AST {
     }
 
     data class FunktionsSignatur(
-        val typParameter: List<WortArt.Nomen>,
+        val typParameter: List<TypParam>,
         val rückgabeTyp: TypKnoten,
         val name: TypedToken<TokenTyp.BEZEICHNER_KLEIN>,
         val reflexivPronomen: TypedToken<TokenTyp.REFLEXIV_PRONOMEN>?,
@@ -300,6 +300,7 @@ sealed class AST {
 
     data class Implementierung(
         val klasse: TypKnoten,
+        val typParameter: List<TypParam>,
         val schnittstellen: List<TypKnoten>,
         val methoden: List<Funktion>,
         val eigenschaften: List<Eigenschaft>,
@@ -307,6 +308,7 @@ sealed class AST {
     ): Definition() {
       override val children = sequence {
         yield(klasse)
+        yieldAll(typParameter)
         yieldAll(schnittstellen)
         yieldAll(methoden)
         yieldAll(eigenschaften)
@@ -314,14 +316,28 @@ sealed class AST {
       }
     }
 
+    data class TypParam(
+        val binder: WortArt.Nomen,
+        val schnittstellen: List<TypKnoten>,
+        val elternKlasse: TypKnoten?
+    ): AST() {
+      override val children = sequence {
+        yield(binder)
+        yieldAll(schnittstellen)
+        if (elternKlasse != null) {
+          yield(elternKlasse!!)
+        }
+      }
+    }
+
     sealed class Typdefinition: Definition() {
       abstract val name: WortArt
       val namensToken get() = name.bezeichnerToken
-      abstract val typParameter: List<WortArt.Nomen>
+      abstract val typParameter: List<TypParam>
       abstract fun findeMethode(methodenName: String): FunktionsSignatur?
 
       data class Klasse(
-          override val typParameter: List<WortArt.Nomen>,
+          override val typParameter: List<TypParam>,
           override val name: WortArt.Nomen,
           val elternKlasse: Satz.Ausdruck.ObjektInstanziierung?,
           val eigenschaften: MutableList<Parameter>,
@@ -348,7 +364,7 @@ sealed class AST {
       }
 
       data class Schnittstelle(
-          override val typParameter: List<WortArt.Nomen>,
+          override val typParameter: List<TypParam>,
           override val name: WortArt.Adjektiv,
           val methodenSignaturen: List<FunktionsSignatur>
       ): Typdefinition() {
@@ -364,7 +380,7 @@ sealed class AST {
       }
 
       data class Alias(override val name: WortArt.Nomen, val typ: TypKnoten): Typdefinition() {
-        override val typParameter = emptyList<WortArt.Nomen>()
+        override val typParameter = emptyList<TypParam>()
         override val children = sequenceOf(name, typ)
         override fun findeMethode(methodenName: String): FunktionsSignatur? = null
       }

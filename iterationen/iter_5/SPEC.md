@@ -75,7 +75,7 @@ Zahlen:
         füge die Zahl 6 hinzu
     .
     // sortiere absteigend
-    sortiere dich mit etwas Vergleichbarem:
+    sortiere dich mit etwas Vergleichendem:
         gebe die ZahlB - die ZahlA zurück
     .
 !
