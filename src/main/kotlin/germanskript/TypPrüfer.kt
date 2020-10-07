@@ -6,7 +6,7 @@ import germanskript.util.SimpleLogger
 class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
   val typisierer = Typisierer(startDatei)
   override val definierer = typisierer.definierer
-  override val nichts = Typ.Nichts
+  override val nichts = Typ.Compound.KlassenTyp.BuildInType.Nichts
   override var umgebung = Umgebung<Typ>()
   val logger = SimpleLogger()
   val ast: AST.Programm get() = typisierer.ast
@@ -16,7 +16,7 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
   // Alternativ könnte man sich überlegen, sich von dem ProgrammDurchlaufer zu trennen
   // und Funktionsparameter für den Kontext zu verwenden.
   private var zuÜberprüfendeKlasse: Typ.Compound.KlassenTyp? = null
-  private var rückgabeTyp: Typ = Typ.Nichts
+  private var rückgabeTyp: Typ = Typ.Compound.KlassenTyp.BuildInType.Nichts
   private var funktionsTypParams: List<AST.Definition.TypParam>? = null
   private var klassenTypParams: List<AST.Definition.TypParam>? = null
   private var implementierungTypArgs: List<Typ>? = null
@@ -35,7 +35,7 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
     definierer.funktionsDefinitionen.forEach(::prüfeFunktion)
 
     // neue germanskript.Umgebung
-    durchlaufeAufruf(ast.programmStart!!, ast.programm, Umgebung(), true, Typ.Nichts, true)
+    durchlaufeAufruf(ast.programmStart!!, ast.programm, Umgebung(), true, Typ.Compound.KlassenTyp.BuildInType.Nichts, true)
   }
 
   private fun ausdruckMussTypSein(
@@ -149,7 +149,7 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
   private fun prüfeKonstante(konstante: AST.Definition.Konstante) {
     evaluiereKonstante = true
     val typ = evaluiereAusdruck(konstante.wert)
-    if (typ !is Typ.Primitiv) {
+    if (typ !is Typ.Compound.KlassenTyp.BuildInType) {
       throw GermanSkriptFehler.KonstantenFehler(holeErstesTokenVonAusdruck(konstante.wert))
     }
     konstante.typ = typ
@@ -201,7 +201,7 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
     }
     zuÜberprüfendeKlasse = typAusKlassenDefinition(klasse, erstelleGenerischeTypArgumente(klasse.typParameter))
     klassenTypParams = klasse.typParameter
-    durchlaufeAufruf(klasse.name.bezeichner.toUntyped(), klasse.konstruktor, Umgebung(), true, Typ.Nichts, false)
+    durchlaufeAufruf(klasse.name.bezeichner.toUntyped(), klasse.konstruktor, Umgebung(), true, Typ.Compound.KlassenTyp.BuildInType.Nichts, false)
     klasse.implementierungen.forEach {implementierung -> prüfeImplementierung(klasse, implementierung)}
     klassenTypParams = null
 
@@ -251,7 +251,7 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
   private fun typAusKlassenDefinition(klasse: AST.Definition.Typdefinition.Klasse, typArgumente: List<AST.TypKnoten>): Typ.Compound.KlassenTyp {
     return when (klasse) {
       Typ.Compound.KlassenTyp.Liste.definition -> Typ.Compound.KlassenTyp.Liste(typArgumente)
-      Typ.Compound.KlassenTyp.Zeichenfolge.definition -> Typ.Compound.KlassenTyp.Zeichenfolge
+      Typ.Compound.KlassenTyp.BuildInType.Zeichenfolge.definition -> Typ.Compound.KlassenTyp.BuildInType.Zeichenfolge
       else -> Typ.Compound.KlassenTyp.Klasse(klasse, typArgumente)
     }
   }
@@ -261,7 +261,7 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
     this.umgebung = umgebung
     rückgabeErreicht = false
     return durchlaufeBereich(bereich, neuerBereich).also {
-      if (!impliziteRückgabe && !rückgabeErreicht && rückgabeTyp != Typ.Nichts) {
+      if (!impliziteRückgabe && !rückgabeErreicht && rückgabeTyp != Typ.Compound.KlassenTyp.BuildInType.Nichts) {
         throw GermanSkriptFehler.RückgabeFehler.RückgabeVergessen(token, rückgabeTyp)
       }
     }
@@ -293,7 +293,7 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
       }
       else {
         // hier müssen wir überprüfen ob der Typ der Variable, die überschrieben werden sollen gleich
-        // dem neuen germanskript.Wert ist
+        // dem neuen germanskript.intern.Wert ist
         val vorherigerTyp = umgebung.leseVariable(deklaration.name.nominativ)
         val wert = if (vorherigerTyp != null) {
           if (vorherigerTyp.name.unveränderlich) {
@@ -309,7 +309,7 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
   }
 
   override fun durchlaufeListenElementZuweisung(zuweisung: AST.Satz.ListenElementZuweisung) {
-    ausdruckMussTypSein(zuweisung.index, Typ.Primitiv.Zahl)
+    ausdruckMussTypSein(zuweisung.index, Typ.Compound.KlassenTyp.BuildInType.Zahl)
     val elementTyp = evaluiereListenSingular(zuweisung.singular)
     ausdruckMussTypSein(zuweisung.wert, elementTyp)
   }
@@ -593,7 +593,7 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
   }
 
   private fun prüfeBedingung(bedingung: AST.Satz.BedingungsTerm): Typ {
-    ausdruckMussTypSein(bedingung.bedingung, Typ.Primitiv.Boolean)
+    ausdruckMussTypSein(bedingung.bedingung, Typ.Compound.KlassenTyp.BuildInType.Boolean)
     return durchlaufeBereich(bedingung.bereich, true)
   }
 
@@ -616,7 +616,7 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
         if (istAusdruck) {
           throw fehler
         }
-        Typ.Nichts
+        Typ.Compound.KlassenTyp.BuildInType.Nichts
       }
     }
 
@@ -631,10 +631,10 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
         if (istAusdruck) {
           throw fehler
         }
-        Typ.Nichts
+        Typ.Compound.KlassenTyp.BuildInType.Nichts
       }
     }
-    return bedingungsTyp?: Typ.Nichts
+    return bedingungsTyp?: Typ.Compound.KlassenTyp.BuildInType.Nichts
   }
 
   override fun durchlaufeSolangeSchleife(schleife: AST.Satz.SolangeSchleife) {
@@ -652,9 +652,9 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
       }
       schleife.reichweite != null -> {
         val (anfang, ende) = schleife.reichweite
-        ausdruckMussTypSein(anfang, Typ.Primitiv.Zahl)
-        ausdruckMussTypSein(ende, Typ.Primitiv.Zahl)
-        Typ.Primitiv.Zahl
+        ausdruckMussTypSein(anfang, Typ.Compound.KlassenTyp.BuildInType.Zahl)
+        ausdruckMussTypSein(ende, Typ.Compound.KlassenTyp.BuildInType.Zahl)
+        Typ.Compound.KlassenTyp.BuildInType.Zahl
       }
       else -> {
         evaluiereListenSingular(schleife.singular)
@@ -716,11 +716,11 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
     // hier muss nichts gemacht werden...
   }
 
-  override fun evaluiereZeichenfolge(ausdruck: AST.Satz.Ausdruck.Zeichenfolge) = Typ.Compound.KlassenTyp.Zeichenfolge
+  override fun evaluiereZeichenfolge(ausdruck: AST.Satz.Ausdruck.Zeichenfolge) = Typ.Compound.KlassenTyp.BuildInType.Zeichenfolge
 
-  override fun evaluiereZahl(ausdruck: AST.Satz.Ausdruck.Zahl) = Typ.Primitiv.Zahl
+  override fun evaluiereZahl(ausdruck: AST.Satz.Ausdruck.Zahl) = Typ.Compound.KlassenTyp.BuildInType.Zahl
 
-  override fun evaluiereBoolean(ausdruck: AST.Satz.Ausdruck.Boolean) = Typ.Primitiv.Boolean
+  override fun evaluiereBoolean(ausdruck: AST.Satz.Ausdruck.Boolean) = Typ.Compound.KlassenTyp.BuildInType.Boolean
 
   override fun evaluiereVariable(variable: AST.Satz.Ausdruck.Variable): Typ {
     return try {
@@ -767,12 +767,12 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
 
   override fun evaluiereListenElement(listenElement: AST.Satz.Ausdruck.ListenElement): Typ {
     nichtErlaubtInKonstante(listenElement)
-    ausdruckMussTypSein(listenElement.index, Typ.Primitiv.Zahl)
+    ausdruckMussTypSein(listenElement.index, Typ.Compound.KlassenTyp.BuildInType.Zahl)
     val zeichenfolge = evaluiereVariable(listenElement.singular.nominativ)
     // Bei einem Zugriff auf einen Listenindex kann es sich auch um eine Zeichenfolge handeln
-    if (zeichenfolge != null && zeichenfolge == Typ.Compound.KlassenTyp.Zeichenfolge) {
+    if (zeichenfolge != null && zeichenfolge == Typ.Compound.KlassenTyp.BuildInType.Zeichenfolge) {
       listenElement.istZeichenfolgeZugriff = true
-      return Typ.Compound.KlassenTyp.Zeichenfolge
+      return Typ.Compound.KlassenTyp.BuildInType.Zeichenfolge
     }
     return evaluiereListenSingular(listenElement.singular)
   }
@@ -926,7 +926,7 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
   }
 
   override fun evaluiereMinus(minus: AST.Satz.Ausdruck.Minus): Typ {
-    return ausdruckMussTypSein(minus.ausdruck, Typ.Primitiv.Zahl)
+    return ausdruckMussTypSein(minus.ausdruck, Typ.Compound.KlassenTyp.BuildInType.Zahl)
   }
 
   override fun evaluiereKonvertierung(konvertierung: AST.Satz.Ausdruck.Konvertierung): Typ{
@@ -988,7 +988,7 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
         else typ
       else -> typ
     }
-    if (erwarteterRückgabeTyp != Typ.Nichts && !typIstTyp(rückgabe, erwarteterRückgabeTyp)) {
+    if (erwarteterRückgabeTyp != Typ.Compound.KlassenTyp.BuildInType.Nichts && !typIstTyp(rückgabe, erwarteterRückgabeTyp)) {
       throw GermanSkriptFehler.ClosureFehler.FalscheRückgabe(closure.schnittstelle.name.bezeichnerToken, rückgabe, erwarteterRückgabeTyp)
     }
     umgebung.popBereich()
@@ -997,7 +997,7 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
 
   override fun evaluiereTypÜberprüfung(typÜberprüfung: AST.Satz.Ausdruck.TypÜberprüfung): Typ {
     typisierer.bestimmeTyp(typÜberprüfung.typ, funktionsTypParams, klassenTypParams, true)
-    return Typ.Primitiv.Boolean
+    return Typ.Compound.KlassenTyp.BuildInType.Boolean
   }
 }
 

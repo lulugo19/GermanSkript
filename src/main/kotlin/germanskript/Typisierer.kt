@@ -11,29 +11,6 @@ sealed class Typ() {
   abstract fun kannNachTypKonvertiertWerden(typ: Typ): Boolean
   abstract fun inTypKnoten(): AST.TypKnoten
 
-  // äquivalent zu Kotlins Typen "Unit"
-  object Nichts: Typ() {
-    override val name = "Nichts"
-    override val definierteOperatoren: Map<Operator, Typ> = mapOf()
-    override fun kannNachTypKonvertiertWerden(typ: Typ) = false
-
-    private val typKnoten = AST.TypKnoten(
-        emptyList(), AST.WortArt.Nomen(null, TypedToken.imaginäresToken(
-        TokenTyp.BEZEICHNER_GROSS(arrayOf("Nichts"), "", null), "Nichts")), emptyList())
-
-    init {
-      typKnoten.name.numera.add(Numerus.SINGULAR)
-      typKnoten.name.deklination = Deklination(
-          Genus.NEUTRUM,
-          arrayOf("Nichts", "Nichts", "Nichts", "Nichts"),
-          arrayOf("Nichts", "Nichts", "Nichts", "Nichts")
-      )
-      typKnoten.typ = Nichts
-    }
-
-    override fun inTypKnoten(): AST.TypKnoten = typKnoten
-  }
-
   // äquivalent zu Kotlins Typen "Nothing"
   object Niemals: Typ() {
     override val name = "Niemals"
@@ -55,70 +32,6 @@ sealed class Typ() {
     }
 
     override fun inTypKnoten(): AST.TypKnoten = typKnoten
-  }
-
-  sealed class Primitiv(override val name: String): Typ() {
-    object Zahl : Primitiv("Zahl") {
-      override val definierteOperatoren: Map<Operator, Typ> = mapOf(
-            Operator.PLUS to Zahl,
-            Operator.MINUS to Zahl,
-            Operator.MAL to Zahl,
-            Operator.GETEILT to Zahl,
-            Operator.MODULO to Zahl,
-            Operator.HOCH to Zahl,
-            Operator.GRÖßER to Boolean,
-            Operator.KLEINER to Boolean,
-            Operator.GRÖSSER_GLEICH to Boolean,
-            Operator.KLEINER_GLEICH to Boolean,
-            Operator.UNGLEICH to Boolean,
-            Operator.GLEICH to Boolean
-        )
-
-      override fun kannNachTypKonvertiertWerden(typ: Typ) = typ == Zahl || typ == Compound.KlassenTyp.Zeichenfolge || typ == Boolean
-
-      private val typKnoten = AST.TypKnoten(
-          emptyList(), AST.WortArt.Nomen(null, TypedToken.imaginäresToken(
-          TokenTyp.BEZEICHNER_GROSS(arrayOf("Zahl"), "", null), "Zahl")), emptyList())
-
-      init {
-        typKnoten.name.numera.add(Numerus.SINGULAR)
-        typKnoten.name.deklination = Deklination(
-            Genus.NEUTRUM,
-            arrayOf("Zahl", "Zahl", "Zahl", "Zahl"),
-            arrayOf("Zahlen", "Zahlen", "Zahlen", "Zahlen")
-        )
-        typKnoten.typ = Zahl
-      }
-
-      override fun inTypKnoten(): AST.TypKnoten = typKnoten
-    }
-
-    object Boolean : Primitiv("Boolean") {
-      override val definierteOperatoren: Map<Operator, Typ> = mapOf(
-            Operator.UND to Boolean,
-            Operator.ODER to Boolean,
-            Operator.GLEICH to Boolean,
-            Operator.UNGLEICH to Boolean
-        )
-
-      override fun kannNachTypKonvertiertWerden(typ: Typ) = typ == Boolean || typ == Compound.KlassenTyp.Zeichenfolge || typ == Zahl
-
-      private val typKnoten = AST.TypKnoten(
-          emptyList(), AST.WortArt.Nomen(null, TypedToken.imaginäresToken(
-          TokenTyp.BEZEICHNER_GROSS(arrayOf("Boolean"), "", null), "Boolean")), emptyList())
-
-      init {
-        typKnoten.name.numera.add(Numerus.SINGULAR)
-        typKnoten.name.deklination = Deklination(
-            Genus.NEUTRUM,
-            arrayOf("Boolean", "Boolean", "Boolean", "Boolean"),
-            arrayOf("Booleans", "Booleans", "Booleans", "Zahlen")
-        )
-        typKnoten.typ = Boolean
-      }
-
-      override fun inTypKnoten(): AST.TypKnoten = typKnoten
-    }
   }
 
   class Generic(
@@ -177,11 +90,11 @@ sealed class Typ() {
           override var typArgumente: List<AST.TypKnoten>
       ): KlassenTyp(definition.name.hauptWort(Kasus.NOMINATIV, Numerus.SINGULAR)) {
         override val definierteOperatoren: Map<Operator, Typ> = mapOf(
-            Operator.GLEICH to Primitiv.Boolean
+            Operator.GLEICH to BuildInType.Boolean
         )
 
-        override fun kannNachTypKonvertiertWerden(typ: Typ): Boolean {
-          return typ.name == this.name || typ == Zeichenfolge || definition.konvertierungen.containsKey(typ.name)
+        override fun kannNachTypKonvertiertWerden(typ: Typ): kotlin.Boolean {
+          return typ.name == this.name || typ == BuildInType.Zeichenfolge || definition.konvertierungen.containsKey(typ.name)
         }
 
         override fun copy(typArgumente: List<AST.TypKnoten>): Compound {
@@ -203,35 +116,93 @@ sealed class Typ() {
         // Das hier muss umbedingt ein Getter sein, sonst gibt es Probleme mit StackOverflow
         override val definierteOperatoren: Map<Operator, Typ> get() = mapOf(
             Operator.PLUS to Liste(typArgumente),
-            Operator.GLEICH to Primitiv.Boolean
+            Operator.GLEICH to BuildInType.Boolean
         )
-        override fun kannNachTypKonvertiertWerden(typ: Typ) = typ.name == this.name || typ == Zeichenfolge
+        override fun kannNachTypKonvertiertWerden(typ: Typ) = typ.name == this.name || typ == BuildInType.Zeichenfolge
 
         override fun copy(typArgumente: List<AST.TypKnoten>): Compound {
           return Liste(typArgumente)
         }
       }
 
-      object Zeichenfolge : KlassenTyp("Zeichenfolge") {
-        override lateinit var definition: AST.Definition.Typdefinition.Klasse
+      sealed class BuildInType(name: String) : KlassenTyp(name) {
 
-        override var typArgumente: List<AST.TypKnoten> = emptyList()
+        // äquivalent zu Kotlins Typen "Unit"
+        object Nichts: BuildInType("Nichts") {
+          override lateinit var definition: AST.Definition.Typdefinition.Klasse
 
-        override val definierteOperatoren: Map<Operator, Typ> = mapOf(
-              Operator.PLUS to Zeichenfolge,
-              Operator.GLEICH to Primitiv.Boolean,
-              Operator.UNGLEICH to Primitiv.Boolean,
-              Operator.GRÖßER to Primitiv.Boolean,
-              Operator.KLEINER to Primitiv.Boolean,
-              Operator.GRÖSSER_GLEICH to Primitiv.Boolean,
-              Operator.KLEINER_GLEICH to Primitiv.Boolean
-          )
-        override fun kannNachTypKonvertiertWerden(typ: Typ) = typ == Zeichenfolge || typ == Primitiv.Zahl || typ == Primitiv.Boolean
+          override var typArgumente: List<AST.TypKnoten> = emptyList()
 
-        override fun copy(typArgumente: List<AST.TypKnoten>): Compound {
-          return Zeichenfolge
+          override fun copy(typArgumente: List<AST.TypKnoten>): Compound {
+            return Nichts
+          }
+
+          override val definierteOperatoren: Map<Operator, Typ> = mapOf()
+          override fun kannNachTypKonvertiertWerden(typ: Typ) = false
+        }
+
+        object Zeichenfolge : BuildInType("Zeichenfolge") {
+          override lateinit var definition: AST.Definition.Typdefinition.Klasse
+
+          override var typArgumente: List<AST.TypKnoten> = emptyList()
+
+          override val definierteOperatoren: Map<Operator, Typ> = mapOf(
+                Operator.PLUS to Zeichenfolge,
+                Operator.GLEICH to Boolean,
+                Operator.UNGLEICH to Boolean,
+                Operator.GRÖßER to Boolean,
+                Operator.KLEINER to Boolean,
+                Operator.GRÖSSER_GLEICH to Boolean,
+                Operator.KLEINER_GLEICH to Boolean
+            )
+          override fun kannNachTypKonvertiertWerden(typ: Typ) = typ == Zeichenfolge || typ == Zahl || typ == Boolean
+
+          override fun copy(typArgumente: List<AST.TypKnoten>) = Zeichenfolge
+        }
+
+        object Boolean : BuildInType("Boolean") {
+          override val definierteOperatoren: Map<Operator, Typ> = mapOf(
+                Operator.UND to Boolean,
+                Operator.ODER to Boolean,
+                Operator.GLEICH to Boolean,
+                Operator.UNGLEICH to Boolean
+            )
+
+          override fun kannNachTypKonvertiertWerden(typ: Typ) = typ == Boolean || typ == Zeichenfolge || typ == Zahl
+
+          override lateinit var definition: AST.Definition.Typdefinition.Klasse
+
+          override var typArgumente: List<AST.TypKnoten> = emptyList()
+
+          override fun copy(typArgumente: List<AST.TypKnoten>) = Boolean
+        }
+
+        object Zahl : BuildInType("Zahl") {
+          override lateinit var definition: AST.Definition.Typdefinition.Klasse
+
+          override var typArgumente: List<AST.TypKnoten> = emptyList()
+
+          override fun copy(typArgumente: List<AST.TypKnoten>) = Zahl
+
+          override val definierteOperatoren: Map<Operator, Typ> = mapOf(
+                Operator.PLUS to Zahl,
+                Operator.MINUS to Zahl,
+                Operator.MAL to Zahl,
+                Operator.GETEILT to Zahl,
+                Operator.MODULO to Zahl,
+                Operator.HOCH to Zahl,
+                Operator.GRÖßER to Boolean,
+                Operator.KLEINER to Boolean,
+                Operator.GRÖSSER_GLEICH to Boolean,
+                Operator.KLEINER_GLEICH to Boolean,
+                Operator.UNGLEICH to Boolean,
+                Operator.GLEICH to Boolean
+            )
+
+          override fun kannNachTypKonvertiertWerden(typ: Typ) = typ == Zahl || typ == Zeichenfolge || typ == Boolean
         }
       }
+
     }
 
     class Schnittstelle(
@@ -239,17 +210,18 @@ sealed class Typ() {
         override var typArgumente: List<AST.TypKnoten>
     ): Compound(definition.namensToken.wert.capitalize()) {
       override val definierteOperatoren: Map<Operator, Typ> = mapOf(
-          Operator.GLEICH to Primitiv.Boolean
+          Operator.GLEICH to KlassenTyp.BuildInType.Boolean
       )
 
       override fun kannNachTypKonvertiertWerden(typ: Typ): Boolean {
-        return typ.name == this.name || typ == KlassenTyp.Zeichenfolge
+        return typ.name == this.name || typ == KlassenTyp.BuildInType.Zeichenfolge
       }
 
       override fun copy(typArgumente: List<AST.TypKnoten>): Compound {
         return Schnittstelle(definition, typArgumente)
       }
     }
+
   }
 }
 
@@ -283,8 +255,14 @@ class Typisierer(startDatei: File): PipelineKomponente(startDatei) {
     // hole die Typdefinitionen des Typen Zeichenfolge und Liste
     Typ.Compound.KlassenTyp.Liste.definition = definierer.holeTypDefinition("Liste")
         as AST.Definition.Typdefinition.Klasse
-    Typ.Compound.KlassenTyp.Zeichenfolge.definition = definierer.holeTypDefinition("Zeichenfolge")
+    Typ.Compound.KlassenTyp.BuildInType.Zeichenfolge.definition = definierer.holeTypDefinition("Zeichenfolge")
         as AST.Definition.Typdefinition.Klasse
+    Typ.Compound.KlassenTyp.BuildInType.Zahl.definition = definierer.holeTypDefinition("Zahl")
+        as AST.Definition.Typdefinition.Klasse
+    Typ.Compound.KlassenTyp.BuildInType.Boolean.definition = definierer.holeTypDefinition("Boolean")
+      as AST.Definition.Typdefinition.Klasse
+    Typ.Compound.KlassenTyp.BuildInType.Nichts.definition = definierer.holeTypDefinition("Nichts")
+      as AST.Definition.Typdefinition.Klasse
     schreiberTyp = Typ.Compound.KlassenTyp.Klasse(
         definierer.holeTypDefinition("Schreiber", arrayOf("IO")) as AST.Definition.Typdefinition.Klasse, emptyList()
     )
@@ -337,10 +315,10 @@ class Typisierer(startDatei: File): PipelineKomponente(startDatei) {
 
     if (typ == null) {
       typ = when (typName) {
-        "Zahl" -> Typ.Primitiv.Zahl
-        "Zeichenfolge" -> Typ.Compound.KlassenTyp.Zeichenfolge
-        "Boolean" -> Typ.Primitiv.Boolean
-        "Nichts" -> Typ.Nichts
+        "Zahl" -> Typ.Compound.KlassenTyp.BuildInType.Zahl
+        "Zeichenfolge" -> Typ.Compound.KlassenTyp.BuildInType.Zeichenfolge
+        "Boolean" -> Typ.Compound.KlassenTyp.BuildInType.Boolean
+        "Nichts" -> Typ.Compound.KlassenTyp.BuildInType.Nichts
         else -> when (val typDef = definierer.holeTypDefinition(typKnoten)) {
           is AST.Definition.Typdefinition.Klasse -> Typ.Compound.KlassenTyp.Klasse(typDef, typArgumente)
           is AST.Definition.Typdefinition.Schnittstelle -> Typ.Compound.Schnittstelle(typDef, typArgumente)
@@ -355,7 +333,7 @@ class Typisierer(startDatei: File): PipelineKomponente(startDatei) {
     }
     // Überprüfe hier die Anzahl der Typargumente
     when (typ) {
-      is Typ.Primitiv, is Typ.Nichts, is Typ.Niemals, is Typ.Generic -> if (typArgumente.isNotEmpty())
+      is Typ.Compound.KlassenTyp.BuildInType.Nichts, is Typ.Niemals, is Typ.Generic -> if (typArgumente.isNotEmpty())
         throw GermanSkriptFehler.TypArgumentFehler(typKnoten.name.bezeichnerToken, typArgumente.size, 0)
       is Typ.Compound -> if (typArgumente.isNotEmpty() && typArgumente.size != typ.definition.typParameter.size)
         throw GermanSkriptFehler.TypArgumentFehler(

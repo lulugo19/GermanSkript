@@ -1,5 +1,6 @@
 package germanskript
 
+import germanskript.intern.Wert
 import java.io.File
 import java.util.*
 
@@ -54,9 +55,9 @@ class KonstantenFalter(startDatei: File): ProgrammDurchlaufer<Wert?>(startDatei)
 
   private fun falteKonstante(originalerAusdruck: AST.Satz.Ausdruck): AST.Satz.Ausdruck {
     return when (val konstanterWert = evaluiereAusdruck(originalerAusdruck)) {
-      is Wert.Primitiv.Zahl -> AST.Satz.Ausdruck.Zahl(TypedToken.imaginäresToken(TokenTyp.ZAHL(konstanterWert),""))
-      is Wert.Objekt.InternesObjekt.Zeichenfolge -> AST.Satz.Ausdruck.Zeichenfolge(TypedToken.imaginäresToken(TokenTyp.ZEICHENFOLGE(konstanterWert), ""))
-      is Wert.Primitiv.Boolean -> AST.Satz.Ausdruck.Boolean(TypedToken.imaginäresToken(TokenTyp.BOOLEAN(konstanterWert), ""))
+      is germanskript.intern.Zahl -> AST.Satz.Ausdruck.Zahl(TypedToken.imaginäresToken(TokenTyp.ZAHL(konstanterWert),""))
+      is germanskript.intern.Zeichenfolge -> AST.Satz.Ausdruck.Zeichenfolge(TypedToken.imaginäresToken(TokenTyp.ZEICHENFOLGE(konstanterWert), ""))
+      is germanskript.intern.Boolean -> AST.Satz.Ausdruck.Boolean(TypedToken.imaginäresToken(TokenTyp.BOOLEAN(konstanterWert), ""))
       else -> originalerAusdruck
     }
   }
@@ -219,16 +220,16 @@ class KonstantenFalter(startDatei: File): ProgrammDurchlaufer<Wert?>(startDatei)
     val rechts = evaluiereAusdruck(ausdruck.rechts)
     val operator = ausdruck.operator.typ.operator
     return when {
-      links is Wert.Objekt.InternesObjekt.Zeichenfolge &&
-        rechts is Wert.Objekt.InternesObjekt.Zeichenfolge  -> Interpretierer.zeichenFolgenOperation(operator, links, rechts)
-      links is Wert.Primitiv.Zahl && rechts is Wert.Primitiv.Zahl -> Interpretierer.zahlOperation(operator, links, rechts)
-      links is Wert.Primitiv.Boolean && rechts is Wert.Primitiv.Boolean -> Interpretierer.booleanOperation(operator, links, rechts)
+      links is germanskript.intern.Zeichenfolge &&
+        rechts is germanskript.intern.Zeichenfolge  -> Interpretierer.zeichenFolgenOperation(operator, links, rechts)
+      links is germanskript.intern.Zahl && rechts is germanskript.intern.Zahl -> Interpretierer.zahlOperation(operator, links, rechts)
+      links is germanskript.intern.Boolean && rechts is germanskript.intern.Boolean -> Interpretierer.booleanOperation(operator, links, rechts)
       else -> null
     }
   }
 
   override fun evaluiereMinus(minus: AST.Satz.Ausdruck.Minus): Wert? {
-    val zahl = evaluiereAusdruck(minus.ausdruck) as Wert.Primitiv.Zahl?
+    val zahl = evaluiereAusdruck(minus.ausdruck) as germanskript.intern.Zahl?
     return if (zahl != null) {
       -zahl
     } else {

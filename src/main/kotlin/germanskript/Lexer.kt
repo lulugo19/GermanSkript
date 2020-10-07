@@ -1,5 +1,6 @@
 package germanskript
 
+import germanskript.intern.Wert
 import germanskript.util.Peekable
 import java.io.File
 import java.util.*
@@ -224,9 +225,9 @@ sealed class TokenTyp(val anzeigeName: String) {
 
     // Literale
     object NICHTS: TokenTyp("'nichts'")
-    data class BOOLEAN(val boolean: Wert.Primitiv.Boolean): TokenTyp("'richtig' oder 'falsch'")
-    data class ZAHL(val zahl: Wert.Primitiv.Zahl): TokenTyp("Zahl")
-    data class ZEICHENFOLGE(val zeichenfolge: Wert.Objekt.InternesObjekt.Zeichenfolge): TokenTyp("Zeichenfolge")
+    data class BOOLEAN(val boolean: germanskript.intern.Boolean): TokenTyp("'richtig' oder 'falsch'")
+    data class ZAHL(val zahl: germanskript.intern.Zahl): TokenTyp("Zahl")
+    data class ZEICHENFOLGE(val zeichenfolge: germanskript.intern.Zeichenfolge): TokenTyp("Zeichenfolge")
 
     object UNDEFINIERT: TokenTyp("undefiniert")
 }
@@ -312,8 +313,8 @@ private val WORT_MAPPING = mapOf<String, TokenTyp>(
     "Modul" to TokenTyp.MODUL,
     "Super" to TokenTyp.SUPER,
     // Werte
-    "wahr" to TokenTyp.BOOLEAN(Wert.Primitiv.Boolean(true)),
-    "falsch" to TokenTyp.BOOLEAN(Wert.Primitiv.Boolean(false)),
+    "wahr" to TokenTyp.BOOLEAN(germanskript.intern.Boolean(true)),
+    "falsch" to TokenTyp.BOOLEAN(germanskript.intern.Boolean(false)),
     "nichts" to TokenTyp.NICHTS,
 
     // Operatoren
@@ -567,7 +568,7 @@ class Lexer(startDatei: File): PipelineKomponente(startDatei) {
 
         val endPos = currentTokenPos
         try {
-            yield(Token(TokenTyp.ZAHL(Wert.Primitiv.Zahl(zahlenString)), zahlenString, currentFile, startPos, endPos))
+            yield(Token(TokenTyp.ZAHL(germanskript.intern.Zahl(zahlenString)), zahlenString, currentFile, startPos, endPos))
         } catch (error: Exception) {
             val fehlerToken = Token(TokenTyp.FEHLER, zahlenString, currentFile, startPos, endPos)
             throw GermanSkriptFehler.SyntaxFehler.LexerFehler(fehlerToken, null)
@@ -601,7 +602,7 @@ class Lexer(startDatei: File): PipelineKomponente(startDatei) {
         }
         next()
         val endPos = currentTokenPos
-        val token = Token(TokenTyp.ZEICHENFOLGE(Wert.Objekt.InternesObjekt.Zeichenfolge(zeichenfolge)),
+        val token = Token(TokenTyp.ZEICHENFOLGE(germanskript.intern.Zeichenfolge(zeichenfolge)),
             '"' + zeichenfolge + '"', currentFile, startPos, endPos)
         yield(token)
     }
@@ -626,7 +627,7 @@ class Lexer(startDatei: File): PipelineKomponente(startDatei) {
     private fun starteStringInterpolation(zeichenfolge: String, startPosition: Token.Position) = sequence<Token> {
         // String Interpolation
         yield(Token(
-            TokenTyp.ZEICHENFOLGE(Wert.Objekt.InternesObjekt.Zeichenfolge(zeichenfolge)),
+            TokenTyp.ZEICHENFOLGE(germanskript.intern.Zeichenfolge(zeichenfolge)),
             '"' + zeichenfolge + '"', currentFile, startPosition, currentTokenPos))
         next() // #
         next() // {

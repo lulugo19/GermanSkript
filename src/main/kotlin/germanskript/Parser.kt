@@ -736,15 +736,8 @@ private sealed class SubParser<T: AST>() {
       }
     }
 
-    companion object {
-      val reservierteTypNamen = arrayOf("Zahl", "Boolean")
-    }
-
     fun überprüfeDoppelteDefinition(container: AST.DefinitionsContainer, typDef: AST.Definition.Typdefinition) {
       val typName = typDef.namensToken.wert.capitalize()
-      if (reservierteTypNamen.contains(typName)) {
-        throw GermanSkriptFehler.ReservierterTypName(typDef.namensToken)
-      }
       if (container.definierteTypen.containsKey(typName)) {
         throw GermanSkriptFehler.DoppelteDefinition.Typ(typDef.namensToken,
             container.definierteTypen.getValue(typName).namensToken)

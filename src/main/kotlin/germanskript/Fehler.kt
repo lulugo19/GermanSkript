@@ -1,5 +1,7 @@
 package germanskript
 
+import germanskript.intern.Wert
+
 sealed class GermanSkriptFehler(private val fehlerName: String, val token: Token): Exception() {
   abstract val nachricht: String
 
@@ -213,11 +215,6 @@ sealed class GermanSkriptFehler(private val fehlerName: String, val token: Token
 
   class Variablenfehler(token: Token, deklaration: AST.WortArt.Nomen): GermanSkriptFehler("Variablen Fehler", token) {
     override val nachricht = "Die Variable '${token.wert}' ist schon in ${deklaration.bezeichner.position} deklariert und kann nicht erneut deklariert werden."
-  }
-
-  class ReservierterTypName(token: Token): GermanSkriptFehler("Reservierter Typname", token) {
-    override val nachricht: String
-      get() = "Der Name '${token.wert}' kann nicht als Klassenname verwendet werden, da dieser ein reservierter Typname ist."
   }
 
   class AliasFehler(token: Token, alias: AST.Definition.Typdefinition.Alias): GermanSkriptFehler("Alias Fehler", token) {

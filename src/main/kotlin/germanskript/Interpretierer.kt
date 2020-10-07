@@ -1,5 +1,6 @@
 package germanskript
 
+import germanskript.intern.Wert
 import java.io.File
 import java.text.ParseException
 import java.util.*
@@ -11,14 +12,14 @@ import kotlin.random.Random
 class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
   val typPrüfer = TypPrüfer(startDatei)
 
-  override val nichts = Wert.Nichts
+  override val nichts = germanskript.intern.Nichts
 
   override val definierer = typPrüfer.definierer
   val ast: AST.Programm = typPrüfer.ast
 
   private val flags = EnumSet.noneOf(Flag::class.java)
   private val aufrufStapel = AufrufStapel()
-  private var rückgabeWert: Wert = Wert.Nichts
+  private var rückgabeWert: Wert = germanskript.intern.Nichts
 
   override val umgebung: Umgebung<Wert> get() = aufrufStapel.top().umgebung
 
@@ -109,7 +110,7 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
 
   // region Sätze
   private fun durchlaufeBedingung(bedingung: AST.Satz.BedingungsTerm): Wert? {
-      return if ((evaluiereAusdruck(bedingung.bedingung) as Wert.Primitiv.Boolean).boolean) {
+      return if ((evaluiereAusdruck(bedingung.bedingung) as germanskript.intern.Boolean).boolean) {
         durchlaufeBereich(bedingung.bereich, true)
       } else {
         null
@@ -143,7 +144,7 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
 
   override fun durchlaufeListenElementZuweisung(zuweisung: AST.Satz.ListenElementZuweisung) {
     val liste = evaluiereListenSingular(zuweisung.singular)
-    val index = (evaluiereAusdruck(zuweisung.index) as Wert.Primitiv.Zahl).toInt()
+    val index = (evaluiereAusdruck(zuweisung.index) as germanskript.intern.Zahl).toInt()
     if (index >= liste.elemente.size) {
       throw GermanSkriptFehler.LaufzeitFehler(holeErstesTokenVonAusdruck(zuweisung.index),
           aufrufStapel.toString(), "Index außerhalb des Bereichs. Der Index ist $index, doch die Länge der Liste ist ${liste.elemente.size}.\n")
@@ -159,7 +160,7 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
       objekt: Wert.Objekt?,
       impliziterRückgabeTyp: Boolean
   ): Wert {
-    rückgabeWert = Wert.Nichts
+    rückgabeWert = germanskript.intern.Nichts
     aufrufStapel.push(aufruf, umgebung, objekt)
     return durchlaufeBereich(bereich, neuerBereich).also {
       aufrufStapel.pop()
@@ -246,12 +247,12 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
     return if (!inBedingung && bedingungsSatz.sonst != null ) {
       durchlaufeBereich(bedingungsSatz.sonst!!, true)
     } else {
-      return Wert.Nichts
+      return germanskript.intern.Nichts
     }
   }
 
   override fun durchlaufeSolangeSchleife(schleife: AST.Satz.SolangeSchleife) {
-    while (!flags.contains(Flag.SCHLEIFE_ABBRECHEN) && !flags.contains(Flag.ZURÜCK) && (evaluiereAusdruck(schleife.bedingung.bedingung) as Wert.Primitiv.Boolean).boolean) {
+    while (!flags.contains(Flag.SCHLEIFE_ABBRECHEN) && !flags.contains(Flag.ZURÜCK) && (evaluiereAusdruck(schleife.bedingung.bedingung) as germanskript.intern.Boolean).boolean) {
       flags.remove(Flag.SCHLEIFE_FORTFAHREN)
       durchlaufeBereich(schleife.bedingung.bereich, true)
     }
@@ -261,21 +262,21 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
   override fun durchlaufeFürJedeSchleife(schleife: AST.Satz.FürJedeSchleife) {
     if (schleife.reichweite != null) {
       val (anfang, ende) = schleife.reichweite
-      val anfangsWert = evaluiereAusdruck(anfang) as Wert.Primitiv.Zahl
-      val endWert = evaluiereAusdruck(ende) as Wert.Primitiv.Zahl
+      val anfangsWert = evaluiereAusdruck(anfang) as germanskript.intern.Zahl
+      val endWert = evaluiereAusdruck(ende) as germanskript.intern.Zahl
       val schrittWeite = if (anfangsWert <= endWert) 1 else -1
       var laufWert = anfangsWert
       while (laufWert.compareTo(endWert) == -schrittWeite) {
         if (!iteriereSchleife(schleife, laufWert)) {
           break
         }
-        laufWert += Wert.Primitiv.Zahl(schrittWeite.toDouble())
+        laufWert += germanskript.intern.Zahl(schrittWeite.toDouble())
       }
     } else {
       val liste = if (schleife.liste != null) {
-        evaluiereAusdruck(schleife.liste) as Wert.Objekt.InternesObjekt.Liste
+        evaluiereAusdruck(schleife.liste) as germanskript.intern.Liste
       } else {
-        evaluiereVariable(schleife.singular.ganzesWort(Kasus.NOMINATIV, Numerus.PLURAL, true))!! as Wert.Objekt.InternesObjekt.Liste
+        evaluiereVariable(schleife.singular.ganzesWort(Kasus.NOMINATIV, Numerus.PLURAL, true))!! as germanskript.intern.Liste
       }
       umgebung.pushBereich()
       for (element in liste.elemente) {
@@ -372,7 +373,7 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
   override fun evaluiereKonstante(konstante: AST.Satz.Ausdruck.Konstante): Wert = evaluiereAusdruck(konstante.wert!!)
 
   override fun evaluiereListe(ausdruck: AST.Satz.Ausdruck.Liste): Wert {
-    return Wert.Objekt.InternesObjekt.Liste(
+    return germanskript.intern.Liste(
         Typ.Compound.KlassenTyp.Liste(listOf(ausdruck.pluralTyp)),
         ausdruck.elemente.map(::evaluiereAusdruck).toMutableList()
     )
@@ -382,7 +383,7 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
     val eigenschaften = hashMapOf<String, Wert>()
     val klassenTyp = (instanziierung.klasse.typ!! as Typ.Compound.KlassenTyp)
     val objekt = when(klassenTyp.name) {
-      "Datei" -> Wert.Objekt.InternesObjekt.Datei(klassenTyp, eigenschaften)
+      "Datei" -> germanskript.intern.Datei(klassenTyp, eigenschaften)
       else -> Wert.Objekt.SkriptObjekt(klassenTyp, eigenschaften)
     }
 
@@ -446,7 +447,7 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
     val operator = ausdruck.operator.typ.operator
 
     // implementiere hier Short-circuit evaluation (https://en.wikipedia.org/wiki/Short-circuit_evaluation)
-    if (links is Wert.Primitiv.Boolean) {
+    if (links is germanskript.intern.Boolean) {
       if ((operator == Operator.UND && !links.boolean) || (operator == Operator.ODER && links.boolean)) {
         return links
       }
@@ -456,19 +457,19 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
 
     // Referenzvergleich von Klassen
     if (operator == Operator.GLEICH && links is Wert.Objekt && rechts is Wert.Objekt) {
-      return Wert.Primitiv.Boolean(links == rechts)
+      return germanskript.intern.Boolean(links == rechts)
     }
     return when (links) {
-      is Wert.Objekt.InternesObjekt.Zeichenfolge -> zeichenFolgenOperation(operator, links, rechts as Wert.Objekt.InternesObjekt.Zeichenfolge)
-      is Wert.Primitiv.Zahl -> {
-        if ((rechts as Wert.Primitiv.Zahl).isZero() && operator == Operator.GETEILT) {
+      is germanskript.intern.Zeichenfolge -> zeichenFolgenOperation(operator, links, rechts as germanskript.intern.Zeichenfolge)
+      is germanskript.intern.Zahl -> {
+        if ((rechts as germanskript.intern.Zahl).isZero() && operator == Operator.GETEILT) {
           throw GermanSkriptFehler.LaufzeitFehler(holeErstesTokenVonAusdruck(ausdruck.rechts), aufrufStapel.toString(),
               "Division durch 0. Es kann nicht durch 0 dividiert werden.")
         }
         zahlOperation(operator, links, rechts)
       }
-      is Wert.Primitiv.Boolean -> booleanOperation(operator, links, rechts as Wert.Primitiv.Boolean)
-      is Wert.Objekt.InternesObjekt.Liste -> listenOperation(operator, links, rechts as Wert.Objekt.InternesObjekt.Liste)
+      is germanskript.intern.Boolean -> booleanOperation(operator, links, rechts as germanskript.intern.Boolean)
+      is germanskript.intern.Liste -> listenOperation(operator, links, rechts as germanskript.intern.Liste)
       else -> throw Exception("Typprüfer sollte disen Fehler verhindern.")
     }
   }
@@ -478,29 +479,29 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
 
   fun zeichenFolgenOperation(
       operator: Operator,
-      links: Wert.Objekt.InternesObjekt.Zeichenfolge,
-      rechts: Wert.Objekt.InternesObjekt.Zeichenfolge
+      links: germanskript.intern.Zeichenfolge,
+      rechts: germanskript.intern.Zeichenfolge
   ): Wert {
     return when (operator) {
-      Operator.GLEICH -> Wert.Primitiv.Boolean(links == rechts)
-      Operator.UNGLEICH -> Wert.Primitiv.Boolean(links != rechts)
-      Operator.GRÖßER -> Wert.Primitiv.Boolean(links > rechts)
-      Operator.KLEINER -> Wert.Primitiv.Boolean(links < rechts)
-      Operator.GRÖSSER_GLEICH -> Wert.Primitiv.Boolean(links >= rechts)
-      Operator.KLEINER_GLEICH -> Wert.Primitiv.Boolean(links <= rechts)
-      Operator.PLUS -> Wert.Objekt.InternesObjekt.Zeichenfolge(links + rechts)
+      Operator.GLEICH -> germanskript.intern.Boolean(links == rechts)
+      Operator.UNGLEICH -> germanskript.intern.Boolean(links != rechts)
+      Operator.GRÖßER -> germanskript.intern.Boolean(links > rechts)
+      Operator.KLEINER -> germanskript.intern.Boolean(links < rechts)
+      Operator.GRÖSSER_GLEICH -> germanskript.intern.Boolean(links >= rechts)
+      Operator.KLEINER_GLEICH -> germanskript.intern.Boolean(links <= rechts)
+      Operator.PLUS -> germanskript.intern.Zeichenfolge(links + rechts)
       else -> throw Exception("Operator $operator ist für den Typen Zeichenfolge nicht definiert.")
     }
   }
 
-  fun zahlOperation(operator: Operator, links: Wert.Primitiv.Zahl, rechts: Wert.Primitiv.Zahl): Wert {
+  fun zahlOperation(operator: Operator, links: germanskript.intern.Zahl, rechts: germanskript.intern.Zahl): Wert {
     return when (operator) {
-      Operator.GLEICH -> Wert.Primitiv.Boolean(links == rechts)
-      Operator.UNGLEICH -> Wert.Primitiv.Boolean(links != rechts)
-      Operator.GRÖßER -> Wert.Primitiv.Boolean(links > rechts)
-      Operator.KLEINER -> Wert.Primitiv.Boolean(links < rechts)
-      Operator.GRÖSSER_GLEICH -> Wert.Primitiv.Boolean(links >= rechts)
-      Operator.KLEINER_GLEICH -> Wert.Primitiv.Boolean(links <= rechts)
+      Operator.GLEICH -> germanskript.intern.Boolean(links == rechts)
+      Operator.UNGLEICH -> germanskript.intern.Boolean(links != rechts)
+      Operator.GRÖßER -> germanskript.intern.Boolean(links > rechts)
+      Operator.KLEINER -> germanskript.intern.Boolean(links < rechts)
+      Operator.GRÖSSER_GLEICH -> germanskript.intern.Boolean(links >= rechts)
+      Operator.KLEINER_GLEICH -> germanskript.intern.Boolean(links <= rechts)
       Operator.PLUS -> links + rechts
       Operator.MINUS -> links - rechts
       Operator.MAL -> links * rechts
@@ -511,54 +512,54 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
     }
   }
 
-  fun booleanOperation(operator: Operator, links: Wert.Primitiv.Boolean, rechts: Wert.Primitiv.Boolean): Wert {
+  fun booleanOperation(operator: Operator, links: germanskript.intern.Boolean, rechts: germanskript.intern.Boolean): Wert {
     return when (operator) {
-      Operator.ODER -> Wert.Primitiv.Boolean(links.boolean || rechts.boolean)
-      Operator.UND -> Wert.Primitiv.Boolean(links.boolean && rechts.boolean)
-      Operator.GLEICH -> Wert.Primitiv.Boolean(links.boolean == rechts.boolean)
-      Operator.UNGLEICH -> Wert.Primitiv.Boolean(links.boolean != rechts.boolean)
+      Operator.ODER -> germanskript.intern.Boolean(links.boolean || rechts.boolean)
+      Operator.UND -> germanskript.intern.Boolean(links.boolean && rechts.boolean)
+      Operator.GLEICH -> germanskript.intern.Boolean(links.boolean == rechts.boolean)
+      Operator.UNGLEICH -> germanskript.intern.Boolean(links.boolean != rechts.boolean)
       else -> throw Exception("Operator $operator ist für den Typen Boolean nicht definiert.")
     }
   }
 }
 
-  private fun listenOperation(operator: Operator, links: Wert.Objekt.InternesObjekt.Liste, rechts: Wert.Objekt.InternesObjekt.Liste): Wert {
+  private fun listenOperation(operator: Operator, links: germanskript.intern.Liste, rechts: germanskript.intern.Liste): Wert {
     return when (operator) {
       Operator.PLUS ->links + rechts
       else -> throw Exception("Operator $operator ist für den Typen Liste nicht definiert.")
     }
   }
 
-  override fun evaluiereMinus(minus: AST.Satz.Ausdruck.Minus): Wert.Primitiv.Zahl {
-    val ausdruck = evaluiereAusdruck(minus.ausdruck) as Wert.Primitiv.Zahl
+  override fun evaluiereMinus(minus: AST.Satz.Ausdruck.Minus): germanskript.intern.Zahl {
+    val ausdruck = evaluiereAusdruck(minus.ausdruck) as germanskript.intern.Zahl
     return -ausdruck
   }
 
-  protected fun evaluiereListenSingular(singular: AST.WortArt.Nomen): Wert.Objekt.InternesObjekt.Liste {
+  protected fun evaluiereListenSingular(singular: AST.WortArt.Nomen): germanskript.intern.Liste {
     return when (val vornomenTyp = singular.vornomen?.typ) {
       is TokenTyp.VORNOMEN.POSSESSIV_PRONOMEN -> {
         val objekt = when (vornomenTyp) {
           TokenTyp.VORNOMEN.POSSESSIV_PRONOMEN.MEIN -> aufrufStapel.top().objekt!! as Wert.Objekt
           TokenTyp.VORNOMEN.POSSESSIV_PRONOMEN.DEIN -> umgebung.holeMethodenBlockObjekt()!! as Wert.Objekt
         }
-        objekt.holeEigenschaft(singular.ganzesWort(Kasus.NOMINATIV, Numerus.PLURAL, true)) as Wert.Objekt.InternesObjekt.Liste
+        objekt.holeEigenschaft(singular.ganzesWort(Kasus.NOMINATIV, Numerus.PLURAL, true)) as germanskript.intern.Liste
       }
       is TokenTyp.VORNOMEN.ARTIKEL.BESTIMMT, null ->
-        evaluiereVariable(singular.ganzesWort(Kasus.NOMINATIV, Numerus.PLURAL, true)) as Wert.Objekt.InternesObjekt.Liste
+        evaluiereVariable(singular.ganzesWort(Kasus.NOMINATIV, Numerus.PLURAL, true)) as germanskript.intern.Liste
       else -> throw Exception("Dieser Fall sollte nie eintreten!")
     }
   }
 
   override fun evaluiereListenElement(listenElement: AST.Satz.Ausdruck.ListenElement): Wert {
-    val index = (evaluiereAusdruck(listenElement.index) as Wert.Primitiv.Zahl).toInt()
+    val index = (evaluiereAusdruck(listenElement.index) as germanskript.intern.Zahl).toInt()
 
     if (listenElement.istZeichenfolgeZugriff) {
-      val zeichenfolge = (evaluiereVariable(listenElement.singular.nominativ) as Wert.Objekt.InternesObjekt.Zeichenfolge).zeichenfolge
+      val zeichenfolge = (evaluiereVariable(listenElement.singular.nominativ) as germanskript.intern.Zeichenfolge).zeichenfolge
       if (index >= zeichenfolge.length) {
         throw GermanSkriptFehler.LaufzeitFehler(holeErstesTokenVonAusdruck(listenElement.index),
             aufrufStapel.toString(), "Index außerhalb des Bereichs. Der Index ist $index, doch die Länge der Zeichenfolge ist ${zeichenfolge.length}.\n")
       }
-      return Wert.Objekt.InternesObjekt.Zeichenfolge(zeichenfolge[index].toString())
+      return germanskript.intern.Zeichenfolge(zeichenfolge[index].toString())
     }
 
     val liste = evaluiereListenSingular(listenElement.singular)
@@ -577,7 +578,7 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
   override fun evaluiereTypÜberprüfung(typÜberprüfung: AST.Satz.Ausdruck.TypÜberprüfung): Wert {
     val ausdruckTyp = typeOf(evaluiereAusdruck(typÜberprüfung.ausdruck))
     val istTyp = typPrüfer.typIstTyp(ausdruckTyp, typÜberprüfung.typ.typ!!)
-    return Wert.Primitiv.Boolean(istTyp)
+    return germanskript.intern.Boolean(istTyp)
   }
 
   // endregion
@@ -606,76 +607,76 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
   // region interne Funktionen
   private val interneFunktionen = mapOf<String, () -> (Wert)>(
     "schreibe die Zeichenfolge" to {
-      val zeichenfolge = umgebung.leseVariable("Zeichenfolge")!!.wert as Wert.Objekt.InternesObjekt.Zeichenfolge
+      val zeichenfolge = umgebung.leseVariable("Zeichenfolge")!!.wert as germanskript.intern.Zeichenfolge
       print(zeichenfolge)
-      Wert.Nichts
+      germanskript.intern.Nichts
     },
 
     "schreibe die Zeile" to {
-      val zeile = umgebung.leseVariable("Zeile")!!.wert as Wert.Objekt.InternesObjekt.Zeichenfolge
+      val zeile = umgebung.leseVariable("Zeile")!!.wert as germanskript.intern.Zeichenfolge
       println(zeile)
-      Wert.Nichts
+      germanskript.intern.Nichts
     },
 
     "schreibe die Zahl" to {
-      val zahl = umgebung.leseVariable("Zahl")!!.wert as Wert.Primitiv.Zahl
+      val zahl = umgebung.leseVariable("Zahl")!!.wert as germanskript.intern.Zahl
       println(zahl)
-      Wert.Nichts
+      germanskript.intern.Nichts
     },
 
     "schreibe die Meldung" to {
-      val zeichenfolge = umgebung.leseVariable("FehlerMeldung")!!.wert as Wert.Objekt.InternesObjekt.Zeichenfolge
+      val zeichenfolge = umgebung.leseVariable("FehlerMeldung")!!.wert as germanskript.intern.Zeichenfolge
       System.err.println(zeichenfolge)
-      Wert.Nichts
+      germanskript.intern.Nichts
     },
 
     "erstelle aus dem Code" to {
-      val zeichenfolge = umgebung.leseVariable("Code")!!.wert as Wert.Primitiv.Zahl
-      Wert.Objekt.InternesObjekt.Zeichenfolge(zeichenfolge.toInt().toChar().toString())
+      val zeichenfolge = umgebung.leseVariable("Code")!!.wert as germanskript.intern.Zahl
+      germanskript.intern.Zeichenfolge(zeichenfolge.toInt().toChar().toString())
     },
 
     "lese" to {
-      Wert.Objekt.InternesObjekt.Zeichenfolge(readLine()!!)
+      germanskript.intern.Zeichenfolge(readLine()!!)
     },
 
     "runde die Zahl" to {
-      val zahl = umgebung.leseVariable("Zahl")!!.wert as Wert.Primitiv.Zahl
-      Wert.Primitiv.Zahl(round(zahl.zahl))
+      val zahl = umgebung.leseVariable("Zahl")!!.wert as germanskript.intern.Zahl
+      germanskript.intern.Zahl(round(zahl.zahl))
     },
 
     "runde die Zahl ab" to {
-      val zahl = umgebung.leseVariable("Zahl")!!.wert as Wert.Primitiv.Zahl
-      Wert.Primitiv.Zahl(floor(zahl.zahl))
+      val zahl = umgebung.leseVariable("Zahl")!!.wert as germanskript.intern.Zahl
+      germanskript.intern.Zahl(floor(zahl.zahl))
     },
 
     "runde die Zahl auf" to {
-      val zahl = umgebung.leseVariable("Zahl")!!.wert as Wert.Primitiv.Zahl
-      Wert.Primitiv.Zahl(ceil(zahl.zahl))
+      val zahl = umgebung.leseVariable("Zahl")!!.wert as germanskript.intern.Zahl
+      germanskript.intern.Zahl(ceil(zahl.zahl))
     },
 
     "sinus von der Zahl" to {
-      val zahl = umgebung.leseVariable("Zahl")!!.wert as Wert.Primitiv.Zahl
-      Wert.Primitiv.Zahl(sin(zahl.zahl))
+      val zahl = umgebung.leseVariable("Zahl")!!.wert as germanskript.intern.Zahl
+      germanskript.intern.Zahl(sin(zahl.zahl))
     },
 
     "cosinus von der Zahl" to {
-      val zahl = umgebung.leseVariable("Zahl")!!.wert as Wert.Primitiv.Zahl
-      Wert.Primitiv.Zahl(cos(zahl.zahl))
+      val zahl = umgebung.leseVariable("Zahl")!!.wert as germanskript.intern.Zahl
+      germanskript.intern.Zahl(cos(zahl.zahl))
     },
 
     "tangens von der Zahl" to {
-      val zahl = umgebung.leseVariable("Zahl")!!.wert as Wert.Primitiv.Zahl
-      Wert.Primitiv.Zahl(tan(zahl.zahl))
+      val zahl = umgebung.leseVariable("Zahl")!!.wert as germanskript.intern.Zahl
+      germanskript.intern.Zahl(tan(zahl.zahl))
     },
 
     "randomisiere" to {
-      Wert.Primitiv.Zahl(Random.nextDouble())
+      germanskript.intern.Zahl(Random.nextDouble())
     },
 
     "randomisiere zwischen dem Minimum, dem Maximum" to {
-      val min = umgebung.leseVariable("Minimum")!!.wert as Wert.Primitiv.Zahl
-      val max = umgebung.leseVariable("Maximum")!!.wert as Wert.Primitiv.Zahl
-      Wert.Primitiv.Zahl(Random.nextDouble(min.zahl, max.zahl))
+      val min = umgebung.leseVariable("Minimum")!!.wert as germanskript.intern.Zahl
+      val max = umgebung.leseVariable("Maximum")!!.wert as germanskript.intern.Zahl
+      germanskript.intern.Zahl(Random.nextDouble(min.zahl, max.zahl))
     }
   )
 
@@ -686,9 +687,9 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
       return durchlaufeAufruf(konvertierung, konvertierungsDefinition.definition, Umgebung(), true, wert, false)
     }
     return when (konvertierung.typ.typ!!) {
-      is Typ.Primitiv.Zahl -> konvertiereZuZahl(konvertierung, wert)
-      is Typ.Primitiv.Boolean -> konvertiereZuBoolean(wert)
-      is Typ.Compound.KlassenTyp.Zeichenfolge -> konvertiereZuZeichenfolge(wert)
+      is Typ.Compound.KlassenTyp.BuildInType.Zahl -> konvertiereZuZahl(konvertierung, wert)
+      is Typ.Compound.KlassenTyp.BuildInType.Boolean -> konvertiereZuBoolean(wert)
+      is Typ.Compound.KlassenTyp.BuildInType.Zeichenfolge -> konvertiereZuZeichenfolge(wert)
       is Typ.Compound.KlassenTyp -> if (typeOf(wert) == konvertierung.typ.typ!!) {
         wert
       } else {
@@ -704,41 +705,41 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
   private fun werfeFehler(fehlerMeldung: String, fehlerKlassenName: String, token: Token): Nothing {
     val fehlerObjekt = Wert.Objekt.SkriptObjekt(Typ.Compound.KlassenTyp.Klasse(klassenDefinitionen.getValue(fehlerKlassenName), emptyList()),
         mutableMapOf(
-            "FehlerMeldung" to Wert.Objekt.InternesObjekt.Zeichenfolge(fehlerMeldung)
+            "FehlerMeldung" to germanskript.intern.Zeichenfolge(fehlerMeldung)
         ))
 
     throw GermanSkriptFehler.UnbehandelterFehler(token, aufrufStapel.toString(), fehlerMeldung, fehlerObjekt)
   }
 
-  private fun konvertiereZuZahl(konvertierung: AST.Satz.Ausdruck.Konvertierung, wert: Wert): Wert.Primitiv.Zahl {
+  private fun konvertiereZuZahl(konvertierung: AST.Satz.Ausdruck.Konvertierung, wert: Wert): germanskript.intern.Zahl {
     return when (wert) {
-      is Wert.Primitiv.Zahl -> wert
-      is Wert.Objekt.InternesObjekt.Zeichenfolge -> {
+      is germanskript.intern.Zahl -> wert
+      is germanskript.intern.Zeichenfolge -> {
         try {
-          Wert.Primitiv.Zahl(wert.zeichenfolge)
+          germanskript.intern.Zahl(wert.zeichenfolge)
         }
         catch (parseFehler: ParseException) {
           werfeFehler("Die Zeichenfolge '${wert.zeichenfolge}' kann nicht in eine Zahl konvertiert werden.", "KonvertierungsFehler", konvertierung.token)
         }
       }
-      is Wert.Primitiv.Boolean -> Wert.Primitiv.Zahl(if (wert.boolean) 1.0 else 0.0)
+      is germanskript.intern.Boolean -> germanskript.intern.Zahl(if (wert.boolean) 1.0 else 0.0)
       else -> throw Exception("Typ-Prüfer sollte dies schon überprüfen!")
     }
   }
 
-  private fun konvertiereZuZeichenfolge(wert: Wert): Wert.Objekt.InternesObjekt.Zeichenfolge {
+  private fun konvertiereZuZeichenfolge(wert: Wert): germanskript.intern.Zeichenfolge {
     return when (wert) {
-      is Wert.Objekt.InternesObjekt.Zeichenfolge -> wert
-      is Wert.Primitiv.Boolean -> Wert.Objekt.InternesObjekt.Zeichenfolge(if (wert.boolean) "wahr" else "falsch")
-      else -> Wert.Objekt.InternesObjekt.Zeichenfolge(wert.toString())
+      is germanskript.intern.Zeichenfolge -> wert
+      is germanskript.intern.Boolean -> germanskript.intern.Zeichenfolge(if (wert.boolean) "wahr" else "falsch")
+      else -> germanskript.intern.Zeichenfolge(wert.toString())
     }
   }
 
-  private fun konvertiereZuBoolean(wert: Wert): Wert.Primitiv.Boolean {
+  private fun konvertiereZuBoolean(wert: Wert): germanskript.intern.Boolean {
     return when (wert) {
-      is Wert.Primitiv.Boolean -> wert
-      is Wert.Primitiv.Zahl -> Wert.Primitiv.Boolean(!wert.isZero())
-      is Wert.Objekt.InternesObjekt.Zeichenfolge -> Wert.Primitiv.Boolean(wert.zeichenfolge.isNotEmpty())
+      is germanskript.intern.Boolean -> wert
+      is germanskript.intern.Zahl -> germanskript.intern.Boolean(!wert.isZero())
+      is germanskript.intern.Zeichenfolge -> germanskript.intern.Boolean(wert.zeichenfolge.isNotEmpty())
       else -> throw Exception("Typ-Prüfer sollte dies schon überprüfen!")
     }
   }
@@ -746,15 +747,12 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
 
   private fun typeOf(wert: Wert): Typ {
     return when (wert) {
-      is Wert.Nichts -> Typ.Nichts
-      is Wert.Primitiv.Zahl -> Typ.Primitiv.Zahl
-      is Wert.Primitiv.Boolean -> Typ.Primitiv.Boolean
       is Wert.Objekt -> wert.typ
       is Wert.Closure -> wert.schnittstelle
+      else -> throw Exception("Dieser Fall sollte nie auftreten.")
     }
   }
 }
-
 
 fun main() {
   val interpreter = Interpretierer(File("./iterationen/iter_2/code.gm"))
