@@ -75,13 +75,13 @@ Modul Standard::Collections:
     .
 
     Implementiere<vergleichbares<Element> Element> die Liste<Element>:
-        Verb(Elemente) sortiere mich:
+        Verb(Elemente) sortiere uns:
             gebe sortiere uns mit etwas Vergleichendem:
                 vergleiche das ElementA mit dem Typ ElementB.
             zurück
         .
 
-        Verb (Elemente) sortiere mich absteigend:
+        Verb (Elemente) sortiere uns absteigend:
             gebe sortiere uns mit etwas Vergleichendem:
                 vergleiche das ElementB mit dem Typ ElementA.
             zurück

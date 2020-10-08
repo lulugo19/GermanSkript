@@ -16,7 +16,7 @@ class Definierer(startDatei: File): PipelineKomponente(startDatei) {
     // Benenne die Methodensignaturen der Schnittstellen
     definitionen.definierteTypen.values.forEach { schnittstelle ->
       if (schnittstelle is AST.Definition.Typdefinition.Schnittstelle) {
-        schnittstelle.methodenSignaturen.forEach { holeVollenNamenVonFunktionsSignatur(it) }
+        schnittstelle.methodenSignaturen.forEach { it.vollerName = holeVollenNamenVonFunktionsSignatur(it) }
       }
     }
 
@@ -188,7 +188,6 @@ class Definierer(startDatei: File): PipelineKomponente(startDatei) {
     if (funktionsSignatur.suffix != null) {
       vollerName += " " + funktionsSignatur.suffix.wert
     }
-    funktionsSignatur.vollerName = vollerName
     return vollerName
   }
 
@@ -383,6 +382,7 @@ class Definierer(startDatei: File): PipelineKomponente(startDatei) {
           definitionsContainer.funktionen.getValue(vollerName)
       )
     }
+    funktionsDefinition.signatur.vollerName = vollerName
     definitionsContainer.funktionen[vollerName] = funktionsDefinition
   }
 
@@ -417,6 +417,7 @@ class Definierer(startDatei: File): PipelineKomponente(startDatei) {
           klasse
       )
     }
+    methode.signatur.vollerName = vollerName
     klasse.methoden[vollerName] = methode
   }
 

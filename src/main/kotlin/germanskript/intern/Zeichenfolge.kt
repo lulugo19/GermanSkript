@@ -6,6 +6,7 @@ data class Zeichenfolge(val zeichenfolge: String): Wert.Objekt.InternesObjekt(Ty
 
   override fun rufeMethodeAuf(aufruf: AST.IAufruf, aufrufStapel: Interpretierer.AufrufStapel, umgebung: Umgebung<Wert>, aufrufCallback: AufrufCallback): Wert {
     return when (aufruf.vollerName!!) {
+      "vergleiche mich mit dem Typ" -> vergleicheMichMitDerZeichenfolge(umgebung)
       "code an dem Index" -> codeAnDemIndex(aufruf, aufrufStapel, umgebung)
       "buchstabiere mich groß" -> buchstabiereMichGroß()
       "buchstabiere mich klein" -> buchstabierMichKlein()
@@ -30,6 +31,11 @@ data class Zeichenfolge(val zeichenfolge: String): Wert.Objekt.InternesObjekt(Ty
   override fun setzeEigenschaft(eigenschaftsName: String, wert: Wert) {
     // Eine Zeichenfolge ist immutable
     TODO("Not yet implemented")
+  }
+
+  private fun vergleicheMichMitDerZeichenfolge(umgebung: Umgebung<Wert>): Zahl {
+    val zeichenfolge = umgebung.leseVariable("Zeichenfolge")!!.wert as Zeichenfolge
+    return Zahl(this.zeichenfolge.compareTo(zeichenfolge.zeichenfolge).toDouble())
   }
 
   private fun codeAnDemIndex(aufruf: AST.IAufruf, aufrufStapel: Interpretierer.AufrufStapel, umgebung: Umgebung<Wert>): Wert {

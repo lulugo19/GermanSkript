@@ -1190,7 +1190,8 @@ class GermanSkriptTest {
       Test: teste die Zeichenfolge "Hallo Welt!"!
     """.trimIndent()
 
-    testeGermanSkriptCode(quellCode, "Hallo Welt!")
+    führeGermanSkriptCodeAus(quellCode)
+    //testeGermanSkriptCode(quellCode, "Hallo Welt!")
   }
 
   @Test
@@ -1643,5 +1644,62 @@ class GermanSkriptTest {
     val erwarteteAusgabe = "15\n"
 
     testeGermanSkriptCode(quellCode, erwarteteAusgabe)
+  }
+
+  @Test
+  @DisplayName("Sortiere Zeichenfolgen")
+  fun sortiereZeichenfolgen() {
+    val quellCode = """
+      die Zeichenfolgen sind einige Zeichenfolgen ["Lukas", "Michelle", "Arnold", "Peter", "Tom", "Thomas", "Lucas"]
+      
+      die sortiertenZeichenfolgen sind sortiere die Zeichenfolgen
+      
+      für jede sortierteZeichenfolge:
+        schreibe die Zeile (sortierteZeichenfolge)
+      .
+      
+      schreibe die Zeile ""
+      
+      die absteigendenZeichenfolgen sind sortiere die Zeichenfolgen absteigend
+      für jede absteigendeZeichenfolge:
+        schreibe die Zeile (absteigendeZeichenfolge)
+      .
+    """.trimIndent()
+
+    val erwarteteAusgabe = """
+      Arnold
+      Lucas
+      Lukas
+      Michelle
+      Peter
+      Thomas
+      Tom
+      
+      Tom
+      Thomas
+      Peter
+      Michelle
+      Lukas
+      Lucas
+      Arnold
+      
+    """.trimIndent()
+
+    testeGermanSkriptCode(quellCode, erwarteteAusgabe)
+  }
+
+  @Test
+  @DisplayName("Kann keine Booleans sortieren")
+  fun kannKeineBooleansSortieren() {
+    val quellCode = """
+      die Booleans sind einige Booleans[wahr, falsch, wahr, wahr, falsch]
+      sortiere die Booleans
+      summiere die Booleans
+      schreibe die Zeile "#{Booleans}"
+    """.trimIndent()
+
+    assertThatExceptionOfType(GermanSkriptFehler.Undefiniert.Methode::class.java).isThrownBy {
+      führeGermanSkriptCodeAus(quellCode)
+    }
   }
 }

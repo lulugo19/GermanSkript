@@ -90,9 +90,26 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
       return false
     }
 
-    return when {
-      typ is Typ.Compound.KlassenTyp && sollTyp is Typ.Compound.Schnittstelle -> überprüfeSchnittstelle(typ, sollTyp)
-      typ is Typ.Compound.KlassenTyp && sollTyp is Typ.Compound.KlassenTyp -> überprüfeKlassenHierarchie(typ, sollTyp)
+    if (sollTyp is Typ.Generic) {
+      val schnittstellenKorrekt = sollTyp.typParam.schnittstellen.all { typIstTyp(typ, it.typ!!) }
+      return if (sollTyp.typParam.elternKlasse != null) {
+        typIstTyp(typ, sollTyp.typParam.elternKlasse.typ!!) && schnittstellenKorrekt
+      } else {
+        schnittstellenKorrekt
+      }
+    }
+
+    return when (sollTyp) {
+      is Typ.Compound.Schnittstelle -> when(typ) {
+        is Typ.Generic -> typ.typParam.schnittstellen.find { it.typ!! == sollTyp } != null
+        is Typ.Compound.KlassenTyp -> überprüfeSchnittstelle(typ, sollTyp)
+        else -> typ == sollTyp
+      }
+      is Typ.Compound.KlassenTyp -> when(typ) {
+        is Typ.Generic -> typ.typParam.elternKlasse?.typ!! == sollTyp
+        is Typ.Compound.KlassenTyp -> überprüfeKlassenHierarchie(typ, sollTyp)
+        else -> typ == sollTyp
+      }
       else -> typ == sollTyp
     }
   }
@@ -252,6 +269,9 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
     return when (klasse) {
       Typ.Compound.KlassenTyp.Liste.definition -> Typ.Compound.KlassenTyp.Liste(typArgumente)
       Typ.Compound.KlassenTyp.BuildInType.Zeichenfolge.definition -> Typ.Compound.KlassenTyp.BuildInType.Zeichenfolge
+      Typ.Compound.KlassenTyp.BuildInType.Zahl.definition -> Typ.Compound.KlassenTyp.BuildInType.Zahl
+      Typ.Compound.KlassenTyp.BuildInType.Boolean.definition -> Typ.Compound.KlassenTyp.BuildInType.Boolean
+      Typ.Compound.KlassenTyp.BuildInType.Nichts.definition -> Typ.Compound.KlassenTyp.BuildInType.Nichts
       else -> Typ.Compound.KlassenTyp.Klasse(klasse, typArgumente)
     }
   }
@@ -434,6 +454,17 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
       }
     }
 
+    // TODO: überprüfe ob die Typargumente des Methodenobjekts mit den Generic-Constrains übereinstimmen
+    if (methodenObjekt is Typ.Compound.KlassenTyp && methodenObjekt!!.typArgumente.isNotEmpty()) {
+      val implementierung = funktionsSignatur.parent!!.parent as AST.Definition.Implementierung
+      for (paramIndex in implementierung.klasse.typArgumente.indices) {
+        if (!typIstTyp(methodenObjekt!!.typArgumente[paramIndex].typ!!, implementierung.klasse.typArgumente[paramIndex].typ!!)) {
+          throw GermanSkriptFehler.Undefiniert.Methode(funktionsAufruf.token, funktionsAufruf, methodenObjekt!!.name)
+        }
+      }
+    }
+
+
     val parameter = funktionsSignatur.parameter.toList()
     val argumente = funktionsAufruf.argumente.toList()
     val j = if (funktionsAufruf.aufrufTyp == FunktionsAufrufTyp.METHODEN_REFLEXIV_AUFRUF) 1 else 0
@@ -568,6 +599,8 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
       // Die Funktionstypparameter werden nicht ersetzt, da sie möglicherweise erst inferiert werden müssen.
       val ersetzeTypArgsName = definierer.holeVollenNamenVonFunktionsAufruf(
           funktionsAufruf, typ.definition.typParameter, typ.typArgumente, ersetzeObjekt)
+
+      System.err.println(ersetzeTypArgsName)
 
       typ.definition.findeMethode(ersetzeTypArgsName)?.also { signatur ->
         // TODO: Die Typparameternamen müssen für den Interpreter später hier ersetzt werden

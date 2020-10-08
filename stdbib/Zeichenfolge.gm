@@ -13,7 +13,8 @@ Modul Zeichenfolge:
     Verb(Zeichenfolge) erstelle aus der Zahl Code: intern.
 .
 
-Implementiere die Zeichenfolge:
+Implementiere die vergleichbare<Zeichenfolge> Zeichenfolge:
+    Verb(Zahl) vergleiche mich mit der Zeichenfolge: intern.
     Verb(Zahl) code an der Zahl Index: intern.
     Verb(Zeichenfolgen) trenne mich zwischen der Zeichenfolge Separator: intern.
 

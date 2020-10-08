@@ -410,12 +410,13 @@ class Typisierer(startDatei: File): PipelineKomponente(startDatei) {
       bestimmeTyp(implementierung.klasse, null, implementierung.typParameter, true)
       implementierung.schnittstellen.forEach { schnittstelle ->
         schnittstelle.typArgumente.forEach {arg -> bestimmeTyp(arg, null, klasse.typParameter, true)}
-        klasse.implementierteSchnittstellen += prüfeImplementiertSchnittstelle(implementierung, schnittstelle)
+        klasse.implementierteSchnittstellen += prüfeImplementiertSchnittstelle(klasse, implementierung, schnittstelle)
       }
     }
   }
 
   private fun prüfeImplementiertSchnittstelle(
+      klasse: AST.Definition.Typdefinition.Klasse,
       implementierung: AST.Definition.Implementierung,
       adjektiv: AST.TypKnoten): Typ.Compound.Schnittstelle {
 
@@ -444,6 +445,9 @@ class Typisierer(startDatei: File): PipelineKomponente(startDatei) {
               implementierung,
               schnittstelle
           )
+
+      // Füge den Namen der Signatur wo die Typargumente mit den Typparameternamen ersetzt wurden hinzu
+      klasse.methoden[signatur.vollerName!!] = methode
 
       if (signatur.rückgabeTyp.typ != methode.signatur.rückgabeTyp.typ) {
         throw GermanSkriptFehler.TypFehler.FalscherSchnittstellenTyp(

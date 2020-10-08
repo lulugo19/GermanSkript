@@ -1,3 +1,10 @@
 Deklination Femininum Singular(Zahl) Plural(Zahlen)
 
 Nomen Zahl:.
+
+Implementiere die vergleichbare<Zahl> Zahl:
+
+    Verb(Zahl) vergleiche mich mit der Zahl:
+        gebe Ich - die Zahl zurück
+    .
+.
