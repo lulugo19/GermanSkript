@@ -32,7 +32,9 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
     // zuerst die Klassendefinitionen, damit noch private Eigenschaften definiert werden können
     definierer.holeDefinitionen<AST.Definition.Typdefinition.Klasse>().forEach(::prüfeKlasse)
 
-    definierer.funktionsDefinitionen.forEach(::prüfeFunktion)
+    definierer.funktionsDefinitionen.forEach {funktion ->
+      prüfeFunktion(funktion, Umgebung())
+    }
 
     // neue germanskript.Umgebung
     durchlaufeAufruf(ast.programmStart!!, ast.programm, Umgebung(), true, Typ.Compound.KlassenTyp.BuildInType.Nichts, true)
@@ -182,8 +184,7 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
   // breche niemals Sätze ab
   override fun sollSätzeAbbrechen(): Boolean = false
 
-  private fun prüfeFunktion(funktion: AST.Definition.Funktion) {
-    val funktionsUmgebung = Umgebung<Typ>()
+  private fun prüfeFunktion(funktion: AST.Definition.Funktion, funktionsUmgebung: Umgebung<Typ>) {
     funktionsUmgebung.pushBereich()
     for (parameter in funktion.signatur.parameter) {
       funktionsUmgebung.schreibeVariable(parameter.name, parameter.typKnoten.typ!!, false)
@@ -192,6 +193,7 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
     funktionsTypParams = signatur.typParameter
     durchlaufeAufruf(signatur.name.toUntyped(), funktion.körper, funktionsUmgebung, false, signatur.rückgabeTyp.typ!!, false)
     funktionsTypParams = null
+    funktionsUmgebung.popBereich()
   }
 
   private fun erstelleGenerischeTypArgumente(typParameter: List<AST.Definition.TypParam>): List<AST.TypKnoten> {
@@ -251,18 +253,24 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
       )
     }
     zuÜberprüfendeKlasse = typAusKlassenDefinition(klasse, implementierung.klasse.typArgumente)
-    implementierung.methoden.forEach(::prüfeFunktion)
-    implementierung.konvertierungen.forEach {konvertierung ->
+    prüfeImplementierungsBereich(implementierung.bereich, Umgebung())
+    zuÜberprüfendeKlasse = null
+  }
+
+  private fun prüfeImplementierungsBereich(implBereich: AST.Definition.ImplementierungsBereich, umgebung: Umgebung<Typ>) {
+    implBereich.methoden.forEach { methode ->
+      prüfeFunktion(methode, umgebung)
+    }
+    implBereich.konvertierungen.forEach { konvertierung ->
       durchlaufeAufruf(
           konvertierung.typ.name.bezeichnerToken,
-          konvertierung.definition, Umgebung(), true, konvertierung.typ.typ!!, false)
+          konvertierung.definition, umgebung, true, konvertierung.typ.typ!!, false)
     }
-    implementierung.eigenschaften.forEach {eigenschaft ->
+    implBereich.eigenschaften.forEach { eigenschaft ->
       durchlaufeAufruf(eigenschaft.name.bezeichner.toUntyped(),
-          eigenschaft.definition, Umgebung(),
+          eigenschaft.definition, umgebung,
           true, eigenschaft.rückgabeTyp.typ!!, false)
     }
-    zuÜberprüfendeKlasse = null
   }
 
   private fun typAusKlassenDefinition(klasse: AST.Definition.Typdefinition.Klasse, typArgumente: List<AST.TypKnoten>): Typ.Compound.KlassenTyp {
@@ -456,7 +464,7 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
 
     // TODO: überprüfe ob die Typargumente des Methodenobjekts mit den Generic-Constrains übereinstimmen
     if (methodenObjekt is Typ.Compound.KlassenTyp && methodenObjekt!!.typArgumente.isNotEmpty()) {
-      val implementierung = funktionsSignatur.parent!!.parent as AST.Definition.Implementierung
+      val implementierung = funktionsSignatur.findNodeInParents<AST.Definition.Implementierung>()!!
       for (paramIndex in implementierung.klasse.typArgumente.indices) {
         if (!typIstTyp(methodenObjekt!!.typArgumente[paramIndex].typ!!, implementierung.klasse.typArgumente[paramIndex].typ!!)) {
           throw GermanSkriptFehler.Undefiniert.Methode(funktionsAufruf.token, funktionsAufruf, methodenObjekt!!.name)
@@ -599,8 +607,6 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
       // Die Funktionstypparameter werden nicht ersetzt, da sie möglicherweise erst inferiert werden müssen.
       val ersetzeTypArgsName = definierer.holeVollenNamenVonFunktionsAufruf(
           funktionsAufruf, typ.definition.typParameter, typ.typArgumente, ersetzeObjekt)
-
-      System.err.println(ersetzeTypArgsName)
 
       typ.definition.findeMethode(ersetzeTypArgsName)?.also { signatur ->
         // TODO: Die Typparameternamen müssen für den Interpreter später hier ersetzt werden
@@ -1026,6 +1032,41 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
     }
     umgebung.popBereich()
     return schnittstelle
+  }
+
+  override fun evaluiereAnonymeKlasse(anonymeKlasse: AST.Satz.Ausdruck.AnonymeKlasse): Typ {
+    nichtErlaubtInKonstante(anonymeKlasse)
+    val schnittstelle = typisierer.bestimmeTyp(
+        anonymeKlasse.schnittstelle,
+        funktionsTypParams,
+        klassenTypParams,
+        true
+    )
+    if (schnittstelle !is Typ.Compound.Schnittstelle) {
+      throw GermanSkriptFehler.SchnittstelleErwartet(anonymeKlasse.schnittstelle.name.bezeichnerToken)
+    }
+
+    inferiereTypArgumente(schnittstelle)
+
+    val klassenDefinition = AST.Definition.Typdefinition.Klasse(
+        emptyList(), anonymeKlasse.schnittstelle.name as AST.WortArt.Nomen,
+        null, mutableListOf(), AST.Satz.Bereich(mutableListOf())
+    )
+
+    definierer.definiereImplementierungsKörper(anonymeKlasse.bereich, klassenDefinition)
+    typisierer.typisiereImplementierungsBereich(anonymeKlasse.bereich, klassenTypParams!!)
+    typisierer.prüfeImplementiertSchnittstelle(
+        anonymeKlasse.schnittstelle.name.bezeichnerToken,
+        klassenDefinition,
+        schnittstelle,
+        anonymeKlasse.bereich
+    )
+
+    prüfeImplementierungsBereich(anonymeKlasse.bereich, umgebung)
+
+    val klassenTyp = Typ.Compound.KlassenTyp.Klasse(klassenDefinition, emptyList())
+    anonymeKlasse.typ = klassenTyp
+    return klassenTyp
   }
 
   override fun evaluiereTypÜberprüfung(typÜberprüfung: AST.Satz.Ausdruck.TypÜberprüfung): Typ {

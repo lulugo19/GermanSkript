@@ -395,35 +395,48 @@ class Typisierer(startDatei: File): PipelineKomponente(startDatei) {
     for (eigenschaft in klasse.eigenschaften) {
       bestimmeTyp(eigenschaft.typKnoten, null, klasse.typParameter, true)
     }
-    klasse.methoden.values.forEach { methode ->
-      //methode.klasse.typ = Typ.KlassenTyp.Klasse(klasse)
-      typisiereFunktionsSignatur(methode.signatur, klasse.typParameter)
-    }
-    klasse.konvertierungen.values.forEach { konvertierung ->
-      bestimmeTyp(konvertierung.typ, null, null, true)
-    }
-    klasse.berechneteEigenschaften.values.forEach {eigenschaft ->
-      bestimmeTyp(eigenschaft.rückgabeTyp, klasse.typParameter, null, true)
-    }
+
     klasse.implementierungen.forEach { implementierung ->
-      typisiereTypParameter(implementierung.typParameter)
-      bestimmeTyp(implementierung.klasse, null, implementierung.typParameter, true)
-      implementierung.schnittstellen.forEach { schnittstelle ->
-        schnittstelle.typArgumente.forEach {arg -> bestimmeTyp(arg, null, klasse.typParameter, true)}
-        klasse.implementierteSchnittstellen += prüfeImplementiertSchnittstelle(klasse, implementierung, schnittstelle)
-      }
+      typisiereImplementierung(implementierung, klasse)
     }
   }
 
-  private fun prüfeImplementiertSchnittstelle(
-      klasse: AST.Definition.Typdefinition.Klasse,
-      implementierung: AST.Definition.Implementierung,
-      adjektiv: AST.TypKnoten): Typ.Compound.Schnittstelle {
-
-    val schnittstelle = holeTypDefinition(adjektiv, null, implementierung.typParameter, true)
-    if (schnittstelle !is Typ.Compound.Schnittstelle) {
-      throw GermanSkriptFehler.SchnittstelleErwartet(adjektiv.name.bezeichnerToken)
+  private fun typisiereImplementierung(implementierung: AST.Definition.Implementierung, klasse: AST.Definition.Typdefinition.Klasse) {
+    typisiereTypParameter(implementierung.typParameter)
+    bestimmeTyp(implementierung.klasse, null, implementierung.typParameter, true)
+    typisiereImplementierungsBereich(implementierung.bereich, implementierung.typParameter)
+    implementierung.schnittstellen.forEach { schnittstelle ->
+      schnittstelle.typArgumente.forEach {arg -> bestimmeTyp(arg, null, klasse.typParameter, true)}
+      val schnittstellenTyp = holeTypDefinition(schnittstelle, null, implementierung.typParameter, true)
+      if (schnittstellenTyp !is Typ.Compound.Schnittstelle) {
+        throw GermanSkriptFehler.SchnittstelleErwartet(schnittstelle.name.bezeichnerToken)
+      }
+      prüfeImplementiertSchnittstelle(schnittstelle.name.bezeichnerToken, klasse, schnittstellenTyp, implementierung.bereich)
     }
+  }
+
+  public fun typisiereImplementierungsBereich(
+      implBereich: AST.Definition.ImplementierungsBereich ,
+      typTypParameter: List<AST.Definition.TypParam>) {
+
+    implBereich.methoden.forEach { methode ->
+      typisiereFunktionsSignatur(methode.signatur, typTypParameter)
+    }
+
+    implBereich.konvertierungen.forEach { konvertierung ->
+      bestimmeTyp(konvertierung.typ, null, typTypParameter, true)
+    }
+
+    implBereich.eigenschaften.forEach { eigenschaft ->
+      bestimmeTyp(eigenschaft.rückgabeTyp, null, typTypParameter, true)
+    }
+  }
+
+  public fun prüfeImplementiertSchnittstelle(
+      token: Token,
+      klasse: AST.Definition.Typdefinition.Klasse,
+      schnittstelle: Typ.Compound.Schnittstelle,
+      implBereich: AST.Definition.ImplementierungsBereich) {
 
     fun holeErwartetenTypen(schnittstellenParam: AST.Definition.Parameter): Typ {
       return when (val typ = schnittstellenParam.typKnoten.typ!!) {
@@ -437,12 +450,13 @@ class Typisierer(startDatei: File): PipelineKomponente(startDatei) {
 
     for (signatur in schnittstelle.definition.methodenSignaturen) {
       val methodenName = definierer.holeVollenNamenVonFunktionsSignatur(signatur, schnittstelle.typArgumente)
-      val methode = implementierung.methoden.find { methode ->
+      val methode = implBereich.methoden.find { methode ->
         methode.signatur.vollerName == methodenName
       }
           ?: throw GermanSkriptFehler.UnimplementierteSchnittstelle(
-              adjektiv.name.bezeichnerToken,
-              implementierung,
+              token,
+              klasse,
+              implBereich,
               schnittstelle
           )
 
@@ -485,7 +499,7 @@ class Typisierer(startDatei: File): PipelineKomponente(startDatei) {
         }
       }
     }
-    return schnittstelle
+    klasse.implementierteSchnittstellen += schnittstelle
   }
 
   private fun typisiereSchnittstelle(schnittstelle: AST.Definition.Typdefinition.Schnittstelle) {

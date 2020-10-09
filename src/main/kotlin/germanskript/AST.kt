@@ -302,14 +302,22 @@ sealed class AST {
         val klasse: TypKnoten,
         val typParameter: List<TypParam>,
         val schnittstellen: List<TypKnoten>,
-        val methoden: List<Funktion>,
-        val eigenschaften: List<Eigenschaft>,
-        val konvertierungen: List<Konvertierung>
+        val bereich: ImplementierungsBereich
     ): Definition() {
       override val children = sequence {
         yield(klasse)
         yieldAll(typParameter)
         yieldAll(schnittstellen)
+        yield(bereich)
+      }
+    }
+
+    data class ImplementierungsBereich(
+        val methoden: List<Funktion>,
+        val eigenschaften: List<Eigenschaft>,
+        val konvertierungen: List<Konvertierung>
+    ): Definition() {
+      override val children = sequence {
         yieldAll(methoden)
         yieldAll(eigenschaften)
         yieldAll(konvertierungen)
@@ -692,6 +700,15 @@ sealed class AST {
           yield(schnittstelle)
           yieldAll(bindings)
           yield(körper)
+        }
+      }
+
+      data class AnonymeKlasse(val schnittstelle: TypKnoten, val bereich: Definition.ImplementierungsBereich): Ausdruck() {
+        var typ: Typ.Compound.KlassenTyp.Klasse? = null
+
+        override val children = sequence {
+          yield(schnittstelle)
+          yield(bereich)
         }
       }
 

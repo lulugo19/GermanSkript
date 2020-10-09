@@ -17,7 +17,7 @@ abstract class Wert {
     abstract fun holeEigenschaft(eigenschaftsName: String): Wert
     abstract fun setzeEigenschaft(eigenschaftsName: String, wert: Wert)
 
-    class SkriptObjekt(
+    open class SkriptObjekt(
         typ: Typ.Compound.KlassenTyp,
         val eigenschaften: MutableMap<String, Wert>
     ) : Objekt(typ) {
@@ -26,6 +26,12 @@ abstract class Wert {
         eigenschaften[eigenschaftsName] = wert
       }
     }
+
+    class AnonymesSkriptObjekt(
+        typ: Typ.Compound.KlassenTyp,
+        eigenschaften: MutableMap<String, Wert>,
+        val umgebung: Umgebung<Wert>
+    ): SkriptObjekt(typ, eigenschaften)
 
     abstract class InternesObjekt(typ: Typ.Compound.KlassenTyp): Objekt(typ) {
 

@@ -392,9 +392,14 @@ class Definierer(startDatei: File): PipelineKomponente(startDatei) {
       throw GermanSkriptFehler.KlasseErwartet(implementierung.klasse.name.bezeichnerToken)
     }
     klasse.implementierungen += implementierung
-    implementierung.methoden.forEach { methode -> definiereMethode(methode, klasse) }
-    implementierung.eigenschaften.forEach { eigenschaft -> definiereEigenschaft(eigenschaft, klasse) }
-    implementierung.konvertierungen.forEach { konvertierung -> definiereKonvertierung(konvertierung, klasse) }
+    definiereImplementierungsKörper(implementierung.bereich, klasse)
+  }
+
+  public fun definiereImplementierungsKörper(implBereich: AST.Definition.ImplementierungsBereich, klasse: AST.Definition.Typdefinition.Klasse)
+  {
+    implBereich.methoden.forEach { methode -> definiereMethode(methode, klasse) }
+    implBereich.eigenschaften.forEach { eigenschaft -> definiereEigenschaft(eigenschaft, klasse) }
+    implBereich.konvertierungen.forEach { konvertierung -> definiereKonvertierung(konvertierung, klasse) }
   }
 
   private fun definiereKonvertierung(konvertierung: AST.Definition.Konvertierung, klasse: AST.Definition.Typdefinition.Klasse) {

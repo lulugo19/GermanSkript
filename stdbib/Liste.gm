@@ -1,6 +1,7 @@
 Deklination Femininum Singular(Liste) Plural(Listen)
 Deklination Neutrum Singular(Element) Plural(Elemente)
 Deklination Maskulinum Singular(Index) Plural(Indizes)
+Deklination Maskulinum Singular(Iterator, Iterators, Iterator, Iterator) Plural(Iteratoren)
 Deklination Maskulinum Singular(Akkumulator, Akkumulators, Akkumulator, Akkumulator) Plural(Akkumulatoren)
 Deklination Maskulinum Singular(Wert, Werts, Wert, Wert) Plural(Werte)
 Deklination Femininum Singular(Summe) Plural(Summen)
@@ -31,11 +32,38 @@ Adjektiv<Typ, ErgebnisTyp> reduzierend:
     Verb(ErgebnisTyp) reduziere den ErgebnisTyp Akkumulator mit dem Typ
 .
 
+Adjektiv<Typ> iterierbar:
+    Verb hole (das Iterierende<Typ> Iterator)
+.
+
+Adjektiv<Typ> iterierend:
+    Verb(Boolean) läuft weiter
+    Verb hole (den Typ)
+.
+
 Modul Standard::Collections:
-    Implementiere<Element> die Liste<Element>:
+    Implementiere<Element> die iterierbare<Element> Liste<Element>:
         Verb(Boolean) enthalten das Element: intern.
         Verb füge das Element hinzu: intern.
         Verb entferne an der Zahl Index: intern.
+
+        Verb hole (das Iterierende<Element> Iterator):
+            ein Index ist 0
+            die AnZahl ist meine AnZahl
+            die Elemente sind Ich
+
+            gebe etwas Iterierendes<Element>:
+                Verb(Boolean) läuft weiter:
+                    gebe den Index kleiner als die AnZahl zurück
+                .
+
+                Verb hole (das Element):
+                    ein Index ist der Index + 1
+                    gebe das Element[Index - 1] zurück
+                .
+
+            . zurück
+        .
 
         Verb(Elemente) sortiere uns mit dem Vergleichenden<Element>:
             die ElementeKOPIE sind kopiere die Elemente Ich

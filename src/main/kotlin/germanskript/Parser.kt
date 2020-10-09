@@ -38,7 +38,8 @@ enum class ASTKnotenID {
   IMPLEMENTIERUNG,
   BEDINGUNGS_TERM,
   LISTEN_ELEMENT_ZUWEISUNG,
-  TYP_ÜBERPRÜFUNG
+  TYP_ÜBERPRÜFUNG,
+  ANONYME_KLASSE
 }
 
 class Parser(startDatei: File): PipelineKomponente(startDatei) {
@@ -473,11 +474,8 @@ private sealed class SubParser<T: AST>() {
             if (
                 ausdruck !is AST.Satz.Ausdruck.Bedingung &&
                 ausdruck !is AST.Satz.Ausdruck.MethodenBereich &&
-                !hierarchyContainsAnyNode(
-                    ASTKnotenID.SCHLEIFE,
-                    ASTKnotenID.FÜR_JEDE_SCHLEIFE,
-                    ASTKnotenID.BEDINGUNG,
-                    ASTKnotenID.KLASSEN_DEFINITION)
+                !inBedingungsTerm &&
+                !hierarchyContainsNode(ASTKnotenID.KLASSEN_DEFINITION)
             ) {
               subParse(Satz.Ausdruck.MethodenBereich(ausdruck))
             }
@@ -584,7 +582,19 @@ private sealed class SubParser<T: AST>() {
       }
       is TokenTyp.VORNOMEN.ETWAS -> {
         val schnittstelle = AST.TypKnoten(modulPfad!!, nomen, typArgumente)
-        subParse(Satz.Ausdruck.NomenAusdruck.Closure(schnittstelle))
+        if (peekType(0) == TokenTyp.OFFENE_KLAMMER) {
+          subParse(Satz.Ausdruck.NomenAusdruck.Closure(schnittstelle))
+        } else {
+          var i = 1
+          while (peekType(i) == TokenTyp.NEUE_ZEILE) {
+            i++
+          }
+          when (peekType(i)) {
+            TokenTyp.VERB, TokenTyp.EIGENSCHAFT, TokenTyp.ALS_GROß, is TokenTyp.VORNOMEN.DEMONSTRATIV_PRONOMEN ->
+              subParse(Satz.Ausdruck.NomenAusdruck.AnonymeKlasse(schnittstelle))
+            else -> subParse(Satz.Ausdruck.NomenAusdruck.Closure(schnittstelle))
+          }
+        }
       }
       TokenTyp.VORNOMEN.POSSESSIV_PRONOMEN.MEIN ->
         if (nächstesToken.typ is TokenTyp.OFFENE_ECKIGE_KLAMMER) subParse(Satz.Ausdruck.NomenAusdruck.ListenElement(nomen))
@@ -1158,6 +1168,16 @@ private sealed class SubParser<T: AST>() {
             return AST.Satz.Ausdruck.Closure(typKnoten, bindings, körper)
           }
         }
+
+        class AnonymeKlasse(val typKnoten: AST.TypKnoten)
+          : NomenAusdruck<AST.Satz.Ausdruck.AnonymeKlasse>(typKnoten.name as AST.WortArt.Nomen) {
+          override val id: ASTKnotenID = ASTKnotenID.ANONYME_KLASSE
+
+          override fun parseImpl(): AST.Satz.Ausdruck.AnonymeKlasse {
+            val körper = subParse(Definition.ImplementierungsKörper)
+            return AST.Satz.Ausdruck.AnonymeKlasse(typKnoten, körper)
+          }
+        }
       }
 
 
@@ -1282,7 +1302,10 @@ private sealed class SubParser<T: AST>() {
   sealed class Definition<T: AST.Definition>(): SubParser<T>() {
 
     override fun bewacheKnoten() {
-      if (!(parentNodeId == ASTKnotenID.PROGRAMM || parentNodeId == ASTKnotenID.MODUL || parentNodeId == ASTKnotenID.IMPLEMENTIERUNG)) {
+      if (!(parentNodeId == ASTKnotenID.PROGRAMM ||
+            parentNodeId == ASTKnotenID.MODUL ||
+            parentNodeId == ASTKnotenID.IMPLEMENTIERUNG ||
+            parentNodeId == ASTKnotenID.ANONYME_KLASSE)) {
         throw GermanSkriptFehler.SyntaxFehler.UngültigerBereich(next(),
             "Definitionen können nur im globalem Bereich, in Modulen oder Klasse-Implementierungen geschrieben werden.")
       }
@@ -1542,21 +1565,7 @@ private sealed class SubParser<T: AST>() {
 
         typ.name.vornomen = artikel
 
-        val methoden = mutableListOf<AST.Definition.Funktion>()
-        val eigenschaften = mutableListOf<AST.Definition.Eigenschaft>()
-        val konvertierungen = mutableListOf<AST.Definition.Konvertierung>()
-
-        runParseBereich {
-          when (peekType()) {
-            is TokenTyp.VERB -> methoden += subParse(Funktion(true))
-            is TokenTyp.EIGENSCHAFT -> eigenschaften += subParse(Eigenschaft)
-            is TokenTyp.ALS_GROß -> konvertierungen += subParse(Konvertierung)
-            else -> throw GermanSkriptFehler.SyntaxFehler.ParseFehler(next(), "'.'",
-                "In einem Implementiere-Bereich können nur Methoden oder Eigenschafts-/Konvertierungsdefinitionen definiert werden.")
-          }
-        }
-
-        return AST.Definition.Implementierung(typ, typParameter, schnittstellen, methoden, eigenschaften, konvertierungen)
+        return AST.Definition.Implementierung(typ, typParameter, schnittstellen, subParse(ImplementierungsKörper))
       }
 
       fun parseSchnittstellenMitKlasse(): Pair<List<AST.TypKnoten>, AST.TypKnoten> {
@@ -1576,6 +1585,28 @@ private sealed class SubParser<T: AST>() {
             return  Pair(schnittstellen, adjektivOderNomen)
           }
         }
+      }
+    }
+
+    object ImplementierungsKörper: Definition<AST.Definition.ImplementierungsBereich>() {
+      override val id: ASTKnotenID = ASTKnotenID.IMPLEMENTIERUNG
+
+      override fun parseImpl(): AST.Definition.ImplementierungsBereich {
+        val methoden = mutableListOf<AST.Definition.Funktion>()
+        val eigenschaften = mutableListOf<AST.Definition.Eigenschaft>()
+        val konvertierungen = mutableListOf<AST.Definition.Konvertierung>()
+
+        runParseBereich {
+          when (peekType()) {
+            is TokenTyp.VERB -> methoden += subParse(Funktion(true))
+            is TokenTyp.EIGENSCHAFT -> eigenschaften += subParse(Eigenschaft)
+            is TokenTyp.ALS_GROß -> konvertierungen += subParse(Konvertierung)
+            else -> throw GermanSkriptFehler.SyntaxFehler.ParseFehler(Implementierung.next(), "'.'",
+                "In einem Implementiere-Bereich können nur Methoden oder Eigenschafts-/Konvertierungsdefinitionen definiert werden.")
+          }
+        }
+
+        return AST.Definition.ImplementierungsBereich(methoden, eigenschaften, konvertierungen)
       }
     }
 

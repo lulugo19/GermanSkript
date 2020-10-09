@@ -225,6 +225,7 @@ class GrammatikPrüfer(startDatei: File): PipelineKomponente(startDatei) {
       is AST.Satz.Ausdruck.Konvertierung -> prüfeKonvertierung(ausdruck, kontextNomen, fälle, pluralErwartet)
       is AST.Satz.Ausdruck.BinärerAusdruck -> prüfeBinärenAusdruck(ausdruck, kontextNomen, fälle, pluralErwartet)
       is AST.Satz.Ausdruck.Closure -> prüfeClosure(ausdruck, kontextNomen, fälle, pluralErwartet)
+      is AST.Satz.Ausdruck.AnonymeKlasse -> prüfeAnonymeKlasse(ausdruck, kontextNomen, fälle, pluralErwartet)
       is AST.Satz.Ausdruck.Minus -> prüfeMinus(ausdruck)
       is AST.Satz.Ausdruck.FunktionsAufruf -> prüfeFunktionsAufruf(ausdruck)
       is AST.Satz.Ausdruck.TypÜberprüfung -> prüfeTypÜberprüfung(ausdruck)
@@ -304,6 +305,16 @@ class GrammatikPrüfer(startDatei: File): PipelineKomponente(startDatei) {
       prüfeNumerus(kontextNomen, Numerus.SINGULAR)
     }
     closure.bindings.forEach { binding -> prüfeNomen(binding, EnumSet.of(Kasus.NOMINATIV), Numerus.BEIDE)}
+  }
+
+  private fun prüfeAnonymeKlasse(anonymeKlasse: AST.Satz.Ausdruck.AnonymeKlasse, kontextNomen: AST.WortArt.Nomen?, fälle: EnumSet<Kasus>, pluralErwartet: Boolean) {
+    if (pluralErwartet) {
+      throw GermanSkriptFehler.GrammatikFehler.PluralErwartet(anonymeKlasse.schnittstelle.name.bezeichnerToken)
+    }
+    prüfeTyp(anonymeKlasse.schnittstelle, fälle, EnumSet.of(Numerus.SINGULAR), null)
+    if (kontextNomen != null) {
+      prüfeNumerus(kontextNomen, Numerus.SINGULAR)
+    }
   }
 
   private fun prüfeKonvertierung(konvertierung: AST.Satz.Ausdruck.Konvertierung, kontextNomen: AST.WortArt.Nomen?, fälle: EnumSet<Kasus>, pluralErwartet: Boolean) {

@@ -210,6 +210,9 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
         is Wert.Objekt -> {
           val methode = methodenObjekt.typ.definition.methoden.getValue(funktionsAufruf.vollerName!!)
           // funktionsAufruf.vollerName = "für ${objekt.typ.definition.name.nominativ}: ${methode.signatur.vollerName}"
+          if (methodenObjekt is Wert.Objekt.AnonymesSkriptObjekt) {
+            funktionsUmgebung = methodenObjekt.umgebung
+          }
           val signatur = methode.signatur
           Pair(methode.körper, signatur.parameter.map {it.name}.toList())
         }
@@ -573,6 +576,10 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
 
   override fun evaluiereClosure(closure: AST.Satz.Ausdruck.Closure): Wert {
     return Wert.Closure((closure.schnittstelle.typ as Typ.Compound.Schnittstelle), closure, umgebung)
+  }
+
+  override fun evaluiereAnonymeKlasse(anonymeKlasse: AST.Satz.Ausdruck.AnonymeKlasse): Wert {
+    return Wert.Objekt.AnonymesSkriptObjekt(anonymeKlasse.typ!!, mutableMapOf(), umgebung)
   }
 
   override fun evaluiereTypÜberprüfung(typÜberprüfung: AST.Satz.Ausdruck.TypÜberprüfung): Wert {

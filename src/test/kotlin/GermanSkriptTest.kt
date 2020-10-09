@@ -1702,4 +1702,28 @@ class GermanSkriptTest {
       führeGermanSkriptCodeAus(quellCode)
     }
   }
+
+  @Test
+  @DisplayName("Listen Iterator")
+  fun listenIterator() {
+    val quellCode = """
+      die Zahlen sind einige Zahlen[2, 3, 5, 7, 11]
+      der Iterator ist Zahlen: hole den Iterator!
+      solange der Iterator weiter läuft:
+        die Zahl ist der Iterator: hole die Zahl!
+        schreibe die Zahl
+      .
+    """.trimIndent()
+
+    val erwarteteAusgabe = """
+      2
+      3
+      5
+      7
+      11
+      
+    """.trimIndent()
+
+    testeGermanSkriptCode(quellCode, erwarteteAusgabe)
+  }
 }
