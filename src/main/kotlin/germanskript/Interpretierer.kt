@@ -539,7 +539,10 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
   }
 
   override fun evaluiereAnonymeKlasse(anonymeKlasse: AST.Satz.Ausdruck.AnonymeKlasse): Wert {
-    return Wert.Objekt.AnonymesSkriptObjekt(anonymeKlasse.typ!!, mutableMapOf(), umgebung)
+    val eigenschaften = anonymeKlasse.bereich.eigenschaften
+        .map { it.name.nominativ to evaluiereAusdruck(it.wert) }
+        .toMap().toMutableMap()
+    return Wert.Objekt.AnonymesSkriptObjekt(anonymeKlasse.typ!!, eigenschaften, umgebung)
   }
 
   override fun evaluiereTypÜberprüfung(typÜberprüfung: AST.Satz.Ausdruck.TypÜberprüfung): Wert {

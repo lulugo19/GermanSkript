@@ -399,7 +399,7 @@ class Definierer(startDatei: File): PipelineKomponente(startDatei) {
   fun definiereImplementierungsKörper(implBereich: AST.Definition.ImplementierungsBereich, klasse: AST.Definition.Typdefinition.Klasse)
   {
     implBereich.methoden.forEach { methode -> definiereMethode(methode, klasse) }
-    implBereich.eigenschaften.forEach { eigenschaft -> definiereEigenschaft(eigenschaft, klasse) }
+    implBereich.berechneteEigenschaften.forEach { eigenschaft -> definiereEigenschaft(eigenschaft, klasse) }
     implBereich.konvertierungen.forEach { konvertierung -> definiereKonvertierung(konvertierung, klasse) }
   }
 

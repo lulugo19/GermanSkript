@@ -3,7 +3,6 @@ package germanskript
 import germanskript.util.Peekable
 import java.io.File
 import java.util.*
-import kotlin.math.sin
 
 enum class ASTKnotenID {
   PROGRAMM,
@@ -1278,7 +1277,7 @@ private sealed class SubParser<T: AST>() {
           override val id: ASTKnotenID = ASTKnotenID.ANONYME_KLASSE
 
           override fun parseImpl(): AST.Satz.Ausdruck.AnonymeKlasse {
-            val körper = subParse(Definition.ImplementierungsKörper)
+            val körper = subParse(Definition.ImplementierungsBereich(true))
             return AST.Satz.Ausdruck.AnonymeKlasse(typKnoten, körper)
           }
         }
@@ -1673,7 +1672,7 @@ private sealed class SubParser<T: AST>() {
 
         typ.name.vornomen = artikel
 
-        return AST.Definition.Implementierung(typ, typParameter, schnittstellen, subParse(ImplementierungsKörper))
+        return AST.Definition.Implementierung(typ, typParameter, schnittstellen, subParse(ImplementierungsBereich(false)))
       }
 
       fun parseSchnittstellenMitKlasse(): Pair<List<AST.TypKnoten>, AST.TypKnoten> {
@@ -1696,25 +1695,30 @@ private sealed class SubParser<T: AST>() {
       }
     }
 
-    object ImplementierungsKörper: Definition<AST.Definition.ImplementierungsBereich>() {
+    class ImplementierungsBereich(private val erlaubeEigenschaften: Boolean): Definition<AST.Definition.ImplementierungsBereich>() {
       override val id: ASTKnotenID = ASTKnotenID.IMPLEMENTIERUNG
 
       override fun parseImpl(): AST.Definition.ImplementierungsBereich {
         val methoden = mutableListOf<AST.Definition.Funktion>()
-        val eigenschaften = mutableListOf<AST.Definition.Eigenschaft>()
+        val eigenschaften = mutableListOf<AST.Satz.VariablenDeklaration>()
+        val berechneteEigenschaften = mutableListOf<AST.Definition.Eigenschaft>()
         val konvertierungen = mutableListOf<AST.Definition.Konvertierung>()
 
         runParseBereich {
           when (peekType()) {
             is TokenTyp.VERB -> methoden += subParse(Funktion(true))
-            is TokenTyp.EIGENSCHAFT -> eigenschaften += subParse(Eigenschaft)
+            is TokenTyp.EIGENSCHAFT -> berechneteEigenschaften += subParse(Eigenschaft)
             is TokenTyp.ALS_GROß -> konvertierungen += subParse(Konvertierung)
+            is TokenTyp.VORNOMEN.DEMONSTRATIV_PRONOMEN ->
+              if (erlaubeEigenschaften) eigenschaften += subParse(Satz.VariablenDeklaration)
+              else throw GermanSkriptFehler.SyntaxFehler.ParseFehler(Implementierung.next(), "'.'",
+                  "In einem Implementiere-Bereich können nur Methoden oder Eigenschafts-/Konvertierungsdefinitionen definiert werden.")
             else -> throw GermanSkriptFehler.SyntaxFehler.ParseFehler(Implementierung.next(), "'.'",
-                "In einem Implementiere-Bereich können nur Methoden oder Eigenschafts-/Konvertierungsdefinitionen definiert werden.")
+                "In einem Implementiere-Bereich oder einer Anonymen Klasse können nur Methoden oder Eigenschafts-/Konvertierungsdefinitionen definiert werden.")
           }
         }
 
-        return AST.Definition.ImplementierungsBereich(methoden, eigenschaften, konvertierungen)
+        return AST.Definition.ImplementierungsBereich(eigenschaften, methoden, berechneteEigenschaften, konvertierungen)
       }
     }
 

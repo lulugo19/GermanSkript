@@ -265,7 +265,7 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
           konvertierung.typ.name.bezeichnerToken,
           konvertierung.definition, umgebung, true, konvertierung.typ.typ!!, false)
     }
-    implBereich.eigenschaften.forEach { eigenschaft ->
+    implBereich.berechneteEigenschaften.forEach { eigenschaft ->
       durchlaufeAufruf(eigenschaft.name.bezeichner.toUntyped(),
           eigenschaft.definition, umgebung,
           true, eigenschaft.rückgabeTyp.typ!!, false)
@@ -1026,8 +1026,18 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
         null, mutableListOf(), AST.Satz.Bereich(mutableListOf())
     )
 
+    for (eigenschaft in anonymeKlasse.bereich.eigenschaften) {
+      val wert = evaluiereAusdruck(eigenschaft.wert)
+      val typ = AST.TypKnoten(emptyList(), eigenschaft.name, emptyList())
+      typ.typ = wert
+      if (klassenDefinition.eigenschaften.any {it.name.nominativ == eigenschaft.name.nominativ}) {
+        throw GermanSkriptFehler.DoppelteEigenschaft(eigenschaft.name.bezeichner.toUntyped(), klassenDefinition)
+      }
+      klassenDefinition.eigenschaften.add(AST.Definition.Parameter(typ, eigenschaft.name))
+    }
+
     definierer.definiereImplementierungsKörper(anonymeKlasse.bereich, klassenDefinition)
-    typisierer.typisiereImplementierungsBereich(anonymeKlasse.bereich, klassenTypParams!!)
+    typisierer.typisiereImplementierungsBereich(anonymeKlasse.bereich, klassenTypParams)
     typisierer.prüfeImplementiertSchnittstelle(
         anonymeKlasse.schnittstelle.name.bezeichnerToken,
         klassenDefinition,
@@ -1035,10 +1045,14 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
         anonymeKlasse.bereich
     )
 
-    prüfeImplementierungsBereich(anonymeKlasse.bereich, umgebung)
-
     val klassenTyp = Typ.Compound.KlassenTyp.Klasse(klassenDefinition, emptyList())
     anonymeKlasse.typ = klassenTyp
+
+    val vorherigeKlasse = zuÜberprüfendeKlasse
+    zuÜberprüfendeKlasse = klassenTyp
+    prüfeImplementierungsBereich(anonymeKlasse.bereich, umgebung)
+    zuÜberprüfendeKlasse = vorherigeKlasse
+
     return klassenTyp
   }
 

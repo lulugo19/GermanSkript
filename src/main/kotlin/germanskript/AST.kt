@@ -331,13 +331,15 @@ sealed class AST {
     }
 
     data class ImplementierungsBereich(
+        val eigenschaften: List<Satz.VariablenDeklaration>,
         val methoden: List<Funktion>,
-        val eigenschaften: List<Eigenschaft>,
+        val berechneteEigenschaften: List<Eigenschaft>,
         val konvertierungen: List<Konvertierung>
     ): Definition() {
       override val children = sequence {
-        yieldAll(methoden)
         yieldAll(eigenschaften)
+        yieldAll(methoden)
+        yieldAll(berechneteEigenschaften)
         yieldAll(konvertierungen)
       }
     }

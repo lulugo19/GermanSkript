@@ -417,7 +417,7 @@ class Typisierer(startDatei: File): PipelineKomponente(startDatei) {
 
   fun typisiereImplementierungsBereich(
       implBereich: AST.Definition.ImplementierungsBereich ,
-      typTypParameter: List<AST.Definition.TypParam>) {
+      typTypParameter: List<AST.Definition.TypParam>?) {
 
     implBereich.methoden.forEach { methode ->
       typisiereFunktionsSignatur(methode.signatur, typTypParameter)
@@ -427,7 +427,7 @@ class Typisierer(startDatei: File): PipelineKomponente(startDatei) {
       bestimmeTyp(konvertierung.typ, null, typTypParameter, true)
     }
 
-    implBereich.eigenschaften.forEach { eigenschaft ->
+    implBereich.berechneteEigenschaften.forEach { eigenschaft ->
       bestimmeTyp(eigenschaft.rückgabeTyp, null, typTypParameter, true)
     }
   }

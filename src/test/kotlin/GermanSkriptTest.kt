@@ -1751,4 +1751,59 @@ class GermanSkriptTest {
 
     testeGermanSkriptCode(quellCode, erwarteteAusgabe)
   }
+
+  @Test
+  @DisplayName("Anonyme Klasse mit Eigenschaften")
+  fun anonymeKlasseMitEigenschaften() {
+    val quellCode = """
+      der Iterator ist etwas Iterierendes<Zahl>:
+        jenes X ist 1
+        jenes Y ist 1
+        
+        Verb(Boolean) läuft weiter:
+          gebe mein X kleiner 15 zurück
+        .
+        
+        Verb hole (die nächsteZahl):
+          das T ist mein X
+          mein X ist mein Y
+          mein Y ist das T + mein Y
+          gebe das T zurück
+        .
+      .
+      
+      schreibe die Zahl (das X des Iterators)
+      schreibe die Zahl (das Y des Iterators)
+      
+      schreibe die Zeile ""
+      
+      solange der Iterator weiter läuft:
+        schreibe die Zahl (Iterator: hole die nächsteZahl!)
+      .
+      
+      schreibe die Zeile ""
+      
+      schreibe die Zahl (das X des Iterators)
+      schreibe die Zahl (das Y des Iterators)
+    """.trimIndent()
+
+    val erwarteteAusgabe = """
+      1
+      1
+      
+      1
+      1
+      2
+      3
+      5
+      8
+      13
+      
+      21
+      34
+      
+    """.trimIndent()
+
+    testeGermanSkriptCode(quellCode, erwarteteAusgabe)
+  }
 }
