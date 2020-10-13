@@ -369,7 +369,7 @@ fun wörterBuchTest() {
 fun main() {
   // germanskript.wörterBuchTest()
 
-  val deklanierer = Deklinierer(File("./iterationen/iter_2/code.gm"))
+  val deklanierer = Deklinierer(File("./iterationen/iter_0/code.gm"))
   deklanierer.deklaniere()
   deklanierer.ast.definitionen.wörterbuch.print()
 }

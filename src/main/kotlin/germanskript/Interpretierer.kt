@@ -262,46 +262,6 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
     flags.remove(Flag.SCHLEIFE_ABBRECHEN)
   }
 
-  override fun durchlaufeFürJedeSchleife(schleife: AST.Satz.FürJedeSchleife) {
-    if (schleife.reichweite != null) {
-      val (anfang, ende) = schleife.reichweite
-      val anfangsWert = evaluiereAusdruck(anfang) as germanskript.intern.Zahl
-      val endWert = evaluiereAusdruck(ende) as germanskript.intern.Zahl
-      val schrittWeite = if (anfangsWert <= endWert) 1 else -1
-      var laufWert = anfangsWert
-      while (laufWert.compareTo(endWert) == -schrittWeite) {
-        if (!iteriereSchleife(schleife, laufWert)) {
-          break
-        }
-        laufWert += germanskript.intern.Zahl(schrittWeite.toDouble())
-      }
-    } else {
-      val liste = if (schleife.liste != null) {
-        evaluiereAusdruck(schleife.liste) as germanskript.intern.Liste
-      } else {
-        evaluiereVariable(schleife.singular.ganzesWort(Kasus.NOMINATIV, Numerus.PLURAL, true))!! as germanskript.intern.Liste
-      }
-      umgebung.pushBereich()
-      for (element in liste.elemente) {
-        if (!iteriereSchleife(schleife, element)) {
-          break
-        }
-      }
-      umgebung.popBereich()
-    }
-  }
-
-  private fun iteriereSchleife(schleife: AST.Satz.FürJedeSchleife, element: Wert): Boolean {
-    flags.remove(Flag.SCHLEIFE_FORTFAHREN)
-    umgebung.überschreibeVariable(schleife.binder, element)
-    durchlaufeBereich(schleife.bereich, true)
-    if (flags.contains(Flag.SCHLEIFE_ABBRECHEN) || flags.contains(Flag.ZURÜCK)) {
-      flags.remove(Flag.SCHLEIFE_ABBRECHEN)
-      return false
-    }
-    return true
-  }
-
   override fun durchlaufeVersucheFange(versucheFange: AST.Satz.VersucheFange) {
     try {
       durchlaufeBereich(versucheFange.versuche, true)

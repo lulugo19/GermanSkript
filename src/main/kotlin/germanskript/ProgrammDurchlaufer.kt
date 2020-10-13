@@ -39,7 +39,6 @@ abstract  class ProgrammDurchlaufer<T>(startDatei: File): PipelineKomponente(sta
         is AST.Satz.Zurückgabe -> durchlaufeZurückgabe(satz)
         is AST.Satz.Ausdruck.Bedingung -> durchlaufeBedingungsSatz(satz, false)
         is AST.Satz.SolangeSchleife -> durchlaufeSolangeSchleife(satz)
-        is AST.Satz.FürJedeSchleife -> durchlaufeFürJedeSchleife(satz)
         is AST.Satz.VersucheFange -> durchlaufeVersucheFange(satz)
         is AST.Satz.Werfe -> durchlaufeWerfe(satz)
         is AST.Satz.SchleifenKontrolle.Abbrechen -> durchlaufeAbbrechen()
@@ -104,7 +103,6 @@ abstract  class ProgrammDurchlaufer<T>(startDatei: File): PipelineKomponente(sta
   protected abstract fun durchlaufeAbbrechen()
   protected abstract fun durchlaufeFortfahren()
   protected abstract fun durchlaufeSolangeSchleife(schleife: AST.Satz.SolangeSchleife)
-  protected abstract fun durchlaufeFürJedeSchleife(schleife: AST.Satz.FürJedeSchleife)
   protected abstract fun durchlaufeVersucheFange(versucheFange: AST.Satz.VersucheFange)
   abstract fun durchlaufeWerfe(werfe: AST.Satz.Werfe): T
   protected abstract fun durchlaufeIntern(intern: AST.Satz.Intern): T

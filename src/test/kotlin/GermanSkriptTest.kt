@@ -1710,7 +1710,7 @@ class GermanSkriptTest {
       die Zahlen sind einige Zahlen[2, 3, 5, 7, 11]
       der Iterator ist Zahlen: hole den Iterator!
       solange der Iterator weiter läuft:
-        die Zahl ist der Iterator: hole die Zahl!
+        die Zahl ist Iterator: hole die Zahl!
         schreibe die Zahl
       .
     """.trimIndent()
@@ -1721,6 +1721,31 @@ class GermanSkriptTest {
       5
       7
       11
+      
+    """.trimIndent()
+
+    testeGermanSkriptCode(quellCode, erwarteteAusgabe)
+  }
+
+  @Test
+  @DisplayName("Reichweiten Iterator")
+  fun reichWeitenIterator() {
+    val quellCode = """
+      die ReichWeite ist eine ReichWeite mit dem Start 3, dem Ende 9
+      der Iterator ist ReichWeite: hole den Iterator!
+      solange der Iterator weiter läuft:
+        die Zahl ist Iterator: hole die Zahl!
+        schreibe die Zahl
+      .
+    """.trimIndent()
+
+    val erwarteteAusgabe = """
+      3
+      4
+      5
+      6
+      7
+      8
       
     """.trimIndent()
 

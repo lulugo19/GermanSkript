@@ -125,6 +125,7 @@ sealed class TokenTyp(val anzeigeName: String) {
     object FORTFAHREN: TokenTyp("'fortfahren'")
     object ABBRECHEN: TokenTyp("'abbrechen'")
     object ZURÜCK: TokenTyp("'zurück'")
+    object BIS: TokenTyp("'bis'")
     object VERB: TokenTyp("'Verb'")
     object NOMEN: TokenTyp("'Nomen'")
     object ADJEKTIV: TokenTyp("'Adjektiv'")
@@ -212,7 +213,7 @@ sealed class TokenTyp(val anzeigeName: String) {
         val istSymbol get() = teilWörter.isEmpty()
         val hatSymbol get() = symbol.isNotEmpty()
         val hatAdjektiv get() = adjektiv != null
-        val hauptWort: String? get() = if (teilWörter.isNotEmpty()) teilWörter[teilWörter.size-1] else null
+        val hauptWort: String? get() = if (teilWörter.isNotEmpty()) teilWörter[teilWörter.size-1].removePrefix("_") else null
 
         fun ersetzeHauptWort(wort: String, mitSymbol: Boolean): String {
             return if (istSymbol) {
@@ -307,6 +308,7 @@ private val WORT_MAPPING = mapOf<String, TokenTyp>(
     "dann" to TokenTyp.DANN,
     "sonst" to TokenTyp.SONST,
     "solange" to TokenTyp.SOLANGE,
+    "bis" to TokenTyp.BIS,
     "fortfahren" to TokenTyp.FORTFAHREN,
     "abbrechen" to TokenTyp.ABBRECHEN,
     "zurück" to TokenTyp.ZURÜCK,

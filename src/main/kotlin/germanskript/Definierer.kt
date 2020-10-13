@@ -79,6 +79,7 @@ class Definierer(startDatei: File): PipelineKomponente(startDatei) {
       }
       is AST.WortArt.Adjektiv -> typ.name.normalisierung
     }
+
     if (typ.modulPfad.isEmpty()) {
       var typDefinition: AST.Definition.Typdefinition? = null
       for (definitionen in durchlaufeDefinitionsContainer(typ)) {
@@ -395,7 +396,7 @@ class Definierer(startDatei: File): PipelineKomponente(startDatei) {
     definiereImplementierungsKörper(implementierung.bereich, klasse)
   }
 
-  public fun definiereImplementierungsKörper(implBereich: AST.Definition.ImplementierungsBereich, klasse: AST.Definition.Typdefinition.Klasse)
+  fun definiereImplementierungsKörper(implBereich: AST.Definition.ImplementierungsBereich, klasse: AST.Definition.Typdefinition.Klasse)
   {
     implBereich.methoden.forEach { methode -> definiereMethode(methode, klasse) }
     implBereich.eigenschaften.forEach { eigenschaft -> definiereEigenschaft(eigenschaft, klasse) }

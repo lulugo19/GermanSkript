@@ -93,7 +93,7 @@ sealed class Typ() {
             Operator.GLEICH to BuildInType.Boolean
         )
 
-        override fun kannNachTypKonvertiertWerden(typ: Typ): kotlin.Boolean {
+        override fun kannNachTypKonvertiertWerden(typ: Typ): Boolean {
           return typ.name == this.name || typ == BuildInType.Zeichenfolge || definition.konvertierungen.containsKey(typ.name)
         }
 
@@ -415,7 +415,7 @@ class Typisierer(startDatei: File): PipelineKomponente(startDatei) {
     }
   }
 
-  public fun typisiereImplementierungsBereich(
+  fun typisiereImplementierungsBereich(
       implBereich: AST.Definition.ImplementierungsBereich ,
       typTypParameter: List<AST.Definition.TypParam>) {
 
@@ -432,14 +432,14 @@ class Typisierer(startDatei: File): PipelineKomponente(startDatei) {
     }
   }
 
-  public fun prüfeImplementiertSchnittstelle(
+  fun prüfeImplementiertSchnittstelle(
       token: Token,
       klasse: AST.Definition.Typdefinition.Klasse,
       schnittstelle: Typ.Compound.Schnittstelle,
       implBereich: AST.Definition.ImplementierungsBereich) {
 
-    fun holeErwartetenTypen(schnittstellenParam: AST.Definition.Parameter): Typ {
-      return when (val typ = schnittstellenParam.typKnoten.typ!!) {
+    fun holeErwartetenTypen(typ: Typ): Typ {
+      return when (typ) {
         is Typ.Generic -> when (typ.kontext) {
           TypParamKontext.Typ -> schnittstelle.typArgumente[typ.index].typ!!
           TypParamKontext.Funktion -> typ
@@ -463,7 +463,8 @@ class Typisierer(startDatei: File): PipelineKomponente(startDatei) {
       // Füge den Namen der Signatur wo die Typargumente mit den Typparameternamen ersetzt wurden hinzu
       klasse.methoden[signatur.vollerName!!] = methode
 
-      if (signatur.rückgabeTyp.typ != methode.signatur.rückgabeTyp.typ) {
+      val erwarteterRückgabeTyp = holeErwartetenTypen(signatur.rückgabeTyp.typ!!)
+      if (methode.signatur.rückgabeTyp.typ != erwarteterRückgabeTyp) {
         throw GermanSkriptFehler.TypFehler.FalscherSchnittstellenTyp(
             methode.signatur.rückgabeTyp.name.bezeichnerToken,
             schnittstelle,
@@ -487,7 +488,7 @@ class Typisierer(startDatei: File): PipelineKomponente(startDatei) {
       val schnittstellenParameter = signatur.parameter.toList()
       val methodenParameter = methode.signatur.parameter.toList()
       for (pIndex in methodenParameter.indices) {
-        val erwarteterTyp = holeErwartetenTypen(schnittstellenParameter[pIndex])
+        val erwarteterTyp = holeErwartetenTypen(schnittstellenParameter[pIndex].typKnoten.typ!!)
         if (methodenParameter[pIndex].typKnoten.typ != erwarteterTyp) {
           throw GermanSkriptFehler.TypFehler.FalscherSchnittstellenTyp(
               methodenParameter[pIndex].typKnoten.name.bezeichnerToken,

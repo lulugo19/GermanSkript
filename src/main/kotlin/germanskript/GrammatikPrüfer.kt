@@ -33,7 +33,6 @@ class GrammatikPrüfer(startDatei: File): PipelineKomponente(startDatei) {
         is AST.Satz.VariablenDeklaration -> prüfeVariablendeklaration(knoten)
         is AST.Satz.ListenElementZuweisung -> prüfeListenElementZuweisung(knoten)
         is AST.Satz.Zurückgabe -> prüfeKontextbasiertenAusdruck(knoten.ausdruck, null, EnumSet.of(Kasus.AKKUSATIV), false)
-        is AST.Satz.FürJedeSchleife -> prüfeFürJedeSchleife(knoten)
         is AST.Satz.Fange -> prüfeParameter(knoten.param, EnumSet.of(Kasus.AKKUSATIV))
         is AST.Satz.Werfe -> prüfeWerfe(knoten)
         is AST.Satz.Ausdruck -> prüfeKontextbasiertenAusdruck(knoten, null, EnumSet.of(Kasus.NOMINATIV), false)
@@ -47,6 +46,9 @@ class GrammatikPrüfer(startDatei: File): PipelineKomponente(startDatei) {
     if (nomen.geprüft) {
       return
     }
+
+    val fälle = nomen.überschriebeneFälle ?: fälle
+
     val bezeichner = nomen.bezeichner.typ
     // Bezeichner mit nur Großbuchstaben sind Symbole
     if (bezeichner.istSymbol) {
@@ -85,7 +87,9 @@ class GrammatikPrüfer(startDatei: File): PipelineKomponente(startDatei) {
 
     }
 
-    prüfeVornomen(nomen)
+    if (nomen.überschriebenerNumerus == null) {
+      prüfeVornomen(nomen)
+    }
     if (nomen.adjektiv != null) {
       prüfeAdjektiv(nomen.adjektiv!!, nomen)
     }
@@ -96,6 +100,11 @@ class GrammatikPrüfer(startDatei: File): PipelineKomponente(startDatei) {
         "e"
         else holeAdjektivEndung(nomen)
       nomen.deklination = holeNormalisierteAdjektivDeklination(nomen.hauptWort.removeSuffix(endung) ,nomen)
+    }
+
+    if (nomen.überschriebenerNumerus != null) {
+      nomen.fälle[nomen.überschriebenerNumerus!!.second.ordinal].add(nomen.überschriebenerNumerus!!.first)
+      nomen.numera = EnumSet.of(nomen.überschriebenerNumerus!!.second)
     }
   }
 
@@ -376,29 +385,17 @@ class GrammatikPrüfer(startDatei: File): PipelineKomponente(startDatei) {
     logger.addLine("geprüft: $binärerAusdruck")
   }
 
-  private fun prüfeFürJedeSchleife(fürJedeSchleife: AST.Satz.FürJedeSchleife) {
-    prüfeNomen(fürJedeSchleife.singular, EnumSet.of(Kasus.AKKUSATIV), EnumSet.of(Numerus.SINGULAR))
-    prüfeNomen(fürJedeSchleife.binder, EnumSet.of(Kasus.NOMINATIV), EnumSet.of(Numerus.SINGULAR))
-    prüfeNumerus(fürJedeSchleife.binder, Numerus.SINGULAR)
-
-    if (fürJedeSchleife.liste != null) {
-      prüfeKontextbasiertenAusdruck(fürJedeSchleife.liste, null, EnumSet.of(Kasus.DATIV), true)
-    }
-
-    if (fürJedeSchleife.reichweite != null) {
-      val (anfang, ende) = fürJedeSchleife.reichweite
-      prüfeKontextbasiertenAusdruck(anfang, null, EnumSet.of(Kasus.DATIV), false)
-      prüfeKontextbasiertenAusdruck(ende, null, EnumSet.of(Kasus.DATIV), false)
-    }
-  }
-
   private fun prüfeWerfe(werfe: AST.Satz.Werfe) {
     prüfeKontextbasiertenAusdruck(werfe.ausdruck, null, EnumSet.of(Kasus.AKKUSATIV), false)
   }
 
   private fun prüfeParameter(parameter: AST.Definition.Parameter, fälle: EnumSet<Kasus>) {
     if (!parameter.typIstName) {
-      prüfeNomen(parameter.name, EnumSet.of(Kasus.NOMINATIV), Numerus.BEIDE)
+      if (parameter.typKnoten.name is AST.WortArt.Adjektiv) {
+        prüfeNomen(parameter.name, fälle, Numerus.BEIDE)
+      } else {
+        prüfeNomen(parameter.name, EnumSet.of(Kasus.NOMINATIV), Numerus.BEIDE)
+      }
     }
     prüfeTyp(parameter.typKnoten, fälle, Numerus.BEIDE, parameter.name)
     if (parameter.name.vornomenString == null) {

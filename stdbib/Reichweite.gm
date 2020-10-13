@@ -1,0 +1,29 @@
+Deklination Femininum Singular(Weite) Plural(Weiten)
+Deklination Maskulinum Singular(Start, Starts, Start, Start) Plural(Starts)
+Deklination Neutrum Singular(Ende, Endes, Ende, Ende) Plural(Enden)
+
+Nomen ReichWeite mit der Zahl Start, der Zahl Ende:.
+
+Implementiere die iterierbare ReichWeite:
+
+    Verb hole (den iterierenden<Zahl> Iterator):
+        ein X ist mein Start
+        das Ende ist mein Ende
+        die SchrittWeite ist wenn mein Start <= meinem Ende ist: 1. sonst: -1.
+        gebe etwas Iterierendes<Zahl>:
+            Verb(Boolean) läuft weiter:
+                wenn die SchrittWeite > 0 ist:
+                    gebe das X kleiner als das Ende zurück
+                .
+                sonst:
+                    gebe das X größer als das Ende zurück
+                .
+            .
+
+            Verb hole (die Zahl):
+                ein X ist das X + die SchrittWeite
+                gebe das X - die SchrittWeite zurück
+            .
+        . zurück
+    .
+.

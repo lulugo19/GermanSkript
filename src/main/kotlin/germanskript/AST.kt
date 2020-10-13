@@ -36,6 +36,20 @@ sealed class AST {
     return null
   }
 
+  // using a breadth first search to find the first child of a specific type
+  inline fun<reified T> findFirstNodeInChildren(): T? {
+    val queue: Queue<AST> = LinkedList()
+    queue.add(this)
+    while (queue.isNotEmpty()) {
+      val head = queue.remove()
+      if (head is T) {
+        return head
+      }
+      queue.addAll(head.children)
+    }
+    return null
+  }
+
   fun setParentNode(parent: AST) {
     this.parent = parent
   }
@@ -65,6 +79,9 @@ sealed class AST {
     abstract var vornomen: TypedToken<TokenTyp.VORNOMEN>?
     abstract val hauptWort: String
 
+    var überschriebeneFälle: EnumSet<Kasus>? = null
+    var überschriebenerNumerus: Pair<Kasus, Numerus>? = null
+
     val numerus: Numerus get() = numera.first()
     val geprüft get() = numera.size != 0
     open val genus get() = deklination!!.genus
@@ -74,6 +91,7 @@ sealed class AST {
     val unveränderlich
       get() = vornomen == null || vornomen!!.typ ==
           TokenTyp.VORNOMEN.ARTIKEL.BESTIMMT || vornomen!!.typ == TokenTyp.VORNOMEN.DEMONSTRATIV_PRONOMEN.DIESE
+          || vornomen!!.typ == TokenTyp.VORNOMEN.JEDE
 
     open fun hauptWort(kasus: Kasus, numerus: Numerus): String = deklination!!.holeForm(kasus, numerus)
     abstract fun ganzesWort(kasus: Kasus, numerus: Numerus, mitErweiterung: Boolean): String
@@ -449,8 +467,8 @@ sealed class AST {
     ): Satz() {
       override val children = sequenceOf(name, wert)
 
-      val istEigenschaftsNeuZuweisung = name.vornomen!!.typ == TokenTyp.VORNOMEN.POSSESSIV_PRONOMEN.MEIN
-      val istEigenschaft = name.vornomen!!.typ is TokenTyp.VORNOMEN.DEMONSTRATIV_PRONOMEN
+      val istEigenschaftsNeuZuweisung = name.vornomen != null && name.vornomen!!.typ == TokenTyp.VORNOMEN.POSSESSIV_PRONOMEN.MEIN
+      val istEigenschaft = name.vornomen != null && name.vornomen!!.typ is TokenTyp.VORNOMEN.DEMONSTRATIV_PRONOMEN
     }
 
     data class ListenElementZuweisung(
@@ -486,26 +504,6 @@ sealed class AST {
     ) : Satz() {
       override val children = sequence {
           yield(bedingung)
-        }
-    }
-
-    data class FürJedeSchleife(
-        val singular: WortArt.Nomen,
-        val binder: WortArt.Nomen,
-        val liste: Ausdruck?,
-        val reichweite: Reichweite?,
-        val bereich: Bereich
-    ): Satz() {
-      override val children = sequence {
-          yield(singular)
-          yield(binder)
-          if (liste != null) {
-            yield(liste!!)
-          }
-          if (reichweite != null) {
-            yield(reichweite!!)
-          }
-          yield(bereich)
         }
     }
 
