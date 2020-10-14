@@ -213,10 +213,12 @@ sealed class TokenTyp(val anzeigeName: String) {
         val istSymbol get() = teilWörter.isEmpty()
         val hatSymbol get() = symbol.isNotEmpty()
         val hatAdjektiv get() = adjektiv != null
+        val istUnsichtbarerBezeichner get() = teilWörter[0][0] == '_' || (istSymbol && symbol[0] == '_')
         val hauptWort: String? get() = if (teilWörter.isNotEmpty()) teilWörter[teilWörter.size-1].removePrefix("_") else null
 
         fun ersetzeHauptWort(wort: String, mitSymbol: Boolean): String {
-            return if (istSymbol) {
+            return (if (istUnsichtbarerBezeichner) "_" else "") +
+            if (istSymbol) {
                 return symbol
             } else {
                 teilWörter.dropLast(1).joinToString() + wort + (if (mitSymbol) symbol else "")
