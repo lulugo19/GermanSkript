@@ -172,6 +172,13 @@ class KonstantenFalter(startDatei: File): ProgrammDurchlaufer<Wert?>(startDatei)
     durchlaufeBereich(schleife.bedingung.bereich, true)
   }
 
+  override fun durchlaufeFürJedeSchleife(schleife: AST.Satz.FürJedeSchleife) {
+    umgebung.pushBereich()
+    umgebung.schreibeVariable(schleife.binder, null, true)
+    durchlaufeBereich(schleife.bereich, false)
+    umgebung.popBereich()
+  }
+
   override fun durchlaufeVersucheFange(versucheFange: AST.Satz.VersucheFange) {
     durchlaufeBereich(versucheFange.versuche, true)
     for (fange in versucheFange.fange) {

@@ -26,9 +26,9 @@ begrüße die Welt // Hallo Welt
 der Mond ist "Mond"
 begrüße die Welt Mond // Hallo Mond
 
-Verb(Zeichenfolge) hole die Zeichenfolge: gebe die Zeichenfolge zurück.
+Verb(Zeichenfolge) gebe die Zeichenfolge zurück: gebe die Zeichenfolge zurück.
 
-die Zeichenfolge ist hole die Zeichenfolge "TestA"
+die Zeichenfolge ist gebe die Zeichenfolge "TestA" zurück
 schreibe die Zeichenfolge // TestA
 
 // schreibe die Zeichenfolge (teste "TestB")// TestB

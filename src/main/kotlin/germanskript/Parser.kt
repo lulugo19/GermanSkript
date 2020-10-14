@@ -975,138 +975,47 @@ private sealed class SubParser<T: AST>() {
       }
     }
 
-    object FürJedeSchleife: Satz<AST.Satz.Bereich>() {
+    object FürJedeSchleife: Satz<AST.Satz.FürJedeSchleife>() {
       override val id: ASTKnotenID
         get() = ASTKnotenID.FÜR_JEDE_SCHLEIFE
 
-      override fun parseImpl(): AST.Satz.Bereich {
+      override fun parseImpl(): AST.Satz.FürJedeSchleife {
         parseKleinesSchlüsselwort("für")
         val singular = parseNomenMitVornomen<TokenTyp.VORNOMEN.JEDE>("'jeden', 'jede' oder 'jedes'", true)
-        singular.überschriebeneFälle = EnumSet.of(Kasus.AKKUSATIV)
         val binder = when (peekType()) {
           is TokenTyp.BEZEICHNER_GROSS -> parseNomenOhneVornomen(true)
           else -> singular
         }
         val nächstesToken = peek()
-        val iterierend = if (nächstesToken.typ is TokenTyp.BEZEICHNER_KLEIN) {
+        var liste: AST.Satz.Ausdruck? = null
+        var reichweite: AST.Satz.Reichweite? = null
+        if (nächstesToken.typ is TokenTyp.BEZEICHNER_KLEIN) {
           when (nächstesToken.wert) {
             "in" -> {
               parseKleinesSchlüsselwort("in")
-              parseAusdruck(mitVornomen = true, optionalesIstNachVergleich = false, linkerAusdruck = null, inBedingungsTerm = true).also {
-                it.findFirstNodeInChildren<AST.WortArt.Nomen>()?.also { nomen->
-                  nomen.überschriebeneFälle = EnumSet.of(Kasus.DATIV)
-                }
-              }
+              liste = parseAusdruck(mitVornomen = true, optionalesIstNachVergleich = false, inBedingungsTerm = true)
             }
             "von" -> {
               parseKleinesSchlüsselwort("von")
-              val anfang = parseAusdruck(mitVornomen = true, optionalesIstNachVergleich = false, linkerAusdruck = null, inBedingungsTerm = true)
-              anfang.findFirstNodeInChildren<AST.WortArt.Nomen>()?.also {
-                it.überschriebeneFälle = EnumSet.of(Kasus.DATIV)
-              }
+              val anfang = parseAusdruck(mitVornomen = true, optionalesIstNachVergleich = false, inBedingungsTerm = true)
               expect<TokenTyp.BIS>("'bis'")
               val ende = if(peek().wert == "zu") {
                 parseKleinesSchlüsselwort("zu")
-                val (_, nomen, ausdruck) = parseNomenAusdruck<TokenTyp.VORNOMEN>("'Vornomen'", false, true, false)
-                nomen.überschriebeneFälle = EnumSet.of(Kasus.DATIV)
-                ausdruck
+                parseNomenAusdruck<TokenTyp.VORNOMEN>("'Vornomen'",
+                    inBinärenAusdruck = false, inBedingungsTerm = true, adjektivErlaubt = false).third
               } else {
-                parseAusdruck(mitVornomen = false, optionalesIstNachVergleich = false, linkerAusdruck = null, inBedingungsTerm = true)
+                parseAusdruck(mitVornomen = false, optionalesIstNachVergleich = false, inBedingungsTerm = true)
               }
-              AST.Satz.Ausdruck.ObjektInstanziierung(
-                  AST.TypKnoten(emptyList(), AST.WortArt.Nomen(null,
-                      TypedToken.imaginäresToken(TokenTyp.BEZEICHNER_GROSS(arrayOf("Reich", "Weite"), "", null), "ReichWeite")
-                  ), emptyList()),
-                  listOf(
-                      AST.Argument(
-                          null,
-                          AST.WortArt.Nomen(TypedToken.imaginäresToken(TokenTyp.VORNOMEN.ARTIKEL.BESTIMMT, "dem"),
-                              TypedToken.imaginäresToken(TokenTyp.BEZEICHNER_GROSS(arrayOf("Start"), "", null), "Start")),
-                          anfang),
-                      AST.Argument(
-                          null,
-                          AST.WortArt.Nomen(TypedToken.imaginäresToken(TokenTyp.VORNOMEN.ARTIKEL.BESTIMMT, "dem"),
-                              TypedToken.imaginäresToken(TokenTyp.BEZEICHNER_GROSS(arrayOf("Ende"), "", null), "Ende")),
-                          ende)
-                  )
-              )
+              reichweite = AST.Satz.Reichweite(anfang, ende)
             }
             else -> throw GermanSkriptFehler.SyntaxFehler.ParseFehler(nächstesToken, "'in' oder 'von ... bis'")
           }
-        } else {
-          if (singular.istSymbol) {
-            throw GermanSkriptFehler.SyntaxFehler.ParseFehler(singular.bezeichner.toUntyped(), "Bezeichner",
-                "In der Für-Jede-Schleife ohne 'in' oder 'von ... bis' ist ein Singular, dass nur aus einem Symbol besteht nicht erlaubt.")
-          }
-
-          val plural = singular.copy()
-          // setze hier schon Numera und fälle, sodass der Plural vom Grammatikprüfer nicht überprüft werden muss
-          plural.überschriebenerNumerus = Pair(Kasus.DATIV, Numerus.PLURAL)
-          AST.Satz.Ausdruck.Variable(plural)
+        } else if (singular.istSymbol) {
+          throw GermanSkriptFehler.SyntaxFehler.ParseFehler(singular.bezeichner.toUntyped(), "Bezeichner",
+              "In der Für-Jede-Schleife ohne 'in' oder 'von ... bis' ist ein Singular, dass nur aus einem Symbol besteht nicht erlaubt.")
         }
-
-        val iteratorNomen = AST.WortArt.Nomen(TypedToken.imaginäresToken(TokenTyp.VORNOMEN.ARTIKEL.BESTIMMT, "den"),
-            TypedToken.imaginäresToken(TokenTyp.BEZEICHNER_GROSS(arrayOf("_Iterator"), "", null), "_Iterator"))
-        val holeIterator = AST.Satz.Ausdruck.MethodenBereich(iterierend, AST.Satz.Bereich(mutableListOf(
-            AST.Satz.Ausdruck.FunktionsAufruf(
-                emptyList(),
-                emptyList(),
-                null,
-                TypedToken.imaginäresToken(TokenTyp.BEZEICHNER_KLEIN("hole"), "hole"),
-                AST.Argument(
-                    null,
-                    iteratorNomen,
-                    AST.Satz.Ausdruck.Variable(iteratorNomen)),
-                null,
-                emptyList(),
-                null
-            ))))
-        val varDeklaration = AST.Satz.VariablenDeklaration(
-            AST.WortArt.Nomen(
-                null,
-                TypedToken.imaginäresToken(TokenTyp.BEZEICHNER_GROSS(arrayOf("_Iterator"),"", null), "_Iterator")),
-            null,
-            TypedToken.imaginäresToken(TokenTyp.ZUWEISUNG(Numerus.SINGULAR), "ist"),
-            holeIterator
-        )
-        val bedingung = AST.Satz.Ausdruck.FunktionsAufruf(
-            emptyList(),
-            emptyList(),
-            AST.Satz.Ausdruck.Variable(
-                AST.WortArt.Nomen(
-                    null,
-                    TypedToken.imaginäresToken(TokenTyp.BEZEICHNER_GROSS(arrayOf("_Iterator"),"", null), "_Iterator"))
-            ),
-            TypedToken.imaginäresToken(TokenTyp.BEZEICHNER_KLEIN("läuft"), "läuft"),
-            null, null, emptyList(),
-            TypedToken.imaginäresToken(TokenTyp.BEZEICHNER_KLEIN("weiter"), "weiter")
-        )
-        val typ = AST.WortArt.Nomen(TypedToken.imaginäresToken(TokenTyp.VORNOMEN.ARTIKEL.BESTIMMT, "den"),
-          TypedToken.imaginäresToken(TokenTyp.BEZEICHNER_GROSS(arrayOf("Typ"), "", null), "Typ"))
-        val holeIteration = AST.Satz.Ausdruck.FunktionsAufruf(
-            emptyList(),
-            emptyList(),
-            AST.Satz.Ausdruck.Variable(
-                AST.WortArt.Nomen(
-                    null,
-                    TypedToken.imaginäresToken(TokenTyp.BEZEICHNER_GROSS(arrayOf("_Iterator"),"", null), "_Iterator"))
-            ),
-            TypedToken.imaginäresToken(TokenTyp.BEZEICHNER_KLEIN("hole"), "hole"),
-            AST.Argument(null, typ, AST.Satz.Ausdruck.Variable(typ)),
-            null, emptyList(), null
-        )
-        val iteration = AST.Satz.VariablenDeklaration(
-            binder, null, TypedToken.imaginäresToken(TokenTyp.ZUWEISUNG(Numerus.SINGULAR), "ist"), holeIteration)
         val sätze = parseSätze()
-        sätze.sätze.add(0, iteration)
-        val solangeSchleife = AST.Satz.SolangeSchleife(AST.Satz.BedingungsTerm(
-            bedingung, sätze
-        ))
-
-        return AST.Satz.Bereich(mutableListOf(
-            varDeklaration,
-            solangeSchleife
-        ))
+        return AST.Satz.FürJedeSchleife(singular, binder, liste, reichweite, sätze)
       }
     }
 
@@ -1282,7 +1191,6 @@ private sealed class SubParser<T: AST>() {
           }
         }
       }
-
 
       class FunktionsAufruf(val modulPfad: List<TypedToken<TokenTyp.BEZEICHNER_GROSS>>, val inBedingungsTerm: Boolean): Ausdruck<AST.Satz.Ausdruck.FunktionsAufruf>() {
         override val id: ASTKnotenID = ASTKnotenID.FUNKTIONS_AUFRUF
@@ -1695,7 +1603,7 @@ private sealed class SubParser<T: AST>() {
       }
     }
 
-    class ImplementierungsBereich(private val erlaubeEigenschaften: Boolean): Definition<AST.Definition.ImplementierungsBereich>() {
+    class ImplementierungsBereich(private val istAnonymeKlasse: Boolean): Definition<AST.Definition.ImplementierungsBereich>() {
       override val id: ASTKnotenID = ASTKnotenID.IMPLEMENTIERUNG
 
       override fun parseImpl(): AST.Definition.ImplementierungsBereich {
@@ -1710,7 +1618,7 @@ private sealed class SubParser<T: AST>() {
             is TokenTyp.EIGENSCHAFT -> berechneteEigenschaften += subParse(Eigenschaft)
             is TokenTyp.ALS_GROß -> konvertierungen += subParse(Konvertierung)
             is TokenTyp.VORNOMEN.DEMONSTRATIV_PRONOMEN ->
-              if (erlaubeEigenschaften) eigenschaften += subParse(Satz.VariablenDeklaration)
+              if (istAnonymeKlasse) eigenschaften += subParse(Satz.VariablenDeklaration)
               else throw GermanSkriptFehler.SyntaxFehler.ParseFehler(Implementierung.next(), "'.'",
                   "In einem Implementiere-Bereich können nur Methoden oder Eigenschafts-/Konvertierungsdefinitionen definiert werden.")
             else -> throw GermanSkriptFehler.SyntaxFehler.ParseFehler(Implementierung.next(), "'.'",

@@ -438,7 +438,7 @@ class Typisierer(startDatei: File): PipelineKomponente(startDatei) {
       schnittstelle: Typ.Compound.Schnittstelle,
       implBereich: AST.Definition.ImplementierungsBereich) {
 
-    fun holeErwartetenTypen(typ: Typ): Typ {
+    fun ersetzeGeneric(typ: Typ): Typ {
       return when (typ) {
         is Typ.Generic -> when (typ.kontext) {
           TypParamKontext.Typ -> schnittstelle.typArgumente[typ.index].typ!!
@@ -463,8 +463,7 @@ class Typisierer(startDatei: File): PipelineKomponente(startDatei) {
       // Füge den Namen der Signatur wo die Typargumente mit den Typparameternamen ersetzt wurden hinzu
       klasse.methoden[signatur.vollerName!!] = methode
 
-      val erwarteterRückgabeTyp = holeErwartetenTypen(signatur.rückgabeTyp.typ!!)
-      if (methode.signatur.rückgabeTyp.typ != erwarteterRückgabeTyp) {
+      if (methode.signatur.rückgabeTyp.typ != ersetzeGeneric(signatur.rückgabeTyp.typ!!)) {
         throw GermanSkriptFehler.TypFehler.FalscherSchnittstellenTyp(
             methode.signatur.rückgabeTyp.name.bezeichnerToken,
             schnittstelle,
@@ -488,7 +487,7 @@ class Typisierer(startDatei: File): PipelineKomponente(startDatei) {
       val schnittstellenParameter = signatur.parameter.toList()
       val methodenParameter = methode.signatur.parameter.toList()
       for (pIndex in methodenParameter.indices) {
-        val erwarteterTyp = holeErwartetenTypen(schnittstellenParameter[pIndex].typKnoten.typ!!)
+        val erwarteterTyp = ersetzeGeneric(schnittstellenParameter[pIndex].typKnoten.typ!!)
         if (methodenParameter[pIndex].typKnoten.typ != erwarteterTyp) {
           throw GermanSkriptFehler.TypFehler.FalscherSchnittstellenTyp(
               methodenParameter[pIndex].typKnoten.name.bezeichnerToken,

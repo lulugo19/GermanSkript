@@ -21,19 +21,11 @@ class Umgebung<T>() {
   fun top() = bereiche.last()
 
   fun leseVariable(varName: AST.WortArt.Nomen): Variable<T> {
-    return leseVariable(varName.nominativ)?: throw GermanSkriptFehler.Undefiniert.Variable(varName.bezeichner.toUntyped())
+    return  leseVariable(varName.nominativ)?: throw GermanSkriptFehler.Undefiniert.Variable(varName.bezeichner.toUntyped())
   }
 
   fun leseVariable(varName: String): Variable<T>? {
       return bereiche.findLast { bereich -> bereich.variablen.containsKey(varName) }?.variablen?.get(varName)
-  }
-
-  fun leseBereichsLokaleVariable(varName: AST.WortArt.Nomen): Variable<T> {
-    return leseBereichsLokaleVariable(varName.nominativ)?: throw GermanSkriptFehler.Undefiniert.Variable(varName.bezeichner.toUntyped())
-  }
-
-  fun leseBereichsLokaleVariable(varName: String): Variable<T>? {
-    return bereiche.peek().variablen[varName]
   }
 
   fun schreibeVariable(varName: AST.WortArt.Nomen, wert: T, überschreibe: Boolean) {

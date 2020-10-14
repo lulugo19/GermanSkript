@@ -19,6 +19,7 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
   private var rückgabeTyp: Typ = Typ.Compound.KlassenTyp.BuildInType.Nichts
   private var funktionsTypParams: List<AST.Definition.TypParam>? = null
   private var klassenTypParams: List<AST.Definition.TypParam>? = null
+  private var implementierungTypArgs: List<Typ>? = null
   private var letzterFunktionsAufruf: AST.Satz.Ausdruck.FunktionsAufruf? = null
   private var rückgabeErreicht = false
   private var evaluiereKonstante = false
@@ -625,7 +626,8 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
   override fun durchlaufeZurückgabe(zurückgabe: AST.Satz.Zurückgabe): Typ {
     ausdruckMussTypSein(zurückgabe.ausdruck, rückgabeTyp)
     // Die Rückgabe ist nur auf alle Fälle erreichbar, wenn sie an keine Bedingung und in keiner Schleife ist
-    rückgabeErreicht = zurückgabe.findNodeInParents<AST.Satz.BedingungsTerm>() == null
+    rückgabeErreicht = zurückgabe.findNodeInParents<AST.Satz.BedingungsTerm>() == null &&
+        zurückgabe.findNodeInParents<AST.Satz.FürJedeSchleife>() == null
     return rückgabeTyp
   }
 
@@ -676,6 +678,31 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
 
   override fun durchlaufeSolangeSchleife(schleife: AST.Satz.SolangeSchleife) {
     prüfeBedingung(schleife.bedingung)
+  }
+
+  override fun durchlaufeFürJedeSchleife(schleife: AST.Satz.FürJedeSchleife) {
+    val elementTyp = when {
+      schleife.iterierbares != null -> {
+        val liste = evaluiereAusdruck(schleife.iterierbares)
+        if (liste !is Typ.Compound.KlassenTyp.Liste) {
+          throw GermanSkriptFehler.TypFehler.FalscherTyp(holeErstesTokenVonAusdruck(schleife.iterierbares), liste, "Liste")
+        }
+        liste.typArgumente[0].typ!!
+      }
+      schleife.reichweite != null -> {
+        val (anfang, ende) = schleife.reichweite
+        ausdruckMussTypSein(anfang, Typ.Compound.KlassenTyp.BuildInType.Zahl)
+        ausdruckMussTypSein(ende, Typ.Compound.KlassenTyp.BuildInType.Zahl)
+        Typ.Compound.KlassenTyp.BuildInType.Zahl
+      }
+      else -> {
+        evaluiereListenSingular(schleife.singular)
+      }
+    }
+    umgebung.pushBereich()
+    umgebung.schreibeVariable(schleife.binder, elementTyp, false)
+    durchlaufeBereich(schleife.bereich, true)
+    umgebung.popBereich()
   }
 
   override fun durchlaufeVersucheFange(versucheFange: AST.Satz.VersucheFange) {
