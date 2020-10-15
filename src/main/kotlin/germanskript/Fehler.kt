@@ -324,7 +324,11 @@ sealed class GermanSkriptFehler(private val fehlerName: String, val token: Token
     }
 
     class TypArgumentFehler(token: Token, argAnzahl: Int, erwarteteAnzahl: Int): TypFehler(token) {
-      override val nachricht = "Es wurden $argAnzahl Typargumente angegeben. Erwartet werden jedoch $erwarteteAnzahl Typargument(e)."
+      override val nachricht = "Es wurden $argAnzahl Typargument(e) angegeben. Erwartet werden jedoch $erwarteteAnzahl Typargument(e)."
+    }
+
+    class TypArgumentInferierFehler(token: Token): TypFehler(token) {
+      override val nachricht = "Die Typargumente können nicht inferiert werden. Bitte gebe die Typargumente an."
     }
 
     class IterierbarErwartet(token: Token): TypFehler(token) {

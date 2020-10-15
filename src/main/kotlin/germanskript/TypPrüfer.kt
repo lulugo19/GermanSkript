@@ -118,15 +118,24 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
   /**
    * inferiert Typargumente basierend auf den erwarteten Typen
    */
-  private fun inferiereTypArgumente(typ: Typ.Compound) {
+  private fun inferiereTypArgumente(typ: Typ.Compound, token: Token) {
     if (erwarteterTyp is Typ.Compound && typ.definition === (erwarteterTyp as Typ.Compound).definition) {
       if (typ.typArgumente.isEmpty()) {
         typ.typArgumente = (erwarteterTyp as Typ.Compound).typArgumente.map { arg ->
           when (val argTyp = arg.typ) {
-            // TODO: Gucke dir das nochmal genauer an. Braucht man diese Ersetzung wirklich? Welche Probleme können enstehen?
             is Typ.Generic -> when (argTyp.kontext) {
-              TypParamKontext.Typ -> methodenObjekt!!.typArgumente[argTyp.index]
-              TypParamKontext.Funktion -> letzterFunktionsAufruf!!.typArgumente[argTyp.index]
+              TypParamKontext.Typ -> {
+                if (methodenObjekt == null || methodenObjekt!!.typArgumente.size <= argTyp.index) {
+                  throw GermanSkriptFehler.TypFehler.TypArgumentInferierFehler(token)
+                }
+                methodenObjekt!!.typArgumente[argTyp.index]
+              }
+              TypParamKontext.Funktion -> {
+                if (letzterFunktionsAufruf == null || letzterFunktionsAufruf!!.typArgumente.size <= argTyp.index) {
+                  throw GermanSkriptFehler.TypFehler.TypArgumentInferierFehler(token)
+                }
+                letzterFunktionsAufruf!!.typArgumente[argTyp.index]
+              }
             }
             else -> arg
           }
@@ -844,7 +853,7 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
     if (klasse !is Typ.Compound.KlassenTyp) {
       throw GermanSkriptFehler.TypFehler.ObjektErwartet(instanziierung.klasse.name.bezeichnerToken)
     }
-    inferiereTypArgumente(klasse)
+    inferiereTypArgumente(klasse, instanziierung.klasse.name.bezeichnerToken)
 
     val definition = klasse.definition
 
@@ -996,7 +1005,7 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
     if (schnittstelle !is Typ.Compound.Schnittstelle) {
       throw GermanSkriptFehler.SchnittstelleErwartet(closure.schnittstelle.name.bezeichnerToken)
     }
-    inferiereTypArgumente(schnittstelle)
+    inferiereTypArgumente(schnittstelle, closure.schnittstelle.name.bezeichnerToken)
     if (schnittstelle.definition.methodenSignaturen.size != 1) {
       throw GermanSkriptFehler.ClosureFehler.UngültigeClosureSchnittstelle(closure.schnittstelle.name.bezeichnerToken, schnittstelle.definition)
     }
@@ -1050,7 +1059,7 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
       throw GermanSkriptFehler.SchnittstelleErwartet(anonymeKlasse.schnittstelle.name.bezeichnerToken)
     }
 
-    inferiereTypArgumente(schnittstelle)
+    inferiereTypArgumente(schnittstelle, anonymeKlasse.schnittstelle.name.bezeichnerToken)
 
     val klassenDefinition = AST.Definition.Typdefinition.Klasse(
         emptyList(), anonymeKlasse.schnittstelle.name as AST.WortArt.Nomen,
