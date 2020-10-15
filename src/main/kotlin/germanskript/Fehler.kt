@@ -129,10 +129,6 @@ sealed class GermanSkriptFehler(private val fehlerName: String, val token: Token
     }
   }
 
-  class TypArgumentFehler(token: Token, argAnzahl: Int, erwarteteAnzahl: Int): GermanSkriptFehler("Typargumentfehler", token) {
-    override val nachricht = "Es wurden $argAnzahl Typargumente angegeben. Erwartet werden jedoch $erwarteteAnzahl Typargument(e)."
-  }
-
   sealed class GrammatikFehler(token: Token): GermanSkriptFehler("Grammatikfehler",token) {
 
     sealed class FormFehler(token: Token, protected val kasus: Kasus, protected val nomen: AST.WortArt.Nomen): GrammatikFehler(token) {
@@ -325,6 +321,14 @@ sealed class GermanSkriptFehler(private val fehlerName: String, val token: Token
       override val nachricht = "Um die Methode '${methodenName}' für die Schnittstelle '${schnittstelle}' zu implementieren,\n" +
           if (rückgabeObjektWirdErwartet) "muss das Objekt ein Rückgabe-Objekt sein, also mit Klammern '(${objekt.anzeigeName})' geschrieben werden."
           else  "darf das Objekt kein Rückgabe-Objekt sein, muss also ohne Klammern geschrieben werden."
+    }
+
+    class TypArgumentFehler(token: Token, argAnzahl: Int, erwarteteAnzahl: Int): TypFehler(token) {
+      override val nachricht = "Es wurden $argAnzahl Typargumente angegeben. Erwartet werden jedoch $erwarteteAnzahl Typargument(e)."
+    }
+
+    class IterierbarErwartet(token: Token): TypFehler(token) {
+      override val nachricht = "Der Ausdruck muss die Schnittstelle 'iterierbar' implementieren. Also die Methode 'hole den Iterator zurückgeben'."
     }
   }
 

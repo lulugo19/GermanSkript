@@ -19,7 +19,6 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
   private var rückgabeTyp: Typ = Typ.Compound.KlassenTyp.BuildInType.Nichts
   private var funktionsTypParams: List<AST.Definition.TypParam>? = null
   private var klassenTypParams: List<AST.Definition.TypParam>? = null
-  private var implementierungTypArgs: List<Typ>? = null
   private var letzterFunktionsAufruf: AST.Satz.Ausdruck.FunktionsAufruf? = null
   private var rückgabeErreicht = false
   private var evaluiereKonstante = false
@@ -108,7 +107,7 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
         else -> typ == sollTyp
       }
       is Typ.Compound.KlassenTyp -> when(typ) {
-        is Typ.Generic -> typ.typParam.elternKlasse?.typ!! == sollTyp
+        is Typ.Generic -> typ.typParam.elternKlasse?.typ == sollTyp
         is Typ.Compound.KlassenTyp -> überprüfeKlassenHierarchie(typ, sollTyp)
         else -> typ == sollTyp
       }
@@ -246,7 +245,7 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
   private fun prüfeImplementierung(klasse: AST.Definition.Typdefinition.Klasse, implementierung: AST.Definition.Implementierung) {
     klassenTypParams = implementierung.typParameter
     if (klasse.typParameter.size != implementierung.klasse.typArgumente.size) {
-      throw GermanSkriptFehler.TypArgumentFehler(
+      throw GermanSkriptFehler.TypFehler.TypArgumentFehler(
           implementierung.klasse.name.bezeichnerToken,
           implementierung.klasse.typArgumente.size,
           klasse.typParameter.size
@@ -342,6 +341,24 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
     ausdruckMussTypSein(zuweisung.wert, elementTyp)
   }
 
+  private fun ersetzeGenerics(
+      typKnoten: AST.TypKnoten,
+      funktionsTypArgumente: List<AST.TypKnoten>?,
+      typTypArgumente: List<AST.TypKnoten>?): AST.TypKnoten {
+    return when (val typ = typKnoten.typ!!) {
+      is Typ.Generic -> when (typ.kontext) {
+        TypParamKontext.Funktion -> funktionsTypArgumente!![typ.index]
+        TypParamKontext.Typ -> typTypArgumente!![typ.index]
+      }
+      is Typ.Compound -> {
+        typKnoten.copy(typArgumente = typ.typArgumente.map {
+          ersetzeGenerics(it, funktionsTypArgumente, typTypArgumente)
+        })
+      }
+      else -> typKnoten
+    }
+  }
+
   override fun durchlaufeFunktionsAufruf(funktionsAufruf: AST.Satz.Ausdruck.FunktionsAufruf, istAusdruck: Boolean): Typ {
     if (funktionsAufruf.vollerName == null) {
       funktionsAufruf.vollerName = definierer.holeVollenNamenVonFunktionsAufruf(funktionsAufruf, null)
@@ -371,7 +388,7 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
       val fund = findeMethode(
           funktionsAufruf,
           methodenBlockObjekt,
-          FunktionsAufrufTyp.METHODEN_BLOCK_AUFRUF
+          FunktionsAufrufTyp.METHODEN_BEREICHS_AUFRUF
       )
       funktionsSignatur = fund?.first
       methodenObjekt = fund?.second
@@ -472,6 +489,7 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
       }
     }
 
+    val typKontext = methodenObjekt?.typArgumente
 
     val parameter = funktionsSignatur.parameter.toList()
     val argumente = funktionsAufruf.argumente.toList()
@@ -480,8 +498,6 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
     if (anzahlArgumente != parameter.size) {
       throw GermanSkriptFehler.SyntaxFehler.AnzahlDerParameterFehler(funktionsSignatur.name.toUntyped())
     }
-
-    val typKontext = methodenObjekt?.typArgumente
 
     val genericsMüssenInferiertWerden = funktionsSignatur.typParameter.isNotEmpty()
         && funktionsAufruf.typArgumente.isEmpty()
@@ -518,19 +534,6 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
       }
     }
 
-    fun ersetzeGenerics(typKnoten: AST.TypKnoten): AST.TypKnoten {
-      return when (val typ = typKnoten.typ!!) {
-        is Typ.Generic -> when (typ.kontext) {
-          TypParamKontext.Funktion -> funktionsAufruf.typArgumente[typ.index]
-          TypParamKontext.Typ -> typKontext!![typ.index]
-        }
-        is Typ.Compound -> {
-          typKnoten.copy(typArgumente = typ.typArgumente.map(::ersetzeGenerics))
-        }
-        else -> typKnoten
-      }
-    }
-
     // stimmen die Argument Typen mit den Parameter Typen überein?
     letzterFunktionsAufruf = funktionsAufruf
     for (i in parameter.indices) {
@@ -541,16 +544,16 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
         val paramTyp = inferiereGenerics(parameter[i].typKnoten, ausdruckToken, ausdruckTyp)
         typMussTypSein(ausdruckTyp, paramTyp.typ!!, ausdruckToken)
       } else {
-        ausdruckMussTypSein(argAusdruck, ersetzeGenerics(parameter[i].typKnoten).typ!!)
+        ausdruckMussTypSein(argAusdruck, ersetzeGenerics(parameter[i].typKnoten, funktionsAufruf.typArgumente, typKontext).typ!!)
       }
     }
     if (genericsMüssenInferiertWerden) {
       funktionsAufruf.typArgumente = inferierteGenerics.map { it!! }
     }
+
+    val rückgabeTyp = ersetzeGenerics(funktionsSignatur.rückgabeTyp, funktionsAufruf.typArgumente, typKontext)
     letzterFunktionsAufruf = null
     methodenObjekt = null
-
-    val rückgabeTyp = ersetzeGenerics(funktionsSignatur.rückgabeTyp)
     return rückgabeTyp.typ!!
   }
 
@@ -683,11 +686,11 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
   override fun durchlaufeFürJedeSchleife(schleife: AST.Satz.FürJedeSchleife) {
     val elementTyp = when {
       schleife.iterierbares != null -> {
-        val liste = evaluiereAusdruck(schleife.iterierbares)
-        if (liste !is Typ.Compound.KlassenTyp.Liste) {
-          throw GermanSkriptFehler.TypFehler.FalscherTyp(holeErstesTokenVonAusdruck(schleife.iterierbares), liste, "Liste")
-        }
-        liste.typArgumente[0].typ!!
+        val iterierbarerTyp = evaluiereAusdruck(schleife.iterierbares)
+        val iterierbareSchnittstelle = typisierer.prüfeIterierbar(iterierbarerTyp)
+            ?: throw GermanSkriptFehler.TypFehler.IterierbarErwartet(holeErstesTokenVonAusdruck(schleife.iterierbares))
+        val typArgumente = if (iterierbarerTyp is Typ.Compound) iterierbarerTyp.typArgumente else null
+        ersetzeGenerics(iterierbareSchnittstelle.typArgumente[0], null, typArgumente).typ!!
       }
       schleife.reichweite != null -> {
         val (anfang, ende) = schleife.reichweite
@@ -723,7 +726,7 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
 
   override fun durchlaufeWerfe(werfe: AST.Satz.Werfe): Typ {
     evaluiereAusdruck(werfe.ausdruck)
-    return Typ.Niemals
+    return Typ.Compound.KlassenTyp.BuildInType.Niemals
   }
 
   override fun durchlaufeIntern(intern: AST.Satz.Intern): Typ {
@@ -972,7 +975,8 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
     nichtErlaubtInKonstante(konvertierung)
     val ausdruck = evaluiereAusdruck(konvertierung.ausdruck)
     val konvertierungsTyp = typisierer.bestimmeTyp(konvertierung.typ, null, null, true)!!
-    if (!ausdruck.kannNachTypKonvertiertWerden(konvertierungsTyp)){
+    if (!typIstTyp(ausdruck, konvertierungsTyp) && !typIstTyp(konvertierungsTyp, ausdruck) &&
+        !ausdruck.kannNachTypKonvertiertWerden(konvertierungsTyp)){
       throw GermanSkriptFehler.KonvertierungsFehler(konvertierung.typ.name.bezeichnerToken,
           ausdruck, konvertierungsTyp)
     }

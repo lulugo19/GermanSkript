@@ -13,7 +13,7 @@ fun <T: AST> List<T>.visit(onVisit: (AST) -> Boolean): Boolean {
 enum class FunktionsAufrufTyp {
   FUNKTIONS_AUFRUF,
   METHODEN_SELBST_AUFRUF,
-  METHODEN_BLOCK_AUFRUF,
+  METHODEN_BEREICHS_AUFRUF,
   METHODEN_REFLEXIV_AUFRUF,
   METHODEN_SUBJEKT_AUFRUF,
 }
@@ -88,7 +88,7 @@ sealed class AST {
       override var fälle: Array<EnumSet<Kasus>> = arrayOf(EnumSet.noneOf(Kasus::class.java), EnumSet.noneOf(Kasus::class.java))
 
       private var _adjektiv: Adjektiv? = null
-      val adjektiv: Adjektiv?
+      var adjektiv: Adjektiv?
         get() {
           if (bezeichner.typ.adjektiv == null) {
             return null
@@ -97,6 +97,9 @@ sealed class AST {
             _adjektiv!!.setParentNode(this)
           }
           return _adjektiv
+        }
+        set(value) {
+          _adjektiv = value
         }
 
       var vornomenString: String? = null
@@ -451,8 +454,8 @@ sealed class AST {
     ): Satz() {
       override val children = sequenceOf(name, wert)
 
-      val istEigenschaftsNeuZuweisung = name.vornomen!!.typ == TokenTyp.VORNOMEN.POSSESSIV_PRONOMEN.MEIN
-      val istEigenschaft = name.vornomen!!.typ is TokenTyp.VORNOMEN.DEMONSTRATIV_PRONOMEN
+      val istEigenschaftsNeuZuweisung = name.vornomen != null && name.vornomen!!.typ == TokenTyp.VORNOMEN.POSSESSIV_PRONOMEN.MEIN
+      val istEigenschaft = name.vornomen != null && name.vornomen!!.typ is TokenTyp.VORNOMEN.DEMONSTRATIV_PRONOMEN
     }
 
     data class ListenElementZuweisung(

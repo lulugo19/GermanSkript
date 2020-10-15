@@ -10,12 +10,13 @@ import kotlin.math.*
 import kotlin.random.Random
 
 class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
-  val typPrüfer = TypPrüfer(startDatei)
+  val entsüßer = Entsüßer(startDatei)
+  val typPrüfer = entsüßer.typPrüfer
 
   override val nichts = germanskript.intern.Nichts
 
   override val definierer = typPrüfer.definierer
-  val ast: AST.Programm = typPrüfer.ast
+  val ast: AST.Programm = entsüßer.ast
 
   private val flags = EnumSet.noneOf(Flag::class.java)
   private val aufrufStapel = AufrufStapel()
@@ -26,7 +27,7 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
   private val klassenDefinitionen = HashMap<String, AST.Definition.Typdefinition.Klasse>()
 
   fun interpretiere() {
-    typPrüfer.prüfe()
+    entsüßer.entsüße()
     initKlassenDefinitionen()
     try {
       aufrufStapel.push(ast, Umgebung())
@@ -263,32 +264,7 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
   }
 
   override fun durchlaufeFürJedeSchleife(schleife: AST.Satz.FürJedeSchleife) {
-    if (schleife.reichweite != null) {
-      val (anfang, ende) = schleife.reichweite
-      val anfangsWert = evaluiereAusdruck(anfang) as germanskript.intern.Zahl
-      val endWert = evaluiereAusdruck(ende) as germanskript.intern.Zahl
-      val schrittWeite = if (anfangsWert <= endWert) 1 else -1
-      var laufWert = anfangsWert
-      while (laufWert.compareTo(endWert) == -schrittWeite) {
-        if (!iteriereSchleife(schleife, laufWert)) {
-          break
-        }
-        laufWert += germanskript.intern.Zahl(schrittWeite.toDouble())
-      }
-    } else {
-      val liste = if (schleife.iterierbares != null) {
-        evaluiereAusdruck(schleife.iterierbares) as germanskript.intern.Liste
-      } else {
-        evaluiereVariable(schleife.singular.ganzesWort(Kasus.NOMINATIV, Numerus.PLURAL, true))!! as germanskript.intern.Liste
-      }
-      umgebung.pushBereich()
-      for (element in liste.elemente) {
-        if (!iteriereSchleife(schleife, element)) {
-          break
-        }
-      }
-      umgebung.popBereich()
-    }
+    // Mache nichts hier, weil die Entsüßer die Für-Jede-Schleife durch eine Solange-Schleife ersetzt hat
   }
 
   private fun iteriereSchleife(schleife: AST.Satz.FürJedeSchleife, element: Wert): Boolean {

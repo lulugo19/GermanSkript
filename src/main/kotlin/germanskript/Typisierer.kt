@@ -11,29 +11,6 @@ sealed class Typ() {
   abstract fun kannNachTypKonvertiertWerden(typ: Typ): Boolean
   abstract fun inTypKnoten(): AST.TypKnoten
 
-  // äquivalent zu Kotlins Typen "Nothing"
-  object Niemals: Typ() {
-    override val name = "Niemals"
-    override val definierteOperatoren: Map<Operator, Typ> = mapOf()
-    override fun kannNachTypKonvertiertWerden(typ: Typ) = false
-
-    private val typKnoten = AST.TypKnoten(
-        emptyList(), AST.WortArt.Nomen(null, TypedToken.imaginäresToken(
-        TokenTyp.BEZEICHNER_GROSS(arrayOf("Niemals"), "", null), "Niemals")), emptyList())
-
-    init {
-      typKnoten.name.numera.add(Numerus.SINGULAR)
-      typKnoten.name.deklination = Deklination(
-          Genus.NEUTRUM,
-          arrayOf("Niemals", "Niemals", "Niemals", "Niemals"),
-          arrayOf("Niemals", "Niemals", "Niemals", "Niemals")
-      )
-      typKnoten.typ = Niemals
-    }
-
-    override fun inTypKnoten(): AST.TypKnoten = typKnoten
-  }
-
   class Generic(
       val typParam: AST.Definition.TypParam,
       val index: Int,
@@ -88,7 +65,7 @@ sealed class Typ() {
       class Klasse(
           override val definition: AST.Definition.Typdefinition.Klasse,
           override var typArgumente: List<AST.TypKnoten>
-      ): KlassenTyp(definition.name.hauptWort(Kasus.NOMINATIV, Numerus.SINGULAR)) {
+      ): KlassenTyp(definition.name.ganzesWort(Kasus.NOMINATIV, Numerus.SINGULAR, false)) {
         override val definierteOperatoren: Map<Operator, Typ> = mapOf(
             Operator.GLEICH to BuildInType.Boolean
         )
@@ -139,6 +116,18 @@ sealed class Typ() {
 
           override val definierteOperatoren: Map<Operator, Typ> = mapOf()
           override fun kannNachTypKonvertiertWerden(typ: Typ) = false
+        }
+
+        // äquivalent zu Kotlins Typen "Nothing"
+        object Niemals: BuildInType("Niemals") {
+          override lateinit var definition: AST.Definition.Typdefinition.Klasse
+          override var typArgumente: List<AST.TypKnoten> = emptyList()
+
+          override fun copy(typArgumente: List<AST.TypKnoten>) = Niemals
+
+          override val definierteOperatoren: Map<Operator, Typ> = emptyMap()
+
+          override fun kannNachTypKonvertiertWerden(typ: Typ): kotlin.Boolean = false
         }
 
         object Zeichenfolge : BuildInType("Zeichenfolge") {
@@ -236,6 +225,8 @@ class Typisierer(startDatei: File): PipelineKomponente(startDatei) {
 
   companion object {
     lateinit var schreiberTyp: Typ.Compound.KlassenTyp.Klasse
+    lateinit var reichWeitenTyp: Typ.Compound.KlassenTyp.Klasse
+    lateinit var iterierbarSchnittstelle: AST.Definition.Typdefinition.Schnittstelle
   }
 
   fun typisiere() {
@@ -264,8 +255,10 @@ class Typisierer(startDatei: File): PipelineKomponente(startDatei) {
     Typ.Compound.KlassenTyp.BuildInType.Nichts.definition = definierer.holeTypDefinition("Nichts")
       as AST.Definition.Typdefinition.Klasse
     schreiberTyp = Typ.Compound.KlassenTyp.Klasse(
-        definierer.holeTypDefinition("Schreiber", arrayOf("IO")) as AST.Definition.Typdefinition.Klasse, emptyList()
-    )
+        definierer.holeTypDefinition("Schreiber", arrayOf("IO")) as AST.Definition.Typdefinition.Klasse, emptyList())
+    reichWeitenTyp = Typ.Compound.KlassenTyp.Klasse(
+        definierer.holeTypDefinition("ReichWeite", null) as AST.Definition.Typdefinition.Klasse, emptyList())
+    iterierbarSchnittstelle = definierer.holeTypDefinition("Iterierbare") as AST.Definition.Typdefinition.Schnittstelle
   }
 
   fun bestimmeTyp(
@@ -333,10 +326,10 @@ class Typisierer(startDatei: File): PipelineKomponente(startDatei) {
     }
     // Überprüfe hier die Anzahl der Typargumente
     when (typ) {
-      is Typ.Compound.KlassenTyp.BuildInType.Nichts, is Typ.Niemals, is Typ.Generic -> if (typArgumente.isNotEmpty())
-        throw GermanSkriptFehler.TypArgumentFehler(typKnoten.name.bezeichnerToken, typArgumente.size, 0)
+      is Typ.Compound.KlassenTyp.BuildInType.Nichts, is Typ.Compound.KlassenTyp.BuildInType.Niemals, is Typ.Generic -> if (typArgumente.isNotEmpty())
+        throw GermanSkriptFehler.TypFehler.TypArgumentFehler(typKnoten.name.bezeichnerToken, typArgumente.size, 0)
       is Typ.Compound -> if (typArgumente.isNotEmpty() && typArgumente.size != typ.definition.typParameter.size)
-        throw GermanSkriptFehler.TypArgumentFehler(
+        throw GermanSkriptFehler.TypFehler.TypArgumentFehler(
             typKnoten.name.bezeichnerToken,
             typArgumente.size,
             typ.definition.typParameter.size
@@ -506,6 +499,20 @@ class Typisierer(startDatei: File): PipelineKomponente(startDatei) {
     typisiereTypParameter(schnittstelle.typParameter)
     schnittstelle.methodenSignaturen.forEach { signatur ->
       typisiereFunktionsSignatur(signatur, schnittstelle.typParameter)
+    }
+  }
+
+  /**
+   * Prüft ob ein Typ die Schnittstelle 'iterierbar' implementiert und gibt die Iterierbar-Schnittstelle wenn möglich zurück.
+   */
+  fun prüfeIterierbar(typ: Typ): Typ.Compound.Schnittstelle? {
+    return when (typ) {
+      is Typ.Generic -> typ.typParam.schnittstellen.find {
+        (it.typ!! as Typ.Compound.Schnittstelle).definition == iterierbarSchnittstelle }?.typ!! as Typ.Compound.Schnittstelle?
+      is Typ.Compound.KlassenTyp.Klasse -> typ.definition.implementierteSchnittstellen.find { it.definition == iterierbarSchnittstelle }
+      is Typ.Compound.Schnittstelle -> if (typ.definition == iterierbarSchnittstelle) typ else null
+      is Typ.Compound.KlassenTyp.Liste -> typ.definition.implementierteSchnittstellen.find { it.definition == iterierbarSchnittstelle }
+      is Typ.Compound.KlassenTyp.BuildInType -> null
     }
   }
 }

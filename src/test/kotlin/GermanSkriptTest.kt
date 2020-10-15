@@ -163,7 +163,7 @@ class GermanSkriptTest {
   @Test
   @DisplayName("Für-Jede-Schleifen")
   fun fürJedeSchleifen() {
-    val source = """
+    val quellCode = """
       die Zahlen sind einige Zahlen [1, 2, 3]
       für jede Zahl:
         schreibe die Zahl
@@ -176,7 +176,7 @@ class GermanSkriptTest {
       .
     """.trimIndent()
 
-    val expectedOutput = """
+    val erwarteteAusgabe = """
       1
       2
       3
@@ -189,7 +189,7 @@ class GermanSkriptTest {
       
     """.trimIndent()
 
-    testeGermanSkriptCode(source, expectedOutput)
+    testeGermanSkriptCode(quellCode, erwarteteAusgabe)
   }
 
   @Test
