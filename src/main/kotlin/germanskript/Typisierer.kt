@@ -509,10 +509,8 @@ class Typisierer(startDatei: File): PipelineKomponente(startDatei) {
     return when (typ) {
       is Typ.Generic -> typ.typParam.schnittstellen.find {
         (it.typ!! as Typ.Compound.Schnittstelle).definition == iterierbarSchnittstelle }?.typ!! as Typ.Compound.Schnittstelle?
-      is Typ.Compound.KlassenTyp.Klasse -> typ.definition.implementierteSchnittstellen.find { it.definition == iterierbarSchnittstelle }
+      is Typ.Compound.KlassenTyp -> typ.definition.implementierteSchnittstellen.find { it.definition == iterierbarSchnittstelle }
       is Typ.Compound.Schnittstelle -> if (typ.definition == iterierbarSchnittstelle) typ else null
-      is Typ.Compound.KlassenTyp.Liste -> typ.definition.implementierteSchnittstellen.find { it.definition == iterierbarSchnittstelle }
-      is Typ.Compound.KlassenTyp.BuildInType -> null
     }
   }
 }

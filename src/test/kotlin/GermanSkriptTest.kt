@@ -1806,4 +1806,17 @@ class GermanSkriptTest {
 
     testeGermanSkriptCode(quellCode, erwarteteAusgabe)
   }
+
+  @Test
+  @DisplayName("Iteriere Zeichenfolge")
+  fun iteriereZeichenfolge() {
+    val quellCode = """
+      die Zeichenfolge ist "Hallo Welt!"
+      für jede Zeichenfolge in der Zeichenfolge:
+        schreibe die Zeichenfolge
+      .
+    """.trimIndent()
+
+    testeGermanSkriptCode(quellCode, "Hallo Welt!")
+  }
 }

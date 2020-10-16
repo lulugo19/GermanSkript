@@ -32,11 +32,11 @@ class GrammatikPrüfer(startDatei: File): PipelineKomponente(startDatei) {
         is AST.Definition.Typdefinition.Alias -> prüfeAlias(knoten)
         is AST.Satz.VariablenDeklaration -> prüfeVariablendeklaration(knoten)
         is AST.Satz.ListenElementZuweisung -> prüfeListenElementZuweisung(knoten)
-        is AST.Satz.Zurückgabe -> prüfeKontextbasiertenAusdruck(knoten.ausdruck, null, EnumSet.of(Kasus.AKKUSATIV), false)
+        is AST.Satz.Zurückgabe -> prüfeKontextbasiertenAusdruck(knoten.ausdruck, null, EnumSet.of(Kasus.AKKUSATIV))
         is AST.Satz.FürJedeSchleife -> prüfeFürJedeSchleife(knoten)
         is AST.Satz.Fange -> prüfeParameter(knoten.param, EnumSet.of(Kasus.AKKUSATIV))
         is AST.Satz.Werfe -> prüfeWerfe(knoten)
-        is AST.Satz.Ausdruck -> prüfeKontextbasiertenAusdruck(knoten, null, EnumSet.of(Kasus.NOMINATIV), false)
+        is AST.Satz.Ausdruck -> prüfeKontextbasiertenAusdruck(knoten, null, EnumSet.of(Kasus.NOMINATIV))
       }
       // germanskript.visit everything
       true
@@ -213,32 +213,27 @@ class GrammatikPrüfer(startDatei: File): PipelineKomponente(startDatei) {
   }
 
   // region kontextbasierte Ausdrücke
-  private fun prüfeKontextbasiertenAusdruck(ausdruck: AST.Satz.Ausdruck, kontextNomen: AST.WortArt.Nomen?, fälle: EnumSet<Kasus>, pluralErwartet: Boolean) {
+  private fun prüfeKontextbasiertenAusdruck(ausdruck: AST.Satz.Ausdruck, kontextNomen: AST.WortArt.Nomen?, fälle: EnumSet<Kasus>) {
     when (ausdruck) {
-      is AST.Satz.Ausdruck.Variable -> prüfeVariable(ausdruck, kontextNomen, fälle, pluralErwartet)
+      is AST.Satz.Ausdruck.Variable -> prüfeVariable(ausdruck, kontextNomen, fälle)
       is AST.Satz.Ausdruck.Liste ->  prüfeListe(ausdruck, kontextNomen, fälle)
-      is AST.Satz.Ausdruck.ListenElement -> prüfeListenElement(ausdruck, kontextNomen, fälle, pluralErwartet)
-      is AST.Satz.Ausdruck.ObjektInstanziierung -> prüfeObjektinstanziierung(ausdruck, kontextNomen, fälle, pluralErwartet)
-      is AST.Satz.Ausdruck.EigenschaftsZugriff -> prüfeEigenschaftsZugriff(ausdruck, kontextNomen, fälle, pluralErwartet)
-      is AST.Satz.Ausdruck.MethodenBereichEigenschaftsZugriff -> prüfeNomenKontextBasiert(ausdruck.eigenschaftsName, kontextNomen, fälle, pluralErwartet)
-      is AST.Satz.Ausdruck.SelbstEigenschaftsZugriff -> prüfeNomenKontextBasiert(ausdruck.eigenschaftsName, kontextNomen, fälle, pluralErwartet)
-      is AST.Satz.Ausdruck.Konvertierung -> prüfeKonvertierung(ausdruck, kontextNomen, fälle, pluralErwartet)
-      is AST.Satz.Ausdruck.BinärerAusdruck -> prüfeBinärenAusdruck(ausdruck, kontextNomen, fälle, pluralErwartet)
-      is AST.Satz.Ausdruck.Closure -> prüfeClosure(ausdruck, kontextNomen, fälle, pluralErwartet)
-      is AST.Satz.Ausdruck.AnonymeKlasse -> prüfeAnonymeKlasse(ausdruck, kontextNomen, fälle, pluralErwartet)
+      is AST.Satz.Ausdruck.ListenElement -> prüfeListenElement(ausdruck, kontextNomen, fälle)
+      is AST.Satz.Ausdruck.ObjektInstanziierung -> prüfeObjektinstanziierung(ausdruck, kontextNomen, fälle)
+      is AST.Satz.Ausdruck.EigenschaftsZugriff -> prüfeEigenschaftsZugriff(ausdruck, kontextNomen, fälle)
+      is AST.Satz.Ausdruck.MethodenBereichEigenschaftsZugriff -> prüfeNomenKontextBasiert(ausdruck.eigenschaftsName, kontextNomen, fälle)
+      is AST.Satz.Ausdruck.SelbstEigenschaftsZugriff -> prüfeNomenKontextBasiert(ausdruck.eigenschaftsName, kontextNomen, fälle)
+      is AST.Satz.Ausdruck.Konvertierung -> prüfeKonvertierung(ausdruck, kontextNomen, fälle)
+      is AST.Satz.Ausdruck.BinärerAusdruck -> prüfeBinärenAusdruck(ausdruck, kontextNomen, fälle)
+      is AST.Satz.Ausdruck.Closure -> prüfeClosure(ausdruck, kontextNomen, fälle)
+      is AST.Satz.Ausdruck.AnonymeKlasse -> prüfeAnonymeKlasse(ausdruck, kontextNomen, fälle)
       is AST.Satz.Ausdruck.Minus -> prüfeMinus(ausdruck)
       is AST.Satz.Ausdruck.FunktionsAufruf -> prüfeFunktionsAufruf(ausdruck)
       is AST.Satz.Ausdruck.TypÜberprüfung -> prüfeTypÜberprüfung(ausdruck)
     }
   }
 
-  private fun prüfeVariable(variable: AST.Satz.Ausdruck.Variable, kontextNomen: AST.WortArt.Nomen?, fälle: EnumSet<Kasus>, pluralErwartet: Boolean) {
-    val numerus = when {
-      kontextNomen != null -> EnumSet.of(kontextNomen.numerus)
-      pluralErwartet -> EnumSet.of(Numerus.PLURAL)
-      else -> Numerus.BEIDE
-    }
-    prüfeNomen(variable.name, fälle, numerus)
+  private fun prüfeVariable(variable: AST.Satz.Ausdruck.Variable, kontextNomen: AST.WortArt.Nomen?, fälle: EnumSet<Kasus>) {
+    prüfeNomen(variable.name, fälle, Numerus.BEIDE)
   }
 
   private fun prüfeListe(liste: AST.Satz.Ausdruck.Liste, kontextNomen: AST.WortArt.Nomen?, fälle: EnumSet<Kasus>) {
@@ -246,37 +241,32 @@ class GrammatikPrüfer(startDatei: File): PipelineKomponente(startDatei) {
     if (kontextNomen != null) {
       prüfeNumerus(kontextNomen, Numerus.PLURAL)
     }
-    liste.elemente.forEach {element -> prüfeKontextbasiertenAusdruck(element, null, EnumSet.of(Kasus.NOMINATIV), false)}
+    liste.elemente.forEach {element -> prüfeKontextbasiertenAusdruck(element, null, EnumSet.of(Kasus.NOMINATIV))}
   }
 
-  private fun prüfeObjektinstanziierung(instanziierung: AST.Satz.Ausdruck.ObjektInstanziierung, kontextNomen: AST.WortArt.Nomen?, fälle: EnumSet<Kasus>, pluralErwartet: Boolean) {
-    if (pluralErwartet) {
-      throw GermanSkriptFehler.GrammatikFehler.PluralErwartet(instanziierung.klasse.name.bezeichnerToken)
-    }
+  private fun prüfeObjektinstanziierung(instanziierung: AST.Satz.Ausdruck.ObjektInstanziierung, kontextNomen: AST.WortArt.Nomen?, fälle: EnumSet<Kasus>) {
     prüfeTyp(instanziierung.klasse, fälle, EnumSet.of(Numerus.SINGULAR), null)
     if (kontextNomen != null) {
       prüfeNumerus(kontextNomen, Numerus.SINGULAR)
     }
     for (eigenschaftsZuweisung in instanziierung.eigenschaftsZuweisungen) {
       prüfeNomen(eigenschaftsZuweisung.name, EnumSet.of(Kasus.DATIV), Numerus.BEIDE)
-      prüfeKontextbasiertenAusdruck(eigenschaftsZuweisung.ausdruck, eigenschaftsZuweisung.name, EnumSet.of(Kasus.NOMINATIV), false)
+      prüfeKontextbasiertenAusdruck(eigenschaftsZuweisung.ausdruck, eigenschaftsZuweisung.name, EnumSet.of(Kasus.NOMINATIV))
     }
   }
 
-  private fun prüfeEigenschaftsZugriff(eigenschaftsZugriff: AST.Satz.Ausdruck.EigenschaftsZugriff, kontextNomen: AST.WortArt.Nomen?, fälle: EnumSet<Kasus>, pluralErwartet: Boolean) {
-    prüfeNomenKontextBasiert(eigenschaftsZugriff.eigenschaftsName, kontextNomen, fälle, pluralErwartet)
-    prüfeKontextbasiertenAusdruck(eigenschaftsZugriff.objekt, null, EnumSet.of(Kasus.GENITIV), false)
+  private fun prüfeEigenschaftsZugriff(eigenschaftsZugriff: AST.Satz.Ausdruck.EigenschaftsZugriff, kontextNomen: AST.WortArt.Nomen?, fälle: EnumSet<Kasus>) {
+    prüfeNomenKontextBasiert(eigenschaftsZugriff.eigenschaftsName, kontextNomen, fälle)
+    prüfeKontextbasiertenAusdruck(eigenschaftsZugriff.objekt, null, EnumSet.of(Kasus.GENITIV))
   }
 
   private fun prüfeNomenKontextBasiert(
       nomen: AST.WortArt.Nomen,
       kontextNomen: AST.WortArt.Nomen?,
-      fälle: EnumSet<Kasus>,
-      pluralErwartet: Boolean)
+      fälle: EnumSet<Kasus>)
   {
     val numerus = when {
       kontextNomen != null -> EnumSet.of(kontextNomen.numerus)
-      pluralErwartet -> EnumSet.of(Numerus.PLURAL)
       else -> Numerus.BEIDE
     }
     prüfeNomen(nomen, fälle, numerus)
@@ -285,21 +275,15 @@ class GrammatikPrüfer(startDatei: File): PipelineKomponente(startDatei) {
     }
   }
 
-  private fun prüfeListenElement(listenElement: AST.Satz.Ausdruck.ListenElement, kontextNomen: AST.WortArt.Nomen?, fälle: EnumSet<Kasus>, pluralErwartet: Boolean) {
-    if (pluralErwartet) {
-      throw GermanSkriptFehler.GrammatikFehler.PluralErwartet(listenElement.singular.bezeichner.toUntyped())
-    }
+  private fun prüfeListenElement(listenElement: AST.Satz.Ausdruck.ListenElement, kontextNomen: AST.WortArt.Nomen?, fälle: EnumSet<Kasus>) {
     prüfeNomen(listenElement.singular, fälle, EnumSet.of(Numerus.SINGULAR))
     if (kontextNomen != null) {
       prüfeNumerus(kontextNomen, Numerus.SINGULAR)
     }
-    prüfeKontextbasiertenAusdruck(listenElement.index, null, EnumSet.of(Kasus.NOMINATIV), false)
+    prüfeKontextbasiertenAusdruck(listenElement.index, null, EnumSet.of(Kasus.NOMINATIV))
   }
 
-  private fun prüfeClosure(closure: AST.Satz.Ausdruck.Closure, kontextNomen: AST.WortArt.Nomen?, fälle: EnumSet<Kasus>, pluralErwartet: Boolean) {
-    if (pluralErwartet) {
-      throw GermanSkriptFehler.GrammatikFehler.PluralErwartet(closure.schnittstelle.name.bezeichnerToken)
-    }
+  private fun prüfeClosure(closure: AST.Satz.Ausdruck.Closure, kontextNomen: AST.WortArt.Nomen?, fälle: EnumSet<Kasus>) {
     prüfeTyp(closure.schnittstelle, fälle, EnumSet.of(Numerus.SINGULAR), null)
     if (kontextNomen != null) {
       prüfeNumerus(kontextNomen, Numerus.SINGULAR)
@@ -307,19 +291,16 @@ class GrammatikPrüfer(startDatei: File): PipelineKomponente(startDatei) {
     closure.bindings.forEach { binding -> prüfeNomen(binding, EnumSet.of(Kasus.NOMINATIV), Numerus.BEIDE)}
   }
 
-  private fun prüfeAnonymeKlasse(anonymeKlasse: AST.Satz.Ausdruck.AnonymeKlasse, kontextNomen: AST.WortArt.Nomen?, fälle: EnumSet<Kasus>, pluralErwartet: Boolean) {
-    if (pluralErwartet) {
-      throw GermanSkriptFehler.GrammatikFehler.PluralErwartet(anonymeKlasse.schnittstelle.name.bezeichnerToken)
-    }
+  private fun prüfeAnonymeKlasse(anonymeKlasse: AST.Satz.Ausdruck.AnonymeKlasse, kontextNomen: AST.WortArt.Nomen?, fälle: EnumSet<Kasus>) {
     prüfeTyp(anonymeKlasse.schnittstelle, fälle, EnumSet.of(Numerus.SINGULAR), null)
     if (kontextNomen != null) {
       prüfeNumerus(kontextNomen, Numerus.SINGULAR)
     }
   }
 
-  private fun prüfeKonvertierung(konvertierung: AST.Satz.Ausdruck.Konvertierung, kontextNomen: AST.WortArt.Nomen?, fälle: EnumSet<Kasus>, pluralErwartet: Boolean) {
+  private fun prüfeKonvertierung(konvertierung: AST.Satz.Ausdruck.Konvertierung, kontextNomen: AST.WortArt.Nomen?, fälle: EnumSet<Kasus>) {
     prüfeTyp(konvertierung.typ, EnumSet.of(Kasus.NOMINATIV), EnumSet.of(Numerus.SINGULAR), null)
-    prüfeKontextbasiertenAusdruck(konvertierung.ausdruck, null, fälle, pluralErwartet)
+    prüfeKontextbasiertenAusdruck(konvertierung.ausdruck, null, fälle)
   }
 
   // endregion
@@ -334,7 +315,7 @@ class GrammatikPrüfer(startDatei: File): PipelineKomponente(startDatei) {
       }
     }
     // logger.addLine("geprüft: $variablenDeklaration")
-    prüfeKontextbasiertenAusdruck(variablenDeklaration.wert, nomen, EnumSet.of(Kasus.NOMINATIV), false)
+    prüfeKontextbasiertenAusdruck(variablenDeklaration.wert, nomen, EnumSet.of(Kasus.NOMINATIV))
   }
 
   private fun prüfeListenElementZuweisung(elementZuweisung: AST.Satz.ListenElementZuweisung) {
@@ -343,26 +324,25 @@ class GrammatikPrüfer(startDatei: File): PipelineKomponente(startDatei) {
     if (nomen.numerus != elementZuweisung.zuweisung.typ.numerus) {
       throw GermanSkriptFehler.GrammatikFehler.FalscheZuweisung(elementZuweisung.zuweisung.toUntyped(), nomen.numerus)
     }
-    prüfeKontextbasiertenAusdruck(elementZuweisung.index, null, EnumSet.of(Kasus.NOMINATIV), false)
-    prüfeKontextbasiertenAusdruck(elementZuweisung.wert, nomen, EnumSet.of(Kasus.NOMINATIV), false)
+    prüfeKontextbasiertenAusdruck(elementZuweisung.index, null, EnumSet.of(Kasus.NOMINATIV))
+    prüfeKontextbasiertenAusdruck(elementZuweisung.wert, nomen, EnumSet.of(Kasus.NOMINATIV))
   }
 
   private fun prüfeTypÜberprüfung(typÜberprüfung: AST.Satz.Ausdruck.TypÜberprüfung) {
     prüfeTyp(typÜberprüfung.typ, EnumSet.of(Kasus.NOMINATIV), EnumSet.of(typÜberprüfung.ist.typ.numerus), null)
-    val pluralErwartet = typÜberprüfung.ist.typ.numerus == Numerus.PLURAL
     when (typÜberprüfung.typ.name) {
       is AST.WortArt.Nomen -> {
         prüfeKontextbasiertenAusdruck(typÜberprüfung.ausdruck, typÜberprüfung.typ.name,
-            EnumSet.of(Kasus.NOMINATIV), pluralErwartet)
+            EnumSet.of(Kasus.NOMINATIV))
       }
       is AST.WortArt.Adjektiv -> {
         prüfeKontextbasiertenAusdruck(typÜberprüfung.ausdruck, null,
-            EnumSet.of(Kasus.NOMINATIV), pluralErwartet)
+            EnumSet.of(Kasus.NOMINATIV))
       }
     }
   }
 
-  private fun prüfeBinärenAusdruck(binärerAusdruck: AST.Satz.Ausdruck.BinärerAusdruck, kontextNomen: AST.WortArt.Nomen?, fälle: EnumSet<Kasus>, pluralErwartet: Boolean) {
+  private fun prüfeBinärenAusdruck(binärerAusdruck: AST.Satz.Ausdruck.BinärerAusdruck, kontextNomen: AST.WortArt.Nomen?, fälle: EnumSet<Kasus>) {
     val rechterKasus = if (binärerAusdruck.inStringInterpolation) {
       EnumSet.of(Kasus.NOMINATIV) // in einer String Interpolation wird wieder der Nominativ verwendet
     } else {
@@ -371,8 +351,8 @@ class GrammatikPrüfer(startDatei: File): PipelineKomponente(startDatei) {
     val linkerKasus = if (binärerAusdruck.istAnfang) fälle else rechterKasus
 
     // kontextNomen gilt nur für den linken Ausdruck (für den aller ersten Audruck in dem binären Ausdruck)
-    prüfeKontextbasiertenAusdruck(binärerAusdruck.links, kontextNomen, linkerKasus, pluralErwartet)
-    prüfeKontextbasiertenAusdruck(binärerAusdruck.rechts, null, rechterKasus, false)
+    prüfeKontextbasiertenAusdruck(binärerAusdruck.links, kontextNomen, linkerKasus)
+    prüfeKontextbasiertenAusdruck(binärerAusdruck.rechts, null, rechterKasus)
     logger.addLine("geprüft: $binärerAusdruck")
   }
 
@@ -382,18 +362,18 @@ class GrammatikPrüfer(startDatei: File): PipelineKomponente(startDatei) {
     prüfeNumerus(fürJedeSchleife.binder, Numerus.SINGULAR)
 
     if (fürJedeSchleife.iterierbares != null) {
-      prüfeKontextbasiertenAusdruck(fürJedeSchleife.iterierbares, null, EnumSet.of(Kasus.DATIV), true)
+      prüfeKontextbasiertenAusdruck(fürJedeSchleife.iterierbares, null, EnumSet.of(Kasus.DATIV))
     }
 
     if (fürJedeSchleife.reichweite != null) {
       val (anfang, ende) = fürJedeSchleife.reichweite
-      prüfeKontextbasiertenAusdruck(anfang, null, EnumSet.of(Kasus.DATIV), false)
-      prüfeKontextbasiertenAusdruck(ende, null, EnumSet.of(Kasus.DATIV), false)
+      prüfeKontextbasiertenAusdruck(anfang, null, EnumSet.of(Kasus.DATIV))
+      prüfeKontextbasiertenAusdruck(ende, null, EnumSet.of(Kasus.DATIV))
     }
   }
 
   private fun prüfeWerfe(werfe: AST.Satz.Werfe) {
-    prüfeKontextbasiertenAusdruck(werfe.ausdruck, null, EnumSet.of(Kasus.AKKUSATIV), false)
+    prüfeKontextbasiertenAusdruck(werfe.ausdruck, null, EnumSet.of(Kasus.AKKUSATIV))
   }
 
   private fun prüfeParameter(parameter: AST.Definition.Parameter, fälle: EnumSet<Kasus>) {
@@ -455,7 +435,7 @@ class GrammatikPrüfer(startDatei: File): PipelineKomponente(startDatei) {
     klasse.eigenschaften.forEach {eigenschaft -> prüfeParameter(eigenschaft, EnumSet.of(Kasus.DATIV))}
 
     if (klasse.elternKlasse != null) {
-      prüfeObjektinstanziierung(klasse.elternKlasse, null, EnumSet.of(Kasus.NOMINATIV), false)
+      prüfeObjektinstanziierung(klasse.elternKlasse, null, EnumSet.of(Kasus.NOMINATIV))
     }
   }
 
@@ -501,7 +481,7 @@ class GrammatikPrüfer(startDatei: File): PipelineKomponente(startDatei) {
     if (argument.adjektiv != null) {
       prüfeAdjektiv(argument.adjektiv, argument.name)
     }
-    prüfeKontextbasiertenAusdruck(argument.ausdruck, argument.name, EnumSet.of(Kasus.NOMINATIV), false)
+    prüfeKontextbasiertenAusdruck(argument.ausdruck, argument.name, EnumSet.of(Kasus.NOMINATIV))
   }
 
   private fun prüfePräpositionsArgumente(präposition: AST.PräpositionsArgumente) {
@@ -512,7 +492,7 @@ class GrammatikPrüfer(startDatei: File): PipelineKomponente(startDatei) {
 
   private fun prüfeFunktionsAufruf(funktionsAufruf: AST.Satz.Ausdruck.FunktionsAufruf) {
     if (funktionsAufruf.subjekt != null) {
-      prüfeKontextbasiertenAusdruck(funktionsAufruf.subjekt, null, EnumSet.of(Kasus.NOMINATIV), false)
+      prüfeKontextbasiertenAusdruck(funktionsAufruf.subjekt, null, EnumSet.of(Kasus.NOMINATIV))
     }
     if (funktionsAufruf.objekt != null) {
       prüfeArgument(funktionsAufruf.objekt, EnumSet.of(Kasus.AKKUSATIV, Kasus.DATIV))
@@ -524,7 +504,7 @@ class GrammatikPrüfer(startDatei: File): PipelineKomponente(startDatei) {
   }
 
   private fun prüfeMinus(knoten: AST.Satz.Ausdruck.Minus) {
-    prüfeKontextbasiertenAusdruck(knoten.ausdruck, null, EnumSet.of(Kasus.AKKUSATIV), false)
+    prüfeKontextbasiertenAusdruck(knoten.ausdruck, null, EnumSet.of(Kasus.AKKUSATIV))
   }
 }
 

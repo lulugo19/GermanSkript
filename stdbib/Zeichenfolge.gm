@@ -13,10 +13,26 @@ Modul Zeichenfolge:
     Verb(Zeichenfolge) erstelle aus der Zahl Code: intern.
 .
 
-Implementiere die vergleichbare<Zeichenfolge> Zeichenfolge:
+Implementiere die vergleichbare<Zeichenfolge>, iterierbare<Zeichenfolge> Zeichenfolge:
     Verb(Zahl) vergleiche mich mit der Zeichenfolge: intern.
     Verb(Zahl) code an der Zahl Index: intern.
     Verb(Zeichenfolgen) trenne mich zwischen der Zeichenfolge Separator: intern.
+
+    Verb hole (den iterierenden<Zeichenfolge> Iterator):
+        die Zeichenfolge ist Ich
+        die Länge ist meine Länge
+        ein Index ist 0
+        gebe etwas Iterierendes:
+            Verb(Boolean) läuft weiter:
+                gebe den Index kleiner als die Länge zurück
+            .
+
+            Verb hole (die Zeichenfolge):
+                ein Index ist der Index + 1
+                gebe die Zeichenfolge[der Index - 1] zurück
+            .
+        . zurück
+    .
 
     Verb(Zahl) index von der ZeichenfolgeX:
         die Zeichenfolge ist Ich
