@@ -104,6 +104,24 @@ sealed class Typ() {
 
       sealed class BuildInType(name: String) : KlassenTyp(name) {
 
+        // äquivalent zu Kotlins Typen "Any"
+        object Objekt: BuildInType("Objekt") {
+          override lateinit var definition: AST.Definition.Typdefinition.Klasse
+
+          override var typArgumente: List<AST.TypKnoten> = emptyList()
+
+          override fun copy(typArgumente: List<AST.TypKnoten>): Compound {
+            return Objekt
+          }
+
+          override val definierteOperatoren: Map<Operator, Typ> = mapOf(
+              Operator.GLEICH to Boolean,
+              Operator.UNGLEICH to Boolean
+          )
+
+          override fun kannNachTypKonvertiertWerden(typ: Typ) = false
+        }
+
         // äquivalent zu Kotlins Typen "Unit"
         object Nichts: BuildInType("Nichts") {
           override lateinit var definition: AST.Definition.Typdefinition.Klasse
@@ -244,16 +262,19 @@ class Typisierer(startDatei: File): PipelineKomponente(startDatei) {
 
   private fun holeInterneTypDefinitionen() {
     // hole die Typdefinitionen des Typen Zeichenfolge und Liste
-    Typ.Compound.KlassenTyp.Liste.definition = definierer.holeTypDefinition("Liste")
+    Typ.Compound.KlassenTyp.BuildInType.Objekt.definition = definierer.holeTypDefinition("Objekt")
         as AST.Definition.Typdefinition.Klasse
+    Typ.Compound.KlassenTyp.BuildInType.Nichts.definition = definierer.holeTypDefinition("Nichts")
+      as AST.Definition.Typdefinition.Klasse
     Typ.Compound.KlassenTyp.BuildInType.Zeichenfolge.definition = definierer.holeTypDefinition("Zeichenfolge")
         as AST.Definition.Typdefinition.Klasse
     Typ.Compound.KlassenTyp.BuildInType.Zahl.definition = definierer.holeTypDefinition("Zahl")
         as AST.Definition.Typdefinition.Klasse
     Typ.Compound.KlassenTyp.BuildInType.Boolean.definition = definierer.holeTypDefinition("Boolean")
-      as AST.Definition.Typdefinition.Klasse
-    Typ.Compound.KlassenTyp.BuildInType.Nichts.definition = definierer.holeTypDefinition("Nichts")
-      as AST.Definition.Typdefinition.Klasse
+        as AST.Definition.Typdefinition.Klasse
+    Typ.Compound.KlassenTyp.Liste.definition = definierer.holeTypDefinition("Liste")
+        as AST.Definition.Typdefinition.Klasse
+
     schreiberTyp = Typ.Compound.KlassenTyp.Klasse(
         definierer.holeTypDefinition("Schreiber", arrayOf("IO")) as AST.Definition.Typdefinition.Klasse, emptyList())
     reichWeitenTyp = Typ.Compound.KlassenTyp.Klasse(

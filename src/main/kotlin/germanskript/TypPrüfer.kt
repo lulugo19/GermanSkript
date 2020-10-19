@@ -24,13 +24,16 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
   private var evaluiereKonstante = false
   private var erwarteterTyp: Typ? = null
   private var methodenObjekt: Typ.Compound? = null
+  private lateinit var objektKlasse: AST.Definition.Typdefinition.Klasse
 
   fun prüfe() {
     typisierer.typisiere()
     definierer.konstanten.forEach(::prüfeKonstante)
+    // Die Objekt-Klasse ist die Wurzel der Typ-Hierarchie in Germanskript und muss zuerst definiert werden
+    objektKlasse = definierer.holeTypDefinition("Objekt") as AST.Definition.Typdefinition.Klasse
+    prüfeKlasse(objektKlasse)
     // zuerst die Klassendefinitionen, damit noch private Eigenschaften definiert werden können
     definierer.holeDefinitionen<AST.Definition.Typdefinition.Klasse>().forEach(::prüfeKlasse)
-
     definierer.funktionsDefinitionen.forEach {funktion ->
       prüfeFunktion(funktion, Umgebung())
     }
@@ -108,7 +111,7 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
       }
       is Typ.Compound.KlassenTyp -> when(typ) {
         is Typ.Generic -> typ.typParam.elternKlasse?.typ == sollTyp
-        is Typ.Compound.KlassenTyp -> überprüfeKlassenHierarchie(typ, sollTyp)
+        is Typ.Compound.KlassenTyp -> sollTyp.definition === objektKlasse || überprüfeKlassenHierarchie(typ, sollTyp)
         else -> typ == sollTyp
       }
       else -> typ == sollTyp
@@ -241,11 +244,17 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
       }
       if (elternKlasse.elternKlasse != null) {
         fügeElternKlassenMethodenHinzu((elternKlasse.elternKlasse.klasse.typ as Typ.Compound.KlassenTyp).definition)
+      } else {
+        if (elternKlasse !== objektKlasse)
+        fügeElternKlassenMethodenHinzu(objektKlasse)
       }
     }
 
     if (klasse.elternKlasse != null) {
       fügeElternKlassenMethodenHinzu((klasse.elternKlasse.klasse.typ as Typ.Compound.KlassenTyp).definition)
+    } else if (klasse !== objektKlasse) {
+      // Kopiere die Definitionen der Objekt-Hierarchie-Wurzel runter
+      fügeElternKlassenMethodenHinzu(objektKlasse)
     }
 
     zuÜberprüfendeKlasse = null

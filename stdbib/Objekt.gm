@@ -1,0 +1,13 @@
+// "Objekt" ist die Wurzel der Klassenhierarchie in Germanskript.
+// Jede Klasse in GermanSkript hat "Objekt" als Elternklasse
+Deklination Neutrum Singular(Objekt, Objekts, Objekt, Objekt) Plural(Objekte)
+
+Nomen Objekt:.
+
+Implementiere das Objekt:
+    Verb(Boolean) gleicht dem Objekt: intern.
+
+    Als Zeichenfolge: intern.
+
+    Verb(Zahl) hashe mich: intern.
+.

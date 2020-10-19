@@ -79,7 +79,9 @@ class GrammatikPrüfer(startDatei: File): PipelineKomponente(startDatei) {
       if (nomen.numera.isEmpty()) {
         // TODO: berücksichtige auch die möglichen anderen Fälle in der Fehlermeldung
         val kasus = fälle.first()
+        nomen.numera = numerus
         val erwarteteForm = bezeichner.ersetzeHauptWort(deklination.holeForm(kasus, numerus.first()), true)
+        System.err.println(nomen)
         throw GermanSkriptFehler.GrammatikFehler.FormFehler.FalschesNomen(nomen.bezeichner.toUntyped(), kasus, nomen, erwarteteForm)
       }
 

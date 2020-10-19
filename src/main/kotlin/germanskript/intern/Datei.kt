@@ -4,7 +4,7 @@ import germanskript.*
 import java.io.BufferedWriter
 import java.io.File
 
-class Datei(typ: Typ.Compound.KlassenTyp, val eigenschaften: MutableMap<String, Wert>): Wert.Objekt.InternesObjekt(typ) {
+class Datei(typ: Typ.Compound.KlassenTyp, val eigenschaften: MutableMap<String, Wert>): Wert.Objekt(typ) {
 
   lateinit var file: File
 
@@ -45,7 +45,7 @@ class Datei(typ: Typ.Compound.KlassenTyp, val eigenschaften: MutableMap<String, 
   }
 }
 
-class Schreiber(typ: Typ.Compound.KlassenTyp, private val writer: BufferedWriter): Wert.Objekt.InternesObjekt(typ) {
+class Schreiber(typ: Typ.Compound.KlassenTyp, private val writer: BufferedWriter): Wert.Objekt(typ) {
   override fun rufeMethodeAuf(aufruf: AST.IAufruf, aufrufStapel: Interpretierer.AufrufStapel, umgebung: Umgebung<Wert>, aufrufCallback: AufrufCallback): Wert {
     return when(aufruf.vollerName!!) {
       "schreibe die Zeile" -> schreibeDieZeile(umgebung)
@@ -53,7 +53,7 @@ class Schreiber(typ: Typ.Compound.KlassenTyp, private val writer: BufferedWriter
       "füge die Zeile hinzu" -> fügeDieZeileHinzu(umgebung)
       "füge die Zeichenfolge hinzu" -> fügeDieZeichenfolgeHinzu(umgebung)
       "schließe mich" -> schließe()
-      else -> throw Exception("Die Methode '${aufruf.vollerName}' ist für die Klasse 'Schreiber' nicht definiert.")
+      else -> super.rufeMethodeAuf(aufruf, aufrufStapel, umgebung, aufrufCallback)
     }
   }
 

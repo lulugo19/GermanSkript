@@ -1819,4 +1819,24 @@ class GermanSkriptTest {
 
     testeGermanSkriptCode(quellCode, "Hallo Welt!")
   }
+
+  @Test
+  @DisplayName("Objekt Elternklasse")
+  fun objektElternKlasse() {
+    val quellCode = """
+      Deklination Maskulinum Singular(Test, Tests, Test, Test) Plural(Tests)
+
+      Nomen Test mit der Zahl:.
+      
+      der Test ist ein Test mit der Zahl 42
+      schreibe die Zeile Test als Zeichenfolge
+      schreibe die Zeile (die Zahl des Tests) als Zeichenfolge
+      hashe den Test
+      
+      der Test2 ist der Test
+      schreibe die Zeile (der Test: gleicht dem Objekt Test2!) als Zeichenfolge
+    """.trimIndent()
+
+    führeGermanSkriptCodeAus(quellCode)
+  }
 }

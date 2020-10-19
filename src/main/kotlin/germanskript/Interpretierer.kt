@@ -316,9 +316,7 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
   override fun durchlaufeIntern(intern: AST.Satz.Intern): Wert {
     val aufruf = aufrufStapel.top().aufruf
     return when (val objekt = aufrufStapel.top().objekt) {
-      is Wert.Objekt ->
-        (objekt as Wert.Objekt.InternesObjekt).rufeMethodeAuf(aufruf
-            ,aufrufStapel, umgebung, ::durchlaufeInternenSchnittstellenAufruf)
+      is Wert.Objekt -> objekt.rufeMethodeAuf(aufruf,aufrufStapel, umgebung, ::durchlaufeInternenSchnittstellenAufruf)
       else -> interneFunktionen.getValue(aufruf.vollerName!!)()
     }.also { rückgabeWert = it }
   }

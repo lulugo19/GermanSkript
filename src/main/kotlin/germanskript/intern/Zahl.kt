@@ -7,7 +7,7 @@ import java.text.DecimalFormat
 import kotlin.math.pow
 import kotlin.math.roundToInt
 
-class Zahl(val zahl: Double): Wert.Objekt.InternesObjekt(Typ.Compound.KlassenTyp.BuildInType.Zahl), Comparable<Zahl> {
+class Zahl(val zahl: Double): Wert.Objekt(Typ.Compound.KlassenTyp.BuildInType.Zahl), Comparable<Zahl> {
   object Static {
     val format = DecimalFormat()
     init {
@@ -27,18 +27,6 @@ class Zahl(val zahl: Double): Wert.Objekt.InternesObjekt(Typ.Compound.KlassenTyp
   }
 
   constructor(zahl: String): this(Static.format.parse(zahl).toDouble())
-
-  override fun rufeMethodeAuf(aufruf: AST.IAufruf, aufrufStapel: Interpretierer.AufrufStapel, umgebung: Umgebung<Wert>, aufrufCallback: AufrufCallback): Wert {
-    TODO("Not yet implemented")
-  }
-
-  override fun holeEigenschaft(eigenschaftsName: String): Wert {
-    TODO("Not yet implemented")
-  }
-
-  override fun setzeEigenschaft(eigenschaftsName: String, wert: Wert) {
-    TODO("Not yet implemented")
-  }
 
   override fun toString(): String = Static.format.format(zahl)
   operator fun unaryMinus() = Zahl(-this.zahl)

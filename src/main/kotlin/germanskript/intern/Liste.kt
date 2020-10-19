@@ -5,7 +5,7 @@ import germanskript.Interpretierer
 import germanskript.Typ
 import germanskript.Umgebung
 
-class Liste(typ: Typ.Compound.KlassenTyp, val elemente: MutableList<Wert>): Wert.Objekt.InternesObjekt(typ) {
+class Liste(typ: Typ.Compound.KlassenTyp, val elemente: MutableList<Wert>): Wert.Objekt(typ) {
   operator fun plus(liste: Liste) = Liste(typ, (this.elemente + liste.elemente).toMutableList())
 
   override fun toString(): String {
@@ -29,7 +29,7 @@ class Liste(typ: Typ.Compound.KlassenTyp, val elemente: MutableList<Wert>): Wert
       "füge das Element hinzu" -> fügeDenTypHinzu(umgebung)
       "entferne an dem Index" -> entferneAnDemIndex(umgebung)
       "sortiere mich mit dem Vergleichenden" -> sortiereMichMitDemVergleichbaren(umgebung, aufrufCallback)
-      else -> throw Exception("Undefinierte Methode für Liste")
+      else -> super.rufeMethodeAuf(aufruf, aufrufStapel, umgebung, aufrufCallback)
     }
   }
 

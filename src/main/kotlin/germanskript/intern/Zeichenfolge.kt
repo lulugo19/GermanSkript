@@ -2,7 +2,7 @@ package germanskript.intern
 
 import germanskript.*
 
-data class Zeichenfolge(val zeichenfolge: String): Wert.Objekt.InternesObjekt(Typ.Compound.KlassenTyp.BuildInType.Zeichenfolge), Comparable<Zeichenfolge> {
+data class Zeichenfolge(val zeichenfolge: String): Wert.Objekt(Typ.Compound.KlassenTyp.BuildInType.Zeichenfolge), Comparable<Zeichenfolge> {
 
   override fun rufeMethodeAuf(aufruf: AST.IAufruf, aufrufStapel: Interpretierer.AufrufStapel, umgebung: Umgebung<Wert>, aufrufCallback: AufrufCallback): Wert {
     return when (aufruf.vollerName!!) {
@@ -11,7 +11,7 @@ data class Zeichenfolge(val zeichenfolge: String): Wert.Objekt.InternesObjekt(Ty
       "buchstabiere mich groß" -> buchstabiereMichGroß()
       "buchstabiere mich klein" -> buchstabierMichKlein()
       "trenne mich zwischen dem Separator" -> trenneMichZwischenDemSeperator(umgebung)
-      else -> throw Exception("Ungültige Methode '${aufruf.vollerName!!}' für die Klasse Zeichenfolge!")
+      else -> super.rufeMethodeAuf(aufruf, aufrufStapel, umgebung, aufrufCallback)
     }
   }
 
@@ -26,11 +26,6 @@ data class Zeichenfolge(val zeichenfolge: String): Wert.Objekt.InternesObjekt(Ty
     } else {
       throw Exception("Ungültige Eigenschaft '$eigenschaftsName' der Klasse 'Zeichenfolge'.")
     }
-  }
-
-  override fun setzeEigenschaft(eigenschaftsName: String, wert: Wert) {
-    // Eine Zeichenfolge ist immutable
-    TODO("Not yet implemented")
   }
 
   private fun vergleicheMichMitDerZeichenfolge(umgebung: Umgebung<Wert>): Zahl {
