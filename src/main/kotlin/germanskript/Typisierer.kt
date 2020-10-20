@@ -8,7 +8,6 @@ sealed class Typ() {
   override fun toString(): String = name
 
   abstract val definierteOperatoren: Map<Operator, Typ>
-  abstract fun kannNachTypKonvertiertWerden(typ: Typ): Boolean
   abstract fun inTypKnoten(): AST.TypKnoten
 
   class Generic(
@@ -19,9 +18,6 @@ sealed class Typ() {
     override val name = "Generic"
     override val definierteOperatoren: Map<Operator, Typ>
       get() = mapOf()
-
-    override fun kannNachTypKonvertiertWerden(typ: Typ): Boolean = false
-
 
     override fun inTypKnoten(): AST.TypKnoten {
       val typKnoten = AST.TypKnoten(emptyList(), typParam.binder, emptyList())
@@ -39,7 +35,7 @@ sealed class Typ() {
   sealed class Compound(private val typName: String): Typ() {
     abstract val definition: AST.Definition.Typdefinition
     abstract var typArgumente: List<AST.TypKnoten>
-    override val name get() = typName + if (typArgumente.isEmpty()) "" else "<${typArgumente.joinToString(", ") {it.name.nominativ}}>"
+    override val name get() = typName + if (typArgumente.isEmpty()) "" else "<${typArgumente.joinToString(", ") {it.vollständigerName}}>"
 
     abstract fun copy(typArgumente: List<AST.TypKnoten>): Compound
 
@@ -65,14 +61,10 @@ sealed class Typ() {
       class Klasse(
           override val definition: AST.Definition.Typdefinition.Klasse,
           override var typArgumente: List<AST.TypKnoten>
-      ): KlassenTyp(definition.name.ganzesWort(Kasus.NOMINATIV, Numerus.SINGULAR, false)) {
+      ): KlassenTyp(definition.name.nominativ) {
         override val definierteOperatoren: Map<Operator, Typ> = mapOf(
             Operator.GLEICH to BuildInType.Boolean
         )
-
-        override fun kannNachTypKonvertiertWerden(typ: Typ): Boolean {
-          return typ.name == this.name || typ == BuildInType.Zeichenfolge || definition.konvertierungen.containsKey(typ.name)
-        }
 
         override fun copy(typArgumente: List<AST.TypKnoten>): Compound {
           return Klasse(definition, typArgumente)
@@ -81,7 +73,7 @@ sealed class Typ() {
 
       class Liste(
           override var typArgumente: List<AST.TypKnoten>
-      ) : KlassenTyp("Liste") {
+      ) : KlassenTyp(typArgumente[0].name.ganzesWort(typArgumente[0].name.kasus, Numerus.PLURAL, false)) {
 
         override val definition: AST.Definition.Typdefinition.Klasse
           get() = Liste.definition
@@ -95,7 +87,6 @@ sealed class Typ() {
             Operator.PLUS to Liste(typArgumente),
             Operator.GLEICH to BuildInType.Boolean
         )
-        override fun kannNachTypKonvertiertWerden(typ: Typ) = typ.name == this.name || typ == BuildInType.Zeichenfolge
 
         override fun copy(typArgumente: List<AST.TypKnoten>): Compound {
           return Liste(typArgumente)
@@ -118,8 +109,6 @@ sealed class Typ() {
               Operator.GLEICH to Boolean,
               Operator.UNGLEICH to Boolean
           )
-
-          override fun kannNachTypKonvertiertWerden(typ: Typ) = false
         }
 
         // äquivalent zu Kotlins Typen "Unit"
@@ -133,7 +122,6 @@ sealed class Typ() {
           }
 
           override val definierteOperatoren: Map<Operator, Typ> = mapOf()
-          override fun kannNachTypKonvertiertWerden(typ: Typ) = false
         }
 
         // äquivalent zu Kotlins Typen "Nothing"
@@ -144,8 +132,6 @@ sealed class Typ() {
           override fun copy(typArgumente: List<AST.TypKnoten>) = Niemals
 
           override val definierteOperatoren: Map<Operator, Typ> = emptyMap()
-
-          override fun kannNachTypKonvertiertWerden(typ: Typ): kotlin.Boolean = false
         }
 
         object Zeichenfolge : BuildInType("Zeichenfolge") {
@@ -162,7 +148,6 @@ sealed class Typ() {
                 Operator.GRÖSSER_GLEICH to Boolean,
                 Operator.KLEINER_GLEICH to Boolean
             )
-          override fun kannNachTypKonvertiertWerden(typ: Typ) = typ == Zeichenfolge || typ == Zahl || typ == Boolean
 
           override fun copy(typArgumente: List<AST.TypKnoten>) = Zeichenfolge
         }
@@ -174,8 +159,6 @@ sealed class Typ() {
                 Operator.GLEICH to Boolean,
                 Operator.UNGLEICH to Boolean
             )
-
-          override fun kannNachTypKonvertiertWerden(typ: Typ) = typ == Boolean || typ == Zeichenfolge || typ == Zahl
 
           override lateinit var definition: AST.Definition.Typdefinition.Klasse
 
@@ -205,11 +188,8 @@ sealed class Typ() {
                 Operator.UNGLEICH to Boolean,
                 Operator.GLEICH to Boolean
             )
-
-          override fun kannNachTypKonvertiertWerden(typ: Typ) = typ == Zahl || typ == Zeichenfolge || typ == Boolean
         }
       }
-
     }
 
     class Schnittstelle(
@@ -219,10 +199,6 @@ sealed class Typ() {
       override val definierteOperatoren: Map<Operator, Typ> = mapOf(
           Operator.GLEICH to KlassenTyp.BuildInType.Boolean
       )
-
-      override fun kannNachTypKonvertiertWerden(typ: Typ): Boolean {
-        return typ.name == this.name || typ == KlassenTyp.BuildInType.Zeichenfolge
-      }
 
       override fun copy(typArgumente: List<AST.TypKnoten>): Compound {
         return Schnittstelle(definition, typArgumente)

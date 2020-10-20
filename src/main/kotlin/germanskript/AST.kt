@@ -159,8 +159,21 @@ sealed class AST {
       yieldAll(typArgumente)
       yield(name)
     }
-    val vollständigerName: String get() = modulPfad.joinToString("::") { it.wert } +
-        (if (modulPfad.isEmpty()) "" else "::")  + name.nominativ
+
+    private var _vollständigerName: String? = null
+    val vollständigerName: String get() {
+      if (_vollständigerName != null) {
+        return _vollständigerName!!
+      }
+      _vollständigerName =
+          modulPfad.joinToString("::") {it.wert} +
+          (if (modulPfad.isEmpty()) "" else "::") +
+          name.nominativ +
+          (if (typArgumente.isEmpty()) "" else
+          typArgumente.joinToString(", ", "<", ">") {it.name.nominativ})
+
+      return _vollständigerName!!
+    }
 
     fun copy(typArgumente: List<TypKnoten>): TypKnoten {
       val kopie = TypKnoten(modulPfad, name, typArgumente)

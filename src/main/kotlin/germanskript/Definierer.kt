@@ -395,7 +395,7 @@ class Definierer(startDatei: File): PipelineKomponente(startDatei) {
     definiereImplementierungsKörper(implementierung.bereich, klasse)
   }
 
-  public fun definiereImplementierungsKörper(implBereich: AST.Definition.ImplementierungsBereich, klasse: AST.Definition.Typdefinition.Klasse)
+  fun definiereImplementierungsKörper(implBereich: AST.Definition.ImplementierungsBereich, klasse: AST.Definition.Typdefinition.Klasse)
   {
     implBereich.methoden.forEach { methode -> definiereMethode(methode, klasse) }
     implBereich.berechneteEigenschaften.forEach { eigenschaft -> definiereEigenschaft(eigenschaft, klasse) }
@@ -403,7 +403,7 @@ class Definierer(startDatei: File): PipelineKomponente(startDatei) {
   }
 
   private fun definiereKonvertierung(konvertierung: AST.Definition.Konvertierung, klasse: AST.Definition.Typdefinition.Klasse) {
-    val typName = konvertierung.typ.name.nominativ
+    val typName = konvertierung.typ.vollständigerName
     if (klasse.konvertierungen.containsKey(typName)) {
       throw GermanSkriptFehler.DoppelteDefinition.Konvertierung(
           konvertierung.typ.name.bezeichnerToken,

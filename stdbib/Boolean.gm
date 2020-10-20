@@ -1,3 +1,10 @@
 Deklination Neutrum Singular(Boolean) Plural(Booleans)
 
 Nomen Boolean:.
+
+Implementiere das Boolean:
+    Als Zahl:
+        wenn Ich: gebe 1 zurück.
+        sonst: gebe 0 zurück.
+    .
+.

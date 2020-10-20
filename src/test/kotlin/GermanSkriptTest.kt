@@ -1023,7 +1023,7 @@ class GermanSkriptTest {
   }
 
   @Test
-  @DisplayName("Versuche-Fange: kein Fehler wird gewurfen")
+  @DisplayName("Versuche-Fange: kein Fehler wird geworfen")
   fun versucheFangeErfolg() {
     val quellCode = """
       versuche:

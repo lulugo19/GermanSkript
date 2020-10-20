@@ -7,4 +7,9 @@ Implementiere die vergleichbare<Zahl> Zahl:
     Verb(Zahl) vergleiche mich mit der Zahl:
         gebe Ich - die Zahl zurück
     .
+
+    Als Boolean:
+        wenn Ich gleich 0 ist: gebe wahr zurück.
+        sonst: gebe falsch zurück.
+    .
 .

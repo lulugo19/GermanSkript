@@ -2,8 +2,6 @@ package germanskript.intern
 
 import germanskript.*
 
-typealias AufrufCallback = (Wert, String, argumente: Array<Wert>) -> Wert?
-
 abstract class Wert {
 
   open class Objekt(internal val typ: Typ.Compound.KlassenTyp): Wert() {
@@ -46,19 +44,17 @@ abstract class Wert {
 
     open fun rufeMethodeAuf(
         aufruf: AST.IAufruf,
-        aufrufStapel: Interpretierer.AufrufStapel,
-        umgebung: Umgebung<Wert>,
-        aufrufCallback: AufrufCallback): Wert {
+        injection: InterpretInjection): Wert {
       return when (aufruf.vollerName) {
-        "gleicht dem Objekt" -> gleichtDemObjekt(umgebung)
+        "gleicht dem Objekt" -> gleichtDemObjekt(injection)
         "als Zeichenfolge" -> alsZeichenfolge()
         "hashe mich" -> hash()
         else -> throw Exception("Ungültiger Aufruf '${aufruf.vollerName}' für das Objekt ${this}!")
       }
     }
 
-    private fun gleichtDemObjekt(umgebung: Umgebung<Wert>): Wert {
-      val objekt = umgebung.leseVariable("Objekt")
+    private fun gleichtDemObjekt(injection: InterpretInjection): Wert {
+      val objekt = injection.umgebung.leseVariable("Objekt")
       return Boolean(this === objekt)
     }
 

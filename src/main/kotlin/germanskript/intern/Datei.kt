@@ -10,9 +10,7 @@ class Datei(typ: Typ.Compound.KlassenTyp, val eigenschaften: MutableMap<String, 
 
   override fun rufeMethodeAuf(
       aufruf: AST.IAufruf,
-      aufrufStapel: Interpretierer.AufrufStapel,
-      umgebung: Umgebung<Wert>,
-      aufrufCallback: AufrufCallback): Wert {
+      injection: InterpretInjection): Wert {
 
     return when (aufruf.vollerName!!) {
       "erstelle die Datei" -> konstruktor()
@@ -46,14 +44,14 @@ class Datei(typ: Typ.Compound.KlassenTyp, val eigenschaften: MutableMap<String, 
 }
 
 class Schreiber(typ: Typ.Compound.KlassenTyp, private val writer: BufferedWriter): Wert.Objekt(typ) {
-  override fun rufeMethodeAuf(aufruf: AST.IAufruf, aufrufStapel: Interpretierer.AufrufStapel, umgebung: Umgebung<Wert>, aufrufCallback: AufrufCallback): Wert {
+  override fun rufeMethodeAuf(aufruf: AST.IAufruf, injection: InterpretInjection): Wert {
     return when(aufruf.vollerName!!) {
-      "schreibe die Zeile" -> schreibeDieZeile(umgebung)
-      "schreibe die Zeichenfolge" -> schreibeDieZeichenfolge(umgebung)
-      "füge die Zeile hinzu" -> fügeDieZeileHinzu(umgebung)
-      "füge die Zeichenfolge hinzu" -> fügeDieZeichenfolgeHinzu(umgebung)
+      "schreibe die Zeile" -> schreibeDieZeile(injection)
+      "schreibe die Zeichenfolge" -> schreibeDieZeichenfolge(injection)
+      "füge die Zeile hinzu" -> fügeDieZeileHinzu(injection)
+      "füge die Zeichenfolge hinzu" -> fügeDieZeichenfolgeHinzu(injection)
       "schließe mich" -> schließe()
-      else -> super.rufeMethodeAuf(aufruf, aufrufStapel, umgebung, aufrufCallback)
+      else -> super.rufeMethodeAuf(aufruf, injection)
     }
   }
 
@@ -65,27 +63,27 @@ class Schreiber(typ: Typ.Compound.KlassenTyp, private val writer: BufferedWriter
     TODO("Not yet implemented")
   }
 
-  private fun schreibeDieZeichenfolge(umgebung: Umgebung<Wert>): Nichts {
-    val zeile = umgebung.leseVariable("Zeichenfolge")!!.wert as Zeichenfolge
+  private fun schreibeDieZeichenfolge(injection: InterpretInjection): Nichts {
+    val zeile = injection.umgebung.leseVariable("Zeichenfolge")!!.wert as Zeichenfolge
     writer.write(zeile.zeichenfolge)
     return Nichts
   }
 
-  private fun schreibeDieZeile(umgebung: Umgebung<Wert>): Nichts {
-    val zeile = umgebung.leseVariable("Zeile")!!.wert as Zeichenfolge
+  private fun schreibeDieZeile(injection: InterpretInjection): Nichts {
+    val zeile = injection.umgebung.leseVariable("Zeile")!!.wert as Zeichenfolge
     writer.write(zeile.zeichenfolge)
     writer.newLine()
     return Nichts
   }
 
-  private fun fügeDieZeichenfolgeHinzu(umgebung: Umgebung<Wert>): Nichts {
-    val zeile = umgebung.leseVariable("Zeichenfolge")!!.wert as Zeichenfolge
+  private fun fügeDieZeichenfolgeHinzu(injection: InterpretInjection): Nichts {
+    val zeile = injection.umgebung.leseVariable("Zeichenfolge")!!.wert as Zeichenfolge
     writer.append(zeile.zeichenfolge)
     return Nichts
   }
 
-  private fun fügeDieZeileHinzu(umgebung: Umgebung<Wert>): Nichts {
-    val zeile = umgebung.leseVariable("Zeile")!!.wert as Zeichenfolge
+  private fun fügeDieZeileHinzu(injection: InterpretInjection): Nichts {
+    val zeile = injection.umgebung.leseVariable("Zeile")!!.wert as Zeichenfolge
     writer.appendln(zeile.zeichenfolge)
     return Nichts
   }

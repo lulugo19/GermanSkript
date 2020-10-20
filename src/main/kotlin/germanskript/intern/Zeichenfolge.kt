@@ -1,17 +1,19 @@
 package germanskript.intern
 
 import germanskript.*
+import java.text.ParseException
 
 data class Zeichenfolge(val zeichenfolge: String): Wert.Objekt(Typ.Compound.KlassenTyp.BuildInType.Zeichenfolge), Comparable<Zeichenfolge> {
 
-  override fun rufeMethodeAuf(aufruf: AST.IAufruf, aufrufStapel: Interpretierer.AufrufStapel, umgebung: Umgebung<Wert>, aufrufCallback: AufrufCallback): Wert {
+  override fun rufeMethodeAuf(aufruf: AST.IAufruf, injection: InterpretInjection): Wert {
     return when (aufruf.vollerName!!) {
-      "vergleiche mich mit dem Typ" -> vergleicheMichMitDerZeichenfolge(umgebung)
-      "code an dem Index" -> codeAnDemIndex(aufruf, aufrufStapel, umgebung)
+      "als Zahl" -> konvertiereInZahl(aufruf, injection)
+      "vergleiche mich mit dem Typ" -> vergleicheMichMitDerZeichenfolge(injection)
+      "code an dem Index" -> codeAnDemIndex(aufruf, injection)
       "buchstabiere mich groß" -> buchstabiereMichGroß()
       "buchstabiere mich klein" -> buchstabierMichKlein()
-      "trenne mich zwischen dem Separator" -> trenneMichZwischenDemSeperator(umgebung)
-      else -> super.rufeMethodeAuf(aufruf, aufrufStapel, umgebung, aufrufCallback)
+      "trenne mich zwischen dem Separator" -> trenneMichZwischenDemSeperator(injection)
+      else -> super.rufeMethodeAuf(aufruf, injection)
     }
   }
 
@@ -28,15 +30,24 @@ data class Zeichenfolge(val zeichenfolge: String): Wert.Objekt(Typ.Compound.Klas
     }
   }
 
-  private fun vergleicheMichMitDerZeichenfolge(umgebung: Umgebung<Wert>): Zahl {
-    val zeichenfolge = umgebung.leseVariable("Zeichenfolge")!!.wert as Zeichenfolge
+  private fun konvertiereInZahl(aufruf: AST.IAufruf, injection: InterpretInjection): Zahl {
+    return try {
+      Zahl(zeichenfolge)
+    }
+    catch (parseFehler: ParseException) {
+      injection.werfeFehler("Die Zeichenfolge '${zeichenfolge}' kann nicht in eine Zahl konvertiert werden.", "KonvertierungsFehler", aufruf.token)
+    }
+  }
+
+  private fun vergleicheMichMitDerZeichenfolge(injection: InterpretInjection): Zahl {
+    val zeichenfolge = injection.umgebung.leseVariable("Zeichenfolge")!!.wert as Zeichenfolge
     return Zahl(this.zeichenfolge.compareTo(zeichenfolge.zeichenfolge).toDouble())
   }
 
-  private fun codeAnDemIndex(aufruf: AST.IAufruf, aufrufStapel: Interpretierer.AufrufStapel, umgebung: Umgebung<Wert>): Wert {
-    val index = (umgebung.leseVariable("Index")!!.wert as Zahl).toInt()
+  private fun codeAnDemIndex(aufruf: AST.IAufruf, injection: InterpretInjection): Wert {
+    val index = (injection.umgebung.leseVariable("Index")!!.wert as Zahl).toInt()
     if (index < 0 || index >= zeichenfolge.length)
-      throw GermanSkriptFehler.LaufzeitFehler(aufruf.token, aufrufStapel.toString(),
+      throw GermanSkriptFehler.LaufzeitFehler(aufruf.token, injection.aufrufStapel.toString(),
           "Index außerhalb des Bereichs. Der Index ist $index, doch die Länge der Zeichenfolge ist ${zeichenfolge.length}.\n")
     return Zahl(zeichenfolge[index].toDouble())
   }
@@ -45,8 +56,8 @@ data class Zeichenfolge(val zeichenfolge: String): Wert.Objekt(Typ.Compound.Klas
 
   private fun buchstabierMichKlein() = Zeichenfolge(zeichenfolge.toLowerCase())
 
-  private fun trenneMichZwischenDemSeperator(umgebung: Umgebung<Wert>): Wert {
-    val separator = umgebung.leseVariable("Separator")!!.wert as Zeichenfolge
+  private fun trenneMichZwischenDemSeperator(injection: InterpretInjection): Wert {
+    val separator = injection.umgebung.leseVariable("Separator")!!.wert as Zeichenfolge
 
     return Liste(Typ.Compound.KlassenTyp.Liste(listOf(zeichenFolgenTypArgument)),
         zeichenfolge.split(separator.zeichenfolge).map { Zeichenfolge(it) }.toMutableList())

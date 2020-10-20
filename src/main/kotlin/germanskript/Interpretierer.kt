@@ -2,12 +2,22 @@ package germanskript
 
 import germanskript.intern.Wert
 import java.io.File
-import java.text.ParseException
 import java.util.*
 import kotlin.NoSuchElementException
 import kotlin.collections.HashMap
 import kotlin.math.*
 import kotlin.random.Random
+
+typealias SchnittstellenAufruf = (Wert, String, argumente: Array<Wert>) -> Wert?
+typealias WerfeFehler = (String, String, Token) -> Nothing
+
+class InterpretInjection(
+    val aufrufStapel: Interpretierer.AufrufStapel,
+    val schnittstellenAufruf: SchnittstellenAufruf,
+    val werfeFehler: WerfeFehler
+) {
+  val umgebung: Umgebung<Wert> get() = aufrufStapel.top().umgebung
+}
 
 class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
   val entsüßer = Entsüßer(startDatei)
@@ -26,11 +36,14 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
 
   private val klassenDefinitionen = HashMap<String, AST.Definition.Typdefinition.Klasse>()
 
+  private lateinit var interpretInjection: InterpretInjection
+
   fun interpretiere() {
     entsüßer.entsüße()
     initKlassenDefinitionen()
     try {
       aufrufStapel.push(ast, Umgebung())
+      interpretInjection = InterpretInjection(aufrufStapel, ::durchlaufeInternenSchnittstellenAufruf, ::werfeFehler)
       durchlaufeBereich(ast.programm, true)
     } catch (fehler: Throwable) {
       when (fehler) {
@@ -309,14 +322,24 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
 
   override fun durchlaufeWerfe(werfe: AST.Satz.Werfe): Nothing {
     val wert = evaluiereAusdruck(werfe.ausdruck)
-    val fehlerMeldung = konvertiereZuZeichenfolge(wert).zeichenfolge
-    throw GermanSkriptFehler.UnbehandelterFehler(werfe.werfe.toUntyped(), aufrufStapel.toString(), fehlerMeldung, wert)
+    if (wert !is Wert.Objekt) {
+      throw Exception("Der Typprüfer sollte diesen Fall schon überprüfen.")
+    }
+    val konvertierungsDefinition = wert.typ.definition.konvertierungen.getValue("Zeichenfolge")
+
+    val aufruf = object : AST.IAufruf {
+      override val token: Token = werfe.werfe.toUntyped()
+      override val vollerName = "als Zeichenfolge"
+    }
+
+    val zeichenfolge = durchlaufeAufruf(aufruf, konvertierungsDefinition.definition, Umgebung(), true, wert, false) as germanskript.intern.Zeichenfolge
+    throw GermanSkriptFehler.UnbehandelterFehler(werfe.werfe.toUntyped(), aufrufStapel.toString(), zeichenfolge.zeichenfolge, wert)
   }
 
   override fun durchlaufeIntern(intern: AST.Satz.Intern): Wert {
     val aufruf = aufrufStapel.top().aufruf
     return when (val objekt = aufrufStapel.top().objekt) {
-      is Wert.Objekt -> objekt.rufeMethodeAuf(aufruf,aufrufStapel, umgebung, ::durchlaufeInternenSchnittstellenAufruf)
+      is Wert.Objekt -> objekt.rufeMethodeAuf(aufruf, interpretInjection)
       else -> interneFunktionen.getValue(aufruf.vollerName!!)()
     }.also { rückgabeWert = it }
   }
@@ -666,24 +689,23 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
 
   override fun evaluiereKonvertierung(konvertierung: AST.Satz.Ausdruck.Konvertierung): Wert {
     val wert = evaluiereAusdruck(konvertierung.ausdruck)
-    if (wert is Wert.Objekt && wert.typ.definition.konvertierungen.containsKey(konvertierung.typ.name.nominativ)) {
-      val konvertierungsDefinition = wert.typ.definition.konvertierungen.getValue(konvertierung.typ.name.nominativ)
-      return durchlaufeAufruf(konvertierung, konvertierungsDefinition.definition, Umgebung(), true, wert, false)
-    }
-    return when (konvertierung.typ.typ!!) {
-      is Typ.Compound.KlassenTyp.BuildInType.Zahl -> konvertiereZuZahl(konvertierung, wert)
-      is Typ.Compound.KlassenTyp.BuildInType.Boolean -> konvertiereZuBoolean(wert)
-      is Typ.Compound.KlassenTyp.BuildInType.Zeichenfolge -> konvertiereZuZeichenfolge(wert)
-      is Typ.Compound.KlassenTyp -> if (typeOf(wert) == konvertierung.typ.typ!!) {
-        wert
-      } else {
-        val fehlerMeldung = "Ungültige Konvertierung!\n" +
-            "Die Klasse '${wert}' kann nicht nach '${konvertierung.typ.typ!!}' konvertiert werden."
-        werfeFehler(fehlerMeldung, "KonvertierungsFehler", konvertierung.token)
 
-      }
-      else -> throw Exception("Typprüfer sollte diesen Fall schon überprüfen!")
+
+    if (wert !is Wert.Objekt) {
+      throw Exception("Typprüfer sollte diesen Fall schon überprüfen!")
     }
+
+    wert.typ.definition.konvertierungen[konvertierung.typ.typ!!.name]?.also {
+      return durchlaufeAufruf(konvertierung, it.definition, Umgebung(), true, wert, false)
+    }
+
+    if (typeOf(wert) == konvertierung.typ.typ!!) {
+      return wert
+    }
+
+    val fehlerMeldung = "Ungültige Konvertierung!\n" +
+        "Die Klasse '${wert}' kann nicht nach '${konvertierung.typ.typ!!}' konvertiert werden."
+    werfeFehler(fehlerMeldung, "KonvertierungsFehler", konvertierung.token)
   }
 
   private fun werfeFehler(fehlerMeldung: String, fehlerKlassenName: String, token: Token): Nothing {
@@ -693,39 +715,6 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
         ))
 
     throw GermanSkriptFehler.UnbehandelterFehler(token, aufrufStapel.toString(), fehlerMeldung, fehlerObjekt)
-  }
-
-  private fun konvertiereZuZahl(konvertierung: AST.Satz.Ausdruck.Konvertierung, wert: Wert): germanskript.intern.Zahl {
-    return when (wert) {
-      is germanskript.intern.Zahl -> wert
-      is germanskript.intern.Zeichenfolge -> {
-        try {
-          germanskript.intern.Zahl(wert.zeichenfolge)
-        }
-        catch (parseFehler: ParseException) {
-          werfeFehler("Die Zeichenfolge '${wert.zeichenfolge}' kann nicht in eine Zahl konvertiert werden.", "KonvertierungsFehler", konvertierung.token)
-        }
-      }
-      is germanskript.intern.Boolean -> germanskript.intern.Zahl(if (wert.boolean) 1.0 else 0.0)
-      else -> throw Exception("Typ-Prüfer sollte dies schon überprüfen!")
-    }
-  }
-
-  private fun konvertiereZuZeichenfolge(wert: Wert): germanskript.intern.Zeichenfolge {
-    return when (wert) {
-      is germanskript.intern.Zeichenfolge -> wert
-      is germanskript.intern.Boolean -> germanskript.intern.Zeichenfolge(if (wert.boolean) "wahr" else "falsch")
-      else -> germanskript.intern.Zeichenfolge(wert.toString())
-    }
-  }
-
-  private fun konvertiereZuBoolean(wert: Wert): germanskript.intern.Boolean {
-    return when (wert) {
-      is germanskript.intern.Boolean -> wert
-      is germanskript.intern.Zahl -> germanskript.intern.Boolean(!wert.isZero())
-      is germanskript.intern.Zeichenfolge -> germanskript.intern.Boolean(wert.zeichenfolge.isNotEmpty())
-      else -> throw Exception("Typ-Prüfer sollte dies schon überprüfen!")
-    }
   }
   // endregion
 

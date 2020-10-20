@@ -993,12 +993,37 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
     nichtErlaubtInKonstante(konvertierung)
     val ausdruck = evaluiereAusdruck(konvertierung.ausdruck)
     val konvertierungsTyp = typisierer.bestimmeTyp(konvertierung.typ, null, null, true)!!
-    if (!typIstTyp(ausdruck, konvertierungsTyp) && !typIstTyp(konvertierungsTyp, ausdruck) &&
-        !ausdruck.kannNachTypKonvertiertWerden(konvertierungsTyp)){
-      throw GermanSkriptFehler.KonvertierungsFehler(konvertierung.typ.name.bezeichnerToken,
-          ausdruck, konvertierungsTyp)
+
+    if (!kannNachTypKonvertiertWerden(konvertierung, ausdruck, konvertierungsTyp)) {
+      throw GermanSkriptFehler.KonvertierungsFehler(konvertierung.typ.name.bezeichnerToken, ausdruck, konvertierungsTyp)
     }
     return konvertierungsTyp
+  }
+
+  private fun kannNachTypKonvertiertWerden(konvertierung: AST.Satz.Ausdruck.Konvertierung, typ: Typ, konvertierungsTyp: Typ): Boolean {
+    // Eine Konvertierung ist möglich wenn die Typen miteinander übereinstimmen,
+    // oder eine Konvertierung in eine Zeichenfolge erfolgt (diese ist immer möglich)
+    // oder eine Konvertierungsdefinition für die Konvertierung vorhanden ist.
+    // Bei einem Generic wird übeprüft ob die Elternklasse in den gegebenen Typ konvertiert werden kann.
+    if (typIstTyp(typ, konvertierungsTyp) || typIstTyp(konvertierungsTyp, typ)) {
+      return  true
+    }
+
+    return when (typ) {
+      is Typ.Generic -> typ.typParam.elternKlasse?.let {
+        (it.typ as Typ.Compound.KlassenTyp).definition.konvertierungen.containsKey(konvertierung.typ.vollständigerName)
+      } ?: false
+      is Typ.Compound.KlassenTyp -> {
+        if (konvertierungsTyp is Typ.Compound.KlassenTyp.BuildInType.Zeichenfolge) {
+          true
+        } else {
+          typ.definition.konvertierungen.containsKey(konvertierung.typ.vollständigerName)
+        }
+      }
+      // TODO: Schnittstellen sollen eventuell auch Konvertierungsdefinitionen
+      //  haben und auch in Zeichenfolgen konvertiert werden können
+      is Typ.Compound.Schnittstelle -> false
+    }
   }
 
   override fun evaluiereSelbstReferenz() = zuÜberprüfendeKlasse!!

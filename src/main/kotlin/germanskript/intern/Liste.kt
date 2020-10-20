@@ -1,9 +1,6 @@
 package germanskript.intern
 
-import germanskript.AST
-import germanskript.Interpretierer
-import germanskript.Typ
-import germanskript.Umgebung
+import germanskript.*
 
 class Liste(typ: Typ.Compound.KlassenTyp, val elemente: MutableList<Wert>): Wert.Objekt(typ) {
   operator fun plus(liste: Liste) = Liste(typ, (this.elemente + liste.elemente).toMutableList())
@@ -23,38 +20,38 @@ class Liste(typ: Typ.Compound.KlassenTyp, val elemente: MutableList<Wert>): Wert
     // vielleicht kommt hier später mal was, sieht aber nicht danach aus
   }
 
-  override fun rufeMethodeAuf(aufruf: AST.IAufruf, aufrufStapel: Interpretierer.AufrufStapel, umgebung: Umgebung<Wert>, aufrufCallback: AufrufCallback): Wert {
+  override fun rufeMethodeAuf(aufruf: AST.IAufruf, injection: InterpretInjection): Wert {
     return when (aufruf.vollerName!!) {
-      "enthalten das Element" -> enthaltenDenTyp(umgebung)
-      "füge das Element hinzu" -> fügeDenTypHinzu(umgebung)
-      "entferne an dem Index" -> entferneAnDemIndex(umgebung)
-      "sortiere mich mit dem Vergleichenden" -> sortiereMichMitDemVergleichbaren(umgebung, aufrufCallback)
-      else -> super.rufeMethodeAuf(aufruf, aufrufStapel, umgebung, aufrufCallback)
+      "enthalten das Element" -> enthaltenDenTyp(injection)
+      "füge das Element hinzu" -> fügeDenTypHinzu(injection)
+      "entferne an dem Index" -> entferneAnDemIndex(injection)
+      "sortiere mich mit dem Vergleichenden" -> sortiereMichMitDemVergleichbaren(injection)
+      else -> super.rufeMethodeAuf(aufruf, injection)
     }
   }
 
-  private fun enthaltenDenTyp(umgebung: Umgebung<Wert>): Wert {
-    val element = umgebung.leseVariable("Element")!!.wert
+  private fun enthaltenDenTyp(injection: InterpretInjection): Wert {
+    val element = injection.umgebung.leseVariable("Element")!!.wert
     return Boolean(elemente.contains(element))
   }
 
-  private fun fügeDenTypHinzu(umgebung: Umgebung<Wert>): Wert {
-    val element = umgebung.leseVariable("Element")!!.wert
+  private fun fügeDenTypHinzu(injection: InterpretInjection): Wert {
+    val element = injection.umgebung.leseVariable("Element")!!.wert
     elemente.add(element)
     return Nichts
   }
 
-  private fun entferneAnDemIndex(umgebung: Umgebung<Wert>): Wert {
-    val index = umgebung.leseVariable("Index")!!.wert as Zahl
+  private fun entferneAnDemIndex(injection: InterpretInjection): Wert {
+    val index = injection.umgebung.leseVariable("Index")!!.wert as Zahl
     elemente.removeAt(index.toInt())
     return Nichts
   }
 
-  private fun sortiereMichMitDemVergleichbaren(umgebung: Umgebung<Wert>, aufrufCallback: AufrufCallback): Wert {
+  private fun sortiereMichMitDemVergleichbaren(injection: InterpretInjection): Wert {
     val typArg = typ.typArgumente[0].name.nominativ
-    val vergleichbar = umgebung.leseVariable("Vergleichbare")!!.wert
+    val vergleichbar = injection.umgebung.leseVariable("Vergleichbare")!!.wert
     elemente.sortWith(kotlin.Comparator { a, b ->
-      (aufrufCallback(vergleichbar, "vergleiche den ${typArg}A mit dem ${typArg}B", arrayOf(a, b))
+      (injection.schnittstellenAufruf(vergleichbar, "vergleiche den ${typArg}A mit dem ${typArg}B", arrayOf(a, b))
           as Zahl).zahl.toInt()
     })
     return Nichts
