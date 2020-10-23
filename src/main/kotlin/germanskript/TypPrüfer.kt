@@ -127,7 +127,7 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
         typ.typArgumente = (erwarteterTyp as Typ.Compound).typArgumente.map { arg ->
           when (val argTyp = arg.typ) {
             is Typ.Generic -> when (argTyp.kontext) {
-              TypParamKontext.Typ -> {
+              TypParamKontext.Klasse -> {
                 if (methodenObjekt == null || methodenObjekt!!.typArgumente.size <= argTyp.index) {
                   throw GermanSkriptFehler.TypFehler.TypArgumentInferierFehler(token)
                 }
@@ -150,7 +150,7 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
     }
   }
 
-  private fun holeParamName(param: AST.Definition.Parameter, typArgumente: List<AST.TypKnoten>): AST.WortArt.Nomen {
+  fun holeParamName(param: AST.Definition.Parameter, typArgumente: List<AST.TypKnoten>): AST.WortArt.Nomen {
     return if (param.typKnoten.typ is Typ.Generic && param.typIstName) {
       param.name.tauscheHauptWortAus(typArgumente[(param.typKnoten.typ as Typ.Generic).index].name.deklination!!)
     } else {
@@ -162,7 +162,7 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
     return if (param.typKnoten.typ is Typ.Generic) {
       val generic = param.typKnoten.typ as Typ.Generic
       when (generic.kontext) {
-        TypParamKontext.Typ -> typArgumente[generic.index].typ!!
+        TypParamKontext.Klasse -> typArgumente[generic.index].typ!!
         TypParamKontext.Funktion -> letzterFunktionsAufruf!!.typArgumente[generic.index].typ!!
       }
     } else param.typKnoten.typ!!
@@ -210,7 +210,7 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
   private fun erstelleGenerischeTypArgumente(typParameter: List<AST.Definition.TypParam>): List<AST.TypKnoten> {
     return typParameter.mapIndexed { index, param ->
       val typKnoten = AST.TypKnoten(emptyList(), param.binder, emptyList())
-      typKnoten.typ = Typ.Generic(param, index, TypParamKontext.Typ)
+      typKnoten.typ = Typ.Generic(param, index, TypParamKontext.Klasse)
       typKnoten
     }
   }
@@ -359,21 +359,68 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
     ausdruckMussTypSein(zuweisung.wert, elementTyp)
   }
 
+  /**
+   * Setzt Typargumente in generische Typen ein
+   */
   private fun ersetzeGenerics(
       typKnoten: AST.TypKnoten,
       funktionsTypArgumente: List<AST.TypKnoten>?,
-      typTypArgumente: List<AST.TypKnoten>?): AST.TypKnoten {
+      klassenTypArgumente: List<AST.TypKnoten>?): AST.TypKnoten {
     return when (val typ = typKnoten.typ!!) {
       is Typ.Generic -> when (typ.kontext) {
         TypParamKontext.Funktion -> funktionsTypArgumente!![typ.index]
-        TypParamKontext.Typ -> typTypArgumente!![typ.index]
+        TypParamKontext.Klasse -> klassenTypArgumente!![typ.index]
       }
       is Typ.Compound -> {
         typKnoten.copy(typArgumente = typ.typArgumente.map {
-          ersetzeGenerics(it, funktionsTypArgumente, typTypArgumente)
+          ersetzeGenerics(it, funktionsTypArgumente, klassenTypArgumente)
         })
       }
       else -> typKnoten
+    }
+  }
+
+  /**
+   * Inferiert die Typparameter eines Typknotens basierend auf den eingesetzten Wert.
+   *
+   * @param inferierteGenerics die Generics, die bisher inferiert wurden sind.
+   * @param toInfer der Typknoten, der inferiert werden soll
+   * @param fehlerToken ein Token um ein GermanSkript-Fehler zu werfen, falls die Inferierung nicht klappt
+   * @param fromType der Typ aus dem inferiert werden soll
+   * @param inferKontext der Generic-Kontext gibt an welche Generics inferiert werden sollen
+   * @param otherKontexTypArgs die Typargumente des anderen Kontexts die nicht inferiert werden
+   *
+   * @return Der inferierte Typknoten
+   */
+  fun inferiereGenerics(
+      inferierteGenerics: MutableList<AST.TypKnoten?>,
+      toInfer: AST.TypKnoten,
+      fehlerToken: Token,
+      fromType: Typ,
+      inferKontext: TypParamKontext,
+      otherKontexTypArgs: List<AST.TypKnoten>?
+  ): AST.TypKnoten {
+    return when (val typ = toInfer.typ!!) {
+      is Typ.Generic ->
+        if (typ.kontext == inferKontext) {
+          inferierteGenerics[typ.index] = if (inferierteGenerics[typ.index] == null) {
+            fromType.inTypKnoten()
+          } else {
+            vereineTypen(fehlerToken, inferierteGenerics[typ.index]!!.typ!!, fromType).inTypKnoten()
+          }
+          inferierteGenerics[typ.index]!!
+        } else {
+          otherKontexTypArgs!![typ.index]
+        }
+      is Typ.Compound -> {
+        if (fromType !is Typ.Compound || fromType.typArgumente.size != typ.typArgumente.size) {
+          throw GermanSkriptFehler.TypFehler.TypenUnvereinbar(fehlerToken, typ, fromType)
+        }
+        toInfer.copy(typArgumente = typ.typArgumente.mapIndexed { index, arg ->
+          inferiereGenerics(inferierteGenerics, arg, fehlerToken, fromType.typArgumente[index].typ!!, inferKontext, otherKontexTypArgs)
+        })
+      }
+      else -> toInfer
     }
   }
 
@@ -475,7 +522,6 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
         funktionsSignatur = fund?.first
         methodenObjekt = fund?.second
       }
-
     }
 
     if (funktionsSignatur == null) {
@@ -497,7 +543,7 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
       }
     }
 
-    // TODO: überprüfe ob die Typargumente des Methodenobjekts mit den Generic-Constrains übereinstimmen
+    // Überprüfe ob die Typargumente des Methodenobjekts mit den Generic-Constrains übereinstimmen
     if (methodenObjekt is Typ.Compound.KlassenTyp && methodenObjekt!!.typArgumente.isNotEmpty()) {
       val implementierung = funktionsSignatur.findNodeInParents<AST.Definition.Implementierung>()!!
       for (paramIndex in implementierung.klasse.typArgumente.indices) {
@@ -527,31 +573,6 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
       }
     }
 
-    fun inferiereGenerics(typKnoten: AST.TypKnoten, token: Token, argTyp: Typ): AST.TypKnoten {
-      return when (val typ = typKnoten.typ!!) {
-        is Typ.Generic -> when (typ.kontext) {
-          TypParamKontext.Funktion -> {
-            inferierteGenerics[typ.index] = if (inferierteGenerics[typ.index] == null) {
-              argTyp.inTypKnoten()
-            } else {
-              vereineTypen(token, inferierteGenerics[typ.index]!!.typ!!, argTyp).inTypKnoten()
-            }
-            inferierteGenerics[typ.index]!!
-          }
-          TypParamKontext.Typ -> typKontext!![typ.index]
-        }
-        is Typ.Compound -> {
-          if (argTyp !is Typ.Compound || argTyp.typArgumente.size != typ.typArgumente.size) {
-            throw GermanSkriptFehler.TypFehler.TypenUnvereinbar(token, typ, argTyp)
-          }
-          typKnoten.copy(typArgumente = typ.typArgumente.mapIndexed { index, arg ->
-            inferiereGenerics(arg, token, argTyp.typArgumente[index].typ!!)
-          })
-        }
-        else -> typKnoten
-      }
-    }
-
     // stimmen die Argument Typen mit den Parameter Typen überein?
     letzterFunktionsAufruf = funktionsAufruf
     for (i in parameter.indices) {
@@ -559,7 +580,14 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
       if (genericsMüssenInferiertWerden) {
         val ausdruckTyp = evaluiereAusdruck(argAusdruck)
         val ausdruckToken = holeErstesTokenVonAusdruck(argAusdruck)
-        val paramTyp = inferiereGenerics(parameter[i].typKnoten, ausdruckToken, ausdruckTyp)
+        val paramTyp = inferiereGenerics(
+            inferierteGenerics,
+            parameter[i].typKnoten,
+            ausdruckToken,
+            ausdruckTyp,
+            TypParamKontext.Funktion,
+            typKontext
+        )
         typMussTypSein(ausdruckTyp, paramTyp.typ!!, ausdruckToken)
       } else {
         ausdruckMussTypSein(argAusdruck, ersetzeGenerics(parameter[i].typKnoten, funktionsAufruf.typArgumente, typKontext).typ!!)
@@ -866,6 +894,11 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
 
     val definition = klasse.definition
 
+    val genericsMüssenInferiertWerden = definition.typParameter.isNotEmpty()
+        && klasse.typArgumente.isEmpty()
+
+    val inferierteGenerics: MutableList<AST.TypKnoten?> = MutableList(definition.typParameter.size) {null}
+
     // die Eigenschaftszuweisungen müssen mit der Instanzzierung übereinstimmen, Außerdem müssen die Namen übereinstimmen
     var j = 0
     for (i in definition.eigenschaften.indices) {
@@ -885,14 +918,26 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
         GermanSkriptFehler.EigenschaftsFehler.UnerwarteterEigenschaftsName(zuweisung.name.bezeichner.toUntyped(), eigenschaft.name.nominativ)
       }
 
-      val erwarteterTyp = when(val typ = eigenschaft.typKnoten.typ!!) {
-        is Typ.Generic ->
-          if (typ.kontext == TypParamKontext.Typ) instanziierung.klasse.typArgumente[typ.index].typ!!
-          else typ
-        else -> typ
+      if (genericsMüssenInferiertWerden) {
+        val ausdruckTyp = evaluiereAusdruck(zuweisung.ausdruck)
+        val ausdruckToken = holeErstesTokenVonAusdruck(zuweisung.ausdruck)
+        val paramTyp = inferiereGenerics(
+            inferierteGenerics,
+            eigenschaft.typKnoten,
+            ausdruckToken,
+            ausdruckTyp,
+            TypParamKontext.Klasse,
+            null
+        )
+        typMussTypSein(ausdruckTyp, paramTyp.typ!!, ausdruckToken)
+      } else {
+        ausdruckMussTypSein(zuweisung.ausdruck,
+            ersetzeGenerics(eigenschaft.typKnoten, null, instanziierung.klasse.typArgumente).typ!!)
       }
-      // die Typen müssen übereinstimmen
-      ausdruckMussTypSein(zuweisung.ausdruck, erwarteterTyp)
+    }
+
+    if (genericsMüssenInferiertWerden) {
+      klasse.typArgumente = inferierteGenerics.map { it!! }
     }
 
     if (instanziierung.eigenschaftsZuweisungen.size > definition.eigenschaften.size) {
@@ -1070,7 +1115,7 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
     )
     val erwarteterRückgabeTyp = when(val typ = signatur.rückgabeTyp.typ!!) {
       is Typ.Generic ->
-        if (typ.kontext == TypParamKontext.Typ) schnittstelle.typArgumente[typ.index].typ!!
+        if (typ.kontext == TypParamKontext.Klasse) schnittstelle.typArgumente[typ.index].typ!!
         else typ
       else -> typ
     }

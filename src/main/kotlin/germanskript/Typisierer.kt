@@ -209,7 +209,7 @@ sealed class Typ() {
 }
 
 enum class TypParamKontext {
-  Typ,
+  Klasse,
   Funktion,
 }
 
@@ -261,12 +261,12 @@ class Typisierer(startDatei: File): PipelineKomponente(startDatei) {
   fun bestimmeTyp(
       nomen: AST.WortArt.Nomen,
       funktionsTypParams: List<AST.Definition.TypParam>?,
-      typTypParameter: List<AST.Definition.TypParam>?
+      klassenTypParameter: List<AST.Definition.TypParam>?
   ): Typ {
     val typKnoten = AST.TypKnoten(emptyList(), nomen, emptyList())
     // setze den Parent hier manuell vom Nomen
     typKnoten.setParentNode(nomen.parent!!)
-    return bestimmeTyp(typKnoten, funktionsTypParams, typTypParameter, true)!!
+    return bestimmeTyp(typKnoten, funktionsTypParams, klassenTypParameter, true)!!
   }
 
   private fun holeTypDefinition(
@@ -298,7 +298,7 @@ class Typisierer(startDatei: File): PipelineKomponente(startDatei) {
         typ = Typ.Generic(
             typParam,
             typParamIndex,
-            TypParamKontext.Typ
+            TypParamKontext.Klasse
         )
       }
     }
@@ -339,12 +339,12 @@ class Typisierer(startDatei: File): PipelineKomponente(startDatei) {
   fun bestimmeTyp(
       typKnoten: AST.TypKnoten?,
       funktionsTypParameter: List<AST.Definition.TypParam>?,
-      typTypParameter: List<AST.Definition.TypParam>?, istAliasErlaubt: Boolean): Typ? {
+      klassenTypParameter: List<AST.Definition.TypParam>?, istAliasErlaubt: Boolean): Typ? {
     if (typKnoten == null) {
       return null
     }
-    typKnoten.typArgumente.forEach {typKnoten -> bestimmeTyp(typKnoten, funktionsTypParameter, typTypParameter, true)}
-    val singularTyp = holeTypDefinition(typKnoten, funktionsTypParameter, typTypParameter, istAliasErlaubt)
+    typKnoten.typArgumente.forEach {typKnoten -> bestimmeTyp(typKnoten, funktionsTypParameter, klassenTypParameter, true)}
+    val singularTyp = holeTypDefinition(typKnoten, funktionsTypParameter, klassenTypParameter, istAliasErlaubt)
     typKnoten.typ = if (typKnoten.name.numerus == Numerus.SINGULAR) {
       singularTyp
     } else {
@@ -363,11 +363,11 @@ class Typisierer(startDatei: File): PipelineKomponente(startDatei) {
     return typKnoten.typ
    }
 
-  private fun typisiereFunktionsSignatur(signatur: AST.Definition.FunktionsSignatur, typTypParameter: List<AST.Definition.TypParam>?) {
+  private fun typisiereFunktionsSignatur(signatur: AST.Definition.FunktionsSignatur, klassenTypParameter: List<AST.Definition.TypParam>?) {
     // kombiniere die Typparameter
-    bestimmeTyp(signatur.rückgabeTyp, signatur.typParameter, typTypParameter, true)
+    bestimmeTyp(signatur.rückgabeTyp, signatur.typParameter, klassenTypParameter, true)
     for (parameter in signatur.parameter) {
-      bestimmeTyp(parameter.typKnoten, signatur.typParameter, typTypParameter, true)
+      bestimmeTyp(parameter.typKnoten, signatur.typParameter, klassenTypParameter, true)
     }
   }
 
@@ -407,18 +407,18 @@ class Typisierer(startDatei: File): PipelineKomponente(startDatei) {
 
   fun typisiereImplementierungsBereich(
       implBereich: AST.Definition.ImplementierungsBereich ,
-      typTypParameter: List<AST.Definition.TypParam>?) {
+      klassenTypParameter: List<AST.Definition.TypParam>?) {
 
     implBereich.methoden.forEach { methode ->
-      typisiereFunktionsSignatur(methode.signatur, typTypParameter)
+      typisiereFunktionsSignatur(methode.signatur, klassenTypParameter)
     }
 
     implBereich.konvertierungen.forEach { konvertierung ->
-      bestimmeTyp(konvertierung.typ, null, typTypParameter, true)
+      bestimmeTyp(konvertierung.typ, null, klassenTypParameter, true)
     }
 
     implBereich.berechneteEigenschaften.forEach { eigenschaft ->
-      bestimmeTyp(eigenschaft.rückgabeTyp, null, typTypParameter, true)
+      bestimmeTyp(eigenschaft.rückgabeTyp, null, klassenTypParameter, true)
     }
   }
 
@@ -431,7 +431,7 @@ class Typisierer(startDatei: File): PipelineKomponente(startDatei) {
     fun ersetzeGeneric(typ: Typ): Typ {
       return when (typ) {
         is Typ.Generic -> when (typ.kontext) {
-          TypParamKontext.Typ -> schnittstelle.typArgumente[typ.index].typ!!
+          TypParamKontext.Klasse -> schnittstelle.typArgumente[typ.index].typ!!
           TypParamKontext.Funktion -> typ
         }
         else -> typ
