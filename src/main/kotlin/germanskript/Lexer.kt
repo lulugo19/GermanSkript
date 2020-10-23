@@ -500,7 +500,7 @@ class Lexer(startDatei: File): PipelineKomponente(startDatei) {
                     inMehrZeilenKommentar = true
                     continue
                 }
-                if (zeichen == ' ') {
+                if (zeichen.isWhitespace()) {
                     next()
                     kannWortLesen = true
                     continue
