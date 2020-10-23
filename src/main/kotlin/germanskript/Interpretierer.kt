@@ -404,7 +404,8 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
         aufrufStapel.pop()
       }
       for (index in eigenschaftsZuweisungen.indices) {
-        eigenschaften[eigenschaftsZuweisungen[index].name.nominativ] = evaluierteAusdrücke[index]
+        val eigenschaftsName = typPrüfer.holeParamName(definition.eigenschaften[index], klassenTyp.typArgumente)
+        eigenschaften[eigenschaftsName.nominativ] = evaluierteAusdrücke[index]
       }
       durchlaufeAufruf(instanziierung, definition.konstruktor, Umgebung(), true, objekt, false)
     }
