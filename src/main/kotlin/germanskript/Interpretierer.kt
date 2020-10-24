@@ -9,7 +9,7 @@ import kotlin.math.*
 import kotlin.random.Random
 
 typealias SchnittstellenAufruf = (Wert, String, argumente: Array<Wert>) -> Wert?
-typealias WerfeFehler = (String, String, Token) -> Nothing
+typealias WerfeFehler = (String, String, Token) -> Wert
 
 class InterpretInjection(
     val aufrufStapel: Interpretierer.AufrufStapel,
@@ -24,6 +24,7 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
   val typPrüfer = entsüßer.typPrüfer
 
   override val nichts = germanskript.intern.Nichts
+  override val niemals = germanskript.intern.Niemals
 
   override val definierer = typPrüfer.definierer
   val ast: AST.Programm = entsüßer.ast
@@ -31,6 +32,9 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
   private val flags = EnumSet.noneOf(Flag::class.java)
   private val aufrufStapel = AufrufStapel()
   private var rückgabeWert: Wert = germanskript.intern.Nichts
+
+  private var geworfenerFehler: Wert.Objekt? = null
+  private var geworfenerFehlerToken: Token? = null
 
   override val umgebung: Umgebung<Wert> get() = aufrufStapel.top().umgebung
 
@@ -45,6 +49,9 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
       aufrufStapel.push(ast, Umgebung())
       interpretInjection = InterpretInjection(aufrufStapel, ::durchlaufeInternenSchnittstellenAufruf, ::werfeFehler)
       durchlaufeBereich(ast.programm, true)
+      if (flags.contains(Flag.FEHLER_GEWORFEN)) {
+        werfeLaufZeitFehler()
+      }
     } catch (fehler: Throwable) {
       when (fehler) {
         is StackOverflowError -> throw GermanSkriptFehler.LaufzeitFehler(
@@ -59,10 +66,30 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
     }
   }
 
+  private fun werfeLaufZeitFehler() {
+    flags.remove(Flag.FEHLER_GEWORFEN)
+    val konvertierungsDefinition = geworfenerFehler!!.typ.definition.konvertierungen.getValue("Zeichenfolge")
+
+    val aufruf = object : AST.IAufruf {
+      override val token: Token = konvertierungsDefinition.typ.name.bezeichnerToken
+      override val vollerName = "als Zeichenfolge"
+    }
+
+    val zeichenfolge = durchlaufeAufruf(
+        aufruf,
+        konvertierungsDefinition.definition,
+        Umgebung(),
+        true, geworfenerFehler!!, false
+    ) as germanskript.intern.Zeichenfolge
+
+    throw GermanSkriptFehler.UnbehandelterFehler(geworfenerFehlerToken!!, aufrufStapel.toString(), zeichenfolge.zeichenfolge, geworfenerFehler!!)
+  }
+
   private enum class Flag {
     SCHLEIFE_ABBRECHEN,
     SCHLEIFE_FORTFAHREN,
     ZURÜCK,
+    FEHLER_GEWORFEN,
   }
 
   class AufrufStapelElement(val aufruf: AST.IAufruf, val objekt: Wert?, val umgebung: Umgebung<Wert>)
@@ -116,15 +143,19 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
     }
   }
 
-  override fun sollSätzeAbbrechen(): Boolean {
+  override fun sollteAbbrechen(): Boolean {
     return flags.contains(Flag.SCHLEIFE_FORTFAHREN) ||
         flags.contains(Flag.SCHLEIFE_ABBRECHEN) ||
         flags.contains(Flag.ZURÜCK)
   }
 
+  override fun sollteStackAufrollen(): Boolean {
+    return flags.contains(Flag.FEHLER_GEWORFEN)
+  }
+
   // region Sätze
   private fun durchlaufeBedingung(bedingung: AST.Satz.BedingungsTerm): Wert? {
-      return if ((evaluiereAusdruck(bedingung.bedingung) as germanskript.intern.Boolean).boolean) {
+      return if (!sollteStackAufrollen() && (evaluiereAusdruck(bedingung.bedingung) as germanskript.intern.Boolean).boolean) {
         durchlaufeBereich(bedingung.bereich, true)
       } else {
         null
@@ -292,48 +323,41 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
   }
 
   override fun durchlaufeVersucheFange(versucheFange: AST.Satz.VersucheFange) {
-    try {
       durchlaufeBereich(versucheFange.versuche, true)
+
+      if (flags.contains(Flag.FEHLER_GEWORFEN)) {
+        val fehlerObjekt = geworfenerFehler!!
+        val fehlerTyp = typeOf(fehlerObjekt)
+        val fange = versucheFange.fange.find { fange ->
+          typPrüfer.typIstTyp(fehlerTyp, fange.param.typKnoten.typ!!)
+        }
+        if (fange != null) {
+          flags.remove(Flag.FEHLER_GEWORFEN)
+          umgebung.pushBereich()
+          umgebung.schreibeVariable(fange.param.name, fehlerObjekt, true)
+          durchlaufeBereich(fange.bereich, false)
+          umgebung.popBereich()
+        }
+      }
       if (versucheFange.schlussendlich != null) {
+        val fehlerGeworfen = flags.contains(Flag.FEHLER_GEWORFEN)
+        flags.remove(Flag.FEHLER_GEWORFEN)
         durchlaufeBereich(versucheFange.schlussendlich, true)
-      }
-    } catch (fehler: GermanSkriptFehler.UnbehandelterFehler) {
-      val fehlerObjekt = fehler.fehlerObjekt
-      val fehlerTyp = typeOf(fehler.fehlerObjekt)
-      val fange = versucheFange.fange.find { fange ->
-        typPrüfer.typIstTyp(fehlerTyp, fange.param.typKnoten.typ!!)
-      }
-      if (fange != null) {
-        umgebung.pushBereich()
-        umgebung.schreibeVariable(fange.param.name, fehlerObjekt, true)
-        durchlaufeBereich(fange.bereich, false)
-        umgebung.popBereich()
-        if (versucheFange.schlussendlich != null) {
-          durchlaufeBereich(versucheFange.schlussendlich, true)
+        if (fehlerGeworfen) {
+          flags.add(Flag.FEHLER_GEWORFEN)
         }
-      } else {
-        if (versucheFange.schlussendlich != null) {
-          durchlaufeBereich(versucheFange.schlussendlich, true)
-        }
-        throw fehler
       }
-    }
   }
 
-  override fun durchlaufeWerfe(werfe: AST.Satz.Werfe): Nothing {
+  override fun durchlaufeWerfe(werfe: AST.Satz.Werfe): Wert {
     val wert = evaluiereAusdruck(werfe.ausdruck)
     if (wert !is Wert.Objekt) {
       throw Exception("Der Typprüfer sollte diesen Fall schon überprüfen.")
     }
-    val konvertierungsDefinition = wert.typ.definition.konvertierungen.getValue("Zeichenfolge")
-
-    val aufruf = object : AST.IAufruf {
-      override val token: Token = werfe.werfe.toUntyped()
-      override val vollerName = "als Zeichenfolge"
-    }
-
-    val zeichenfolge = durchlaufeAufruf(aufruf, konvertierungsDefinition.definition, Umgebung(), true, wert, false) as germanskript.intern.Zeichenfolge
-    throw GermanSkriptFehler.UnbehandelterFehler(werfe.werfe.toUntyped(), aufrufStapel.toString(), zeichenfolge.zeichenfolge, wert)
+    geworfenerFehlerToken = werfe.werfe.toUntyped()
+    geworfenerFehler = wert
+    flags.add(Flag.FEHLER_GEWORFEN)
+    return germanskript.intern.Niemals
   }
 
   override fun durchlaufeIntern(intern: AST.Satz.Intern): Wert {
@@ -382,8 +406,10 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
   override fun evaluiereObjektInstanziierung(instanziierung: AST.Satz.Ausdruck.ObjektInstanziierung): Wert {
     val eigenschaften = hashMapOf<String, Wert>()
     val klassenTyp = (instanziierung.klasse.typ!! as Typ.Compound.KlassenTyp)
-    val objekt = when(klassenTyp.name) {
+    // TODO: Wie löse ich das Problem, dass hier interne Objekte instanziiert werden können?
+    val objekt = when(instanziierung.klasse.name.nominativ) {
       "Datei" -> germanskript.intern.Datei(klassenTyp, eigenschaften)
+      "HashMap" -> germanskript.intern.HashMap(klassenTyp, eigenschaften)
       else -> Wert.Objekt.SkriptObjekt(klassenTyp, eigenschaften)
     }
 
@@ -456,9 +482,21 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
 
     val rechts = evaluiereAusdruck(ausdruck.rechts)
 
-    // Referenzvergleich von Klassen
     if (operator == Operator.GLEICH && links is Wert.Objekt && rechts is Wert.Objekt) {
-      return germanskript.intern.Boolean(links == rechts)
+      // TODO: syntaktischer Zucker der zur Laufzeit aufgelöst wird ist schlecht für die Performance
+      val aufrufUmgebung = Umgebung<Wert>()
+      aufrufUmgebung.pushBereich()
+      aufrufUmgebung.schreibeVariable("Objekt", rechts)
+      return durchlaufeAufruf(
+        object : AST.IAufruf {
+          override val token = ausdruck.operator.toUntyped()
+          override val vollerName = "gleicht dem Objekt"
+        },
+        links.typ.definition.methoden["gleicht dem Objekt"]!!.körper,
+        aufrufUmgebung, false,
+        links,
+        false
+      )
     }
     return when (links) {
       is germanskript.intern.Zeichenfolge -> zeichenFolgenOperation(operator, links, rechts as germanskript.intern.Zeichenfolge)
@@ -476,7 +514,7 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
   }
 
   companion object {
-  val preloadedKlassenDefinitionen = arrayOf("Fehler", "KonvertierungsFehler")
+  val preloadedKlassenDefinitionen = arrayOf("Fehler", "KonvertierungsFehler", "SchlüsselNichtGefundenFehler")
 
   fun zeichenFolgenOperation(
       operator: Operator,
@@ -706,16 +744,17 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
 
     val fehlerMeldung = "Ungültige Konvertierung!\n" +
         "Die Klasse '${wert}' kann nicht nach '${konvertierung.typ.typ!!}' konvertiert werden."
-    werfeFehler(fehlerMeldung, "KonvertierungsFehler", konvertierung.token)
+    return werfeFehler(fehlerMeldung, "KonvertierungsFehler", konvertierung.token)
   }
 
-  private fun werfeFehler(fehlerMeldung: String, fehlerKlassenName: String, token: Token): Nothing {
-    val fehlerObjekt = Wert.Objekt.SkriptObjekt(Typ.Compound.KlassenTyp.Klasse(klassenDefinitionen.getValue(fehlerKlassenName), emptyList()),
+  private fun werfeFehler(fehlerMeldung: String, fehlerKlassenName: String, token: Token): Wert {
+    geworfenerFehler = Wert.Objekt.SkriptObjekt(Typ.Compound.KlassenTyp.Klasse(klassenDefinitionen.getValue(fehlerKlassenName), emptyList()),
         mutableMapOf(
             "FehlerMeldung" to germanskript.intern.Zeichenfolge(fehlerMeldung)
         ))
-
-    throw GermanSkriptFehler.UnbehandelterFehler(token, aufrufStapel.toString(), fehlerMeldung, fehlerObjekt)
+    geworfenerFehlerToken = token
+    flags.add(Flag.FEHLER_GEWORFEN)
+    return germanskript.intern.Niemals
   }
   // endregion
 

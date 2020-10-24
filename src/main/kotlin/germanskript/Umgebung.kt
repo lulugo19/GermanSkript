@@ -46,6 +46,13 @@ class Umgebung<T>() {
     }
   }
 
+  fun schreibeVariable(varName: String, wert: T) {
+    bereiche.peek()!!.variablen[varName] = Variable(
+        AST.WortArt.Nomen(null, TypedToken.imaginäresToken(
+            TokenTyp.BEZEICHNER_GROSS(arrayOf(varName), "", null), varName)),
+        wert)
+  }
+
   fun pushBereich(methodenBlockObjekt: T? = null) {
     bereiche.push(Bereich(methodenBlockObjekt))
   }

@@ -277,11 +277,11 @@ class Typisierer(startDatei: File): PipelineKomponente(startDatei) {
   ): Typ {
     val typArgumente = typKnoten.typArgumente
     val typName = typKnoten.name.hauptWort(Kasus.NOMINATIV, Numerus.SINGULAR)
-    val typNameNominativ = typKnoten.name.ganzesWort(Kasus.NOMINATIV, Numerus.SINGULAR, false)
 
     var typ: Typ? = null
     if (funktionsTypParams != null ) {
-      val funktionTypParamIndex = funktionsTypParams.indexOfFirst { param -> param.binder.nominativ == typNameNominativ }
+      val funktionTypParamIndex = funktionsTypParams.indexOfFirst { param ->
+        param.binder.nominativ == typKnoten.name.ganzesWort(Kasus.NOMINATIV, Numerus.SINGULAR, false, param.binder.teilWörterAnzahl) }
       if (funktionTypParamIndex != -1) {
         val typParam = funktionsTypParams[funktionTypParamIndex]
         typ = Typ.Generic(
@@ -292,7 +292,9 @@ class Typisierer(startDatei: File): PipelineKomponente(startDatei) {
       }
     }
     if (typ == null && typTypParams != null) {
-      val typParamIndex = typTypParams.indexOfFirst { param -> param.binder.nominativ == typNameNominativ }
+      val typParamIndex = typTypParams.indexOfFirst { param ->
+        param.binder.nominativ == typKnoten.name.ganzesWort(Kasus.NOMINATIV, Numerus.SINGULAR, false, param.binder.teilWörterAnzahl)
+      }
       if (typParamIndex != -1) {
         val typParam = typTypParams[typParamIndex]
         typ = Typ.Generic(

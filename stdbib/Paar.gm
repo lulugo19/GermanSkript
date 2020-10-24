@@ -1,0 +1,13 @@
+Deklination Neutrum Singular(Paar, Paars, Paar, Paar) Plural(Paare)
+
+Nomen<PrimärTyp, SekundärTyp> Paar mit
+    dem PrimärTyp ersterWert,
+    dem SekundärTyp zweiterWert:.
+
+
+Deklination Neutrum Singular(Triple, Triples, Triple, Triple) Plural(Triple)
+
+Nomen<PrimärTyp, SekundärTyp, TernärTyp> Triple mit
+    dem PrimärTyp ersterWert,
+    dem SekundärTyp zweiterWert,
+    dem TernärTyp dritterWert:.

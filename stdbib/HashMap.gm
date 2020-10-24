@@ -1,0 +1,23 @@
+Deklination Femininum Singular(Map) Plural(Maps)
+Deklination Maskulinum Singular(Wert, Werts, Wert, Wert) Plural(Werte)
+Deklination Maskulinum Singular(Schlüssel, Schlüssels, Schlüssel, Schlüssel) Plural(Schlüssel)
+Deklination Femininum Singular(Größe) Plural(Größen)
+
+Nomen<Wert, Schlüssel> HashMap:
+    jene Größe ist 0
+.
+
+Implementiere<Wert, Schlüssel> die HashMap<Wert, Schlüssel>:
+
+    Verb enthält den Schlüssel: intern.
+
+    Verb entferne den Schlüssel: intern.
+
+    Verb füge den Schlüssel mit dem Wert hinzu: intern.
+
+    Verb hole (den Wert) mit dem Schlüssel: intern.
+
+    Verb hole (den Wert) mit dem Schlüssel, dem StandardWert: intern.
+
+    Verb lösche alles: intern.
+.

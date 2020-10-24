@@ -7,6 +7,7 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
   val typisierer = Typisierer(startDatei)
   override val definierer = typisierer.definierer
   override val nichts = Typ.Compound.KlassenTyp.BuildInType.Nichts
+  override val niemals = Typ.Compound.KlassenTyp.BuildInType.Niemals
   override var umgebung = Umgebung<Typ>()
   val logger = SimpleLogger()
   val ast: AST.Programm get() = typisierer.ast
@@ -193,7 +194,8 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
   }
 
   // breche niemals Sätze ab
-  override fun sollSätzeAbbrechen(): Boolean = false
+  override fun sollteAbbrechen(): Boolean = false
+  override fun sollteStackAufrollen(): Boolean = false
 
   private fun prüfeFunktion(funktion: AST.Definition.Funktion, funktionsUmgebung: Umgebung<Typ>) {
     funktionsUmgebung.pushBereich()
@@ -228,6 +230,14 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
       }
       val elternKlasse = klasse.elternKlasse.klasse.typ as Typ.Compound.KlassenTyp
       prüfeKlasse(elternKlasse.definition)
+
+      // Überprüfe Elternklassen-Konstruktor
+      umgebung.pushBereich()
+      for (eigenschaft in klasse.eigenschaften) {
+        umgebung.schreibeVariable(eigenschaft.name, eigenschaft.typKnoten.typ!!, false)
+      }
+      evaluiereObjektInstanziierung(klasse.elternKlasse)
+      umgebung.popBereich()
     }
     zuÜberprüfendeKlasse = typAusKlassenDefinition(klasse, erstelleGenerischeTypArgumente(klasse.typParameter))
     klassenTypParams = klasse.typParameter

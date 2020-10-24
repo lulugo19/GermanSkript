@@ -113,7 +113,7 @@ class GermanSkriptTest {
   @Test
   @DisplayName("Solange-Schleife")
   fun solangeSchleife() {
-    val source = """
+    val quellCode = """
       eine Zahl ist -1
       solange wahr:
         eine Zahl ist die Zahl plus 1
@@ -123,7 +123,7 @@ class GermanSkriptTest {
       .
     """.trimIndent()
 
-    val expectedOutput = """
+    val erwarteteAusgabe = """
       0
       2
       4
@@ -133,7 +133,7 @@ class GermanSkriptTest {
       
     """.trimIndent()
 
-    testeGermanSkriptCode(source, expectedOutput)
+    testeGermanSkriptCode(quellCode, erwarteteAusgabe)
   }
 
   @Test
@@ -1098,7 +1098,6 @@ class GermanSkriptTest {
       Die Fakultät von einer negativen Zahl ist undefiniert.
       
     """.trimIndent()
-
     testeGermanSkriptCode(quellCode, erwarteteAusgabe)
   }
 
@@ -1190,8 +1189,7 @@ class GermanSkriptTest {
       Test: teste die Zeichenfolge "Hallo Welt!"!
     """.trimIndent()
 
-    führeGermanSkriptCodeAus(quellCode)
-    //testeGermanSkriptCode(quellCode, "Hallo Welt!")
+    testeGermanSkriptCode(quellCode, "Hallo Welt!")
   }
 
   @Test
@@ -1835,6 +1833,86 @@ class GermanSkriptTest {
       
       der Test2 ist der Test
       schreibe die Zeile (der Test: gleicht dem Objekt Test2!) als Zeichenfolge
+    """.trimIndent()
+
+    führeGermanSkriptCodeAus(quellCode)
+  }
+
+  @Test
+  @DisplayName("Paare und Triple")
+  fun paareUndTriple() {
+    val quellCode = """
+      das Paar ist ein Paar mit dem erstenWert 3, dem zweitenWert "Hallo"
+      die Zahl ist der ersteWert des Paars + 4
+      schreibe die Zahl
+      
+      das Triple ist ein Triple mit 
+        dem Wert 3, 
+        dem Wert "Hallo",
+        dem Wert wahr
+        
+      wenn der dritteWert des Triples gleich wahr ist und der ersteWert des Triples größer 2 ist:
+        schreibe die Zeile (der zweiteWert des Triples)
+      .
+    """.trimIndent()
+
+    val erwarteteAusgabe = """
+      7
+      Hallo
+      
+    """.trimIndent()
+
+    testeGermanSkriptCode(quellCode, erwarteteAusgabe)
+  }
+
+  @Test
+  @DisplayName("Verschachtelte Klassen-Generics Inference")
+  fun verschachtelteKlassenGenericsInference() {
+    val quellCode = """
+      ein Paar ist ein Paar mit
+        dem Wert (ein Triple mit dem Wert 1, dem Wert wahr, dem Wert "Test"),
+        dem Wert (ein Paar mit 
+          dem Wert (ein Paar mit dem Wert 1, dem Wert 2), 
+          dem Wert 3
+        )
+        
+      schreibe die Zeile (der dritteWert des erstenWerts des Paars)
+      schreibe die Zahl (der zweiteWert des erstenWerts des zweitenWerts des Paars)
+    """.trimIndent()
+
+    val erwarteteAusgabe = """
+      Test
+      2
+      
+    """.trimIndent()
+
+    testeGermanSkriptCode(quellCode, erwarteteAusgabe)
+  }
+
+  @Test
+  @DisplayName("HashMap")
+  fun hashMap() {
+    val quellCode = """
+      die HashMap ist eine HashMap<Zeichenfolge, Zeichenfolge>
+      HashMap:
+        füge den Schlüssel "Deutsch" mit dem Wert "Hallo" hinzu
+        füge den Schlüssel "Englisch" mit dem Wert "Hello" hinzu
+        füge den Schlüssel "Französisch" mit dem Wert "Salut" hinzu
+        füge den Schlüssel "Spanisch" mit dem Wert "Ola" hinzu
+        
+        schreibe die Zeile (hole den Wert mit dem Schlüssel "Deutsch")
+        schreibe die Zeile (hole den Wert mit dem Schlüssel "Englisch")
+        schreibe die Zeile (hole den Wert mit dem Schlüssel "Französisch")
+        schreibe die Zeile (hole den Wert mit dem Schlüssel "Spanisch")
+        
+        versuche:
+          schreibe die Zeile (hole den Wert mit dem Schlüssel "Türkisch")
+        .
+        fange den Fehler:
+          schreibe die Zeile (der Fehler als Zeichenfolge)
+        .
+        schreibe die Zeile (hole den Wert mit dem Schlüssel "Türkisch", dem StandardWert "N/A")
+      !
     """.trimIndent()
 
     führeGermanSkriptCodeAus(quellCode)

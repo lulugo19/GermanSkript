@@ -18,6 +18,7 @@ class KonstantenFalter(startDatei: File): ProgrammDurchlaufer<Wert?>(startDatei)
     get() = typPrüfer.definierer
 
   override val nichts: Wert? = null
+  override val niemals: Wert? = null
 
   override var umgebung = Umgebung<Wert?>()
 
@@ -66,7 +67,8 @@ class KonstantenFalter(startDatei: File): ProgrammDurchlaufer<Wert?>(startDatei)
     // hier muss nichts gemacht werden
   }
 
-  override fun sollSätzeAbbrechen(): Boolean = false
+  override fun sollteAbbrechen(): Boolean = false
+  override fun sollteStackAufrollen(): Boolean = false
 
   override fun durchlaufeFunktionsAufruf(funktionsAufruf: AST.Satz.Ausdruck.FunktionsAufruf, istAusdruck: Boolean): Wert? {
     funktionsAufruf.argumente.forEach {arg -> arg.ausdruck = falteKonstante(arg.ausdruck)}

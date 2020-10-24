@@ -2,6 +2,7 @@ package germanskript.intern
 
 import germanskript.*
 import java.text.ParseException
+import kotlin.Boolean
 
 data class Zeichenfolge(val zeichenfolge: String): Wert.Objekt(Typ.Compound.KlassenTyp.BuildInType.Zeichenfolge), Comparable<Zeichenfolge> {
 
@@ -19,6 +20,13 @@ data class Zeichenfolge(val zeichenfolge: String): Wert.Objekt(Typ.Compound.Klas
 
   override fun toString(): String = zeichenfolge
 
+  override fun hashCode(): Int = zeichenfolge.hashCode()
+
+  override fun equals(other: Any?): Boolean {
+    if (other !is Zeichenfolge) return false
+    return zeichenfolge == other.zeichenfolge
+  }
+
   operator fun plus(zeichenfolge: Zeichenfolge) = this.zeichenfolge + zeichenfolge.zeichenfolge
   override fun compareTo(other: Zeichenfolge): Int = this.zeichenfolge.compareTo(other.zeichenfolge)
 
@@ -30,7 +38,7 @@ data class Zeichenfolge(val zeichenfolge: String): Wert.Objekt(Typ.Compound.Klas
     }
   }
 
-  private fun konvertiereInZahl(aufruf: AST.IAufruf, injection: InterpretInjection): Zahl {
+  private fun konvertiereInZahl(aufruf: AST.IAufruf, injection: InterpretInjection): Wert {
     return try {
       Zahl(zeichenfolge)
     }

@@ -105,9 +105,13 @@ class Entsüßer(startDatei: File): PipelineKomponente(startDatei) {
   }
 
   private fun erstelleReichweite(reichweite: AST.Satz.Reichweite): AST.Satz.Ausdruck.ObjektInstanziierung {
-    val reichweitenKlasse = AST.TypKnoten(emptyList(), AST.WortArt.Nomen(null,
-        TypedToken.imaginäresToken(TokenTyp.BEZEICHNER_GROSS(arrayOf("Reich", "Weite"), "", null), "ReichWeite")
-    ), emptyList())
+    val reichWeitenNomen = AST.WortArt.Nomen(null,
+        TypedToken.imaginäresToken(TokenTyp.BEZEICHNER_GROSS(arrayOf("Reich", "Weite"), "", null), "ReichWeite"))
+
+    reichWeitenNomen.numera = EnumSet.of(Numerus.SINGULAR)
+    reichWeitenNomen.deklination = Deklination(Genus.FEMININUM, Array(4) {"ReichWeite"}, Array(4) {"ReichWeite"})
+
+    val reichweitenKlasse = AST.TypKnoten(emptyList(), reichWeitenNomen, emptyList())
     reichweitenKlasse.typ = Typisierer.reichWeitenTyp
 
     val startNomen = AST.WortArt.Nomen(TypedToken.imaginäresToken(TokenTyp.VORNOMEN.ARTIKEL.BESTIMMT, "dem"),

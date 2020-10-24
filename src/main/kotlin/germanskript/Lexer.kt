@@ -3,6 +3,7 @@ package germanskript
 import germanskript.intern.Wert
 import germanskript.util.Peekable
 import java.io.File
+import java.lang.Integer.max
 import java.util.*
 
 enum class Assoziativität {
@@ -216,12 +217,13 @@ sealed class TokenTyp(val anzeigeName: String) {
         val istUnsichtbarerBezeichner get() = teilWörter[0][0] == '_' || (istSymbol && symbol[0] == '_')
         val hauptWort: String? get() = if (teilWörter.isNotEmpty()) teilWörter[teilWörter.size-1].removePrefix("_") else null
 
-        fun ersetzeHauptWort(wort: String, mitSymbol: Boolean): String {
+        fun ersetzeHauptWort(wort: String, mitSymbol: Boolean, maxAnzahlTeilWörter: Int = Int.MAX_VALUE): String {
             return (if (istUnsichtbarerBezeichner) "_" else "") +
             if (istSymbol) {
                 return symbol
             } else {
-                teilWörter.dropLast(1).joinToString() + wort + (if (mitSymbol) symbol else "")
+                val dropAnzahl = max(0, teilWörter.size - maxAnzahlTeilWörter)
+                teilWörter.drop(dropAnzahl).dropLast(1).joinToString() + wort + (if (mitSymbol) symbol else "")
             }
         }
     }

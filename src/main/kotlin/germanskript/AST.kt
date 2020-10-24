@@ -64,6 +64,7 @@ sealed class AST {
     abstract var fälle: Array<EnumSet<Kasus>>
     abstract var vornomen: TypedToken<TokenTyp.VORNOMEN>?
     abstract val hauptWort: String
+    abstract val teilWörterAnzahl: Int
 
     val numerus: Numerus get() = numera.first()
     val geprüft get() = numera.size != 0
@@ -76,7 +77,7 @@ sealed class AST {
           TokenTyp.VORNOMEN.ARTIKEL.BESTIMMT || vornomen!!.typ == TokenTyp.VORNOMEN.DEMONSTRATIV_PRONOMEN.DIESE
 
     open fun hauptWort(kasus: Kasus, numerus: Numerus): String = deklination!!.holeForm(kasus, numerus)
-    abstract fun ganzesWort(kasus: Kasus, numerus: Numerus, mitErweiterung: Boolean): String
+    abstract fun ganzesWort(kasus: Kasus, numerus: Numerus, mitErweiterung: Boolean, maxAnzahlTeilWörter: Int = Int.MAX_VALUE): String
 
     data class Nomen(
         override var vornomen: TypedToken<TokenTyp.VORNOMEN>?,
@@ -86,6 +87,7 @@ sealed class AST {
       override var deklination: Deklination? = null
       override var numera: EnumSet<Numerus> = EnumSet.noneOf(Numerus::class.java)
       override var fälle: Array<EnumSet<Kasus>> = arrayOf(EnumSet.noneOf(Kasus::class.java), EnumSet.noneOf(Kasus::class.java))
+      override val teilWörterAnzahl = bezeichner.typ.teilWörter.size
 
       private var _adjektiv: Adjektiv? = null
       var adjektiv: Adjektiv?
@@ -108,12 +110,12 @@ sealed class AST {
 
       override val hauptWort = if (istSymbol) bezeichner.typ.symbol else bezeichner.typ.hauptWort!!
 
-      override fun ganzesWort(kasus: Kasus, numerus: Numerus, mitErweiterung: Boolean): String {
+      override fun ganzesWort(kasus: Kasus, numerus: Numerus, mitErweiterung: Boolean, maxAnzahlTeilWörter: Int): String {
         if (istSymbol) {
           return (adjektiv?.ganzesWort(kasus, numerus, true) ?: "") + bezeichnerToken.wert
         }
         val adjektiv = if (mitErweiterung) (adjektiv?.ganzesWort(kasus, numerus, true) ?: "") else ""
-        return adjektiv + bezeichner.typ.ersetzeHauptWort(deklination!!.holeForm(kasus, numerus), mitErweiterung)
+        return adjektiv + bezeichner.typ.ersetzeHauptWort(deklination!!.holeForm(kasus, numerus), mitErweiterung, maxAnzahlTeilWörter)
       }
 
       override fun hauptWort(kasus: Kasus, numerus: Numerus): String {
@@ -142,10 +144,12 @@ sealed class AST {
       override var deklination: Deklination? = null
       override var fälle: Array<EnumSet<Kasus>> = arrayOf(EnumSet.noneOf(Kasus::class.java), EnumSet.noneOf(Kasus::class.java))
       override val bezeichnerToken = bezeichner.toUntyped()
+      override val teilWörterAnzahl = 1
       var normalisierung: String = ""
 
       override val hauptWort = bezeichner.wert.capitalize()
-      override fun ganzesWort(kasus: Kasus, numerus: Numerus, mitErweiterung: Boolean): String = hauptWort(kasus, numerus)
+      override fun ganzesWort(kasus: Kasus, numerus: Numerus, mitErweiterung: Boolean, maxAnzahlTeilWörter: Int): String
+          = hauptWort(kasus, numerus)
     }
   }
 

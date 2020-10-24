@@ -7,6 +7,7 @@ abstract  class ProgrammDurchlaufer<T>(startDatei: File): PipelineKomponente(sta
   abstract val definierer: Definierer
 
   protected abstract val nichts: T
+  protected abstract val niemals: T
   protected abstract val umgebung: Umgebung<T>
   protected var inSuperBlock = false
     private set
@@ -19,7 +20,10 @@ abstract  class ProgrammDurchlaufer<T>(startDatei: File): PipelineKomponente(sta
     starteBereich(bereich)
     var rückgabe = nichts
     for (satz in bereich.sätze) {
-      if (sollSätzeAbbrechen()) {
+      if (sollteStackAufrollen()) {
+        return niemals
+      }
+      if (sollteAbbrechen()) {
         return nichts
       }
       @Suppress("IMPLICIT_CAST_TO_ANY")
@@ -95,7 +99,8 @@ abstract  class ProgrammDurchlaufer<T>(startDatei: File): PipelineKomponente(sta
   }
 
   protected abstract fun bevorDurchlaufeMethodenBereich(methodenBereich: AST.Satz.Ausdruck.MethodenBereich, blockObjekt: T?)
-  protected abstract fun sollSätzeAbbrechen(): Boolean
+  protected abstract fun sollteAbbrechen(): Boolean
+  protected abstract fun sollteStackAufrollen(): Boolean
   protected abstract fun durchlaufeFunktionsAufruf(funktionsAufruf: AST.Satz.Ausdruck.FunktionsAufruf, istAusdruck: Boolean): T
   protected abstract fun durchlaufeVariablenDeklaration(deklaration: AST.Satz.VariablenDeklaration)
   protected abstract fun durchlaufeListenElementZuweisung(zuweisung: AST.Satz.ListenElementZuweisung)
@@ -113,6 +118,9 @@ abstract  class ProgrammDurchlaufer<T>(startDatei: File): PipelineKomponente(sta
 
   // endregion
   protected fun evaluiereAusdruck(ausdruck: AST.Satz.Ausdruck): T {
+    if (sollteStackAufrollen()) {
+      return niemals
+    }
     return when (ausdruck) {
       is AST.Satz.Ausdruck.Zeichenfolge -> evaluiereZeichenfolge(ausdruck)
       is AST.Satz.Ausdruck.Zahl -> evaluiereZahl(ausdruck)

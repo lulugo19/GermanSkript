@@ -1,0 +1,15 @@
+Deklination Maskulinum Singular(Fehler, Fehlers, Fehler, Fehler) Plural(Fehler)
+
+Nomen Fehler mit der Zeichenfolge FehlerMeldung:.
+
+Nomen KonvertierungsFehler mit
+    der Zeichenfolge FehlerMeldung
+    als Fehler mit der FehlerMeldung:.
+
+Nomen SchlüsselNichtGefundenFehler mit
+    der Zeichenfolge FehlerMeldung
+    als Fehler mit der FehlerMeldung:.
+
+Implementiere den Fehler:
+    Als Zeichenfolge: gebe meine FehlerMeldung zurück.
+.

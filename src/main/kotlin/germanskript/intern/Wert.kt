@@ -54,8 +54,8 @@ abstract class Wert {
     }
 
     private fun gleichtDemObjekt(injection: InterpretInjection): Wert {
-      val objekt = injection.umgebung.leseVariable("Objekt")
-      return Boolean(this === objekt)
+      val objekt = injection.umgebung.leseVariable("Objekt")!!.wert
+      return Boolean(this == objekt)
     }
 
     private fun alsZeichenfolge(): Wert {
