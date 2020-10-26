@@ -1,6 +1,5 @@
 package germanskript
 
-import germanskript.intern.Wert
 import germanskript.util.Peekable
 import java.io.File
 import java.lang.Integer.max
@@ -74,12 +73,12 @@ enum class Numerus(val anzeigeName: String, val zuweisung: String) {
     }
 }
 
-data class Token(val typ: TokenTyp, var wert: String, val dateiPfad: String, val anfang: Position, val ende: Position) {
+data class Token(val typ: TokenTyp, var wert: String, val dateiPfad: String, val anfang: Position) {
     // um die Ausgabe zu vereinfachen
     // override fun toString(): String = typ.toString()
 
     @Suppress("UNCHECKED_CAST")
-    fun <T: TokenTyp> toTyped() = TypedToken<T>(typ as T, wert, dateiPfad, anfang, ende)
+    fun <T: TokenTyp> toTyped() = TypedToken<T>(typ as T, wert, dateiPfad, anfang)
 
     open class Position(val zeile: Int, val spalte: Int) {
         object Ende: Position(-1, -1)
@@ -90,17 +89,20 @@ data class Token(val typ: TokenTyp, var wert: String, val dateiPfad: String, val
     }
 
     val position: String = "'$dateiPfad' $anfang"
+
+    val ende: Position = Position(anfang.zeile, anfang.spalte + wert.length)
 }
 
 // für den Parser gedacht
-data class TypedToken<out T : TokenTyp>(val typ: T, val wert: String, val dateiPfad: String, val anfang: Token.Position, val ende: Token.Position) {
-    fun toUntyped()  = Token(typ, wert, dateiPfad, anfang, ende)
-    fun<TChange: TokenTyp> changeType(typ: TChange): TypedToken<TChange> = TypedToken(typ, wert, dateiPfad, anfang, ende)
+data class TypedToken<out T : TokenTyp>(val typ: T, val wert: String, val dateiPfad: String, val anfang: Token.Position) {
+    fun toUntyped()  = Token(typ, wert, dateiPfad, anfang)
+    fun<TChange: TokenTyp> changeType(typ: TChange): TypedToken<TChange> = TypedToken(typ, wert, dateiPfad, anfang)
     val position: String = "'$dateiPfad' $anfang"
+    val ende: Token.Position = Token.Position(anfang.zeile, anfang.spalte + wert.length)
 
     companion object {
         fun<T: TokenTyp> imaginäresToken(typ: T, wert: String)
-            = TypedToken(typ, wert, "", Token.Position.Ende, Token.Position.Ende)
+            = TypedToken(typ, wert, "", Token.Position.Ende)
     }
 }
 
@@ -420,8 +422,7 @@ class Lexer(startDatei: File): PipelineKomponente(startDatei) {
 
     private var currentFile: String = ""
     private val currentTokenPos: Token.Position get() = Token.Position(zeilenIndex, iterator!!.index)
-    private val nextTokenPos: Token.Position get() = Token.Position(zeilenIndex, iterator!!.index + 1)
-    private val eofToken = Token(TokenTyp.EOF, "EOF", currentFile, Token.Position.Ende, Token.Position.Ende)
+    private val eofToken = Token(TokenTyp.EOF, "EOF", currentFile, Token.Position.Ende)
     
     private fun next() = iterator!!.next()
     private fun peek(ahead: Int = 0) = iterator!!.peek(ahead)
@@ -433,14 +434,12 @@ class Lexer(startDatei: File): PipelineKomponente(startDatei) {
         yield(Token(
             TokenTyp.HAUPT_PROGRAMM_START,
             "Programmstart", startDatei.absolutePath,
-            Token.Position(0, 0),
             Token.Position(0, 0)
         ))
         yieldAll(tokeniziereDatei(startDatei))
         yield(Token(
             TokenTyp.HAUPT_PROGRAMM_ENDE,
             "Programmende", startDatei.absolutePath,
-            Token.Position.Ende,
             Token.Position.Ende
         ))
         while (dateiSchlange.isNotEmpty()) {
@@ -521,8 +520,7 @@ class Lexer(startDatei: File): PipelineKomponente(startDatei) {
                 TokenTyp.NEUE_ZEILE,
                 "\\n",
                 currentFile,
-                currentTokenPos,
-                nextTokenPos
+                currentTokenPos
             ))
         }
     }
@@ -544,12 +542,11 @@ class Lexer(startDatei: File): PipelineKomponente(startDatei) {
             TokenTyp.UNDEFINIERT
           }
         }
-        val endPos = currentTokenPos
         if (tokenTyp is TokenTyp.UNDEFINIERT) {
-            val fehlerToken = Token(TokenTyp.FEHLER, symbolString, currentFile, startPos, endPos)
+            val fehlerToken = Token(TokenTyp.FEHLER, symbolString, currentFile, startPos)
             throw GermanSkriptFehler.SyntaxFehler.LexerFehler(fehlerToken, null)
         }
-        yield(Token(tokenTyp, symbolString, currentFile, startPos, endPos))
+        yield(Token(tokenTyp, symbolString, currentFile, startPos))
     }
 
     private fun zahl(): Sequence<Token> = sequence {
@@ -571,12 +568,10 @@ class Lexer(startDatei: File): PipelineKomponente(startDatei) {
                 break
             }
         }
-
-        val endPos = currentTokenPos
         try {
-            yield(Token(TokenTyp.ZAHL(germanskript.intern.Zahl(zahlenString)), zahlenString, currentFile, startPos, endPos))
+            yield(Token(TokenTyp.ZAHL(germanskript.intern.Zahl(zahlenString)), zahlenString, currentFile, startPos))
         } catch (error: Exception) {
-            val fehlerToken = Token(TokenTyp.FEHLER, zahlenString, currentFile, startPos, endPos)
+            val fehlerToken = Token(TokenTyp.FEHLER, zahlenString, currentFile, startPos)
             throw GermanSkriptFehler.SyntaxFehler.LexerFehler(fehlerToken, null)
         }
     }
@@ -607,9 +602,8 @@ class Lexer(startDatei: File): PipelineKomponente(startDatei) {
             throw GermanSkriptFehler.SyntaxFehler.LexerFehler(eofToken, null)
         }
         next()
-        val endPos = currentTokenPos
         val token = Token(TokenTyp.ZEICHENFOLGE(germanskript.intern.Zeichenfolge(zeichenfolge)),
-            '"' + zeichenfolge + '"', currentFile, startPos, endPos)
+            '"' + zeichenfolge + '"', currentFile, startPos)
         yield(token)
     }
 
@@ -624,7 +618,7 @@ class Lexer(startDatei: File): PipelineKomponente(startDatei) {
             '"' -> '"'
             '\\' -> '\\'
             else -> {
-                val fehlerToken = Token(TokenTyp.FEHLER, "\\$escapeChar", currentFile, escapeSequenzPos, currentTokenPos)
+                val fehlerToken = Token(TokenTyp.FEHLER, "\\$escapeChar", currentFile, escapeSequenzPos)
                 throw GermanSkriptFehler.SyntaxFehler.UngültigeEscapeSequenz(fehlerToken)
             }
         }
@@ -634,25 +628,25 @@ class Lexer(startDatei: File): PipelineKomponente(startDatei) {
         // String Interpolation
         yield(Token(
             TokenTyp.ZEICHENFOLGE(germanskript.intern.Zeichenfolge(zeichenfolge)),
-            '"' + zeichenfolge + '"', currentFile, startPosition, currentTokenPos))
+            '"' + zeichenfolge + '"', currentFile, startPosition))
         next() // #
         next() // {
-        yield(Token(TokenTyp.OPERATOR(Operator.PLUS), "+", currentFile, currentTokenPos, currentTokenPos))
-        yield(Token(TokenTyp.STRING_INTERPOLATION, "String-Interpolation", currentFile, currentTokenPos, currentTokenPos))
-        yield(Token(TokenTyp.OFFENE_KLAMMER, "(", currentFile, currentTokenPos, currentTokenPos))
+        yield(Token(TokenTyp.OPERATOR(Operator.PLUS), "+", currentFile, currentTokenPos))
+        yield(Token(TokenTyp.STRING_INTERPOLATION, "String-Interpolation", currentFile, currentTokenPos))
+        yield(Token(TokenTyp.OFFENE_KLAMMER, "(", currentFile, currentTokenPos))
         inStringInterpolation = true
         kannWortLesen = true
     }
 
     private fun beendeStringInterpolation() = sequence<Token> {
         next() // }
-        yield(Token(TokenTyp.GESCHLOSSENE_KLAMMER, ")", currentFile, currentTokenPos, currentTokenPos))
-        yield(Token(TokenTyp.ALS_KLEIN, "als", currentFile, currentTokenPos, currentTokenPos))
+        yield(Token(TokenTyp.GESCHLOSSENE_KLAMMER, ")", currentFile, currentTokenPos))
+        yield(Token(TokenTyp.ALS_KLEIN, "als", currentFile, currentTokenPos))
         yield(Token(
             TokenTyp.BEZEICHNER_GROSS(arrayOf("Zeichenfolge"), "", null),
-            "Zeichenfolge", currentFile, currentTokenPos, currentTokenPos)
+            "Zeichenfolge", currentFile, currentTokenPos)
         )
-        yield(Token(TokenTyp.OPERATOR(Operator.PLUS), "+", currentFile, currentTokenPos, currentTokenPos))
+        yield(Token(TokenTyp.OPERATOR(Operator.PLUS), "+", currentFile, currentTokenPos))
         inStringInterpolation = false
         kannWortLesen = false
         yieldAll(zeichenfolge(true))
@@ -661,7 +655,6 @@ class Lexer(startDatei: File): PipelineKomponente(startDatei) {
     private fun wort(): Sequence<Token> = sequence {
         val firstWordStartPos = currentTokenPos
         val erstesWort = teilWort()
-        val firstWordEndPos = currentTokenPos
         var spaceBetweenWords = ""
         when {
             WORT_MAPPING.containsKey(erstesWort) -> when (erstesWort) {
@@ -673,23 +666,22 @@ class Lexer(startDatei: File): PipelineKomponente(startDatei) {
                     if (nächstesZeichen?.isLetter() == true) {
                         val nextWordStartPos = currentTokenPos
                         val nächstesWort = teilWort()
-                        val nextWordEndPos = currentTokenPos
                         if (nächstesWort == "gleich") {
                             val tokenTyp = when (erstesWort) {
                                 "größer" -> TokenTyp.OPERATOR(Operator.GRÖSSER_GLEICH)
                                 "kleiner" -> TokenTyp.OPERATOR(Operator.KLEINER_GLEICH)
                                 else -> throw Exception("Diser Fall wird nie ausgeführt")
                             }
-                            yield(Token(tokenTyp, erstesWort + spaceBetweenWords + nächstesWort, currentFile, firstWordStartPos, nextWordEndPos))
+                            yield(Token(tokenTyp, erstesWort + spaceBetweenWords + nächstesWort, currentFile, firstWordStartPos))
                         } else {
-                            yield(Token(WORT_MAPPING.getValue(erstesWort), erstesWort, currentFile, firstWordStartPos, firstWordEndPos))
+                            yield(Token(WORT_MAPPING.getValue(erstesWort), erstesWort, currentFile, firstWordStartPos))
                             val tokenTyp = (WORT_MAPPING.getOrElse(nächstesWort, {
                                 when {
-                                    istGroßerBezeichner(erstesWort) -> großerBezeichner(nächstesWort, nextWordStartPos, nextWordEndPos)
+                                    istGroßerBezeichner(erstesWort) -> großerBezeichner(nächstesWort, nextWordStartPos)
                                     else -> TokenTyp.BEZEICHNER_KLEIN(nächstesWort)
                                 }
                             }))
-                            val token = Token(tokenTyp, nächstesWort, currentFile, nextWordStartPos, nextWordEndPos)
+                            val token = Token(tokenTyp, nächstesWort, currentFile, nextWordStartPos)
                             if (tokenTyp is TokenTyp.BEZEICHNER_KLEIN) {
                                 yieldAll(präpositionArtikelVerschmelzung(token))
                             } else {
@@ -698,16 +690,16 @@ class Lexer(startDatei: File): PipelineKomponente(startDatei) {
                         }
                     }
                     else {
-                        yield(Token(WORT_MAPPING.getValue(erstesWort), erstesWort, currentFile, firstWordStartPos, firstWordEndPos))
+                        yield(Token(WORT_MAPPING.getValue(erstesWort), erstesWort, currentFile, firstWordStartPos))
                     }
                 }
-                else -> yield(Token(WORT_MAPPING.getValue(erstesWort), erstesWort, currentFile, firstWordStartPos, firstWordEndPos))
+                else -> yield(Token(WORT_MAPPING.getValue(erstesWort), erstesWort, currentFile, firstWordStartPos))
             }
             istGroßerBezeichner(erstesWort) -> yield(
-                Token(großerBezeichner(erstesWort, firstWordStartPos, firstWordEndPos),
-                    erstesWort, currentFile, firstWordStartPos, firstWordEndPos))
+                Token(großerBezeichner(erstesWort, firstWordStartPos),
+                    erstesWort, currentFile, firstWordStartPos))
             else -> {
-                val token = Token(TokenTyp.BEZEICHNER_KLEIN(erstesWort), erstesWort, currentFile, firstWordStartPos, firstWordEndPos)
+                val token = Token(TokenTyp.BEZEICHNER_KLEIN(erstesWort), erstesWort, currentFile, firstWordStartPos)
                 yieldAll(präpositionArtikelVerschmelzung(token))
             }
         }
@@ -719,8 +711,7 @@ class Lexer(startDatei: File): PipelineKomponente(startDatei) {
                 TokenTyp.FEHLER,
                 wert.toString(),
                 currentFile,
-                currentTokenPos,
-                nextTokenPos
+                currentTokenPos
             ),
             details
         )
@@ -730,7 +721,7 @@ class Lexer(startDatei: File): PipelineKomponente(startDatei) {
         return wort.any {it.isUpperCase()}
     }
 
-    private fun großerBezeichner(zeichenfolge: String, tokenStart: Token.Position, tokenEnd: Token.Position): TokenTyp.BEZEICHNER_GROSS {
+    private fun großerBezeichner(zeichenfolge: String, tokenPos: Token.Position): TokenTyp.BEZEICHNER_GROSS {
         var i = 0
         var adjektivString = ""
         while (i < zeichenfolge.length && zeichenfolge[i].isLowerCase()) {
@@ -738,8 +729,7 @@ class Lexer(startDatei: File): PipelineKomponente(startDatei) {
         }
         val adjektiv =
             if (adjektivString.isEmpty()) null
-            else TypedToken(TokenTyp.BEZEICHNER_KLEIN(adjektivString), adjektivString, currentFile, tokenStart,
-                Token.Position(tokenStart.zeile, tokenStart.spalte + i))
+            else TypedToken(TokenTyp.BEZEICHNER_KLEIN(adjektivString), adjektivString, currentFile, tokenPos)
         var teilWort = zeichenfolge[i++].toString()
         val teilWörter = mutableListOf<String>()
         var symbol = ""
@@ -751,7 +741,7 @@ class Lexer(startDatei: File): PipelineKomponente(startDatei) {
               teilWort.length == 1  -> symbol += teilWort
               symbol.isEmpty() -> teilWörter.add(teilWort)
               else -> {
-                  val token = Token(TokenTyp.FEHLER, zeichenfolge, currentFile, tokenStart, tokenEnd)
+                  val token = Token(TokenTyp.FEHLER, zeichenfolge, currentFile, tokenPos)
                   throw GermanSkriptFehler.SyntaxFehler.LexerFehler(token, "Ein großer Bezeichner in GermanSkript darf einzelne Großbuchstaben und Ziffern" +
                       " (Symbole) nur am Ende haben.")
               }
@@ -812,7 +802,7 @@ class Lexer(startDatei: File): PipelineKomponente(startDatei) {
             val (präposition, artikel) = präpositionArtikelVerschmelzungsMap.getValue(präpToken.wert)
             präpToken.wert = präposition
             yield(präpToken)
-            val artikelToken = Token(TokenTyp.VORNOMEN.ARTIKEL.BESTIMMT, artikel, currentFile, präpToken.anfang, präpToken.ende)
+            val artikelToken = Token(TokenTyp.VORNOMEN.ARTIKEL.BESTIMMT, artikel, currentFile, präpToken.anfang)
             yield(artikelToken)
         } else {
             yield(präpToken)
@@ -820,9 +810,10 @@ class Lexer(startDatei: File): PipelineKomponente(startDatei) {
     }
 }
 
-
-
 fun main() {
-    Lexer(File("./iterationen/iter_2/code.gm"))
-        .tokeniziere().takeWhile { token -> token.typ != TokenTyp.EOF }.forEach { println(it) }
+    val datei = createTempFile()
+    datei.writeText("\"#{der Name} wird morgen #{das Alter + 1} Jahre alt!\"")
+
+    Lexer(datei)
+        .tokeniziere().takeWhile { token -> token.typ != TokenTyp.EOF }.forEach { println(it.typ) }
 }
