@@ -56,7 +56,7 @@ sealed class AST {
       }
     }
   }
-
+  
   sealed class WortArt: AST() {
     abstract val bezeichnerToken: Token
     abstract var deklination: Deklination?
@@ -572,6 +572,35 @@ sealed class AST {
     }
 
     sealed class Ausdruck : Satz() {
+
+      fun holeErstesToken(): Token {
+        return when (this) {
+          is Zeichenfolge -> zeichenfolge.toUntyped()
+          is Liste -> pluralTyp.name.vornomen!!.toUntyped()
+          is Zahl -> zahl.toUntyped()
+          is Boolean -> boolean.toUntyped()
+          is Variable -> name.bezeichner.toUntyped()
+          is FunktionsAufruf -> verb.toUntyped()
+          is ListenElement -> singular.vornomen!!.toUntyped()
+          is BinärerAusdruck -> links.holeErstesToken()
+          is Minus -> ausdruck.holeErstesToken()
+          is Konvertierung -> ausdruck.holeErstesToken()
+          is ObjektInstanziierung -> klasse.name.bezeichnerToken
+          is EigenschaftsZugriff -> eigenschaftsName.bezeichner.toUntyped()
+          is SelbstEigenschaftsZugriff -> eigenschaftsName.bezeichner.toUntyped()
+          is MethodenBereichEigenschaftsZugriff -> eigenschaftsName.bezeichner.toUntyped()
+          is SelbstReferenz -> ich.toUntyped()
+          is MethodenBereichReferenz -> du.toUntyped()
+          is Closure -> schnittstelle.name.bezeichnerToken
+          is AnonymeKlasse -> schnittstelle.name.bezeichnerToken
+          is Konstante -> name.toUntyped()
+          is MethodenBereich -> objekt.holeErstesToken()
+          is Nichts -> nichts.toUntyped()
+          is Bedingung -> bedingungen[0].bedingung.holeErstesToken()
+          is TypÜberprüfung -> ausdruck.holeErstesToken()
+        }
+      }
+      
       data class Nichts(val nichts: TypedToken<TokenTyp.NICHTS>): Ausdruck()
 
       data class Zeichenfolge(val zeichenfolge: TypedToken<TokenTyp.ZEICHENFOLGE>) : Ausdruck()

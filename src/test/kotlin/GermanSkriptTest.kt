@@ -1098,6 +1098,7 @@ class GermanSkriptTest {
       Die Fakultät von einer negativen Zahl ist undefiniert.
       
     """.trimIndent()
+
     testeGermanSkriptCode(quellCode, erwarteteAusgabe)
   }
 

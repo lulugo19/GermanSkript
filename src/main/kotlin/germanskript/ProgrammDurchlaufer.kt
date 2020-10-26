@@ -3,6 +3,15 @@ package germanskript
 import java.io.File
 import java.lang.Exception
 
+/**
+ * Eine abstrakte Klasse, die dafür gedacht war, eine gleiche Programmstruktur für
+ * den Typprüfer, sowie den Interpreter zu erhalten. Beide durchlaufen nämlich in ähnlicher Art und Weise
+ * den AST.
+ *
+ * Zuerst hat es sich als gute Idee rausgestellt, aber dann wurden Typprüfer und Interpreter
+ * zu unterschiedlich, sodass für Typprüfer und Interpreter unnötiger Code ausgeführt werden musste
+ * um die gleiche Struktur sicherzuestellen.
+ */
 abstract  class ProgrammDurchlaufer<T>(startDatei: File): PipelineKomponente(startDatei ) {
   abstract val definierer: Definierer
 

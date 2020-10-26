@@ -19,14 +19,10 @@ class InterpretInjection(
   val umgebung: Umgebung<Wert> get() = aufrufStapel.top().umgebung
 }
 
-class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
+class Interpretierer(startDatei: File): PipelineKomponente(startDatei) {
   val entsüßer = Entsüßer(startDatei)
   val typPrüfer = entsüßer.typPrüfer
 
-  override val nichts = germanskript.intern.Nichts
-  override val niemals = germanskript.intern.Niemals
-
-  override val definierer = typPrüfer.definierer
   val ast: AST.Programm = entsüßer.ast
 
   private val flags = EnumSet.noneOf(Flag::class.java)
@@ -36,7 +32,7 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
   private var geworfenerFehler: Wert.Objekt? = null
   private var geworfenerFehlerToken: Token? = null
 
-  override val umgebung: Umgebung<Wert> get() = aufrufStapel.top().umgebung
+  private val umgebung: Umgebung<Wert> get() = aufrufStapel.top().umgebung
 
   private val klassenDefinitionen = HashMap<String, AST.Definition.Typdefinition.Klasse>()
 
@@ -143,17 +139,56 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
     }
   }
 
-  override fun sollteAbbrechen(): Boolean {
+  private fun sollteAbbrechen(): Boolean {
     return flags.contains(Flag.SCHLEIFE_FORTFAHREN) ||
         flags.contains(Flag.SCHLEIFE_ABBRECHEN) ||
         flags.contains(Flag.ZURÜCK)
   }
 
-  override fun sollteStackAufrollen(): Boolean {
-    return flags.contains(Flag.FEHLER_GEWORFEN)
-  }
+  private fun sollteStackAufrollen(): Boolean = flags.contains(Flag.FEHLER_GEWORFEN)
 
   // region Sätze
+  private fun durchlaufeBereich(bereich: AST.Satz.Bereich, neuerBereich: Boolean): Wert  {
+    if (neuerBereich) {
+      umgebung.pushBereich()
+    }
+    var rückgabe: Wert = germanskript.intern.Nichts
+    for (satz in bereich.sätze) {
+      if (sollteAbbrechen()) {
+        return germanskript.intern.Nichts
+      }
+      if (sollteStackAufrollen()) {
+        return germanskript.intern.Niemals
+      }
+      @Suppress("IMPLICIT_CAST_TO_ANY")
+      rückgabe = when (satz) {
+        is AST.Satz.VariablenDeklaration -> durchlaufeVariablenDeklaration(satz)
+        is AST.Satz.ListenElementZuweisung -> durchlaufeListenElementZuweisung(satz)
+        is AST.Satz.Bereich -> durchlaufeBereich(satz, true)
+        is AST.Satz.SuperBlock -> durchlaufeBereich(satz.bereich, true)
+        is AST.Satz.Zurückgabe -> durchlaufeZurückgabe(satz)
+        is AST.Satz.SolangeSchleife -> durchlaufeSolangeSchleife(satz)
+        is AST.Satz.VersucheFange -> durchlaufeVersucheFange(satz)
+        is AST.Satz.Werfe -> durchlaufeWerfe(satz)
+        is AST.Satz.SchleifenKontrolle.Abbrechen -> flags.add(Flag.SCHLEIFE_ABBRECHEN).let { germanskript.intern.Nichts }
+        is AST.Satz.SchleifenKontrolle.Fortfahren -> flags.add(Flag.SCHLEIFE_FORTFAHREN).let { germanskript.intern.Nichts }
+        is AST.Satz.Intern -> durchlaufeIntern(satz)
+        is AST.Satz.Ausdruck -> evaluiereAusdruck(satz)
+        else -> throw java.lang.Exception("Dieser Fall sollte nie eintreten!")
+      }
+    }
+    if (neuerBereich) {
+      umgebung.popBereich()
+    }
+    return rückgabe
+  }
+
+  private fun durchlaufeMethodenBereich(methodenBereich: AST.Satz.Ausdruck.MethodenBereich): Wert {
+    val wert = evaluiereAusdruck(methodenBereich.objekt)
+    umgebung.pushBereich(wert)
+    return durchlaufeBereich(methodenBereich.bereich, false).also { umgebung.popBereich() }
+  }
+  
   private fun durchlaufeBedingung(bedingung: AST.Satz.BedingungsTerm): Wert? {
       return if (!sollteStackAufrollen() && (evaluiereAusdruck(bedingung.bedingung) as germanskript.intern.Boolean).boolean) {
         durchlaufeBereich(bedingung.bereich, true)
@@ -162,15 +197,7 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
       }
   }
 
-  override fun starteBereich(bereich: AST.Satz.Bereich) {
-    // hier muss nichts gemacht werden...
-  }
-
-  override fun beendeBereich(bereich: AST.Satz.Bereich) {
-    // hier muss nichts gemacht werden...
-  }
-
-  override fun durchlaufeVariablenDeklaration(deklaration: AST.Satz.VariablenDeklaration) {
+  private fun durchlaufeVariablenDeklaration(deklaration: AST.Satz.VariablenDeklaration): Wert {
     if (deklaration.istEigenschaftsNeuZuweisung || deklaration.istEigenschaft) {
       // weise Eigenschaft neu zu
       (aufrufStapel.top().objekt!! as Wert.Objekt).setzeEigenschaft(deklaration.name.nominativ, evaluiereAusdruck(deklaration.wert))
@@ -185,16 +212,19 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
         umgebung.überschreibeVariable(deklaration.name, wert)
       }
     }
+    return germanskript.intern.Nichts
   }
 
-  override fun durchlaufeListenElementZuweisung(zuweisung: AST.Satz.ListenElementZuweisung) {
+  private fun durchlaufeListenElementZuweisung(zuweisung: AST.Satz.ListenElementZuweisung): Wert {
     val liste = evaluiereListenSingular(zuweisung.singular)
     val index = (evaluiereAusdruck(zuweisung.index) as germanskript.intern.Zahl).toInt()
     if (index >= liste.elemente.size) {
-      throw GermanSkriptFehler.LaufzeitFehler(holeErstesTokenVonAusdruck(zuweisung.index),
+      throw GermanSkriptFehler.LaufzeitFehler(zuweisung.index.holeErstesToken(),
           aufrufStapel.toString(), "Index außerhalb des Bereichs. Der Index ist $index, doch die Länge der Liste ist ${liste.elemente.size}.\n")
     }
     liste.elemente[index] = evaluiereAusdruck(zuweisung.wert)
+
+    return germanskript.intern.Nichts
   }
 
   private fun durchlaufeAufruf(
@@ -231,7 +261,7 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
     }
   }
 
-  override fun durchlaufeFunktionsAufruf(funktionsAufruf: AST.Satz.Ausdruck.FunktionsAufruf, istAusdruck: Boolean): Wert {
+  private fun durchlaufeFunktionsAufruf(funktionsAufruf: AST.Satz.Ausdruck.FunktionsAufruf): Wert {
     var funktionsUmgebung = Umgebung<Wert>()
     var objekt: Wert.Objekt? = null
     var impliziterRückgabeTyp = false
@@ -280,14 +310,14 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
         .let { if (impliziterRückgabeTyp) it else rückgabeWert }
   }
 
-  override fun durchlaufeZurückgabe(zurückgabe: AST.Satz.Zurückgabe): Wert {
+  private fun durchlaufeZurückgabe(zurückgabe: AST.Satz.Zurückgabe): Wert {
     return evaluiereAusdruck(zurückgabe.ausdruck).also {
       flags.add(Flag.ZURÜCK)
       rückgabeWert = it
     }
   }
 
-  override fun durchlaufeBedingungsSatz(bedingungsSatz: AST.Satz.Ausdruck.Bedingung, istAusdruck: Boolean): Wert {
+  private fun durchlaufeBedingungsSatz(bedingungsSatz: AST.Satz.Ausdruck.Bedingung): Wert {
     val inBedingung = bedingungsSatz.bedingungen.any { bedingung ->
       durchlaufeBedingung(bedingung)?.also { return it } != null
     }
@@ -299,57 +329,43 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
     }
   }
 
-  override fun durchlaufeSolangeSchleife(schleife: AST.Satz.SolangeSchleife) {
+  private fun durchlaufeSolangeSchleife(schleife: AST.Satz.SolangeSchleife): Wert {
     while (!flags.contains(Flag.SCHLEIFE_ABBRECHEN) && !flags.contains(Flag.ZURÜCK) && (evaluiereAusdruck(schleife.bedingung.bedingung) as germanskript.intern.Boolean).boolean) {
       flags.remove(Flag.SCHLEIFE_FORTFAHREN)
       durchlaufeBereich(schleife.bedingung.bereich, true)
     }
     flags.remove(Flag.SCHLEIFE_ABBRECHEN)
+    return germanskript.intern.Nichts
   }
 
-  override fun durchlaufeFürJedeSchleife(schleife: AST.Satz.FürJedeSchleife) {
-    // Mache nichts hier, weil die Entsüßer die Für-Jede-Schleife durch eine Solange-Schleife ersetzt hat
-  }
-
-  private fun iteriereSchleife(schleife: AST.Satz.FürJedeSchleife, element: Wert): Boolean {
-    flags.remove(Flag.SCHLEIFE_FORTFAHREN)
-    umgebung.überschreibeVariable(schleife.binder, element)
-    durchlaufeBereich(schleife.bereich, true)
-    if (flags.contains(Flag.SCHLEIFE_ABBRECHEN) || flags.contains(Flag.ZURÜCK)) {
-      flags.remove(Flag.SCHLEIFE_ABBRECHEN)
-      return false
-    }
-    return true
-  }
-
-  override fun durchlaufeVersucheFange(versucheFange: AST.Satz.VersucheFange) {
-      durchlaufeBereich(versucheFange.versuche, true)
-
-      if (flags.contains(Flag.FEHLER_GEWORFEN)) {
-        val fehlerObjekt = geworfenerFehler!!
-        val fehlerTyp = typeOf(fehlerObjekt)
-        val fange = versucheFange.fange.find { fange ->
-          typPrüfer.typIstTyp(fehlerTyp, fange.param.typKnoten.typ!!)
-        }
-        if (fange != null) {
-          flags.remove(Flag.FEHLER_GEWORFEN)
-          umgebung.pushBereich()
-          umgebung.schreibeVariable(fange.param.name, fehlerObjekt, true)
-          durchlaufeBereich(fange.bereich, false)
-          umgebung.popBereich()
-        }
+  private fun durchlaufeVersucheFange(versucheFange: AST.Satz.VersucheFange): Wert {
+    durchlaufeBereich(versucheFange.versuche, true)
+    if (flags.contains(Flag.FEHLER_GEWORFEN)) {
+      val fehlerObjekt = geworfenerFehler!!
+      val fehlerTyp = typeOf(fehlerObjekt)
+      val fange = versucheFange.fange.find { fange ->
+        typPrüfer.typIstTyp(fehlerTyp, fange.param.typKnoten.typ!!)
       }
-      if (versucheFange.schlussendlich != null) {
-        val fehlerGeworfen = flags.contains(Flag.FEHLER_GEWORFEN)
+      if (fange != null) {
         flags.remove(Flag.FEHLER_GEWORFEN)
-        durchlaufeBereich(versucheFange.schlussendlich, true)
-        if (fehlerGeworfen) {
-          flags.add(Flag.FEHLER_GEWORFEN)
-        }
+        umgebung.pushBereich()
+        umgebung.schreibeVariable(fange.param.name, fehlerObjekt, true)
+        durchlaufeBereich(fange.bereich, false)
+        umgebung.popBereich()
       }
+    }
+    if (versucheFange.schlussendlich != null) {
+      val fehlerGeworfen = flags.contains(Flag.FEHLER_GEWORFEN)
+      flags.remove(Flag.FEHLER_GEWORFEN)
+      durchlaufeBereich(versucheFange.schlussendlich, true)
+      if (fehlerGeworfen) {
+        flags.add(Flag.FEHLER_GEWORFEN)
+      }
+    }
+    return germanskript.intern.Nichts
   }
 
-  override fun durchlaufeWerfe(werfe: AST.Satz.Werfe): Wert {
+  private fun durchlaufeWerfe(werfe: AST.Satz.Werfe): Wert {
     val wert = evaluiereAusdruck(werfe.ausdruck)
     if (wert !is Wert.Objekt) {
       throw Exception("Der Typprüfer sollte diesen Fall schon überprüfen.")
@@ -360,7 +376,7 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
     return germanskript.intern.Niemals
   }
 
-  override fun durchlaufeIntern(intern: AST.Satz.Intern): Wert {
+  private fun durchlaufeIntern(intern: AST.Satz.Intern): Wert {
     val aufruf = aufrufStapel.top().aufruf
     return when (val objekt = aufrufStapel.top().objekt) {
       is Wert.Objekt -> objekt.rufeMethodeAuf(aufruf, interpretInjection)
@@ -368,42 +384,82 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
     }.also { rückgabeWert = it }
   }
 
-  override fun bevorDurchlaufeMethodenBereich(methodenBereich: AST.Satz.Ausdruck.MethodenBereich, blockObjekt: Wert?) {
-    // mache nichts hier, das ist eigentlich nur für den Typprüfer gedacht
-  }
-
-  override fun durchlaufeAbbrechen() {
-    flags.add(Flag.SCHLEIFE_ABBRECHEN)
-  }
-
-  override fun durchlaufeFortfahren() {
-    flags.add(Flag.SCHLEIFE_FORTFAHREN)
-  }
   // endregion
 
   // region Ausdrücke
-  override fun evaluiereZeichenfolge(ausdruck: AST.Satz.Ausdruck.Zeichenfolge): Wert {
+  private fun evaluiereAusdruck(ausdruck: AST.Satz.Ausdruck): Wert {
+    if (sollteStackAufrollen()) {
+      return germanskript.intern.Niemals
+    }
+    return when (ausdruck) {
+      is AST.Satz.Ausdruck.Zeichenfolge -> evaluiereZeichenfolge(ausdruck)
+      is AST.Satz.Ausdruck.Zahl -> evaluiereZahl(ausdruck)
+      is AST.Satz.Ausdruck.Boolean -> evaluiereBoolean(ausdruck)
+      is AST.Satz.Ausdruck.Variable -> evaluiereVariable(ausdruck)
+      is AST.Satz.Ausdruck.Liste -> evaluiereListe(ausdruck)
+      is AST.Satz.Ausdruck.ListenElement -> evaluiereListenElement(ausdruck)
+      is AST.Satz.Ausdruck.FunktionsAufruf -> durchlaufeFunktionsAufruf(ausdruck)
+      is AST.Satz.Ausdruck.BinärerAusdruck -> evaluiereBinärenAusdruck(ausdruck)
+      is AST.Satz.Ausdruck.Minus -> evaluiereMinus(ausdruck)
+      is AST.Satz.Ausdruck.Konvertierung -> evaluiereKonvertierung(ausdruck)
+      is AST.Satz.Ausdruck.ObjektInstanziierung -> evaluiereObjektInstanziierung(ausdruck)
+      is AST.Satz.Ausdruck.EigenschaftsZugriff -> evaluiereEigenschaftsZugriff(ausdruck)
+      is AST.Satz.Ausdruck.SelbstEigenschaftsZugriff -> evaluiereSelbstEigenschaftsZugriff(ausdruck)
+      is AST.Satz.Ausdruck.MethodenBereichEigenschaftsZugriff -> evaluiereMethodenBlockEigenschaftsZugriff(ausdruck)
+      is AST.Satz.Ausdruck.SelbstReferenz -> evaluiereSelbstReferenz()
+      is AST.Satz.Ausdruck.MethodenBereichReferenz -> evaluiereMethodenBlockReferenz()
+      is AST.Satz.Ausdruck.Closure -> evaluiereClosure(ausdruck)
+      is AST.Satz.Ausdruck.AnonymeKlasse -> evaluiereAnonymeKlasse(ausdruck)
+      is AST.Satz.Ausdruck.Konstante -> evaluiereKonstante(ausdruck)
+      is AST.Satz.Ausdruck.TypÜberprüfung -> evaluiereTypÜberprüfung(ausdruck)
+      is AST.Satz.Ausdruck.MethodenBereich -> durchlaufeMethodenBereich(ausdruck)
+      is AST.Satz.Ausdruck.Bedingung -> durchlaufeBedingungsSatz(ausdruck)
+      is AST.Satz.Ausdruck.Nichts -> germanskript.intern.Nichts
+    }
+  }
+
+  private fun evaluiereVariable(variable: AST.Satz.Ausdruck.Variable): Wert {
+    return if (variable.konstante != null) {
+      evaluiereAusdruck(variable.konstante!!.wert!!)
+    } else {
+      return this.evaluiereVariable(variable.name)
+    }
+  }
+
+  private fun evaluiereVariable(name: AST.WortArt.Nomen): Wert {
+    return umgebung.leseVariable(name).wert
+  }
+
+  private fun evaluiereVariable(variable: String): Wert? {
+    return umgebung.leseVariable(variable)?.wert
+  }
+
+  private fun evaluiereMethodenBlockReferenz(): Wert {
+    return umgebung.holeMethodenBlockObjekt()!!
+  }
+  
+  private fun evaluiereZeichenfolge(ausdruck: AST.Satz.Ausdruck.Zeichenfolge): Wert {
     return ausdruck.zeichenfolge.typ.zeichenfolge
   }
 
-  override fun evaluiereZahl(ausdruck: AST.Satz.Ausdruck.Zahl): Wert {
+  private fun evaluiereZahl(ausdruck: AST.Satz.Ausdruck.Zahl): Wert {
     return ausdruck.zahl.typ.zahl
   }
 
-  override fun evaluiereBoolean(ausdruck: AST.Satz.Ausdruck.Boolean): Wert {
+  private fun evaluiereBoolean(ausdruck: AST.Satz.Ausdruck.Boolean): Wert {
     return ausdruck.boolean.typ.boolean
   }
 
-  override fun evaluiereKonstante(konstante: AST.Satz.Ausdruck.Konstante): Wert = evaluiereAusdruck(konstante.wert!!)
+  private fun evaluiereKonstante(konstante: AST.Satz.Ausdruck.Konstante): Wert = evaluiereAusdruck(konstante.wert!!)
 
-  override fun evaluiereListe(ausdruck: AST.Satz.Ausdruck.Liste): Wert {
+  private fun evaluiereListe(ausdruck: AST.Satz.Ausdruck.Liste): Wert {
     return germanskript.intern.Liste(
         Typ.Compound.KlassenTyp.Liste(listOf(ausdruck.pluralTyp)),
         ausdruck.elemente.map(::evaluiereAusdruck).toMutableList()
     )
   }
 
-  override fun evaluiereObjektInstanziierung(instanziierung: AST.Satz.Ausdruck.ObjektInstanziierung): Wert {
+  private fun evaluiereObjektInstanziierung(instanziierung: AST.Satz.Ausdruck.ObjektInstanziierung): Wert {
     val eigenschaften = hashMapOf<String, Wert>()
     val klassenTyp = (instanziierung.klasse.typ!! as Typ.Compound.KlassenTyp)
     // TODO: Wie löse ich das Problem, dass hier interne Objekte instanziiert werden können?
@@ -450,26 +506,26 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
     }
   }
 
-  override fun evaluiereEigenschaftsZugriff(eigenschaftsZugriff: AST.Satz.Ausdruck.EigenschaftsZugriff): Wert {
+  private fun evaluiereEigenschaftsZugriff(eigenschaftsZugriff: AST.Satz.Ausdruck.EigenschaftsZugriff): Wert {
     return when (val objekt = evaluiereAusdruck(eigenschaftsZugriff.objekt)) {
       is Wert.Objekt -> holeEigenschaft(eigenschaftsZugriff, objekt)
       else -> throw Exception("Dies sollte nie passieren, weil der Typprüfer diesen Fall schon überprüft")
     }
   }
 
-  override fun evaluiereSelbstEigenschaftsZugriff(eigenschaftsZugriff: AST.Satz.Ausdruck.SelbstEigenschaftsZugriff): Wert {
+  private fun evaluiereSelbstEigenschaftsZugriff(eigenschaftsZugriff: AST.Satz.Ausdruck.SelbstEigenschaftsZugriff): Wert {
     val objekt = aufrufStapel.top().objekt!! as Wert.Objekt
     return holeEigenschaft(eigenschaftsZugriff, objekt)
   }
 
-  override fun evaluiereMethodenBlockEigenschaftsZugriff(eigenschaftsZugriff: AST.Satz.Ausdruck.MethodenBereichEigenschaftsZugriff): Wert {
+  private fun evaluiereMethodenBlockEigenschaftsZugriff(eigenschaftsZugriff: AST.Satz.Ausdruck.MethodenBereichEigenschaftsZugriff): Wert {
     val objekt = umgebung.holeMethodenBlockObjekt()!! as Wert.Objekt
     return holeEigenschaft(eigenschaftsZugriff, objekt)
   }
 
-  override fun evaluiereSelbstReferenz(): Wert = aufrufStapel.top().objekt!!
+  private fun evaluiereSelbstReferenz(): Wert = aufrufStapel.top().objekt!!
 
-  override  fun evaluiereBinärenAusdruck(ausdruck: AST.Satz.Ausdruck.BinärerAusdruck): Wert {
+  private  fun evaluiereBinärenAusdruck(ausdruck: AST.Satz.Ausdruck.BinärerAusdruck): Wert {
     val links = evaluiereAusdruck(ausdruck.links)
     val operator = ausdruck.operator.typ.operator
 
@@ -502,7 +558,7 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
       is germanskript.intern.Zeichenfolge -> zeichenFolgenOperation(operator, links, rechts as germanskript.intern.Zeichenfolge)
       is germanskript.intern.Zahl -> {
         if ((rechts as germanskript.intern.Zahl).isZero() && operator == Operator.GETEILT) {
-          throw GermanSkriptFehler.LaufzeitFehler(holeErstesTokenVonAusdruck(ausdruck.rechts), aufrufStapel.toString(),
+          throw GermanSkriptFehler.LaufzeitFehler(ausdruck.rechts.holeErstesToken(), aufrufStapel.toString(),
               "Division durch 0. Es kann nicht durch 0 dividiert werden.")
         }
         zahlOperation(operator, links, rechts)
@@ -569,12 +625,12 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
     }
   }
 
-  override fun evaluiereMinus(minus: AST.Satz.Ausdruck.Minus): germanskript.intern.Zahl {
+  private fun evaluiereMinus(minus: AST.Satz.Ausdruck.Minus): germanskript.intern.Zahl {
     val ausdruck = evaluiereAusdruck(minus.ausdruck) as germanskript.intern.Zahl
     return -ausdruck
   }
 
-  protected fun evaluiereListenSingular(singular: AST.WortArt.Nomen): germanskript.intern.Liste {
+  private fun evaluiereListenSingular(singular: AST.WortArt.Nomen): germanskript.intern.Liste {
     return when (val vornomenTyp = singular.vornomen?.typ) {
       is TokenTyp.VORNOMEN.POSSESSIV_PRONOMEN -> {
         val objekt = when (vornomenTyp) {
@@ -589,13 +645,13 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
     }
   }
 
-  override fun evaluiereListenElement(listenElement: AST.Satz.Ausdruck.ListenElement): Wert {
+  private fun evaluiereListenElement(listenElement: AST.Satz.Ausdruck.ListenElement): Wert {
     val index = (evaluiereAusdruck(listenElement.index) as germanskript.intern.Zahl).toInt()
 
     if (listenElement.istZeichenfolgeZugriff) {
       val zeichenfolge = (evaluiereVariable(listenElement.singular.nominativ) as germanskript.intern.Zeichenfolge).zeichenfolge
       if (index >= zeichenfolge.length) {
-        throw GermanSkriptFehler.LaufzeitFehler(holeErstesTokenVonAusdruck(listenElement.index),
+        throw GermanSkriptFehler.LaufzeitFehler(listenElement.index.holeErstesToken(),
             aufrufStapel.toString(), "Index außerhalb des Bereichs. Der Index ist $index, doch die Länge der Zeichenfolge ist ${zeichenfolge.length}.\n")
       }
       return germanskript.intern.Zeichenfolge(zeichenfolge[index].toString())
@@ -604,24 +660,24 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
     val liste = evaluiereListenSingular(listenElement.singular)
 
     if (index >= liste.elemente.size) {
-      throw GermanSkriptFehler.LaufzeitFehler(holeErstesTokenVonAusdruck(listenElement.index),
+      throw GermanSkriptFehler.LaufzeitFehler(listenElement.index.holeErstesToken(),
           aufrufStapel.toString(), "Index außerhalb des Bereichs. Der Index ist $index, doch die Länge der Liste ist ${liste.elemente.size}.\n")
     }
     return liste.elemente[index]
   }
 
-  override fun evaluiereClosure(closure: AST.Satz.Ausdruck.Closure): Wert {
+  private fun evaluiereClosure(closure: AST.Satz.Ausdruck.Closure): Wert {
     return Wert.Closure((closure.schnittstelle.typ as Typ.Compound.Schnittstelle), closure, umgebung)
   }
 
-  override fun evaluiereAnonymeKlasse(anonymeKlasse: AST.Satz.Ausdruck.AnonymeKlasse): Wert {
+  private fun evaluiereAnonymeKlasse(anonymeKlasse: AST.Satz.Ausdruck.AnonymeKlasse): Wert {
     val eigenschaften = anonymeKlasse.bereich.eigenschaften
         .map { it.name.nominativ to evaluiereAusdruck(it.wert) }
         .toMap().toMutableMap()
     return Wert.Objekt.AnonymesSkriptObjekt(anonymeKlasse.typ!!, eigenschaften, umgebung)
   }
 
-  override fun evaluiereTypÜberprüfung(typÜberprüfung: AST.Satz.Ausdruck.TypÜberprüfung): Wert {
+  private fun evaluiereTypÜberprüfung(typÜberprüfung: AST.Satz.Ausdruck.TypÜberprüfung): Wert {
     val ausdruckTyp = typeOf(evaluiereAusdruck(typÜberprüfung.ausdruck))
     val istTyp = typPrüfer.typIstTyp(ausdruckTyp, typÜberprüfung.typ.typ!!)
     return germanskript.intern.Boolean(istTyp)
@@ -726,7 +782,7 @@ class Interpretierer(startDatei: File): ProgrammDurchlaufer<Wert>(startDatei) {
     }
   )
 
-  override fun evaluiereKonvertierung(konvertierung: AST.Satz.Ausdruck.Konvertierung): Wert {
+  private fun evaluiereKonvertierung(konvertierung: AST.Satz.Ausdruck.Konvertierung): Wert {
     val wert = evaluiereAusdruck(konvertierung.ausdruck)
 
 

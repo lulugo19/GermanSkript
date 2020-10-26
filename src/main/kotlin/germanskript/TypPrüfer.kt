@@ -3,12 +3,10 @@ package germanskript
 import java.io.File
 import germanskript.util.SimpleLogger
 
-class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
+class TypPrüfer(startDatei: File): PipelineKomponente(startDatei) {
   val typisierer = Typisierer(startDatei)
-  override val definierer = typisierer.definierer
-  override val nichts = Typ.Compound.KlassenTyp.BuildInType.Nichts
-  override val niemals = Typ.Compound.KlassenTyp.BuildInType.Niemals
-  override var umgebung = Umgebung<Typ>()
+  val definierer = typisierer.definierer
+  var umgebung = Umgebung<Typ>()
   val logger = SimpleLogger()
   val ast: AST.Programm get() = typisierer.ast
 
@@ -25,6 +23,7 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
   private var evaluiereKonstante = false
   private var erwarteterTyp: Typ? = null
   private var methodenObjekt: Typ.Compound? = null
+  private var inSuperBlock = false
   private lateinit var objektKlasse: AST.Definition.Typdefinition.Klasse
 
   fun prüfe() {
@@ -54,7 +53,7 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
 
     if (!typIstTyp(ausdruckTyp, erwarteterTyp)) {
       throw GermanSkriptFehler.TypFehler.FalscherTyp(
-          holeErstesTokenVonAusdruck(ausdruck), ausdruckTyp, erwarteterTyp.name
+          ausdruck.holeErstesToken(), ausdruckTyp, erwarteterTyp.name
       )
     }
     return ausdruckTyp
@@ -181,7 +180,7 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
     evaluiereKonstante = true
     val typ = evaluiereAusdruck(konstante.wert)
     if (typ !is Typ.Compound.KlassenTyp.BuildInType) {
-      throw GermanSkriptFehler.KonstantenFehler(holeErstesTokenVonAusdruck(konstante.wert))
+      throw GermanSkriptFehler.KonstantenFehler(konstante.wert.holeErstesToken())
     }
     konstante.typ = typ
     evaluiereKonstante = false
@@ -189,14 +188,10 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
 
   private fun nichtErlaubtInKonstante(ausdruck: AST.Satz.Ausdruck) {
     if (evaluiereKonstante) {
-      throw GermanSkriptFehler.KonstantenFehler(holeErstesTokenVonAusdruck(ausdruck))
+      throw GermanSkriptFehler.KonstantenFehler(ausdruck.holeErstesToken())
     }
   }
-
-  // breche niemals Sätze ab
-  override fun sollteAbbrechen(): Boolean = false
-  override fun sollteStackAufrollen(): Boolean = false
-
+  
   private fun prüfeFunktion(funktion: AST.Definition.Funktion, funktionsUmgebung: Umgebung<Typ>) {
     funktionsUmgebung.pushBereich()
     for (parameter in funktion.signatur.parameter) {
@@ -311,6 +306,117 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
     }
   }
 
+  private fun durchlaufeBereich(bereich: AST.Satz.Bereich, neuerBereich: Boolean): Typ  {
+    if (neuerBereich) {
+      umgebung.pushBereich()
+    }
+    var rückgabe: Typ = Typ.Compound.KlassenTyp.BuildInType.Nichts
+    for (satz in bereich.sätze) {
+      rückgabe = when (satz) {
+        is AST.Satz.VariablenDeklaration -> durchlaufeVariablenDeklaration(satz)
+        is AST.Satz.ListenElementZuweisung -> durchlaufeListenElementZuweisung(satz)
+        is AST.Satz.Bereich -> durchlaufeBereich(satz, true)
+        is AST.Satz.SuperBlock -> {
+          val prevInSuperBlock = inSuperBlock
+          inSuperBlock = true
+          durchlaufeBereich(satz.bereich, true).also {
+            inSuperBlock = prevInSuperBlock
+          }
+        }
+        is AST.Satz.Zurückgabe -> durchlaufeZurückgabe(satz)
+        is AST.Satz.Ausdruck.Bedingung -> durchlaufeBedingungsSatz(satz, false)
+        is AST.Satz.SolangeSchleife -> durchlaufeSolangeSchleife(satz)
+        is AST.Satz.FürJedeSchleife -> durchlaufeFürJedeSchleife(satz)
+        is AST.Satz.SchleifenKontrolle -> Typ.Compound.KlassenTyp.BuildInType.Nichts
+        is AST.Satz.VersucheFange -> durchlaufeVersucheFange(satz)
+        is AST.Satz.Werfe -> durchlaufeWerfe(satz)
+        is AST.Satz.Intern -> durchlaufeIntern(satz)
+        is AST.Satz.Ausdruck -> evaluiereAusdruck(satz)
+        else -> throw java.lang.Exception("Dieser Fall sollte nie eintreten!")
+      }
+    }
+    if (neuerBereich) {
+      umgebung.popBereich()
+    }
+    return rückgabe
+  }
+
+  private fun evaluiereAusdruck(ausdruck: AST.Satz.Ausdruck): Typ {
+    return when (ausdruck) {
+      is AST.Satz.Ausdruck.Zeichenfolge -> Typ.Compound.KlassenTyp.BuildInType.Zeichenfolge
+      is AST.Satz.Ausdruck.Zahl -> Typ.Compound.KlassenTyp.BuildInType.Zahl
+      is AST.Satz.Ausdruck.Boolean -> Typ.Compound.KlassenTyp.BuildInType.Boolean
+      is AST.Satz.Ausdruck.Variable -> evaluiereVariable(ausdruck)
+      is AST.Satz.Ausdruck.Liste -> evaluiereListe(ausdruck)
+      is AST.Satz.Ausdruck.ListenElement -> evaluiereListenElement(ausdruck)
+      is AST.Satz.Ausdruck.FunktionsAufruf -> durchlaufeFunktionsAufruf(ausdruck)
+      is AST.Satz.Ausdruck.BinärerAusdruck -> evaluiereBinärenAusdruck(ausdruck)
+      is AST.Satz.Ausdruck.Minus -> evaluiereMinus(ausdruck)
+      is AST.Satz.Ausdruck.Konvertierung -> evaluiereKonvertierung(ausdruck)
+      is AST.Satz.Ausdruck.ObjektInstanziierung -> evaluiereObjektInstanziierung(ausdruck)
+      is AST.Satz.Ausdruck.EigenschaftsZugriff -> evaluiereEigenschaftsZugriff(ausdruck)
+      is AST.Satz.Ausdruck.SelbstEigenschaftsZugriff -> evaluiereSelbstEigenschaftsZugriff(ausdruck)
+      is AST.Satz.Ausdruck.MethodenBereichEigenschaftsZugriff -> evaluiereMethodenBlockEigenschaftsZugriff(ausdruck)
+      is AST.Satz.Ausdruck.SelbstReferenz -> evaluiereSelbstReferenz()
+      is AST.Satz.Ausdruck.MethodenBereichReferenz -> evaluiereMethodenBlockReferenz()
+      is AST.Satz.Ausdruck.Closure -> evaluiereClosure(ausdruck)
+      is AST.Satz.Ausdruck.AnonymeKlasse -> evaluiereAnonymeKlasse(ausdruck)
+      is AST.Satz.Ausdruck.Konstante -> evaluiereKonstante(ausdruck)
+      is AST.Satz.Ausdruck.TypÜberprüfung -> evaluiereTypÜberprüfung(ausdruck)
+      is AST.Satz.Ausdruck.MethodenBereich -> durchlaufeMethodenBereich(ausdruck)
+      is AST.Satz.Ausdruck.Bedingung -> durchlaufeBedingungsSatz(ausdruck, true)
+      is AST.Satz.Ausdruck.Nichts -> Typ.Compound.KlassenTyp.BuildInType.Nichts
+    }
+  }
+
+  private fun durchlaufeMethodenBereich(methodenBereich: AST.Satz.Ausdruck.MethodenBereich): Typ {
+    val wert = evaluiereAusdruck(methodenBereich.objekt)
+    bevorDurchlaufeMethodenBereich(methodenBereich, wert)
+    umgebung.pushBereich(wert)
+    return durchlaufeBereich(methodenBereich.bereich, false).also { umgebung.popBereich() }
+  }
+  
+
+  private fun evaluiereVariable(variable: AST.Satz.Ausdruck.Variable): Typ {
+    return try {
+      if (variable.konstante != null) {
+        evaluiereAusdruck(variable.konstante!!.wert!!)
+      } else {
+        this.evaluiereVariable(variable.name)
+      }
+    } catch (undefiniert: GermanSkriptFehler.Undefiniert.Variable) {
+      // Wenn die Variable nicht gefunden wurde, wird überprüft, ob es sich vielleicht um eine Konstante handelt
+      if (variable.name.vornomen == null) {
+        try {
+          val konstante = AST.Satz.Ausdruck.Konstante(emptyList(), variable.name.bezeichner)
+          konstante.setParentNode(variable)
+          val konstantenDefinition = definierer.holeKonstante(konstante)
+          konstante.wert = konstantenDefinition.wert
+          // ersetze die Variable mit ihrer Konstanten
+          variable.konstante = konstante
+          evaluiereAusdruck(konstantenDefinition.wert)
+        } catch (fehler: GermanSkriptFehler.Undefiniert.Konstante) {
+          throw  undefiniert
+        }
+      }
+      else {
+        throw undefiniert
+      }
+    }
+  }
+
+  private fun evaluiereVariable(name: AST.WortArt.Nomen): Typ {
+    return umgebung.leseVariable(name).wert
+  }
+
+  private fun evaluiereVariable(variable: String): Typ? {
+    return umgebung.leseVariable(variable)?.wert
+  }
+
+  private fun evaluiereMethodenBlockReferenz(): Typ {
+    return umgebung.holeMethodenBlockObjekt()!!
+  }
+
   private fun durchlaufeAufruf(token: Token, bereich: AST.Satz.Bereich, umgebung: Umgebung<Typ>, neuerBereich: Boolean, rückgabeTyp: Typ, impliziteRückgabe: Boolean): Typ {
     this.rückgabeTyp = rückgabeTyp
     this.umgebung = umgebung
@@ -322,7 +428,7 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
     }
   }
 
-  override fun durchlaufeVariablenDeklaration(deklaration: AST.Satz.VariablenDeklaration) {
+  private fun durchlaufeVariablenDeklaration(deklaration: AST.Satz.VariablenDeklaration): Typ {
     if (deklaration.istEigenschaftsNeuZuweisung) {
       val eigenschaft = holeNormaleEigenschaftAusKlasse(deklaration.name, zuÜberprüfendeKlasse!!)
       if (eigenschaft.typKnoten.name.unveränderlich) {
@@ -361,12 +467,14 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
         umgebung.überschreibeVariable(deklaration.name, wert)
       }
     }
+    return Typ.Compound.KlassenTyp.BuildInType.Nichts
   }
 
-  override fun durchlaufeListenElementZuweisung(zuweisung: AST.Satz.ListenElementZuweisung) {
+  private fun durchlaufeListenElementZuweisung(zuweisung: AST.Satz.ListenElementZuweisung): Typ {
     ausdruckMussTypSein(zuweisung.index, Typ.Compound.KlassenTyp.BuildInType.Zahl)
     val elementTyp = evaluiereListenSingular(zuweisung.singular)
     ausdruckMussTypSein(zuweisung.wert, elementTyp)
+    return Typ.Compound.KlassenTyp.BuildInType.Nichts
   }
 
   /**
@@ -434,7 +542,7 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
     }
   }
 
-  override fun durchlaufeFunktionsAufruf(funktionsAufruf: AST.Satz.Ausdruck.FunktionsAufruf, istAusdruck: Boolean): Typ {
+  private fun durchlaufeFunktionsAufruf(funktionsAufruf: AST.Satz.Ausdruck.FunktionsAufruf): Typ {
     if (funktionsAufruf.vollerName == null) {
       funktionsAufruf.vollerName = definierer.holeVollenNamenVonFunktionsAufruf(funktionsAufruf, null)
     }
@@ -589,7 +697,7 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
       val argAusdruck = argumente[i+j].ausdruck
       if (genericsMüssenInferiertWerden) {
         val ausdruckTyp = evaluiereAusdruck(argAusdruck)
-        val ausdruckToken = holeErstesTokenVonAusdruck(argAusdruck)
+        val ausdruckToken = argAusdruck.holeErstesToken()
         val paramTyp = inferiereGenerics(
             inferierteGenerics,
             parameter[i].typKnoten,
@@ -682,7 +790,7 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
     return null
   }
 
-  override fun durchlaufeZurückgabe(zurückgabe: AST.Satz.Zurückgabe): Typ {
+  private fun durchlaufeZurückgabe(zurückgabe: AST.Satz.Zurückgabe): Typ {
     ausdruckMussTypSein(zurückgabe.ausdruck, rückgabeTyp)
     // Die Rückgabe ist nur auf alle Fälle erreichbar, wenn sie an keine Bedingung und in keiner Schleife ist
     rückgabeErreicht = zurückgabe.findNodeInParents<AST.Satz.BedingungsTerm>() == null &&
@@ -695,9 +803,9 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
     return durchlaufeBereich(bedingung.bereich, true)
   }
 
-  override fun durchlaufeBedingungsSatz(bedingungsSatz: AST.Satz.Ausdruck.Bedingung, istAusdruck: Boolean): Typ {
+  private fun durchlaufeBedingungsSatz(bedingungsSatz: AST.Satz.Ausdruck.Bedingung, istAusdruck: Boolean): Typ {
     if (istAusdruck && bedingungsSatz.sonst == null) {
-      throw GermanSkriptFehler.WennAusdruckBrauchtSonst(holeErstesTokenVonAusdruck(bedingungsSatz))
+      throw GermanSkriptFehler.WennAusdruckBrauchtSonst(bedingungsSatz.holeErstesToken())
     }
 
     var bedingungsTyp: Typ? = null
@@ -708,7 +816,7 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
         if (bedingungsTyp == null) {
           typ
         } else {
-          vereineTypen(holeErstesTokenVonAusdruck(bedingung.bedingung), bedingungsTyp, typ)
+          vereineTypen(bedingung.bedingung.holeErstesToken(), bedingungsTyp, typ)
         }
       } catch (fehler: GermanSkriptFehler.TypFehler.TypenUnvereinbar) {
         if (istAusdruck) {
@@ -721,7 +829,7 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
     if (bedingungsSatz.sonst != null) {
       bedingungsTyp = try {
         vereineTypen(
-            holeErstesTokenVonAusdruck(bedingungsSatz.bedingungen[0].bedingung),
+            bedingungsSatz.bedingungen[0].bedingung.holeErstesToken(),
             bedingungsTyp!!,
             durchlaufeBereich(bedingungsSatz.sonst!!, true)
         )
@@ -735,16 +843,17 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
     return bedingungsTyp?: Typ.Compound.KlassenTyp.BuildInType.Nichts
   }
 
-  override fun durchlaufeSolangeSchleife(schleife: AST.Satz.SolangeSchleife) {
+  private fun durchlaufeSolangeSchleife(schleife: AST.Satz.SolangeSchleife): Typ {
     prüfeBedingung(schleife.bedingung)
+    return Typ.Compound.KlassenTyp.BuildInType.Nichts
   }
 
-  override fun durchlaufeFürJedeSchleife(schleife: AST.Satz.FürJedeSchleife) {
+  private fun durchlaufeFürJedeSchleife(schleife: AST.Satz.FürJedeSchleife): Typ {
     val elementTyp = when {
       schleife.iterierbares != null -> {
         val iterierbarerTyp = evaluiereAusdruck(schleife.iterierbares)
         val iterierbareSchnittstelle = typisierer.prüfeIterierbar(iterierbarerTyp)
-            ?: throw GermanSkriptFehler.TypFehler.IterierbarErwartet(holeErstesTokenVonAusdruck(schleife.iterierbares))
+            ?: throw GermanSkriptFehler.TypFehler.IterierbarErwartet(schleife.iterierbares.holeErstesToken())
         val typArgumente = if (iterierbarerTyp is Typ.Compound) iterierbarerTyp.typArgumente else null
         ersetzeGenerics(iterierbareSchnittstelle.typArgumente[0], null, typArgumente).typ!!
       }
@@ -762,9 +871,10 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
     umgebung.schreibeVariable(schleife.binder, elementTyp, false)
     durchlaufeBereich(schleife.bereich, true)
     umgebung.popBereich()
+    return Typ.Compound.KlassenTyp.BuildInType.Nichts
   }
 
-  override fun durchlaufeVersucheFange(versucheFange: AST.Satz.VersucheFange) {
+  private fun durchlaufeVersucheFange(versucheFange: AST.Satz.VersucheFange): Typ {
     durchlaufeBereich(versucheFange.versuche, true)
     for (fange in versucheFange.fange) {
       umgebung.pushBereich()
@@ -778,80 +888,35 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
         durchlaufeBereich(versucheFange.schlussendlich, true)
       }
     }
+    return Typ.Compound.KlassenTyp.BuildInType.Nichts
   }
 
-  override fun durchlaufeWerfe(werfe: AST.Satz.Werfe): Typ {
+  private fun durchlaufeWerfe(werfe: AST.Satz.Werfe): Typ {
     evaluiereAusdruck(werfe.ausdruck)
     return Typ.Compound.KlassenTyp.BuildInType.Niemals
   }
 
-  override fun durchlaufeIntern(intern: AST.Satz.Intern): Typ {
+  fun durchlaufeIntern(intern: AST.Satz.Intern): Typ {
     // Hier muss nicht viel gemacht werden
     // die internen Sachen sind schon von kotlin Typ-gecheckt :)
     rückgabeErreicht = true
     return rückgabeTyp
   }
 
-  override fun bevorDurchlaufeMethodenBereich(methodenBereich: AST.Satz.Ausdruck.MethodenBereich, blockObjekt: Typ?) {
+  private fun bevorDurchlaufeMethodenBereich(methodenBereich: AST.Satz.Ausdruck.MethodenBereich, blockObjekt: Typ?) {
     if (blockObjekt !is Typ.Compound && blockObjekt !is Typ.Compound.Schnittstelle) {
-      throw GermanSkriptFehler.TypFehler.ObjektErwartet(holeErstesTokenVonAusdruck(methodenBereich.objekt))
+      throw GermanSkriptFehler.TypFehler.ObjektErwartet(methodenBereich.objekt.holeErstesToken())
     }
   }
 
-  override fun durchlaufeAbbrechen() {
-    // hier muss nichts gemacht werden...
-  }
-
-  override fun durchlaufeFortfahren() {
-    // hier muss nichts gemacht werden...
-  }
-
-  override fun starteBereich(bereich: AST.Satz.Bereich) {
-    // hier muss nichts gemacht werden...
-  }
-
-  override fun beendeBereich(bereich: AST.Satz.Bereich) {
-    // hier muss nichts gemacht werden...
-  }
-
-  override fun evaluiereZeichenfolge(ausdruck: AST.Satz.Ausdruck.Zeichenfolge) = Typ.Compound.KlassenTyp.BuildInType.Zeichenfolge
-
-  override fun evaluiereZahl(ausdruck: AST.Satz.Ausdruck.Zahl) = Typ.Compound.KlassenTyp.BuildInType.Zahl
-
-  override fun evaluiereBoolean(ausdruck: AST.Satz.Ausdruck.Boolean) = Typ.Compound.KlassenTyp.BuildInType.Boolean
-
-  override fun evaluiereVariable(variable: AST.Satz.Ausdruck.Variable): Typ {
-    return try {
-      super.evaluiereVariable(variable)
-    } catch (undefiniert: GermanSkriptFehler.Undefiniert.Variable) {
-      // Wenn die Variable nicht gefunden wurde, wird überprüft, ob es sich vielleicht um eine Konstante handelt
-      if (variable.name.vornomen == null) {
-        try {
-          val konstante = AST.Satz.Ausdruck.Konstante(emptyList(), variable.name.bezeichner)
-          konstante.setParentNode(variable)
-          val konstantenDefinition = definierer.holeKonstante(konstante)
-          konstante.wert = konstantenDefinition.wert
-          // ersetze die Variable mit ihrer Konstanten
-          variable.konstante = konstante
-          evaluiereAusdruck(konstantenDefinition.wert)
-        } catch (fehler: GermanSkriptFehler.Undefiniert.Konstante) {
-          throw  undefiniert
-        }
-      }
-      else {
-        throw undefiniert
-      }
-    }
-  }
-
-  override fun evaluiereKonstante(konstante: AST.Satz.Ausdruck.Konstante): Typ {
+  private fun evaluiereKonstante(konstante: AST.Satz.Ausdruck.Konstante): Typ {
     val konstanteDefinition = definierer.holeKonstante(konstante)
     // tragen den Wert der Konstanten ein
     konstante.wert = konstanteDefinition.wert
     return evaluiereAusdruck(konstante.wert!!)
   }
 
-  override fun evaluiereListe(ausdruck: AST.Satz.Ausdruck.Liste): Typ {
+  private fun evaluiereListe(ausdruck: AST.Satz.Ausdruck.Liste): Typ {
     nichtErlaubtInKonstante(ausdruck)
     val listenTyp = typisierer.bestimmeTyp(
         ausdruck.pluralTyp,
@@ -863,7 +928,7 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
     return listenTyp
   }
 
-  override fun evaluiereListenElement(listenElement: AST.Satz.Ausdruck.ListenElement): Typ {
+  private fun evaluiereListenElement(listenElement: AST.Satz.Ausdruck.ListenElement): Typ {
     nichtErlaubtInKonstante(listenElement)
     ausdruckMussTypSein(listenElement.index, Typ.Compound.KlassenTyp.BuildInType.Zahl)
     val zeichenfolge = evaluiereVariable(listenElement.singular.nominativ)
@@ -889,7 +954,7 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
     return (liste as Typ.Compound.KlassenTyp.Liste).typArgumente[0].typ!!
   }
 
-  override fun evaluiereObjektInstanziierung(instanziierung: AST.Satz.Ausdruck.ObjektInstanziierung): Typ {
+  private fun evaluiereObjektInstanziierung(instanziierung: AST.Satz.Ausdruck.ObjektInstanziierung): Typ {
     nichtErlaubtInKonstante(instanziierung)
     val klasse = typisierer.bestimmeTyp(
         instanziierung.klasse,
@@ -930,7 +995,7 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
 
       if (genericsMüssenInferiertWerden) {
         val ausdruckTyp = evaluiereAusdruck(zuweisung.ausdruck)
-        val ausdruckToken = holeErstesTokenVonAusdruck(zuweisung.ausdruck)
+        val ausdruckToken = zuweisung.ausdruck.holeErstesToken()
         val paramTyp = inferiereGenerics(
             inferierteGenerics,
             eigenschaft.typKnoten,
@@ -957,24 +1022,24 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
     return klasse
   }
 
-  override fun evaluiereEigenschaftsZugriff(eigenschaftsZugriff: AST.Satz.Ausdruck.EigenschaftsZugriff): Typ {
+  private fun evaluiereEigenschaftsZugriff(eigenschaftsZugriff: AST.Satz.Ausdruck.EigenschaftsZugriff): Typ {
     nichtErlaubtInKonstante(eigenschaftsZugriff)
     val klasse = evaluiereAusdruck(eigenschaftsZugriff.objekt)
     return if (klasse is Typ.Compound.KlassenTyp) {
       holeEigenschaftAusKlasse(eigenschaftsZugriff, klasse)
     }
     else {
-      throw GermanSkriptFehler.TypFehler.ObjektErwartet(holeErstesTokenVonAusdruck(eigenschaftsZugriff.objekt))
+      throw GermanSkriptFehler.TypFehler.ObjektErwartet(eigenschaftsZugriff.objekt.holeErstesToken())
     }
   }
 
-  override fun evaluiereSelbstEigenschaftsZugriff(eigenschaftsZugriff: AST.Satz.Ausdruck.SelbstEigenschaftsZugriff): Typ {
+  private fun evaluiereSelbstEigenschaftsZugriff(eigenschaftsZugriff: AST.Satz.Ausdruck.SelbstEigenschaftsZugriff): Typ {
     nichtErlaubtInKonstante(eigenschaftsZugriff)
     return holeEigenschaftAusKlasse(eigenschaftsZugriff, zuÜberprüfendeKlasse!!)
   }
 
 
-  override fun evaluiereMethodenBlockEigenschaftsZugriff(eigenschaftsZugriff: AST.Satz.Ausdruck.MethodenBereichEigenschaftsZugriff): Typ {
+  private fun evaluiereMethodenBlockEigenschaftsZugriff(eigenschaftsZugriff: AST.Satz.Ausdruck.MethodenBereichEigenschaftsZugriff): Typ {
     nichtErlaubtInKonstante(eigenschaftsZugriff)
     val methodenBlockObjekt = umgebung.holeMethodenBlockObjekt() as Typ.Compound.KlassenTyp
     return holeEigenschaftAusKlasse(eigenschaftsZugriff, methodenBlockObjekt)
@@ -1029,7 +1094,7 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
     return if (typ is Typ.Generic) klasse.typArgumente[typ.index].typ!! else typ
   }
 
-  override fun evaluiereBinärenAusdruck(ausdruck: AST.Satz.Ausdruck.BinärerAusdruck): Typ {
+  private fun evaluiereBinärenAusdruck(ausdruck: AST.Satz.Ausdruck.BinärerAusdruck): Typ {
     val linkerTyp = evaluiereAusdruck(ausdruck.links)
     val operator = ausdruck.operator.typ.operator
     if (!linkerTyp.definierteOperatoren.containsKey(operator)) {
@@ -1040,11 +1105,11 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
     return linkerTyp.definierteOperatoren.getValue(operator)
   }
 
-  override fun evaluiereMinus(minus: AST.Satz.Ausdruck.Minus): Typ {
+  private fun evaluiereMinus(minus: AST.Satz.Ausdruck.Minus): Typ {
     return ausdruckMussTypSein(minus.ausdruck, Typ.Compound.KlassenTyp.BuildInType.Zahl)
   }
 
-  override fun evaluiereKonvertierung(konvertierung: AST.Satz.Ausdruck.Konvertierung): Typ{
+  private fun evaluiereKonvertierung(konvertierung: AST.Satz.Ausdruck.Konvertierung): Typ{
     nichtErlaubtInKonstante(konvertierung)
     val ausdruck = evaluiereAusdruck(konvertierung.ausdruck)
     val konvertierungsTyp = typisierer.bestimmeTyp(konvertierung.typ, null, null, true)!!
@@ -1081,9 +1146,9 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
     }
   }
 
-  override fun evaluiereSelbstReferenz() = zuÜberprüfendeKlasse!!
+  private fun evaluiereSelbstReferenz() = zuÜberprüfendeKlasse!!
 
-  override fun evaluiereClosure(closure: AST.Satz.Ausdruck.Closure): Typ.Compound.Schnittstelle {
+  private fun evaluiereClosure(closure: AST.Satz.Ausdruck.Closure): Typ.Compound.Schnittstelle {
     nichtErlaubtInKonstante(closure)
     val schnittstelle = typisierer.bestimmeTyp(
         closure.schnittstelle,
@@ -1136,7 +1201,7 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
     return schnittstelle
   }
 
-  override fun evaluiereAnonymeKlasse(anonymeKlasse: AST.Satz.Ausdruck.AnonymeKlasse): Typ {
+  private fun evaluiereAnonymeKlasse(anonymeKlasse: AST.Satz.Ausdruck.AnonymeKlasse): Typ {
     nichtErlaubtInKonstante(anonymeKlasse)
     val schnittstelle = typisierer.bestimmeTyp(
         anonymeKlasse.schnittstelle,
@@ -1185,7 +1250,7 @@ class TypPrüfer(startDatei: File): ProgrammDurchlaufer<Typ>(startDatei) {
     return klassenTyp
   }
 
-  override fun evaluiereTypÜberprüfung(typÜberprüfung: AST.Satz.Ausdruck.TypÜberprüfung): Typ {
+  private fun evaluiereTypÜberprüfung(typÜberprüfung: AST.Satz.Ausdruck.TypÜberprüfung): Typ {
     typisierer.bestimmeTyp(typÜberprüfung.typ, funktionsTypParams, klassenTypParams, true)
     return Typ.Compound.KlassenTyp.BuildInType.Boolean
   }
