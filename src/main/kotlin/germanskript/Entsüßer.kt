@@ -93,7 +93,7 @@ class Entsüßer(startDatei: File): PipelineKomponente(startDatei) {
 
     fürJedeSchleife.bereich.sätze.add(0, iteration)
     val solangeSchleife = AST.Satz.SolangeSchleife(AST.Satz.BedingungsTerm(
-        bedingung, fürJedeSchleife.bereich
+        fürJedeSchleife.für.toUntyped(), bedingung, fürJedeSchleife.bereich
     ))
 
     // ersetze die Für-Jede-Schleife

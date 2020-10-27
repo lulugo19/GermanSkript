@@ -128,6 +128,10 @@ sealed class TokenTyp(val anzeigeName: String) {
     object FORTFAHREN: TokenTyp("'fortfahren'")
     object ABBRECHEN: TokenTyp("'abbrechen'")
     object ZURÜCK: TokenTyp("'zurück'")
+    object VERSUCHE: TokenTyp("'versuche'")
+    object FANGE: TokenTyp("'fange'")
+    object SCHLUSSENDLICH: TokenTyp("'schlussendlich'")
+    object WERFE: TokenTyp("'werfe'")
     object BIS: TokenTyp("'bis'")
     object VERB: TokenTyp("'Verb'")
     object NOMEN: TokenTyp("'Nomen'")
@@ -318,6 +322,10 @@ private val WORT_MAPPING = mapOf<String, TokenTyp>(
     "fortfahren" to TokenTyp.FORTFAHREN,
     "abbrechen" to TokenTyp.ABBRECHEN,
     "zurück" to TokenTyp.ZURÜCK,
+    "versuche" to TokenTyp.VERSUCHE,
+    "fange" to TokenTyp.FANGE,
+    "schlussendlich" to TokenTyp.SCHLUSSENDLICH,
+    "werfe" to TokenTyp.WERFE,
     "Modul" to TokenTyp.MODUL,
     "Super" to TokenTyp.SUPER,
     // Werte

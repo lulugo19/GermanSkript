@@ -486,6 +486,7 @@ sealed class AST {
     }
 
     data class BedingungsTerm(
+        val token: Token,
         var bedingung: Ausdruck,
         val bereich: Bereich
     ): Satz() {
@@ -512,6 +513,7 @@ sealed class AST {
     }
 
     data class FürJedeSchleife(
+        val für: TypedToken<TokenTyp.BEZEICHNER_KLEIN>,
         val singular: WortArt.Nomen,
         val binder: WortArt.Nomen,
         val iterierbares: Ausdruck?,
@@ -529,34 +531,6 @@ sealed class AST {
           }
           yield(bereich)
         }
-    }
-
-    data class VersucheFange(
-        val versuche: Bereich,
-        val fange: List<Fange>,
-        val schlussendlich: Bereich?
-    ): Satz() {
-      override val children = sequence {
-        yield(versuche)
-        yieldAll(fange)
-        if (schlussendlich != null) {
-          yield(schlussendlich!!)
-        }
-      }
-    }
-
-    data class Fange(
-        val param: Definition.Parameter,
-        val bereich: Bereich
-    ): Satz() {
-      override val children = sequenceOf(param, bereich)
-    }
-
-    data class Werfe(
-        val werfe: TypedToken<TokenTyp.BEZEICHNER_KLEIN>,
-        var ausdruck: Ausdruck
-    ): Satz() {
-      override val children = sequenceOf(ausdruck)
     }
 
     data class Reichweite(val anfang: Ausdruck, val ende: Ausdruck) : AST() {
@@ -596,8 +570,10 @@ sealed class AST {
           is Konstante -> name.toUntyped()
           is MethodenBereich -> objekt.holeErstesToken()
           is Nichts -> nichts.toUntyped()
-          is Bedingung -> bedingungen[0].bedingung.holeErstesToken()
+          is Bedingung -> bedingungen[0].token
           is TypÜberprüfung -> ausdruck.holeErstesToken()
+          is VersucheFange -> versuche.toUntyped()
+          is Werfe -> werfe.toUntyped()
         }
       }
       
@@ -765,7 +741,7 @@ sealed class AST {
 
       data class Bedingung(
           val bedingungen: MutableList<BedingungsTerm>,
-          var sonst: Bereich?
+          var sonst: Sonst?
       ): Ausdruck() {
         override val children = sequence {
           yieldAll(bedingungen)
@@ -773,6 +749,13 @@ sealed class AST {
             yield(sonst!!)
           }
         }
+      }
+
+      data class Sonst(
+          val token: TypedToken<TokenTyp.SONST>,
+          val bereich: Bereich
+      ): Satz() {
+        override val children = sequenceOf(bereich)
       }
 
       data class TypÜberprüfung(
@@ -818,6 +801,36 @@ sealed class AST {
 
       data class SelbstReferenz(val ich: TypedToken<TokenTyp.REFERENZ.ICH>): Ausdruck()
       data class MethodenBereichReferenz(val du: TypedToken<TokenTyp.REFERENZ.DU>): Ausdruck()
+
+      data class VersucheFange(
+          val versuche: TypedToken<TokenTyp.VERSUCHE>,
+          val bereich: Bereich,
+          val fange: List<Fange>,
+          val schlussendlich: Bereich?
+      ): Ausdruck() {
+        override val children = sequence {
+          yield(bereich)
+          yieldAll(fange)
+          if (schlussendlich != null) {
+            yield(schlussendlich!!)
+          }
+        }
+      }
+
+      data class Fange(
+          val fange: TypedToken<TokenTyp.FANGE>,
+          val param: Definition.Parameter,
+          val bereich: Bereich
+      ): Satz() {
+        override val children = sequenceOf(param, bereich)
+      }
+
+      data class Werfe(
+          val werfe: TypedToken<TokenTyp.WERFE>,
+          var ausdruck: Ausdruck
+      ): Ausdruck() {
+        override val children = sequenceOf(ausdruck)
+      }
     }
   }
 

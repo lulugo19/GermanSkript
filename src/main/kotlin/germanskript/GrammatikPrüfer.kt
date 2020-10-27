@@ -34,8 +34,8 @@ class GrammatikPrüfer(startDatei: File): PipelineKomponente(startDatei) {
         is AST.Satz.ListenElementZuweisung -> prüfeListenElementZuweisung(knoten)
         is AST.Satz.Zurückgabe -> prüfeKontextbasiertenAusdruck(knoten.ausdruck, null, EnumSet.of(Kasus.AKKUSATIV))
         is AST.Satz.FürJedeSchleife -> prüfeFürJedeSchleife(knoten)
-        is AST.Satz.Fange -> prüfeParameter(knoten.param, EnumSet.of(Kasus.AKKUSATIV))
-        is AST.Satz.Werfe -> prüfeWerfe(knoten)
+        is AST.Satz.Ausdruck.Fange -> prüfeParameter(knoten.param, EnumSet.of(Kasus.AKKUSATIV))
+        is AST.Satz.Ausdruck.Werfe -> prüfeWerfe(knoten)
         is AST.Satz.Ausdruck -> prüfeKontextbasiertenAusdruck(knoten, null, EnumSet.of(Kasus.NOMINATIV))
       }
       // germanskript.visit everything
@@ -372,7 +372,7 @@ class GrammatikPrüfer(startDatei: File): PipelineKomponente(startDatei) {
     }
   }
 
-  private fun prüfeWerfe(werfe: AST.Satz.Werfe) {
+  private fun prüfeWerfe(werfe: AST.Satz.Ausdruck.Werfe) {
     prüfeKontextbasiertenAusdruck(werfe.ausdruck, null, EnumSet.of(Kasus.AKKUSATIV))
   }
 

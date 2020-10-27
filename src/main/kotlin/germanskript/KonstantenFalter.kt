@@ -181,17 +181,18 @@ class KonstantenFalter(startDatei: File): ProgrammDurchlaufer<Wert?>(startDatei)
     umgebung.popBereich()
   }
 
-  override fun durchlaufeVersucheFange(versucheFange: AST.Satz.VersucheFange) {
-    durchlaufeBereich(versucheFange.versuche, true)
+  override fun durchlaufeVersucheFange(versucheFange: AST.Satz.Ausdruck.VersucheFange): Wert? {
+    durchlaufeBereich(versucheFange.bereich, true)
     for (fange in versucheFange.fange) {
       umgebung.pushBereich()
       umgebung.schreibeVariable(fange.param.name, null ,true)
       durchlaufeBereich(fange.bereich, false)
       umgebung.popBereich()
     }
+    return null
   }
 
-  override fun durchlaufeWerfe(werfe: AST.Satz.Werfe): Wert? {
+  override fun durchlaufeWerfe(werfe: AST.Satz.Ausdruck.Werfe): Wert? {
     werfe.ausdruck = falteKonstante(werfe.ausdruck)
     return null
   }

@@ -53,8 +53,8 @@ abstract  class ProgrammDurchlaufer<T>(startDatei: File): PipelineKomponente(sta
         is AST.Satz.Ausdruck.Bedingung -> durchlaufeBedingungsSatz(satz, false)
         is AST.Satz.SolangeSchleife -> durchlaufeSolangeSchleife(satz)
         is AST.Satz.FürJedeSchleife -> durchlaufeFürJedeSchleife(satz)
-        is AST.Satz.VersucheFange -> durchlaufeVersucheFange(satz)
-        is AST.Satz.Werfe -> durchlaufeWerfe(satz)
+        is AST.Satz.Ausdruck.VersucheFange -> durchlaufeVersucheFange(satz)
+        is AST.Satz.Ausdruck.Werfe -> durchlaufeWerfe(satz)
         is AST.Satz.SchleifenKontrolle.Abbrechen -> durchlaufeAbbrechen()
         is AST.Satz.SchleifenKontrolle.Fortfahren -> durchlaufeFortfahren()
         is AST.Satz.Intern -> durchlaufeIntern(satz)
@@ -70,34 +70,6 @@ abstract  class ProgrammDurchlaufer<T>(startDatei: File): PipelineKomponente(sta
       umgebung.popBereich()
     }
     return rückgabe
-  }
-
-  protected fun holeErstesTokenVonAusdruck(ausdruck: AST.Satz.Ausdruck): Token {
-    return when (ausdruck) {
-      is AST.Satz.Ausdruck.Zeichenfolge -> ausdruck.zeichenfolge.toUntyped()
-      is AST.Satz.Ausdruck.Liste -> ausdruck.pluralTyp.name.vornomen!!.toUntyped()
-      is AST.Satz.Ausdruck.Zahl -> ausdruck.zahl.toUntyped()
-      is AST.Satz.Ausdruck.Boolean -> ausdruck.boolean.toUntyped()
-      is AST.Satz.Ausdruck.Variable -> ausdruck.name.bezeichner.toUntyped()
-      is AST.Satz.Ausdruck.FunktionsAufruf -> ausdruck.verb.toUntyped()
-      is AST.Satz.Ausdruck.ListenElement -> ausdruck.singular.vornomen!!.toUntyped()
-      is AST.Satz.Ausdruck.BinärerAusdruck -> holeErstesTokenVonAusdruck(ausdruck.links)
-      is AST.Satz.Ausdruck.Minus -> holeErstesTokenVonAusdruck(ausdruck.ausdruck)
-      is AST.Satz.Ausdruck.Konvertierung -> holeErstesTokenVonAusdruck(ausdruck.ausdruck)
-      is AST.Satz.Ausdruck.ObjektInstanziierung -> ausdruck.klasse.name.bezeichnerToken
-      is AST.Satz.Ausdruck.EigenschaftsZugriff -> ausdruck.eigenschaftsName.bezeichner.toUntyped()
-      is AST.Satz.Ausdruck.SelbstEigenschaftsZugriff -> ausdruck.eigenschaftsName.bezeichner.toUntyped()
-      is AST.Satz.Ausdruck.MethodenBereichEigenschaftsZugriff -> ausdruck.eigenschaftsName.bezeichner.toUntyped()
-      is AST.Satz.Ausdruck.SelbstReferenz -> ausdruck.ich.toUntyped()
-      is AST.Satz.Ausdruck.MethodenBereichReferenz -> ausdruck.du.toUntyped()
-      is AST.Satz.Ausdruck.Closure -> ausdruck.schnittstelle.name.bezeichnerToken
-      is AST.Satz.Ausdruck.AnonymeKlasse -> ausdruck.schnittstelle.name.bezeichnerToken
-      is AST.Satz.Ausdruck.Konstante -> ausdruck.name.toUntyped()
-      is AST.Satz.Ausdruck.MethodenBereich -> holeErstesTokenVonAusdruck(ausdruck.objekt)
-      is AST.Satz.Ausdruck.Nichts -> ausdruck.nichts.toUntyped()
-      is AST.Satz.Ausdruck.Bedingung -> holeErstesTokenVonAusdruck(ausdruck.bedingungen[0].bedingung)
-      is AST.Satz.Ausdruck.TypÜberprüfung -> holeErstesTokenVonAusdruck(ausdruck.ausdruck)
-    }
   }
 
   private fun durchlaufeMethodenBereich(methodenBereich: AST.Satz.Ausdruck.MethodenBereich): T {
@@ -119,8 +91,8 @@ abstract  class ProgrammDurchlaufer<T>(startDatei: File): PipelineKomponente(sta
   protected abstract fun durchlaufeFortfahren()
   protected abstract fun durchlaufeSolangeSchleife(schleife: AST.Satz.SolangeSchleife)
   protected abstract fun durchlaufeFürJedeSchleife(schleife: AST.Satz.FürJedeSchleife)
-  protected abstract fun durchlaufeVersucheFange(versucheFange: AST.Satz.VersucheFange)
-  abstract fun durchlaufeWerfe(werfe: AST.Satz.Werfe): T
+  protected abstract fun durchlaufeVersucheFange(versucheFange: AST.Satz.Ausdruck.VersucheFange): T
+  abstract fun durchlaufeWerfe(werfe: AST.Satz.Ausdruck.Werfe): T
   protected abstract fun durchlaufeIntern(intern: AST.Satz.Intern): T
   protected abstract fun starteBereich(bereich: AST.Satz.Bereich)
   protected abstract fun beendeBereich(bereich: AST.Satz.Bereich)
@@ -154,6 +126,8 @@ abstract  class ProgrammDurchlaufer<T>(startDatei: File): PipelineKomponente(sta
       is AST.Satz.Ausdruck.MethodenBereich -> durchlaufeMethodenBereich(ausdruck)
       is AST.Satz.Ausdruck.Bedingung -> durchlaufeBedingungsSatz(ausdruck, true)
       is AST.Satz.Ausdruck.Nichts -> nichts
+      is AST.Satz.Ausdruck.VersucheFange -> durchlaufeVersucheFange(ausdruck)
+      is AST.Satz.Ausdruck.Werfe -> durchlaufeWerfe(ausdruck)
     }
   }
 

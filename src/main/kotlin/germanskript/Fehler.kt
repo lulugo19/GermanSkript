@@ -100,7 +100,13 @@ sealed class GermanSkriptFehler(private val fehlerName: String, val token: Token
   }
 
   class WennAusdruckBrauchtSonst(token: Token): GermanSkriptFehler("Wenn-Ausdruck-Fehler", token) {
-    override val nachricht: String = "Der Wenn-Ausdruck braucht einen Sonst-Fall, ansonsten kann er nicht als Ausdruck verwendet werden."
+    override val nachricht: String = "Der Wenn-Ausdruck braucht einen Sonst-Fall,\n" +
+        "ansonsten kann er nicht als Ausdruck verwendet werden."
+  }
+
+  class VersucheFangeAusdruckBrauchtFangeOderSchlussendlich(token: Token): GermanSkriptFehler("Versuche-Fange-Ausdruck-Fehler", token) {
+    override val nachricht: String = "Der Versuche-Fange-Ausdruck braucht mindestens ein 'Fange' oder ein 'Schlussendlich',\n" +
+        "ansonsten kann er nicht als Ausdruck verwendet werden."
   }
 
   class UnimplementierteSchnittstelle(

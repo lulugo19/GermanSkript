@@ -242,6 +242,8 @@ class Typisierer(startDatei: File): PipelineKomponente(startDatei) {
         as AST.Definition.Typdefinition.Klasse
     Typ.Compound.KlassenTyp.BuildInType.Nichts.definition = definierer.holeTypDefinition("Nichts")
       as AST.Definition.Typdefinition.Klasse
+    Typ.Compound.KlassenTyp.BuildInType.Niemals.definition = definierer.holeTypDefinition("Niemals")
+      as AST.Definition.Typdefinition.Klasse
     Typ.Compound.KlassenTyp.BuildInType.Zeichenfolge.definition = definierer.holeTypDefinition("Zeichenfolge")
         as AST.Definition.Typdefinition.Klasse
     Typ.Compound.KlassenTyp.BuildInType.Zahl.definition = definierer.holeTypDefinition("Zahl")

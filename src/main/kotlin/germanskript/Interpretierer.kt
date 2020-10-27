@@ -168,8 +168,8 @@ class Interpretierer(startDatei: File): PipelineKomponente(startDatei) {
         is AST.Satz.SuperBlock -> durchlaufeBereich(satz.bereich, true)
         is AST.Satz.Zurückgabe -> durchlaufeZurückgabe(satz)
         is AST.Satz.SolangeSchleife -> durchlaufeSolangeSchleife(satz)
-        is AST.Satz.VersucheFange -> durchlaufeVersucheFange(satz)
-        is AST.Satz.Werfe -> durchlaufeWerfe(satz)
+        is AST.Satz.Ausdruck.VersucheFange -> durchlaufeVersucheFange(satz)
+        is AST.Satz.Ausdruck.Werfe -> durchlaufeWerfe(satz)
         is AST.Satz.SchleifenKontrolle.Abbrechen -> flags.add(Flag.SCHLEIFE_ABBRECHEN).let { germanskript.intern.Nichts }
         is AST.Satz.SchleifenKontrolle.Fortfahren -> flags.add(Flag.SCHLEIFE_FORTFAHREN).let { germanskript.intern.Nichts }
         is AST.Satz.Intern -> durchlaufeIntern(satz)
@@ -323,7 +323,7 @@ class Interpretierer(startDatei: File): PipelineKomponente(startDatei) {
     }
 
     return if (!inBedingung && bedingungsSatz.sonst != null ) {
-      durchlaufeBereich(bedingungsSatz.sonst!!, true)
+      durchlaufeBereich(bedingungsSatz.sonst!!.bereich, true)
     } else {
       return germanskript.intern.Nichts
     }
@@ -338,8 +338,8 @@ class Interpretierer(startDatei: File): PipelineKomponente(startDatei) {
     return germanskript.intern.Nichts
   }
 
-  private fun durchlaufeVersucheFange(versucheFange: AST.Satz.VersucheFange): Wert {
-    durchlaufeBereich(versucheFange.versuche, true)
+  private fun durchlaufeVersucheFange(versucheFange: AST.Satz.Ausdruck.VersucheFange): Wert {
+    var rückgabe = durchlaufeBereich(versucheFange.bereich, true)
     if (flags.contains(Flag.FEHLER_GEWORFEN)) {
       val fehlerObjekt = geworfenerFehler!!
       val fehlerTyp = typeOf(fehlerObjekt)
@@ -350,22 +350,22 @@ class Interpretierer(startDatei: File): PipelineKomponente(startDatei) {
         flags.remove(Flag.FEHLER_GEWORFEN)
         umgebung.pushBereich()
         umgebung.schreibeVariable(fange.param.name, fehlerObjekt, true)
-        durchlaufeBereich(fange.bereich, false)
+        rückgabe = durchlaufeBereich(fange.bereich, false)
         umgebung.popBereich()
       }
     }
     if (versucheFange.schlussendlich != null) {
       val fehlerGeworfen = flags.contains(Flag.FEHLER_GEWORFEN)
       flags.remove(Flag.FEHLER_GEWORFEN)
-      durchlaufeBereich(versucheFange.schlussendlich, true)
+      rückgabe = durchlaufeBereich(versucheFange.schlussendlich, true)
       if (fehlerGeworfen) {
         flags.add(Flag.FEHLER_GEWORFEN)
       }
     }
-    return germanskript.intern.Nichts
+    return rückgabe
   }
 
-  private fun durchlaufeWerfe(werfe: AST.Satz.Werfe): Wert {
+  private fun durchlaufeWerfe(werfe: AST.Satz.Ausdruck.Werfe): Wert {
     val wert = evaluiereAusdruck(werfe.ausdruck)
     if (wert !is Wert.Objekt) {
       throw Exception("Der Typprüfer sollte diesen Fall schon überprüfen.")
@@ -415,6 +415,8 @@ class Interpretierer(startDatei: File): PipelineKomponente(startDatei) {
       is AST.Satz.Ausdruck.MethodenBereich -> durchlaufeMethodenBereich(ausdruck)
       is AST.Satz.Ausdruck.Bedingung -> durchlaufeBedingungsSatz(ausdruck)
       is AST.Satz.Ausdruck.Nichts -> germanskript.intern.Nichts
+      is AST.Satz.Ausdruck.VersucheFange -> durchlaufeVersucheFange(ausdruck)
+      is AST.Satz.Ausdruck.Werfe -> durchlaufeWerfe(ausdruck)
     }
   }
 

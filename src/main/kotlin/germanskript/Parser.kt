@@ -395,6 +395,8 @@ private sealed class SubParser<T: AST>() {
         is TokenTyp.BOOLEAN -> AST.Satz.Ausdruck.Boolean(next().toTyped())
         is TokenTyp.BEZEICHNER_KLEIN -> subParse(Satz.Ausdruck.FunktionsAufruf(emptyList(), inBedingungsTerm))
         is TokenTyp.WENN -> subParse(Satz.Ausdruck.Bedingung)
+        is TokenTyp.VERSUCHE -> subParse(Satz.Ausdruck.VersucheFange)
+        is TokenTyp.WERFE -> subParse(Satz.Ausdruck.Werfe)
         is TokenTyp.VORNOMEN -> {
           val subjekt = parseNomenAusdruck<TokenTyp.VORNOMEN>("Vornomen", true, inBedingungsTerm, false).third
           val nächterTokenTyp = peekType()
@@ -740,8 +742,6 @@ private sealed class SubParser<T: AST>() {
               peekType(1) is TokenTyp.BEZEICHNER_GROSS -> null
               else -> subParse(Satz.Ausdruck.FunktionsAufruf(emptyList(), false))
             }
-            "versuche" -> subParse(Satz.VersucheFange)
-            "werfe" -> subParse(Satz.Werfe)
             else -> subParse(Satz.Ausdruck.FunktionsAufruf(emptyList(), false))
           }
         is TokenTyp.EOF, TokenTyp.PUNKT, TokenTyp.AUSRUFEZEICHEN, TokenTyp.HAUPT_PROGRAMM_ENDE -> null
@@ -955,13 +955,13 @@ private sealed class SubParser<T: AST>() {
       }
     }
 
-    object BedingungsTerm: Satz<AST.Satz.BedingungsTerm>() {
+    class BedingungsTerm(private val token: Token): Satz<AST.Satz.BedingungsTerm>() {
       override val id = ASTKnotenID.BEDINGUNGS_TERM
 
       override fun parseImpl(): AST.Satz.BedingungsTerm {
         val bedingung = parseAusdruck(mitVornomen = true, optionalesIstNachVergleich = true, inBedingungsTerm = true)
         val sätze = parseSätze()
-        return AST.Satz.BedingungsTerm(bedingung, sätze)
+        return AST.Satz.BedingungsTerm(token, bedingung, sätze)
       }
     }
 
@@ -970,8 +970,8 @@ private sealed class SubParser<T: AST>() {
         get() = ASTKnotenID.SCHLEIFE
 
       override fun parseImpl(): AST.Satz.SolangeSchleife {
-        expect<TokenTyp.SOLANGE>("'solange'")
-        return AST.Satz.SolangeSchleife(subParse(BedingungsTerm))
+        val solange = expect<TokenTyp.SOLANGE>("'solange'")
+        return AST.Satz.SolangeSchleife(subParse(BedingungsTerm(solange.toUntyped())))
       }
     }
 
@@ -980,7 +980,7 @@ private sealed class SubParser<T: AST>() {
         get() = ASTKnotenID.FÜR_JEDE_SCHLEIFE
 
       override fun parseImpl(): AST.Satz.FürJedeSchleife {
-        parseKleinesSchlüsselwort("für")
+        val für = parseKleinesSchlüsselwort("für")
         val singular = parseNomenMitVornomen<TokenTyp.VORNOMEN.JEDE>("'jeden', 'jede' oder 'jedes'", true)
         val binder = when (peekType()) {
           is TokenTyp.BEZEICHNER_GROSS -> parseNomenOhneVornomen(true)
@@ -1015,7 +1015,7 @@ private sealed class SubParser<T: AST>() {
               "In der Für-Jede-Schleife ohne 'in' oder 'von ... bis' ist ein Singular, dass nur aus einem Symbol besteht nicht erlaubt.")
         }
         val sätze = parseSätze()
-        return AST.Satz.FürJedeSchleife(singular, binder, liste, reichweite, sätze)
+        return AST.Satz.FürJedeSchleife(für, singular, binder, liste, reichweite, sätze)
       }
     }
 
@@ -1038,48 +1038,6 @@ private sealed class SubParser<T: AST>() {
       }
     }
 
-    object VersucheFange: Satz<AST.Satz.VersucheFange>() {
-      override val id: ASTKnotenID = ASTKnotenID.VERSUCHE_FANGE
-
-      override fun parseImpl(): AST.Satz.VersucheFange {
-        parseKleinesSchlüsselwort("versuche")
-        val versuchBereich = parseSätze()
-        überspringeLeereZeilen()
-        val fange = mutableListOf<AST.Satz.Fange>()
-        while (peek().wert == "fange") {
-          fange += parseFange()
-          überspringeLeereZeilen()
-        }
-        val schlussendlich = if (peek().wert == "schlussendlich") {
-          next()
-          parseSätze()
-        } else {
-          null
-        }
-        return AST.Satz.VersucheFange(versuchBereich, fange, schlussendlich)
-      }
-
-      private fun parseFange(): AST.Satz.Fange {
-        parseKleinesSchlüsselwort("fange")
-        val param = parseParameter<TokenTyp.VORNOMEN.ARTIKEL.BESTIMMT>("bestimmter Artikel")
-        val bereich = parseSätze()
-        return AST.Satz.Fange(param, bereich)
-      }
-    }
-
-    object Werfe: Satz<AST.Satz.Werfe>() {
-      override val id: ASTKnotenID = ASTKnotenID.WERFE
-
-      override fun parseImpl(): AST.Satz.Werfe {
-        val werfe = parseKleinesSchlüsselwort("werfe")
-        val (_, _, ausdruck) = parseNomenAusdruck<TokenTyp.VORNOMEN>(
-            "Vornomen", inBinärenAusdruck = false, inBedingungsTerm = false, adjektivErlaubt = false
-        )
-        return AST.Satz.Werfe(werfe, ausdruck)
-      }
-
-    }
-
     sealed class Ausdruck<T: AST.Satz.Ausdruck>: SubParser<T>() {
 
       fun parsePräpositionsArgumente(inBedingungsTerm: Boolean): List<AST.PräpositionsArgumente> {
@@ -1093,7 +1051,7 @@ private sealed class SubParser<T: AST>() {
       }
 
       sealed class NomenAusdruck<T: AST.Satz.Ausdruck>(protected val nomen: AST.WortArt.Nomen, protected val inBedingungsTerm: Boolean): Ausdruck<T>() {
-        class Liste(protected val pluralTyp: AST.TypKnoten, inBedingungsTerm: Boolean)
+        class Liste(private val pluralTyp: AST.TypKnoten, inBedingungsTerm: Boolean)
           : NomenAusdruck<AST.Satz.Ausdruck.Liste>(pluralTyp.name as AST.WortArt.Nomen, inBedingungsTerm) {
 
           override val id: ASTKnotenID
@@ -1228,19 +1186,19 @@ private sealed class SubParser<T: AST>() {
         override fun parseImpl(): AST.Satz.Ausdruck.Bedingung {
           val bedingungen = mutableListOf<AST.Satz.BedingungsTerm>()
 
-          expect<TokenTyp.WENN>("'wenn'")
+          val wenn = expect<TokenTyp.WENN>("'wenn'")
 
-          bedingungen += subParse(BedingungsTerm)
+          bedingungen += subParse(BedingungsTerm(wenn.toUntyped()))
 
           überspringeLeereZeilen()
           while (peekType() is TokenTyp.SONST) {
-            expect<TokenTyp.SONST>("'sonst'")
+            val sonst =expect<TokenTyp.SONST>("'sonst'")
             if (peekType() !is TokenTyp.WENN) {
               val sätze = parseSätze()
-              return AST.Satz.Ausdruck.Bedingung(bedingungen, sätze)
+              return AST.Satz.Ausdruck.Bedingung(bedingungen, AST.Satz.Ausdruck.Sonst(sonst, sätze))
             }
             expect<TokenTyp.WENN>("'wenn'")
-            bedingungen += subParse(BedingungsTerm)
+            bedingungen += subParse(BedingungsTerm(sonst.toUntyped()))
             überspringeLeereZeilen()
           }
           return AST.Satz.Ausdruck.Bedingung(bedingungen, null)
@@ -1310,6 +1268,47 @@ private sealed class SubParser<T: AST>() {
           return AST.Satz.Ausdruck.FunktionsAufruf(typArgumente, emptyList(), subjekt, verb!!, objekt, null, präpositionen, suffix)
         }
 
+      }
+
+      object VersucheFange: Ausdruck<AST.Satz.Ausdruck.VersucheFange>() {
+        override val id: ASTKnotenID = ASTKnotenID.VERSUCHE_FANGE
+
+        override fun parseImpl(): AST.Satz.Ausdruck.VersucheFange {
+          val versuche = expect<TokenTyp.VERSUCHE>("'versuche'")
+          val versuchBereich = parseSätze()
+          überspringeLeereZeilen()
+          val fange = mutableListOf<AST.Satz.Ausdruck.Fange>()
+          while (peekType() is TokenTyp.FANGE) {
+            fange += parseFange()
+            überspringeLeereZeilen()
+          }
+          val schlussendlich = if (peekType() is TokenTyp.SCHLUSSENDLICH) {
+            next()
+            parseSätze()
+          } else {
+            null
+          }
+          return AST.Satz.Ausdruck.VersucheFange(versuche, versuchBereich, fange, schlussendlich)
+        }
+
+        private fun parseFange(): AST.Satz.Ausdruck.Fange {
+          val fange = expect<TokenTyp.FANGE>("'fange'")
+          val param = parseParameter<TokenTyp.VORNOMEN.ARTIKEL.BESTIMMT>("bestimmter Artikel")
+          val bereich = parseSätze()
+          return AST.Satz.Ausdruck.Fange(fange, param, bereich)
+        }
+      }
+
+      object Werfe: Ausdruck<AST.Satz.Ausdruck.Werfe>() {
+        override val id: ASTKnotenID = ASTKnotenID.WERFE
+
+        override fun parseImpl(): AST.Satz.Ausdruck.Werfe {
+          val werfe = expect<TokenTyp.WERFE>("'werfe'")
+          val (_, _, ausdruck) = parseNomenAusdruck<TokenTyp.VORNOMEN>(
+              "Vornomen", inBinärenAusdruck = false, inBedingungsTerm = false, adjektivErlaubt = false
+          )
+          return AST.Satz.Ausdruck.Werfe(werfe, ausdruck)
+        }
       }
     }
   }

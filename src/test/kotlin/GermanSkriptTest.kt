@@ -1103,6 +1103,42 @@ class GermanSkriptTest {
   }
 
   @Test
+  @DisplayName("Versuche-Fange als Ausdruck")
+  fun versucheFangeAlsAusdruck() {
+    val quellCode = """
+      die Zahl ist versuche:
+        "Erster Versuch" als Zahl
+      .
+      fange den Fehler:
+        42
+      .
+      
+      schreibe die Zahl
+      
+      // wenn schlussendlich verwendet wird, dann ist Wert, das, was in Schlussendlich steht
+      die Zeile ist versuche:
+        "Zweiter Versuch" als Zahl
+      .
+      fange den Fehler:
+        7
+      .
+      schlussendlich:
+        "Das Beste kommt zum Schluss!"
+      .
+      
+      schreibe die Zeile
+    """.trimIndent()
+
+    val erwarteteAusgabe = """
+      42
+      Das Beste kommt zum Schluss!
+      
+    """.trimIndent()
+
+    testeGermanSkriptCode(quellCode, erwarteteAusgabe)
+  }
+
+  @Test
   @DisplayName("Liste (füge hinzu, enthalten)")
   fun liste() {
     val quellCode = """
@@ -1458,18 +1494,6 @@ class GermanSkriptTest {
     """.trimIndent()
 
     testeGermanSkriptCode(quellCode, "21\n")
-  }
-
-  @Test
-  @DisplayName("Ungültige Bedingung als Ausdruck")
-  fun ungültigeBedingungAlsAusdruck() {
-    val quellCode = """
-      eine Zahl ist wenn wahr: 32. sonst: "Hallo".
-    """.trimIndent()
-
-    assertThatExceptionOfType(GermanSkriptFehler.TypFehler.TypenUnvereinbar::class.java).isThrownBy {
-      führeGermanSkriptCodeAus(quellCode)
-    }
   }
 
   @Test
@@ -1916,6 +1940,16 @@ class GermanSkriptTest {
       !
     """.trimIndent()
 
-    führeGermanSkriptCodeAus(quellCode)
+    val erwarteteAusgabe = """
+      Hallo
+      Hello
+      Salut
+      Ola
+      Der Schlüssel 'Türkisch' konnte in der HashMap nicht gefunden werden.
+      N/A
+      
+    """.trimIndent()
+
+    testeGermanSkriptCode(quellCode, erwarteteAusgabe)
   }
 }

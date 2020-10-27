@@ -168,11 +168,18 @@ class TypPrüfer(startDatei: File): PipelineKomponente(startDatei) {
     } else param.typKnoten.typ!!
   }
 
-  private fun vereineTypen(token: Token, typA: Typ, typB: Typ): Typ {
+  private fun vereineTypen(typA: Typ, typB: Typ): Typ {
     return when {
       typIstTyp(typA, typB) -> typB
       typIstTyp(typB, typA) -> typA
-      else -> throw GermanSkriptFehler.TypFehler.TypenUnvereinbar(token, typA, typB)
+      // Wenn die Typen nicht übereinstimmen, dann kommt Objekt raus, Elternklasse von allen Typen
+      else -> Typ.Compound.KlassenTyp.BuildInType.Objekt
+    }
+  }
+
+  private fun vereineAlleTypen(typen: List<Typ>): Typ {
+    return typen.reduce() { typA, typB ->
+      vereineTypen(typA, typB)
     }
   }
 
@@ -328,8 +335,7 @@ class TypPrüfer(startDatei: File): PipelineKomponente(startDatei) {
         is AST.Satz.SolangeSchleife -> durchlaufeSolangeSchleife(satz)
         is AST.Satz.FürJedeSchleife -> durchlaufeFürJedeSchleife(satz)
         is AST.Satz.SchleifenKontrolle -> Typ.Compound.KlassenTyp.BuildInType.Nichts
-        is AST.Satz.VersucheFange -> durchlaufeVersucheFange(satz)
-        is AST.Satz.Werfe -> durchlaufeWerfe(satz)
+        is AST.Satz.Ausdruck.VersucheFange -> durchlaufeVersucheFange(satz, false)
         is AST.Satz.Intern -> durchlaufeIntern(satz)
         is AST.Satz.Ausdruck -> evaluiereAusdruck(satz)
         else -> throw java.lang.Exception("Dieser Fall sollte nie eintreten!")
@@ -366,6 +372,8 @@ class TypPrüfer(startDatei: File): PipelineKomponente(startDatei) {
       is AST.Satz.Ausdruck.MethodenBereich -> durchlaufeMethodenBereich(ausdruck)
       is AST.Satz.Ausdruck.Bedingung -> durchlaufeBedingungsSatz(ausdruck, true)
       is AST.Satz.Ausdruck.Nichts -> Typ.Compound.KlassenTyp.BuildInType.Nichts
+      is AST.Satz.Ausdruck.VersucheFange -> durchlaufeVersucheFange(ausdruck, true)
+      is AST.Satz.Ausdruck.Werfe -> evaluiereWerfe(ausdruck)
     }
   }
 
@@ -375,7 +383,6 @@ class TypPrüfer(startDatei: File): PipelineKomponente(startDatei) {
     umgebung.pushBereich(wert)
     return durchlaufeBereich(methodenBereich.bereich, false).also { umgebung.popBereich() }
   }
-  
 
   private fun evaluiereVariable(variable: AST.Satz.Ausdruck.Variable): Typ {
     return try {
@@ -524,7 +531,7 @@ class TypPrüfer(startDatei: File): PipelineKomponente(startDatei) {
           inferierteGenerics[typ.index] = if (inferierteGenerics[typ.index] == null) {
             fromType.inTypKnoten()
           } else {
-            vereineTypen(fehlerToken, inferierteGenerics[typ.index]!!.typ!!, fromType).inTypKnoten()
+            vereineTypen(inferierteGenerics[typ.index]!!.typ!!, fromType).inTypKnoten()
           }
           inferierteGenerics[typ.index]!!
         } else {
@@ -805,42 +812,20 @@ class TypPrüfer(startDatei: File): PipelineKomponente(startDatei) {
 
   private fun durchlaufeBedingungsSatz(bedingungsSatz: AST.Satz.Ausdruck.Bedingung, istAusdruck: Boolean): Typ {
     if (istAusdruck && bedingungsSatz.sonst == null) {
-      throw GermanSkriptFehler.WennAusdruckBrauchtSonst(bedingungsSatz.holeErstesToken())
+      throw GermanSkriptFehler.WennAusdruckBrauchtSonst(bedingungsSatz.bedingungen[0].token)
     }
 
-    var bedingungsTyp: Typ? = null
+    val typen = mutableListOf<Typ>()
 
     for (bedingung in bedingungsSatz.bedingungen) {
-      val typ = prüfeBedingung(bedingung)
-      bedingungsTyp = try {
-        if (bedingungsTyp == null) {
-          typ
-        } else {
-          vereineTypen(bedingung.bedingung.holeErstesToken(), bedingungsTyp, typ)
-        }
-      } catch (fehler: GermanSkriptFehler.TypFehler.TypenUnvereinbar) {
-        if (istAusdruck) {
-          throw fehler
-        }
-        Typ.Compound.KlassenTyp.BuildInType.Nichts
-      }
+      typen.add(prüfeBedingung(bedingung))
     }
 
     if (bedingungsSatz.sonst != null) {
-      bedingungsTyp = try {
-        vereineTypen(
-            bedingungsSatz.bedingungen[0].bedingung.holeErstesToken(),
-            bedingungsTyp!!,
-            durchlaufeBereich(bedingungsSatz.sonst!!, true)
-        )
-      } catch (fehler: GermanSkriptFehler.TypFehler.TypenUnvereinbar) {
-        if (istAusdruck) {
-          throw fehler
-        }
-        Typ.Compound.KlassenTyp.BuildInType.Nichts
-      }
+      typen.add(durchlaufeBereich(bedingungsSatz.sonst!!.bereich, true))
     }
-    return bedingungsTyp?: Typ.Compound.KlassenTyp.BuildInType.Nichts
+
+    return vereineAlleTypen(typen)
   }
 
   private fun durchlaufeSolangeSchleife(schleife: AST.Satz.SolangeSchleife): Typ {
@@ -874,24 +859,29 @@ class TypPrüfer(startDatei: File): PipelineKomponente(startDatei) {
     return Typ.Compound.KlassenTyp.BuildInType.Nichts
   }
 
-  private fun durchlaufeVersucheFange(versucheFange: AST.Satz.VersucheFange): Typ {
-    durchlaufeBereich(versucheFange.versuche, true)
+  private fun durchlaufeVersucheFange(versucheFange: AST.Satz.Ausdruck.VersucheFange, istAusdruck: Boolean): Typ {
+    if (istAusdruck && versucheFange.fange.isEmpty() && versucheFange.schlussendlich == null) {
+      throw GermanSkriptFehler.VersucheFangeAusdruckBrauchtFangeOderSchlussendlich(versucheFange.versuche.toUntyped())
+    }
+    val typen = mutableListOf<Typ>()
+    typen.add(durchlaufeBereich(versucheFange.bereich, true))
     for (fange in versucheFange.fange) {
       umgebung.pushBereich()
       // TODO: hole aus dem Kontext die Typparameter
       val typ = typisierer.bestimmeTyp(
           fange.param.typKnoten, funktionsTypParams, klassenTypParams, true)!!
       umgebung.schreibeVariable(fange.param.name, typ, true)
-      durchlaufeBereich(fange.bereich, true)
+      typen.add(durchlaufeBereich(fange.bereich, true))
       umgebung.popBereich()
-      if (versucheFange.schlussendlich != null) {
-        durchlaufeBereich(versucheFange.schlussendlich, true)
-      }
     }
-    return Typ.Compound.KlassenTyp.BuildInType.Nichts
+    return if (versucheFange.schlussendlich != null) {
+      durchlaufeBereich(versucheFange.schlussendlich, true)
+    } else {
+      vereineAlleTypen(typen)
+    }
   }
 
-  private fun durchlaufeWerfe(werfe: AST.Satz.Werfe): Typ {
+  private fun evaluiereWerfe(werfe: AST.Satz.Ausdruck.Werfe): Typ {
     evaluiereAusdruck(werfe.ausdruck)
     return Typ.Compound.KlassenTyp.BuildInType.Niemals
   }
