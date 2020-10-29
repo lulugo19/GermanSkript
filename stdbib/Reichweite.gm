@@ -4,7 +4,7 @@ Deklination Neutrum Singular(Ende, Endes, Ende, Ende) Plural(Enden)
 
 Nomen ReichWeite mit der Zahl Start, der Zahl Ende:.
 
-Implementiere die iterierbare ReichWeite:
+Implementiere die iterierbare<Zahl> ReichWeite:
 
     Verb hole (den iterierenden<Zahl> Iterator):
         ein X ist mein Start

@@ -43,16 +43,17 @@ Adjektiv<Typ> iterierend:
 
 Modul Standard::Collections:
     Implementiere<Element> die iterierbare<Element> Liste<Element>:
+
         Verb(Boolean) enthalten das Element: intern.
         Verb füge das Element hinzu: intern.
         Verb entferne an der Zahl Index: intern.
 
-        Verb hole (das Iterierende<Element> Iterator):
+        Verb hole (den iterierenden<Element> Iterator):
             ein Index ist 0
             die AnZahl ist meine AnZahl
             die Elemente sind Ich
 
-            gebe etwas Iterierendes<Element>:
+            gebe etwas Iterierendes:
                 Verb(Boolean) läuft weiter:
                     gebe den Index kleiner als die AnZahl zurück
                 .
