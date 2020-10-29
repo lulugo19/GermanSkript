@@ -2,7 +2,8 @@ Deklination Maskulinum Singular(Name, Namens, Namen, Namen) Plural(Namen)
 Deklination Neutrum Singular(Alter, Alters, Alter, Alter) Plural(Alter)
 Deklination Femininum Singular(Person) Plural(Personen)
 Deklination Femininum Singular(Begrüßung) Plural(Begrüßungen)
-
+Deklination Maskulinum Singular(Student, Students, Student, Student) Plural(Studenten)
+Deklination Maskulinum Singular(Gang, Gangs, Gang, Gang) Plural(Gänge)
 
 Nomen Person mit
     der Zeichenfolge NachName,
@@ -29,6 +30,22 @@ Implementiere die Person:
         gebe "#{mein VorName} #{mein NachName} (#{mein Alter} Jahre alt)" zurück
     .
 .
+
+Nomen Student mit
+    der Zeichenfolge NachName,
+    der Zeichenfolge VorName,
+    einer Zahl Alter,
+    einer Zeichenfolge StudienGang
+    als Person:.
+
+Implementiere den Student:
+    Verb stelle mich vor:
+        Super: stelle mich vor!
+        schreibe die Zeile "Ich studiere #{mein StudienGang}."
+    .
+.
+
+
 die Person ist eine Person mit dem NachNamen "Mustermann", dem VorNamen "Max", dem Alter 24
 
 Person:
@@ -38,3 +55,12 @@ Person:
 
 stelle die Person vor
 schreibe die Zeile Person als Zeichenfolge
+
+der Student ist ein Student mit
+    dem NachNamen "Peterson",
+    dem VorNamen "Sabine",
+    dem Alter 22,
+    dem StudienGang "Ernährungswissenschaften"
+
+stelle den Student vor
+schreibe die Zeile Student als Zeichenfolge

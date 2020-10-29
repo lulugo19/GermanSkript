@@ -129,7 +129,7 @@ class Entsüßer(startDatei: File): PipelineKomponente(startDatei) {
 
     return AST.Satz.Ausdruck.ObjektInstanziierung(
         reichweitenKlasse,
-        listOf(
+        mutableListOf(
             AST.Argument(null, startNomen,reichweite.anfang),
             AST.Argument(null, endNomen, reichweite.ende)
         )

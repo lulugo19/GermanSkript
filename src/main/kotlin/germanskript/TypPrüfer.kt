@@ -982,20 +982,35 @@ class TypPrüfer(startDatei: File): PipelineKomponente(startDatei) {
         j++
         continue
       }
-      if (i >= instanziierung.eigenschaftsZuweisungen.size + j) {
-        throw GermanSkriptFehler.EigenschaftsFehler.EigenschaftsVergessen(instanziierung.klasse.name.bezeichnerToken, eigenschaft.name.nominativ)
-      }
-      val zuweisung = instanziierung.eigenschaftsZuweisungen[i-j]
+
+      val zuweisung = instanziierung.eigenschaftsZuweisungen.getOrNull(i-j)
 
       // Wenn es es sich um eine generische Eigenschaft handelt, verwende den Namen des Typarguments
       val eigenschaftsName = holeParamName(eigenschaft, instanziierung.klasse.typArgumente)
-      if (eigenschaftsName.nominativ != zuweisung.name.nominativ) {
-        GermanSkriptFehler.EigenschaftsFehler.UnerwarteterEigenschaftsName(zuweisung.name.bezeichner.toUntyped(), eigenschaft.name.nominativ)
+
+      // Es wird überprüft, ob das Hauptwort gleich ist, Adjektive können weggelassen werden
+      val eigenschaftsVariable = if (zuweisung == null ||
+          eigenschaftsName.hauptWort(Kasus.NOMINATIV, eigenschaftsName.numerus) !=
+          zuweisung.name.hauptWort(Kasus.NOMINATIV, eigenschaftsName.numerus)) {
+        // Gucke ob die Eigenschaft sich in der Umgebung befindet, dann wird die Elterneigenschaft mit dieser überschrieben
+        umgebung.leseVariable(eigenschaftsName.nominativ).also {
+          instanziierung.eigenschaftsZuweisungen.add(
+              i-j, AST.Argument(null, eigenschaftsName, AST.Satz.Ausdruck.Variable(eigenschaftsName)))
+        } ?:
+          if (zuweisung != null) {
+            throw GermanSkriptFehler.EigenschaftsFehler.UnerwarteterEigenschaftsName(
+                zuweisung.name.bezeichner.toUntyped(),
+                eigenschaft.name.hauptWort(Kasus.DATIV, eigenschaft.name.numerus))
+          } else {
+            throw GermanSkriptFehler.EigenschaftsFehler.EigenschaftVergessen(instanziierung.klasse.name.bezeichnerToken, eigenschaft.name.hauptWort)
+          }
+      } else {
+        null
       }
 
       if (genericsMüssenInferiertWerden) {
-        val ausdruckTyp = evaluiereAusdruck(zuweisung.ausdruck)
-        val ausdruckToken = zuweisung.ausdruck.holeErstesToken()
+        val ausdruckTyp = eigenschaftsVariable?.wert ?: evaluiereAusdruck(zuweisung!!.ausdruck)
+        val ausdruckToken = eigenschaftsVariable?.name?.bezeichnerToken ?: zuweisung!!.ausdruck.holeErstesToken()
         val paramTyp = inferiereGenerics(
             inferierteGenerics,
             eigenschaft.typKnoten,
@@ -1006,8 +1021,12 @@ class TypPrüfer(startDatei: File): PipelineKomponente(startDatei) {
         )
         typMussTypSein(ausdruckTyp, paramTyp.typ!!, ausdruckToken)
       } else {
-        ausdruckMussTypSein(zuweisung.ausdruck,
-            ersetzeGenerics(eigenschaft.typKnoten, null, instanziierung.klasse.typArgumente).typ!!)
+        val erwarteterTyp =  ersetzeGenerics(eigenschaft.typKnoten, null, instanziierung.klasse.typArgumente).typ!!
+        if (eigenschaftsVariable != null) {
+          typMussTypSein(eigenschaftsVariable.wert, erwarteterTyp, eigenschaftsVariable.name.bezeichnerToken)
+        } else {
+          ausdruckMussTypSein(zuweisung!!.ausdruck, erwarteterTyp)
+        }
       }
     }
 
@@ -1015,7 +1034,7 @@ class TypPrüfer(startDatei: File): PipelineKomponente(startDatei) {
       klasse.typArgumente = inferierteGenerics.map { it!! }
     }
 
-    if (instanziierung.eigenschaftsZuweisungen.size > definition.eigenschaften.size) {
+    if (instanziierung.eigenschaftsZuweisungen.size > definition.eigenschaften.size-j) {
       throw GermanSkriptFehler.EigenschaftsFehler.UnerwarteteEigenschaft(
           instanziierung.eigenschaftsZuweisungen[definition.eigenschaften.size].name.bezeichner.toUntyped())
     }

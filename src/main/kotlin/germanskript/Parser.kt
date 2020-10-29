@@ -1096,7 +1096,7 @@ private sealed class SubParser<T: AST>() {
               else -> emptyList()
             }
 
-            return AST.Satz.Ausdruck.ObjektInstanziierung(klasse, eigenschaftsZuweisungen)
+            return AST.Satz.Ausdruck.ObjektInstanziierung(klasse, eigenschaftsZuweisungen.toMutableList())
           }
         }
 

@@ -349,7 +349,7 @@ sealed class GermanSkriptFehler(private val fehlerName: String, val token: Token
 
     }
 
-    class EigenschaftsVergessen(token: Token, private val erwarteteEigenschaft: String): EigenschaftsFehler(token) {
+    class EigenschaftVergessen(token: Token, private val erwarteteEigenschaft: String): EigenschaftsFehler(token) {
       override val nachricht: String
         get() = "Es wird die Eigenschaft '$erwarteteEigenschaft' erwartet. Doch sie wurde vergessen."
 

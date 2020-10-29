@@ -702,7 +702,7 @@ sealed class AST {
 
       data class ObjektInstanziierung(
           val klasse: TypKnoten,
-          val eigenschaftsZuweisungen: List<Argument>
+          val eigenschaftsZuweisungen: MutableList<Argument>
       ): Ausdruck(), IAufruf {
         override val children = sequence {
           yield(klasse)
