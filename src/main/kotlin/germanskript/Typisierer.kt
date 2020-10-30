@@ -7,7 +7,6 @@ sealed class Typ() {
   abstract val name: String
   override fun toString(): String = name
 
-  abstract val definierteOperatoren: Map<Operator, Typ>
   abstract fun inTypKnoten(): AST.TypKnoten
 
   class Generic(
@@ -16,8 +15,6 @@ sealed class Typ() {
       val kontext: TypParamKontext
   ) : Typ() {
     override val name = "Generic"
-    override val definierteOperatoren: Map<Operator, Typ>
-      get() = mapOf()
 
     override fun inTypKnoten(): AST.TypKnoten {
       val typKnoten = AST.TypKnoten(emptyList(), typParam.binder, emptyList())
@@ -55,156 +52,26 @@ sealed class Typ() {
       return typKnoten
     }
 
-    sealed class KlassenTyp(name: String): Compound(name) {
-      abstract override val definition: AST.Definition.Typdefinition.Klasse
+    class Klasse(
+        override val definition: AST.Definition.Typdefinition.Klasse,
+        override var typArgumente: List<AST.TypKnoten>
+    ): Compound(definition.name.nominativ) {
 
-      class Klasse(
-          override val definition: AST.Definition.Typdefinition.Klasse,
-          override var typArgumente: List<AST.TypKnoten>
-      ): KlassenTyp(definition.name.nominativ) {
-        override val definierteOperatoren: Map<Operator, Typ> = mapOf(
-            Operator.GLEICH to BuildInType.Boolean
-        )
-
-        override fun copy(typArgumente: List<AST.TypKnoten>): Compound {
-          return Klasse(definition, typArgumente)
-        }
+      override fun copy(typArgumente: List<AST.TypKnoten>): Compound {
+        return Klasse(definition, typArgumente)
       }
 
-      class Liste(
-          override var typArgumente: List<AST.TypKnoten>
-      ) : KlassenTyp(typArgumente[0].name.ganzesWort(typArgumente[0].name.kasus, Numerus.PLURAL, false)) {
-
-        override val definition: AST.Definition.Typdefinition.Klasse
-          get() = Liste.definition
-
-        companion object {
-          lateinit var definition: AST.Definition.Typdefinition.Klasse
-        }
-
-        // Das hier muss umbedingt ein Getter sein, sonst gibt es Probleme mit StackOverflow
-        override val definierteOperatoren: Map<Operator, Typ> get() = mapOf(
-            Operator.PLUS to Liste(typArgumente),
-            Operator.GLEICH to BuildInType.Boolean
-        )
-
-        override fun copy(typArgumente: List<AST.TypKnoten>): Compound {
-          return Liste(typArgumente)
-        }
-      }
-
-      sealed class BuildInType(name: String) : KlassenTyp(name) {
-
-        // äquivalent zu Kotlins Typen "Any"
-        object Objekt: BuildInType("Objekt") {
-          override lateinit var definition: AST.Definition.Typdefinition.Klasse
-
-          override var typArgumente: List<AST.TypKnoten> = emptyList()
-
-          override fun copy(typArgumente: List<AST.TypKnoten>): Compound {
-            return Objekt
-          }
-
-          override val definierteOperatoren: Map<Operator, Typ> = mapOf(
-              Operator.GLEICH to Boolean,
-              Operator.UNGLEICH to Boolean
-          )
-        }
-
-        // äquivalent zu Kotlins Typen "Unit"
-        object Nichts: BuildInType("Nichts") {
-          override lateinit var definition: AST.Definition.Typdefinition.Klasse
-
-          override var typArgumente: List<AST.TypKnoten> = emptyList()
-
-          override fun copy(typArgumente: List<AST.TypKnoten>): Compound {
-            return Nichts
-          }
-
-          override val definierteOperatoren: Map<Operator, Typ> = mapOf()
-        }
-
-        // äquivalent zu Kotlins Typen "Nothing"
-        object Niemals: BuildInType("Niemals") {
-          override lateinit var definition: AST.Definition.Typdefinition.Klasse
-          override var typArgumente: List<AST.TypKnoten> = emptyList()
-
-          override fun copy(typArgumente: List<AST.TypKnoten>) = Niemals
-
-          override val definierteOperatoren: Map<Operator, Typ> = emptyMap()
-        }
-
-        object Zeichenfolge : BuildInType("Zeichenfolge") {
-          override lateinit var definition: AST.Definition.Typdefinition.Klasse
-
-          override var typArgumente: List<AST.TypKnoten> = emptyList()
-
-          override val definierteOperatoren: Map<Operator, Typ> = mapOf(
-                Operator.PLUS to Zeichenfolge,
-                Operator.GLEICH to Boolean,
-                Operator.UNGLEICH to Boolean,
-                Operator.GRÖßER to Boolean,
-                Operator.KLEINER to Boolean,
-                Operator.GRÖSSER_GLEICH to Boolean,
-                Operator.KLEINER_GLEICH to Boolean
-            )
-
-          override fun copy(typArgumente: List<AST.TypKnoten>) = Zeichenfolge
-        }
-
-        object Boolean : BuildInType("Boolean") {
-          override val definierteOperatoren: Map<Operator, Typ> = mapOf(
-                Operator.UND to Boolean,
-                Operator.ODER to Boolean,
-                Operator.GLEICH to Boolean,
-                Operator.UNGLEICH to Boolean
-            )
-
-          override lateinit var definition: AST.Definition.Typdefinition.Klasse
-
-          override var typArgumente: List<AST.TypKnoten> = emptyList()
-
-          override fun copy(typArgumente: List<AST.TypKnoten>) = Boolean
-        }
-
-        object Zahl : BuildInType("Zahl") {
-          override lateinit var definition: AST.Definition.Typdefinition.Klasse
-
-          override var typArgumente: List<AST.TypKnoten> = emptyList()
-
-          override fun copy(typArgumente: List<AST.TypKnoten>) = Zahl
-
-          override val definierteOperatoren: Map<Operator, Typ> = mapOf(
-                Operator.PLUS to Zahl,
-                Operator.MINUS to Zahl,
-                Operator.MAL to Zahl,
-                Operator.GETEILT to Zahl,
-                Operator.MODULO to Zahl,
-                Operator.HOCH to Zahl,
-                Operator.GRÖßER to Boolean,
-                Operator.KLEINER to Boolean,
-                Operator.GRÖSSER_GLEICH to Boolean,
-                Operator.KLEINER_GLEICH to Boolean,
-                Operator.UNGLEICH to Boolean,
-                Operator.GLEICH to Boolean
-            )
-        }
-      }
     }
 
     class Schnittstelle(
         override val definition: AST.Definition.Typdefinition.Schnittstelle,
         override var typArgumente: List<AST.TypKnoten>
     ): Compound(definition.namensToken.wert.capitalize()) {
-      override val definierteOperatoren: Map<Operator, Typ> = mapOf(
-          Operator.GLEICH to KlassenTyp.BuildInType.Boolean
-      )
 
       override fun copy(typArgumente: List<AST.TypKnoten>): Compound {
         return Schnittstelle(definition, typArgumente)
       }
     }
-
   }
 }
 
@@ -217,15 +84,9 @@ class Typisierer(startDatei: File): PipelineKomponente(startDatei) {
   val definierer = Definierer(startDatei)
   val ast = definierer.ast
 
-  companion object {
-    lateinit var schreiberTyp: Typ.Compound.KlassenTyp.Klasse
-    lateinit var reichWeitenTyp: Typ.Compound.KlassenTyp.Klasse
-    lateinit var iterierbarSchnittstelle: AST.Definition.Typdefinition.Schnittstelle
-  }
-
   fun typisiere() {
     definierer.definiere()
-    holeInterneTypDefinitionen()
+    holeBuildInTypDefinitionen()
     definierer.funktionsDefinitionen.forEach { typisiereFunktionsSignatur(it.signatur, null)}
     definierer.typDefinitionen.forEach {typDefinition ->
       // Klassen werden von Typprüfer typisiert, da die Reihenfolge und die Konstruktoren eine wichtige Rolle spielen
@@ -235,30 +96,35 @@ class Typisierer(startDatei: File): PipelineKomponente(startDatei) {
             typDefinition.typ, null, null, istAliasErlaubt = false, erlaubeLeereTypArgumente = false)
       }
     }
+    definierer.typDefinitionen.forEach { typDefinition ->
+      if (typDefinition is AST.Definition.Typdefinition.Klasse) {
+        typisiereKlasse(typDefinition)
+      }
+    }
   }
 
-  private fun holeInterneTypDefinitionen() {
-    // hole die Typdefinitionen des Typen Zeichenfolge und Liste
-    Typ.Compound.KlassenTyp.BuildInType.Objekt.definition = definierer.holeTypDefinition("Objekt")
-        as AST.Definition.Typdefinition.Klasse
-    Typ.Compound.KlassenTyp.BuildInType.Nichts.definition = definierer.holeTypDefinition("Nichts")
-      as AST.Definition.Typdefinition.Klasse
-    Typ.Compound.KlassenTyp.BuildInType.Niemals.definition = definierer.holeTypDefinition("Niemals")
-      as AST.Definition.Typdefinition.Klasse
-    Typ.Compound.KlassenTyp.BuildInType.Zeichenfolge.definition = definierer.holeTypDefinition("Zeichenfolge")
-        as AST.Definition.Typdefinition.Klasse
-    Typ.Compound.KlassenTyp.BuildInType.Zahl.definition = definierer.holeTypDefinition("Zahl")
-        as AST.Definition.Typdefinition.Klasse
-    Typ.Compound.KlassenTyp.BuildInType.Boolean.definition = definierer.holeTypDefinition("Boolean")
-        as AST.Definition.Typdefinition.Klasse
-    Typ.Compound.KlassenTyp.Liste.definition = definierer.holeTypDefinition("Liste")
-        as AST.Definition.Typdefinition.Klasse
+  private fun holeBuildInTypDefinitionen() {
+    // Build In Klassen
+    BuildIn.Klassen.objekt = Typ.Compound.Klasse(definierer.holeTypDefinition("Objekt", null) as AST.Definition.Typdefinition.Klasse, emptyList())
+    BuildIn.Klassen.nichts = Typ.Compound.Klasse(definierer.holeTypDefinition("Nichts", null) as AST.Definition.Typdefinition.Klasse, emptyList())
+    BuildIn.Klassen.niemals = Typ.Compound.Klasse(definierer.holeTypDefinition("Niemals", null) as AST.Definition.Typdefinition.Klasse, emptyList())
+    BuildIn.Klassen.zahl = Typ.Compound.Klasse(definierer.holeTypDefinition("Zahl", null) as AST.Definition.Typdefinition.Klasse, emptyList())
+    BuildIn.Klassen.zeichenfolge = Typ.Compound.Klasse(definierer.holeTypDefinition("Zeichenfolge", null) as AST.Definition.Typdefinition.Klasse, emptyList())
+    BuildIn.Klassen.boolean = Typ.Compound.Klasse(definierer.holeTypDefinition("Boolean", null) as AST.Definition.Typdefinition.Klasse, emptyList())
+    BuildIn.Klassen.reichweite = Typ.Compound.Klasse(definierer.holeTypDefinition("ReichWeite", null) as AST.Definition.Typdefinition.Klasse, emptyList())
+    BuildIn.Klassen.schreiber = Typ.Compound.Klasse(definierer.holeTypDefinition("Schreiber", arrayOf("IO")) as AST.Definition.Typdefinition.Klasse, emptyList())
+    BuildIn.Klassen.liste = definierer.holeTypDefinition("Liste") as AST.Definition.Typdefinition.Klasse
 
-    schreiberTyp = Typ.Compound.KlassenTyp.Klasse(
-        definierer.holeTypDefinition("Schreiber", arrayOf("IO")) as AST.Definition.Typdefinition.Klasse, emptyList())
-    reichWeitenTyp = Typ.Compound.KlassenTyp.Klasse(
-        definierer.holeTypDefinition("ReichWeite", null) as AST.Definition.Typdefinition.Klasse, emptyList())
-    iterierbarSchnittstelle = definierer.holeTypDefinition("Iterierbare") as AST.Definition.Typdefinition.Schnittstelle
+    // Build In Schnittstellen
+    BuildIn.Schnittstellen.iterierbar = definierer.holeTypDefinition("Iterierbare") as AST.Definition.Typdefinition.Schnittstelle
+    BuildIn.Schnittstellen.addierbar = definierer.holeTypDefinition("Addierbare") as AST.Definition.Typdefinition.Schnittstelle
+    BuildIn.Schnittstellen.subtrahierbar = definierer.holeTypDefinition("Subtrahierbare") as AST.Definition.Typdefinition.Schnittstelle
+    BuildIn.Schnittstellen.multiplizierbar = definierer.holeTypDefinition("Multiplizierbare") as AST.Definition.Typdefinition.Schnittstelle
+    BuildIn.Schnittstellen.dividierbar = definierer.holeTypDefinition("Dividierbare") as AST.Definition.Typdefinition.Schnittstelle
+    BuildIn.Schnittstellen.potenzierbar = definierer.holeTypDefinition("Potenzierbare") as AST.Definition.Typdefinition.Schnittstelle
+    BuildIn.Schnittstellen.modulobar = definierer.holeTypDefinition("Modulobare") as AST.Definition.Typdefinition.Schnittstelle
+    BuildIn.Schnittstellen.negierbar = definierer.holeTypDefinition("Negierbare") as AST.Definition.Typdefinition.Schnittstelle
+    BuildIn.Schnittstellen.vergleichbar = definierer.holeTypDefinition("Vergleichbare") as AST.Definition.Typdefinition.Schnittstelle
   }
 
   fun bestimmeTyp(
@@ -281,7 +147,6 @@ class Typisierer(startDatei: File): PipelineKomponente(startDatei) {
       erlaubeLeereTypArgumente: Boolean = false
   ): Typ {
     val typArgumente = typKnoten.typArgumente
-    val typName = typKnoten.name.hauptWort(Kasus.NOMINATIV, Numerus.SINGULAR)
 
     var typ: Typ? = null
     if (funktionsTypParams != null ) {
@@ -311,13 +176,8 @@ class Typisierer(startDatei: File): PipelineKomponente(startDatei) {
     }
 
     if (typ == null) {
-      typ = when (typName) {
-        "Zahl" -> Typ.Compound.KlassenTyp.BuildInType.Zahl
-        "Zeichenfolge" -> Typ.Compound.KlassenTyp.BuildInType.Zeichenfolge
-        "Boolean" -> Typ.Compound.KlassenTyp.BuildInType.Boolean
-        "Nichts" -> Typ.Compound.KlassenTyp.BuildInType.Nichts
-        else -> when (val typDef = definierer.holeTypDefinition(typKnoten)) {
-          is AST.Definition.Typdefinition.Klasse -> Typ.Compound.KlassenTyp.Klasse(typDef, typArgumente)
+      typ = when (val typDef = definierer.holeTypDefinition(typKnoten)) {
+          is AST.Definition.Typdefinition.Klasse -> Typ.Compound.Klasse(typDef, typArgumente)
           is AST.Definition.Typdefinition.Schnittstelle -> Typ.Compound.Schnittstelle(typDef, typArgumente)
           is AST.Definition.Typdefinition.Alias -> {
             if (!aliasErlaubt) {
@@ -326,12 +186,11 @@ class Typisierer(startDatei: File): PipelineKomponente(startDatei) {
             holeTypDefinition(typDef.typ, null, null,
                 aliasErlaubt = false, erlaubeLeereTypArgumente = false)
           }
-        }
       }
     }
     // Überprüfe hier die Anzahl der Typargumente
     when (typ) {
-      is Typ.Compound.KlassenTyp.BuildInType.Nichts, is Typ.Compound.KlassenTyp.BuildInType.Niemals, is Typ.Generic -> if (typArgumente.isNotEmpty())
+      is Typ.Generic -> if (typArgumente.isNotEmpty())
         throw GermanSkriptFehler.TypFehler.TypArgumentFehler(typKnoten.name.bezeichnerToken, typArgumente.size, 0)
       is Typ.Compound -> if ((typArgumente.isNotEmpty() || !erlaubeLeereTypArgumente) && typArgumente.size != typ.definition.typParameter.size)
         throw GermanSkriptFehler.TypFehler.TypArgumentFehler(
@@ -369,7 +228,7 @@ class Typisierer(startDatei: File): PipelineKomponente(startDatei) {
       nomen.fälle = arrayOf(EnumSet.of(Kasus.NOMINATIV))
       val singularTypKnoten = AST.TypKnoten(typKnoten.modulPfad, nomen, emptyList())
       singularTypKnoten.typ = singularTyp
-      Typ.Compound.KlassenTyp.Liste(listOf(singularTypKnoten))
+      Typ.Compound.Klasse(BuildIn.Klassen.liste ,listOf(singularTypKnoten))
     }
     return typKnoten.typ
    }
@@ -391,7 +250,7 @@ class Typisierer(startDatei: File): PipelineKomponente(startDatei) {
     }
   }
 
-  fun typisiereKlasse(klasse: AST.Definition.Typdefinition.Klasse) {
+  private fun typisiereKlasse(klasse: AST.Definition.Typdefinition.Klasse) {
     typisiereTypParameter(klasse.typParameter)
     for (eigenschaft in klasse.eigenschaften) {
       bestimmeTyp(eigenschaft.typKnoten, null, klasse.typParameter, true)
@@ -399,6 +258,31 @@ class Typisierer(startDatei: File): PipelineKomponente(startDatei) {
 
     klasse.implementierungen.forEach { implementierung ->
       typisiereImplementierung(implementierung, klasse)
+    }
+
+    fun fügeElternKlassenMethodenHinzu(elternKlasse: AST.Definition.Typdefinition.Klasse) {
+      for ((methodenName, methode) in elternKlasse.methoden) {
+        klasse.methoden.putIfAbsent(methodenName, methode)
+      }
+      for ((konvertierungsTyp, konvertierung) in elternKlasse.konvertierungen) {
+        klasse.konvertierungen.putIfAbsent(konvertierungsTyp, konvertierung)
+      }
+      klasse.implementierteSchnittstellen.addAll(elternKlasse.implementierteSchnittstellen)
+      if (elternKlasse.elternKlasse != null) {
+        fügeElternKlassenMethodenHinzu((elternKlasse.elternKlasse.klasse.typ as Typ.Compound.Klasse).definition)
+      } else {
+        if (elternKlasse !== BuildIn.Klassen.objekt.definition)
+          fügeElternKlassenMethodenHinzu(BuildIn.Klassen.objekt.definition)
+      }
+    }
+
+    if (klasse.elternKlasse != null) {
+      bestimmeTyp(klasse.elternKlasse.klasse, null, klasse.typParameter, true)
+      typisiereKlasse((klasse.elternKlasse.klasse.typ!! as Typ.Compound.Klasse).definition)
+      fügeElternKlassenMethodenHinzu((klasse.elternKlasse.klasse.typ as Typ.Compound.Klasse).definition)
+    } else if (klasse !== BuildIn.Klassen.objekt.definition) {
+      // Kopiere die Definitionen der Objekt-Hierarchie-Wurzel runter
+      fügeElternKlassenMethodenHinzu(BuildIn.Klassen.objekt.definition)
     }
   }
 
@@ -418,8 +302,7 @@ class Typisierer(startDatei: File): PipelineKomponente(startDatei) {
           schnittstelle.name.bezeichnerToken,
           klasse,
           schnittstellenTyp,
-          implementierung.bereich,
-          implementierung.klasse
+          implementierung.bereich
       )
     }
   }
@@ -445,8 +328,7 @@ class Typisierer(startDatei: File): PipelineKomponente(startDatei) {
       token: Token,
       klasse: AST.Definition.Typdefinition.Klasse,
       schnittstelle: Typ.Compound.Schnittstelle,
-      implementierung: AST.Definition.ImplementierungsBereich,
-      klassenTypKnoten: AST.TypKnoten?
+      implementierung: AST.Definition.ImplementierungsBereich
   ) {
 
     fun ersetzeGeneric(typ: Typ): Typ {
@@ -518,18 +400,6 @@ class Typisierer(startDatei: File): PipelineKomponente(startDatei) {
     typisiereTypParameter(schnittstelle.typParameter)
     schnittstelle.methodenSignaturen.forEach { signatur ->
       typisiereFunktionsSignatur(signatur, schnittstelle.typParameter)
-    }
-  }
-
-  /**
-   * Prüft ob ein Typ die Schnittstelle 'iterierbar' implementiert und gibt die Iterierbar-Schnittstelle wenn möglich zurück.
-   */
-  fun prüfeIterierbar(typ: Typ): Typ.Compound.Schnittstelle? {
-    return when (typ) {
-      is Typ.Generic -> typ.typParam.schnittstellen.find {
-        (it.typ!! as Typ.Compound.Schnittstelle).definition == iterierbarSchnittstelle }?.typ!! as Typ.Compound.Schnittstelle?
-      is Typ.Compound.KlassenTyp -> typ.definition.implementierteSchnittstellen.find { it.definition == iterierbarSchnittstelle }
-      is Typ.Compound.Schnittstelle -> if (typ.definition == iterierbarSchnittstelle) typ else null
     }
   }
 }

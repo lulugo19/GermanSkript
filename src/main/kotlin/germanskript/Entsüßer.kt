@@ -112,7 +112,7 @@ class Entsüßer(startDatei: File): PipelineKomponente(startDatei) {
     reichWeitenNomen.deklination = Deklination(Genus.FEMININUM, Array(4) {"ReichWeite"}, Array(4) {"ReichWeite"})
 
     val reichweitenKlasse = AST.TypKnoten(emptyList(), reichWeitenNomen, emptyList())
-    reichweitenKlasse.typ = Typisierer.reichWeitenTyp
+    reichweitenKlasse.typ = BuildIn.Klassen.reichweite
 
     val startNomen = AST.WortArt.Nomen(TypedToken.imaginäresToken(TokenTyp.VORNOMEN.ARTIKEL.BESTIMMT, "dem"),
         TypedToken.imaginäresToken(TokenTyp.BEZEICHNER_GROSS(arrayOf("Start"), "", null), "Start"))

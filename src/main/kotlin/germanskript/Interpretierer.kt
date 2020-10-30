@@ -1,6 +1,6 @@
 package germanskript
 
-import germanskript.intern.Wert
+import germanskript.intern.Objekt
 import java.io.File
 import java.util.*
 import kotlin.NoSuchElementException
@@ -8,15 +8,15 @@ import kotlin.collections.HashMap
 import kotlin.math.*
 import kotlin.random.Random
 
-typealias SchnittstellenAufruf = (Wert, String, argumente: Array<Wert>) -> Wert?
-typealias WerfeFehler = (String, String, Token) -> Wert
+typealias SchnittstellenAufruf = (Objekt, String, argumente: Array<Objekt>) -> Objekt?
+typealias WerfeFehler = (String, String, Token) -> Objekt
 
 class InterpretInjection(
     val aufrufStapel: Interpretierer.AufrufStapel,
     val schnittstellenAufruf: SchnittstellenAufruf,
     val werfeFehler: WerfeFehler
 ) {
-  val umgebung: Umgebung<Wert> get() = aufrufStapel.top().umgebung
+  val umgebung: Umgebung<Objekt> get() = aufrufStapel.top().umgebung
 }
 
 class Interpretierer(startDatei: File): PipelineKomponente(startDatei) {
@@ -27,12 +27,12 @@ class Interpretierer(startDatei: File): PipelineKomponente(startDatei) {
 
   private val flags = EnumSet.noneOf(Flag::class.java)
   private val aufrufStapel = AufrufStapel()
-  private var rückgabeWert: Wert = germanskript.intern.Nichts
+  private lateinit var rückgabeWert: Objekt
 
-  private var geworfenerFehler: Wert.Objekt? = null
+  private var geworfenerFehler: Objekt? = null
   private var geworfenerFehlerToken: Token? = null
 
-  private val umgebung: Umgebung<Wert> get() = aufrufStapel.top().umgebung
+  private val umgebung: Umgebung<Objekt> get() = aufrufStapel.top().umgebung
 
   private val klassenDefinitionen = HashMap<String, AST.Definition.Typdefinition.Klasse>()
 
@@ -44,6 +44,7 @@ class Interpretierer(startDatei: File): PipelineKomponente(startDatei) {
     try {
       aufrufStapel.push(ast, Umgebung())
       interpretInjection = InterpretInjection(aufrufStapel, ::durchlaufeInternenSchnittstellenAufruf, ::werfeFehler)
+      rückgabeWert = germanskript.intern.Nichts
       durchlaufeBereich(ast.programm, true)
       if (flags.contains(Flag.FEHLER_GEWORFEN)) {
         werfeLaufZeitFehler()
@@ -64,7 +65,7 @@ class Interpretierer(startDatei: File): PipelineKomponente(startDatei) {
 
   private fun werfeLaufZeitFehler() {
     flags.remove(Flag.FEHLER_GEWORFEN)
-    val konvertierungsDefinition = geworfenerFehler!!.typ.definition.konvertierungen.getValue("Zeichenfolge")
+    val konvertierungsDefinition = geworfenerFehler!!.klasse.definition.konvertierungen.getValue("Zeichenfolge")
 
     val aufruf = object : AST.IAufruf {
       override val token: Token = konvertierungsDefinition.typ.name.bezeichnerToken
@@ -75,7 +76,7 @@ class Interpretierer(startDatei: File): PipelineKomponente(startDatei) {
         aufruf,
         konvertierungsDefinition.definition,
         Umgebung(),
-        true, geworfenerFehler!!, false
+        true, geworfenerFehler!!
     ) as germanskript.intern.Zeichenfolge
 
     throw GermanSkriptFehler.UnbehandelterFehler(geworfenerFehlerToken!!, aufrufStapel.toString(), zeichenfolge.zeichenfolge, geworfenerFehler!!)
@@ -88,7 +89,7 @@ class Interpretierer(startDatei: File): PipelineKomponente(startDatei) {
     FEHLER_GEWORFEN,
   }
 
-  class AufrufStapelElement(val aufruf: AST.IAufruf, val objekt: Wert?, val umgebung: Umgebung<Wert>)
+  class AufrufStapelElement(val aufruf: AST.IAufruf, val objekt: Objekt?, val umgebung: Umgebung<Objekt>)
 
   object Konstanten {
      const val CALL_STACK_OUTPUT_LIMIT = 50
@@ -98,7 +99,7 @@ class Interpretierer(startDatei: File): PipelineKomponente(startDatei) {
     val stapel = Stack<AufrufStapelElement>()
 
     fun top(): AufrufStapelElement = stapel.peek()
-    fun push(funktionsAufruf: AST.IAufruf, neueUmgebung: Umgebung<Wert>, aufrufObjekt: Wert.Objekt? = null) {
+    fun push(funktionsAufruf: AST.IAufruf, neueUmgebung: Umgebung<Objekt>, aufrufObjekt: Objekt? = null) {
       stapel.push(AufrufStapelElement(funktionsAufruf, aufrufObjekt, neueUmgebung))
     }
 
@@ -121,8 +122,8 @@ class Interpretierer(startDatei: File): PipelineKomponente(startDatei) {
     private fun aufrufStapelElementToString(element: AufrufStapelElement): String {
       val aufruf = element.aufruf
       var zeichenfolge = "'${aufruf.vollerName}' in ${aufruf.token.position}"
-      if (element.objekt is Wert.Objekt) {
-        val klassenName = element.objekt.typ.definition.name.hauptWort
+      if (element.objekt is Objekt) {
+        val klassenName = element.objekt.klasse.definition.name.hauptWort
         zeichenfolge = "'für $klassenName: ${aufruf.vollerName}' in ${aufruf.token.position}"
       }
 
@@ -148,11 +149,11 @@ class Interpretierer(startDatei: File): PipelineKomponente(startDatei) {
   private fun sollteStackAufrollen(): Boolean = flags.contains(Flag.FEHLER_GEWORFEN)
 
   // region Sätze
-  private fun durchlaufeBereich(bereich: AST.Satz.Bereich, neuerBereich: Boolean): Wert  {
+  private fun durchlaufeBereich(bereich: AST.Satz.Bereich, neuerBereich: Boolean): Objekt  {
     if (neuerBereich) {
       umgebung.pushBereich()
     }
-    var rückgabe: Wert = germanskript.intern.Nichts
+    var rückgabe: Objekt = germanskript.intern.Nichts
     for (satz in bereich.sätze) {
       if (sollteAbbrechen()) {
         return germanskript.intern.Nichts
@@ -183,13 +184,13 @@ class Interpretierer(startDatei: File): PipelineKomponente(startDatei) {
     return rückgabe
   }
 
-  private fun durchlaufeMethodenBereich(methodenBereich: AST.Satz.Ausdruck.MethodenBereich): Wert {
+  private fun durchlaufeMethodenBereich(methodenBereich: AST.Satz.Ausdruck.MethodenBereich): Objekt {
     val wert = evaluiereAusdruck(methodenBereich.objekt)
     umgebung.pushBereich(wert)
     return durchlaufeBereich(methodenBereich.bereich, false).also { umgebung.popBereich() }
   }
   
-  private fun durchlaufeBedingung(bedingung: AST.Satz.BedingungsTerm): Wert? {
+  private fun durchlaufeBedingung(bedingung: AST.Satz.BedingungsTerm): Objekt? {
       return if (!sollteStackAufrollen() && (evaluiereAusdruck(bedingung.bedingung) as germanskript.intern.Boolean).boolean) {
         durchlaufeBereich(bedingung.bereich, true)
       } else {
@@ -197,10 +198,10 @@ class Interpretierer(startDatei: File): PipelineKomponente(startDatei) {
       }
   }
 
-  private fun durchlaufeVariablenDeklaration(deklaration: AST.Satz.VariablenDeklaration): Wert {
+  private fun durchlaufeVariablenDeklaration(deklaration: AST.Satz.VariablenDeklaration): Objekt {
     if (deklaration.istEigenschaftsNeuZuweisung || deklaration.istEigenschaft) {
       // weise Eigenschaft neu zu
-      (aufrufStapel.top().objekt!! as Wert.Objekt).setzeEigenschaft(deklaration.name.nominativ, evaluiereAusdruck(deklaration.wert))
+      aufrufStapel.top().objekt!!.setzeEigenschaft(deklaration.name.nominativ, evaluiereAusdruck(deklaration.wert))
     }
     else {
       val wert = evaluiereAusdruck(deklaration.wert)
@@ -215,7 +216,7 @@ class Interpretierer(startDatei: File): PipelineKomponente(startDatei) {
     return germanskript.intern.Nichts
   }
 
-  private fun durchlaufeListenElementZuweisung(zuweisung: AST.Satz.ListenElementZuweisung): Wert {
+  private fun durchlaufeListenElementZuweisung(zuweisung: AST.Satz.ListenElementZuweisung): Objekt {
     val liste = evaluiereListenSingular(zuweisung.singular)
     val index = (evaluiereAusdruck(zuweisung.index) as germanskript.intern.Zahl).toInt()
     if (index >= liste.elemente.size) {
@@ -230,15 +231,15 @@ class Interpretierer(startDatei: File): PipelineKomponente(startDatei) {
   private fun durchlaufeAufruf(
       aufruf: AST.IAufruf,
       bereich: AST.Satz.Bereich,
-      umgebung: Umgebung<Wert>,
+      umgebung: Umgebung<Objekt>,
       neuerBereich: Boolean,
-      objekt: Wert.Objekt?,
-      impliziterRückgabeTyp: Boolean
-  ): Wert {
+      objekt: Objekt?
+  ): Objekt {
     rückgabeWert = germanskript.intern.Nichts
     aufrufStapel.push(aufruf, umgebung, objekt)
     return durchlaufeBereich(bereich, neuerBereich).also {
       aufrufStapel.pop()
+      val impliziterRückgabeTyp = objekt is Objekt.AnonymesSkriptObjekt && objekt.istLambda
       if (!impliziterRückgabeTyp) {
         flags.remove(Flag.ZURÜCK)
       }
@@ -248,9 +249,10 @@ class Interpretierer(startDatei: File): PipelineKomponente(startDatei) {
   /**
    * Bei Closures werden die Parameternamen bei generischen Parametern mit dem Namen des eingesetzen Typen ersetzt.
    */
-  private fun holeParameterNamenFürClosure(objekt: Wert.Closure): List<AST.WortArt.Nomen> {
-    val typArgumente = objekt.schnittstelle.typArgumente
-    val signatur = objekt.schnittstelle.definition.methodenSignaturen[0]
+  /*
+  private fun holeParameterNamenFürClosure(objekt: Objekt.Closure): List<AST.WortArt.Nomen> {
+    val typArgumente = objekt.klasse.typArgumente
+    val signatur = objekt.klasse.definition.methoden[0]
     return signatur.parameter.toList().mapIndexed { index, param ->
       if (index < objekt.ausdruck.bindings.size) objekt.ausdruck.bindings[index]
       else when (val typ = param.typKnoten.typ!!) {
@@ -260,43 +262,35 @@ class Interpretierer(startDatei: File): PipelineKomponente(startDatei) {
       }
     }
   }
+  */
 
-  private fun durchlaufeFunktionsAufruf(funktionsAufruf: AST.Satz.Ausdruck.FunktionsAufruf): Wert {
-    var funktionsUmgebung = Umgebung<Wert>()
-    var objekt: Wert.Objekt? = null
+  private fun durchlaufeFunktionsAufruf(funktionsAufruf: AST.Satz.Ausdruck.FunktionsAufruf): Objekt {
+    var funktionsUmgebung = Umgebung<Objekt>()
+    var objekt: Objekt? = null
     var impliziterRückgabeTyp = false
     val (körper, parameterNamen) = if (funktionsAufruf.aufrufTyp == FunktionsAufrufTyp.FUNKTIONS_AUFRUF) {
       val definition = funktionsAufruf.funktionsDefinition!!
       Pair(definition.körper, definition.signatur.parameter.map{it.name}.toList())
     } else {
       // dynamisches Binden von Methoden
-      val methodenObjekt = when(funktionsAufruf.aufrufTyp) {
+      objekt = when(funktionsAufruf.aufrufTyp) {
         FunktionsAufrufTyp.METHODEN_SUBJEKT_AUFRUF -> evaluiereAusdruck(funktionsAufruf.subjekt!!)
         FunktionsAufrufTyp.METHODEN_REFLEXIV_AUFRUF -> evaluiereAusdruck(funktionsAufruf.objekt!!.ausdruck)
         FunktionsAufrufTyp.METHODEN_SELBST_AUFRUF -> aufrufStapel.top().objekt!!
-        else -> umgebung.holeMethodenBlockObjekt()
+        else -> umgebung.holeMethodenBlockObjekt()!!
       }
-      objekt = if (methodenObjekt is Wert.Objekt) methodenObjekt else null
       if (funktionsAufruf.funktionsDefinition != null) {
         val definition = funktionsAufruf.funktionsDefinition!!
         Pair(definition.körper, definition.signatur.parameter.map{it.name}.toList())
-      } else when (methodenObjekt)
-      {
-        is Wert.Objekt -> {
-          val methode = methodenObjekt.typ.definition.methoden.getValue(funktionsAufruf.vollerName!!)
-          // funktionsAufruf.vollerName = "für ${objekt.typ.definition.name.nominativ}: ${methode.signatur.vollerName}"
-          if (methodenObjekt is Wert.Objekt.AnonymesSkriptObjekt) {
-            funktionsUmgebung = methodenObjekt.umgebung
-          }
-          val signatur = methode.signatur
-          Pair(methode.körper, signatur.parameter.map {it.name}.toList())
+      } else {
+        val methode = objekt.klasse.definition.methoden.getValue(funktionsAufruf.vollerName!!)
+        // funktionsAufruf.vollerName = "für ${objekt.typ.definition.name.nominativ}: ${methode.signatur.vollerName}"
+        if (objekt is Objekt.AnonymesSkriptObjekt) {
+          funktionsUmgebung = objekt.umgebung
+          impliziterRückgabeTyp = objekt.istLambda
         }
-        is Wert.Closure -> {
-          impliziterRückgabeTyp = true
-          funktionsUmgebung = methodenObjekt.umgebung
-          Pair(methodenObjekt.ausdruck.körper, holeParameterNamenFürClosure(methodenObjekt))
-        }
-        else -> throw Exception("Dieser Fall sollte nie eintreten.")
+        val signatur = methode.signatur
+        Pair(methode.körper, signatur.parameter.map {it.name}.toList())
       }
     }
     funktionsUmgebung.pushBereich()
@@ -306,18 +300,18 @@ class Interpretierer(startDatei: File): PipelineKomponente(startDatei) {
       funktionsUmgebung.schreibeVariable(parameterNamen[i], evaluiereAusdruck(argumente[i+j].ausdruck), false)
     }
 
-    return durchlaufeAufruf(funktionsAufruf, körper, funktionsUmgebung, false, objekt, impliziterRückgabeTyp)
+    return durchlaufeAufruf(funktionsAufruf, körper, funktionsUmgebung, false, objekt)
         .let { if (impliziterRückgabeTyp) it else rückgabeWert }
   }
 
-  private fun durchlaufeZurückgabe(zurückgabe: AST.Satz.Zurückgabe): Wert {
+  private fun durchlaufeZurückgabe(zurückgabe: AST.Satz.Zurückgabe): Objekt {
     return evaluiereAusdruck(zurückgabe.ausdruck).also {
       flags.add(Flag.ZURÜCK)
       rückgabeWert = it
     }
   }
 
-  private fun durchlaufeBedingungsSatz(bedingungsSatz: AST.Satz.Ausdruck.Bedingung): Wert {
+  private fun durchlaufeBedingungsSatz(bedingungsSatz: AST.Satz.Ausdruck.Bedingung): Objekt {
     val inBedingung = bedingungsSatz.bedingungen.any { bedingung ->
       durchlaufeBedingung(bedingung)?.also { return it } != null
     }
@@ -329,7 +323,7 @@ class Interpretierer(startDatei: File): PipelineKomponente(startDatei) {
     }
   }
 
-  private fun durchlaufeSolangeSchleife(schleife: AST.Satz.SolangeSchleife): Wert {
+  private fun durchlaufeSolangeSchleife(schleife: AST.Satz.SolangeSchleife): Objekt {
     while (!flags.contains(Flag.SCHLEIFE_ABBRECHEN) && !flags.contains(Flag.ZURÜCK) && (evaluiereAusdruck(schleife.bedingung.bedingung) as germanskript.intern.Boolean).boolean) {
       flags.remove(Flag.SCHLEIFE_FORTFAHREN)
       durchlaufeBereich(schleife.bedingung.bereich, true)
@@ -338,13 +332,13 @@ class Interpretierer(startDatei: File): PipelineKomponente(startDatei) {
     return germanskript.intern.Nichts
   }
 
-  private fun durchlaufeVersucheFange(versucheFange: AST.Satz.Ausdruck.VersucheFange): Wert {
+  private fun durchlaufeVersucheFange(versucheFange: AST.Satz.Ausdruck.VersucheFange): Objekt {
     var rückgabe = durchlaufeBereich(versucheFange.bereich, true)
     if (flags.contains(Flag.FEHLER_GEWORFEN)) {
       val fehlerObjekt = geworfenerFehler!!
-      val fehlerTyp = typeOf(fehlerObjekt)
+      val fehlerKlasse = fehlerObjekt.klasse
       val fange = versucheFange.fange.find { fange ->
-        typPrüfer.typIstTyp(fehlerTyp, fange.param.typKnoten.typ!!)
+        typPrüfer.typIstTyp(fehlerKlasse, fange.param.typKnoten.typ!!)
       }
       if (fange != null) {
         flags.remove(Flag.FEHLER_GEWORFEN)
@@ -365,21 +359,18 @@ class Interpretierer(startDatei: File): PipelineKomponente(startDatei) {
     return rückgabe
   }
 
-  private fun durchlaufeWerfe(werfe: AST.Satz.Ausdruck.Werfe): Wert {
+  private fun durchlaufeWerfe(werfe: AST.Satz.Ausdruck.Werfe): Objekt {
     val wert = evaluiereAusdruck(werfe.ausdruck)
-    if (wert !is Wert.Objekt) {
-      throw Exception("Der Typprüfer sollte diesen Fall schon überprüfen.")
-    }
     geworfenerFehlerToken = werfe.werfe.toUntyped()
     geworfenerFehler = wert
     flags.add(Flag.FEHLER_GEWORFEN)
     return germanskript.intern.Niemals
   }
 
-  private fun durchlaufeIntern(intern: AST.Satz.Intern): Wert {
+  private fun durchlaufeIntern(intern: AST.Satz.Intern): Objekt {
     val aufruf = aufrufStapel.top().aufruf
     return when (val objekt = aufrufStapel.top().objekt) {
-      is Wert.Objekt -> objekt.rufeMethodeAuf(aufruf, interpretInjection)
+      is Objekt -> objekt.rufeMethodeAuf(aufruf, interpretInjection)
       else -> interneFunktionen.getValue(aufruf.vollerName!!)()
     }.also { rückgabeWert = it }
   }
@@ -387,7 +378,7 @@ class Interpretierer(startDatei: File): PipelineKomponente(startDatei) {
   // endregion
 
   // region Ausdrücke
-  private fun evaluiereAusdruck(ausdruck: AST.Satz.Ausdruck): Wert {
+  private fun evaluiereAusdruck(ausdruck: AST.Satz.Ausdruck): Objekt {
     if (sollteStackAufrollen()) {
       return germanskript.intern.Niemals
     }
@@ -420,7 +411,7 @@ class Interpretierer(startDatei: File): PipelineKomponente(startDatei) {
     }
   }
 
-  private fun evaluiereVariable(variable: AST.Satz.Ausdruck.Variable): Wert {
+  private fun evaluiereVariable(variable: AST.Satz.Ausdruck.Variable): Objekt {
     return if (variable.konstante != null) {
       evaluiereAusdruck(variable.konstante!!.wert!!)
     } else {
@@ -428,61 +419,61 @@ class Interpretierer(startDatei: File): PipelineKomponente(startDatei) {
     }
   }
 
-  private fun evaluiereVariable(name: AST.WortArt.Nomen): Wert {
+  private fun evaluiereVariable(name: AST.WortArt.Nomen): Objekt {
     return umgebung.leseVariable(name).wert
   }
 
-  private fun evaluiereVariable(variable: String): Wert? {
+  private fun evaluiereVariable(variable: String): Objekt? {
     return umgebung.leseVariable(variable)?.wert
   }
 
-  private fun evaluiereMethodenBlockReferenz(): Wert {
+  private fun evaluiereMethodenBlockReferenz(): Objekt {
     return umgebung.holeMethodenBlockObjekt()!!
   }
   
-  private fun evaluiereZeichenfolge(ausdruck: AST.Satz.Ausdruck.Zeichenfolge): Wert {
-    return ausdruck.zeichenfolge.typ.zeichenfolge
+  private fun evaluiereZeichenfolge(ausdruck: AST.Satz.Ausdruck.Zeichenfolge): Objekt {
+    return germanskript.intern.Zeichenfolge(ausdruck.zeichenfolge.typ.zeichenfolge)
   }
 
-  private fun evaluiereZahl(ausdruck: AST.Satz.Ausdruck.Zahl): Wert {
-    return ausdruck.zahl.typ.zahl
+  private fun evaluiereZahl(ausdruck: AST.Satz.Ausdruck.Zahl): Objekt {
+    return germanskript.intern.Zahl(ausdruck.zahl.typ.zahl)
   }
 
-  private fun evaluiereBoolean(ausdruck: AST.Satz.Ausdruck.Boolean): Wert {
-    return ausdruck.boolean.typ.boolean
+  private fun evaluiereBoolean(ausdruck: AST.Satz.Ausdruck.Boolean): Objekt {
+    return germanskript.intern.Boolean(ausdruck.boolean.typ.boolean)
   }
 
-  private fun evaluiereKonstante(konstante: AST.Satz.Ausdruck.Konstante): Wert = evaluiereAusdruck(konstante.wert!!)
+  private fun evaluiereKonstante(konstante: AST.Satz.Ausdruck.Konstante): Objekt = evaluiereAusdruck(konstante.wert!!)
 
-  private fun evaluiereListe(ausdruck: AST.Satz.Ausdruck.Liste): Wert {
+  private fun evaluiereListe(ausdruck: AST.Satz.Ausdruck.Liste): Objekt {
     return germanskript.intern.Liste(
-        Typ.Compound.KlassenTyp.Liste(listOf(ausdruck.pluralTyp)),
+        Typ.Compound.Klasse(BuildIn.Klassen.liste ,listOf(ausdruck.pluralTyp)),
         ausdruck.elemente.map(::evaluiereAusdruck).toMutableList()
     )
   }
 
-  private fun evaluiereObjektInstanziierung(instanziierung: AST.Satz.Ausdruck.ObjektInstanziierung): Wert {
-    val eigenschaften = hashMapOf<String, Wert>()
-    val klassenTyp = (instanziierung.klasse.typ!! as Typ.Compound.KlassenTyp)
+  private fun evaluiereObjektInstanziierung(instanziierung: AST.Satz.Ausdruck.ObjektInstanziierung): Objekt {
+    val eigenschaften = hashMapOf<String, Objekt>()
+    val klassenTyp = (instanziierung.klasse.typ!! as Typ.Compound.Klasse)
     // TODO: Wie löse ich das Problem, dass hier interne Objekte instanziiert werden können?
     val objekt = when(instanziierung.klasse.name.nominativ) {
       "Datei" -> germanskript.intern.Datei(klassenTyp, eigenschaften)
       "HashMap" -> germanskript.intern.HashMap(klassenTyp, eigenschaften)
-      else -> Wert.Objekt.SkriptObjekt(klassenTyp, eigenschaften)
+      else -> Objekt.SkriptObjekt(klassenTyp, eigenschaften)
     }
 
     fun führeKonstruktorAus(definition: AST.Definition.Typdefinition.Klasse, eigenschaftsZuweisungen: List<AST.Argument>) {
       // Führe zuerst den Konstruktor der Elternklasse aus
       val evaluierteAusdrücke = eigenschaftsZuweisungen.map { evaluiereAusdruck(it.ausdruck) }
       if (definition.elternKlasse != null) {
-        val konstruktorUmgebung = Umgebung<Wert>()
+        val konstruktorUmgebung = Umgebung<Objekt>()
         konstruktorUmgebung.pushBereich()
         for (index in eigenschaftsZuweisungen.indices) {
           konstruktorUmgebung.schreibeVariable(eigenschaftsZuweisungen[index].name, evaluierteAusdrücke[index], false)
         }
         aufrufStapel.push(definition.elternKlasse, konstruktorUmgebung)
         führeKonstruktorAus(
-            (definition.elternKlasse.klasse.typ!! as Typ.Compound.KlassenTyp).definition,
+            (definition.elternKlasse.klasse.typ!! as Typ.Compound.Klasse).definition,
             definition.elternKlasse.eigenschaftsZuweisungen
         )
         aufrufStapel.pop()
@@ -491,43 +482,40 @@ class Interpretierer(startDatei: File): PipelineKomponente(startDatei) {
         val eigenschaftsName = typPrüfer.holeParamName(definition.eigenschaften[index], klassenTyp.typArgumente)
         eigenschaften[eigenschaftsName.nominativ] = evaluierteAusdrücke[index]
       }
-      durchlaufeAufruf(instanziierung, definition.konstruktor, Umgebung(), true, objekt, false)
+      durchlaufeAufruf(instanziierung, definition.konstruktor, Umgebung(), true, objekt)
     }
 
     führeKonstruktorAus(klassenTyp.definition, instanziierung.eigenschaftsZuweisungen)
     return  objekt
   }
 
-  private fun holeEigenschaft(zugriff: AST.Satz.Ausdruck.IEigenschaftsZugriff, objekt: Wert.Objekt): Wert {
+  private fun holeEigenschaft(zugriff: AST.Satz.Ausdruck.IEigenschaftsZugriff, objekt: Objekt): Objekt {
     val eigName = zugriff.eigenschaftsName.nominativ
     return try {
       objekt.holeEigenschaft(eigName)
     } catch (nichtGefunden: NoSuchElementException) {
-      val berechneteEigenschaft = objekt.typ.definition.berechneteEigenschaften.getValue(eigName)
-      durchlaufeAufruf(zugriff, berechneteEigenschaft.definition, Umgebung(), true, objekt, false)
+      val berechneteEigenschaft = objekt.klasse.definition.berechneteEigenschaften.getValue(eigName)
+      durchlaufeAufruf(zugriff, berechneteEigenschaft.definition, Umgebung(), true, objekt)
     }
   }
 
-  private fun evaluiereEigenschaftsZugriff(eigenschaftsZugriff: AST.Satz.Ausdruck.EigenschaftsZugriff): Wert {
-    return when (val objekt = evaluiereAusdruck(eigenschaftsZugriff.objekt)) {
-      is Wert.Objekt -> holeEigenschaft(eigenschaftsZugriff, objekt)
-      else -> throw Exception("Dies sollte nie passieren, weil der Typprüfer diesen Fall schon überprüft")
-    }
+  private fun evaluiereEigenschaftsZugriff(eigenschaftsZugriff: AST.Satz.Ausdruck.EigenschaftsZugriff): Objekt {
+    return holeEigenschaft(eigenschaftsZugriff, evaluiereAusdruck(eigenschaftsZugriff.objekt))
   }
 
-  private fun evaluiereSelbstEigenschaftsZugriff(eigenschaftsZugriff: AST.Satz.Ausdruck.SelbstEigenschaftsZugriff): Wert {
-    val objekt = aufrufStapel.top().objekt!! as Wert.Objekt
+  private fun evaluiereSelbstEigenschaftsZugriff(eigenschaftsZugriff: AST.Satz.Ausdruck.SelbstEigenschaftsZugriff): Objekt {
+    val objekt = aufrufStapel.top().objekt!!
     return holeEigenschaft(eigenschaftsZugriff, objekt)
   }
 
-  private fun evaluiereMethodenBlockEigenschaftsZugriff(eigenschaftsZugriff: AST.Satz.Ausdruck.MethodenBereichEigenschaftsZugriff): Wert {
-    val objekt = umgebung.holeMethodenBlockObjekt()!! as Wert.Objekt
+  private fun evaluiereMethodenBlockEigenschaftsZugriff(eigenschaftsZugriff: AST.Satz.Ausdruck.MethodenBereichEigenschaftsZugriff): Objekt {
+    val objekt = umgebung.holeMethodenBlockObjekt()!!
     return holeEigenschaft(eigenschaftsZugriff, objekt)
   }
 
-  private fun evaluiereSelbstReferenz(): Wert = aufrufStapel.top().objekt!!
+  private fun evaluiereSelbstReferenz(): Objekt = aufrufStapel.top().objekt!!
 
-  private  fun evaluiereBinärenAusdruck(ausdruck: AST.Satz.Ausdruck.BinärerAusdruck): Wert {
+  private  fun evaluiereBinärenAusdruck(ausdruck: AST.Satz.Ausdruck.BinärerAusdruck): Objekt {
     val links = evaluiereAusdruck(ausdruck.links)
     val operator = ausdruck.operator.typ.operator
 
@@ -540,35 +528,62 @@ class Interpretierer(startDatei: File): PipelineKomponente(startDatei) {
 
     val rechts = evaluiereAusdruck(ausdruck.rechts)
 
-    if (operator == Operator.GLEICH && links is Wert.Objekt && rechts is Wert.Objekt) {
-      // TODO: syntaktischer Zucker der zur Laufzeit aufgelöst wird ist schlecht für die Performance
-      val aufrufUmgebung = Umgebung<Wert>()
-      aufrufUmgebung.pushBereich()
+    var methodenName: String
+
+    val aufrufUmgebung = Umgebung<Objekt>()
+    aufrufUmgebung.pushBereich()
+
+    if ((operator == Operator.GLEICH || operator == Operator.UNGLEICH)) {
+      methodenName = "gleicht dem Objekt"
       aufrufUmgebung.schreibeVariable("Objekt", rechts)
-      return durchlaufeAufruf(
+    }
+    else if (operator.klasse == OperatorKlasse.ARITHMETISCH) {
+      methodenName = when(operator) {
+        Operator.PLUS -> "addiere"
+        Operator.MINUS -> "subtrahiere"
+        Operator.MAL -> "multipliziere"
+        Operator.GETEILT -> "dividiere"
+        Operator.MODULO -> "moduliere"
+        Operator.HOCH -> "potenziere"
+        else -> throw Exception("Dieser Fall sollte nie eintreten!")
+      } + " mich mit dem Operanden"
+
+      aufrufUmgebung.schreibeVariable(rechts.klasse.definition.name.nominativ, rechts)
+    }
+    else {
+      // Vergleich
+      methodenName = "vergleiche mich mit dem Typ"
+
+      aufrufUmgebung.schreibeVariable(rechts.klasse.definition.name.nominativ, rechts)
+
+      val vergleich = durchlaufeAufruf(
+          object : AST.IAufruf {
+            override val token = ausdruck.operator.toUntyped()
+            override val vollerName = methodenName
+          },
+          links.klasse.definition.methoden[methodenName]!!.körper,
+          aufrufUmgebung, false,
+          links
+      ) as germanskript.intern.Zahl
+
+      return germanskript.intern.Boolean(when (operator) {
+        Operator.GRÖßER -> vergleich.zahl > 0
+        Operator.KLEINER -> vergleich.zahl < 0
+        Operator.GRÖSSER_GLEICH -> vergleich.zahl >= 0
+        Operator.KLEINER_GLEICH -> vergleich.zahl <= 0
+        else -> throw Exception("Dieser Fall sollte nie auftreten.")
+      })
+    }
+
+    return durchlaufeAufruf(
         object : AST.IAufruf {
           override val token = ausdruck.operator.toUntyped()
-          override val vollerName = "gleicht dem Objekt"
+          override val vollerName = methodenName
         },
-        links.typ.definition.methoden["gleicht dem Objekt"]!!.körper,
+        links.klasse.definition.methoden[methodenName]!!.körper,
         aufrufUmgebung, false,
-        links,
-        false
-      )
-    }
-    return when (links) {
-      is germanskript.intern.Zeichenfolge -> zeichenFolgenOperation(operator, links, rechts as germanskript.intern.Zeichenfolge)
-      is germanskript.intern.Zahl -> {
-        if ((rechts as germanskript.intern.Zahl).isZero() && operator == Operator.GETEILT) {
-          throw GermanSkriptFehler.LaufzeitFehler(ausdruck.rechts.holeErstesToken(), aufrufStapel.toString(),
-              "Division durch 0. Es kann nicht durch 0 dividiert werden.")
-        }
-        zahlOperation(operator, links, rechts)
-      }
-      is germanskript.intern.Boolean -> booleanOperation(operator, links, rechts as germanskript.intern.Boolean)
-      is germanskript.intern.Liste -> listenOperation(operator, links, rechts as germanskript.intern.Liste)
-      else -> throw Exception("Typprüfer sollte disen Fehler verhindern.")
-    }
+        links
+    )
   }
 
   companion object {
@@ -578,7 +593,7 @@ class Interpretierer(startDatei: File): PipelineKomponente(startDatei) {
       operator: Operator,
       links: germanskript.intern.Zeichenfolge,
       rechts: germanskript.intern.Zeichenfolge
-  ): Wert {
+  ): Objekt {
     return when (operator) {
       Operator.GLEICH -> germanskript.intern.Boolean(links == rechts)
       Operator.UNGLEICH -> germanskript.intern.Boolean(links != rechts)
@@ -586,12 +601,12 @@ class Interpretierer(startDatei: File): PipelineKomponente(startDatei) {
       Operator.KLEINER -> germanskript.intern.Boolean(links < rechts)
       Operator.GRÖSSER_GLEICH -> germanskript.intern.Boolean(links >= rechts)
       Operator.KLEINER_GLEICH -> germanskript.intern.Boolean(links <= rechts)
-      Operator.PLUS -> germanskript.intern.Zeichenfolge(links + rechts)
+      Operator.PLUS -> links + rechts
       else -> throw Exception("Operator $operator ist für den Typen Zeichenfolge nicht definiert.")
     }
   }
 
-  fun zahlOperation(operator: Operator, links: germanskript.intern.Zahl, rechts: germanskript.intern.Zahl): Wert {
+  fun zahlOperation(operator: Operator, links: germanskript.intern.Zahl, rechts: germanskript.intern.Zahl): Objekt {
     return when (operator) {
       Operator.GLEICH -> germanskript.intern.Boolean(links == rechts)
       Operator.UNGLEICH -> germanskript.intern.Boolean(links != rechts)
@@ -609,7 +624,7 @@ class Interpretierer(startDatei: File): PipelineKomponente(startDatei) {
     }
   }
 
-  fun booleanOperation(operator: Operator, links: germanskript.intern.Boolean, rechts: germanskript.intern.Boolean): Wert {
+  fun booleanOperation(operator: Operator, links: germanskript.intern.Boolean, rechts: germanskript.intern.Boolean): Objekt {
     return when (operator) {
       Operator.ODER -> germanskript.intern.Boolean(links.boolean || rechts.boolean)
       Operator.UND -> germanskript.intern.Boolean(links.boolean && rechts.boolean)
@@ -620,24 +635,33 @@ class Interpretierer(startDatei: File): PipelineKomponente(startDatei) {
   }
 }
 
-  private fun listenOperation(operator: Operator, links: germanskript.intern.Liste, rechts: germanskript.intern.Liste): Wert {
+  private fun listenOperation(operator: Operator, links: germanskript.intern.Liste, rechts: germanskript.intern.Liste): Objekt {
     return when (operator) {
       Operator.PLUS ->links + rechts
       else -> throw Exception("Operator $operator ist für den Typen Liste nicht definiert.")
     }
   }
 
-  private fun evaluiereMinus(minus: AST.Satz.Ausdruck.Minus): germanskript.intern.Zahl {
-    val ausdruck = evaluiereAusdruck(minus.ausdruck) as germanskript.intern.Zahl
-    return -ausdruck
+  private fun evaluiereMinus(minus: AST.Satz.Ausdruck.Minus): Objekt {
+    val ausdruck = evaluiereAusdruck(minus.ausdruck)
+
+    return durchlaufeAufruf(
+        object : AST.IAufruf {
+          override val token = minus.holeErstesToken()
+          override val vollerName = "negiere mich"
+        },
+        ausdruck.klasse.definition.methoden["negiere mich"]!!.körper,
+        Umgebung(), false,
+        ausdruck
+    )
   }
 
   private fun evaluiereListenSingular(singular: AST.WortArt.Nomen): germanskript.intern.Liste {
     return when (val vornomenTyp = singular.vornomen?.typ) {
       is TokenTyp.VORNOMEN.POSSESSIV_PRONOMEN -> {
         val objekt = when (vornomenTyp) {
-          TokenTyp.VORNOMEN.POSSESSIV_PRONOMEN.MEIN -> aufrufStapel.top().objekt!! as Wert.Objekt
-          TokenTyp.VORNOMEN.POSSESSIV_PRONOMEN.DEIN -> umgebung.holeMethodenBlockObjekt()!! as Wert.Objekt
+          TokenTyp.VORNOMEN.POSSESSIV_PRONOMEN.MEIN -> aufrufStapel.top().objekt!!
+          TokenTyp.VORNOMEN.POSSESSIV_PRONOMEN.DEIN -> umgebung.holeMethodenBlockObjekt()!!
         }
         objekt.holeEigenschaft(singular.ganzesWort(Kasus.NOMINATIV, Numerus.PLURAL, true)) as germanskript.intern.Liste
       }
@@ -647,7 +671,7 @@ class Interpretierer(startDatei: File): PipelineKomponente(startDatei) {
     }
   }
 
-  private fun evaluiereListenElement(listenElement: AST.Satz.Ausdruck.ListenElement): Wert {
+  private fun evaluiereListenElement(listenElement: AST.Satz.Ausdruck.ListenElement): Objekt {
     val index = (evaluiereAusdruck(listenElement.index) as germanskript.intern.Zahl).toInt()
 
     if (listenElement.istZeichenfolgeZugriff) {
@@ -668,48 +692,44 @@ class Interpretierer(startDatei: File): PipelineKomponente(startDatei) {
     return liste.elemente[index]
   }
 
-  private fun evaluiereClosure(closure: AST.Satz.Ausdruck.Closure): Wert {
-    return Wert.Closure((closure.schnittstelle.typ as Typ.Compound.Schnittstelle), closure, umgebung)
+  private fun evaluiereClosure(closure: AST.Satz.Ausdruck.Closure): Objekt {
+    return Objekt.AnonymesSkriptObjekt(closure.klasse, mutableMapOf(), umgebung, true)
   }
 
-  private fun evaluiereAnonymeKlasse(anonymeKlasse: AST.Satz.Ausdruck.AnonymeKlasse): Wert {
+  private fun evaluiereAnonymeKlasse(anonymeKlasse: AST.Satz.Ausdruck.AnonymeKlasse): Objekt {
     val eigenschaften = anonymeKlasse.bereich.eigenschaften
         .map { it.name.nominativ to evaluiereAusdruck(it.wert) }
         .toMap().toMutableMap()
-    return Wert.Objekt.AnonymesSkriptObjekt(anonymeKlasse.typ!!, eigenschaften, umgebung)
+    return Objekt.AnonymesSkriptObjekt(anonymeKlasse.klasse, eigenschaften, umgebung, false)
   }
 
-  private fun evaluiereTypÜberprüfung(typÜberprüfung: AST.Satz.Ausdruck.TypÜberprüfung): Wert {
-    val ausdruckTyp = typeOf(evaluiereAusdruck(typÜberprüfung.ausdruck))
-    val istTyp = typPrüfer.typIstTyp(ausdruckTyp, typÜberprüfung.typ.typ!!)
+  private fun evaluiereTypÜberprüfung(typÜberprüfung: AST.Satz.Ausdruck.TypÜberprüfung): Objekt {
+    val klasse = evaluiereAusdruck(typÜberprüfung.ausdruck).klasse
+    val istTyp = typPrüfer.typIstTyp(klasse, typÜberprüfung.typ.typ!!)
     return germanskript.intern.Boolean(istTyp)
   }
 
   // endregion
 
 
-  private fun durchlaufeInternenSchnittstellenAufruf(wert: Wert, name: String, argumente: Array<Wert>): Wert {
-    val (funktionsUmgebung, körper, parameterNamen) = when (wert) {
-      is Wert.Objekt -> {
-        val methode = wert.typ.definition.methoden.getValue(name)
-        Triple(Umgebung<Wert>(), methode.körper, methode.signatur.parameter.map { it.name }.toList())
-      }
-      is Wert.Closure -> Triple(wert.umgebung, wert.ausdruck.körper, holeParameterNamenFürClosure(wert))
-      else -> throw Exception("Dieser Fall sollte nie auftreten!")
-    }
+  private fun durchlaufeInternenSchnittstellenAufruf(wert: Objekt, name: String, argumente: Array<Objekt>): Objekt {
+    val funktionsUmgebung = if (wert is Objekt.AnonymesSkriptObjekt) wert.umgebung else Umgebung()
+    val methode = wert.klasse.definition.methoden.getValue(name)
+    val parameterNamen = methode.signatur.parameter.map { it.name }.toList()
 
     funktionsUmgebung.pushBereich()
     for (i in parameterNamen.indices) {
       funktionsUmgebung.schreibeVariable(parameterNamen[i], argumente[i], false)
     }
+
     return durchlaufeAufruf(
         aufrufStapel.top().aufruf,
-        körper, funktionsUmgebung, false, if (wert is Wert.Objekt) wert else null, wert is Wert.Closure
+        methode.körper, funktionsUmgebung, false, wert
     )
   }
 
   // region interne Funktionen
-  private val interneFunktionen = mapOf<String, () -> (Wert)>(
+  private val interneFunktionen = mapOf<String, () -> (Objekt)>(
     "schreibe die Zeichenfolge" to {
       val zeichenfolge = umgebung.leseVariable("Zeichenfolge")!!.wert as germanskript.intern.Zeichenfolge
       print(zeichenfolge)
@@ -784,19 +804,14 @@ class Interpretierer(startDatei: File): PipelineKomponente(startDatei) {
     }
   )
 
-  private fun evaluiereKonvertierung(konvertierung: AST.Satz.Ausdruck.Konvertierung): Wert {
+  private fun evaluiereKonvertierung(konvertierung: AST.Satz.Ausdruck.Konvertierung): Objekt {
     val wert = evaluiereAusdruck(konvertierung.ausdruck)
 
-
-    if (wert !is Wert.Objekt) {
-      throw Exception("Typprüfer sollte diesen Fall schon überprüfen!")
+    wert.klasse.definition.konvertierungen[konvertierung.typ.typ!!.name]?.also {
+      return durchlaufeAufruf(konvertierung, it.definition, Umgebung(), true, wert)
     }
 
-    wert.typ.definition.konvertierungen[konvertierung.typ.typ!!.name]?.also {
-      return durchlaufeAufruf(konvertierung, it.definition, Umgebung(), true, wert, false)
-    }
-
-    if (typeOf(wert) == konvertierung.typ.typ!!) {
+    if (wert.klasse == konvertierung.typ.typ!!) {
       return wert
     }
 
@@ -805,8 +820,8 @@ class Interpretierer(startDatei: File): PipelineKomponente(startDatei) {
     return werfeFehler(fehlerMeldung, "KonvertierungsFehler", konvertierung.token)
   }
 
-  private fun werfeFehler(fehlerMeldung: String, fehlerKlassenName: String, token: Token): Wert {
-    geworfenerFehler = Wert.Objekt.SkriptObjekt(Typ.Compound.KlassenTyp.Klasse(klassenDefinitionen.getValue(fehlerKlassenName), emptyList()),
+  private fun werfeFehler(fehlerMeldung: String, fehlerKlassenName: String, token: Token): Objekt {
+    geworfenerFehler = Objekt.SkriptObjekt(Typ.Compound.Klasse(klassenDefinitionen.getValue(fehlerKlassenName), emptyList()),
         mutableMapOf(
             "FehlerMeldung" to germanskript.intern.Zeichenfolge(fehlerMeldung)
         ))
@@ -816,13 +831,6 @@ class Interpretierer(startDatei: File): PipelineKomponente(startDatei) {
   }
   // endregion
 
-  private fun typeOf(wert: Wert): Typ {
-    return when (wert) {
-      is Wert.Objekt -> wert.typ
-      is Wert.Closure -> wert.schnittstelle
-      else -> throw Exception("Dieser Fall sollte nie auftreten.")
-    }
-  }
 }
 
 fun main() {

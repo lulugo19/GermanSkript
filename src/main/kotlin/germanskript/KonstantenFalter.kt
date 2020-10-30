@@ -1,6 +1,6 @@
 package germanskript
 
-import germanskript.intern.Wert
+import germanskript.intern.Objekt
 import java.io.File
 import java.util.*
 
@@ -10,17 +10,17 @@ import java.util.*
  *
  * Zurückgabe-Statements in Bedingungen und Schleifen
  */
-class KonstantenFalter(startDatei: File): ProgrammDurchlaufer<Wert?>(startDatei) {
+class KonstantenFalter(startDatei: File): ProgrammDurchlaufer<Objekt?>(startDatei) {
   val typPrüfer = TypPrüfer(startDatei)
   val ast = typPrüfer.ast
 
   override val definierer: Definierer
     get() = typPrüfer.definierer
 
-  override val nichts: Wert? = null
-  override val niemals: Wert? = null
+  override val nichts: Objekt? = null
+  override val niemals: Objekt? = null
 
-  override var umgebung = Umgebung<Wert?>()
+  override var umgebung = Umgebung<Objekt?>()
 
   fun falteKonstanten() {
     typPrüfer.prüfe()
@@ -29,13 +29,13 @@ class KonstantenFalter(startDatei: File): ProgrammDurchlaufer<Wert?>(startDatei)
     durchlaufeAufruf(ast.programm, Umgebung(), true)
   }
 
-  private fun durchlaufeAufruf(bereich: AST.Satz.Bereich, umgebung: Umgebung<Wert?>, neuerBereich: Boolean) {
+  private fun durchlaufeAufruf(bereich: AST.Satz.Bereich, umgebung: Umgebung<Objekt?>, neuerBereich: Boolean) {
     this.umgebung = umgebung
     durchlaufeBereich(bereich, neuerBereich)
   }
 
   private fun falteFunktion(funktion: AST.Definition.Funktion) {
-    val funktionsUmgebung = Umgebung<Wert?>()
+    val funktionsUmgebung = Umgebung<Objekt?>()
     funktionsUmgebung.pushBereich()
     for (parameter in funktion.signatur.parameter) {
       funktionsUmgebung.schreibeVariable(parameter.name, null, false)
@@ -56,21 +56,21 @@ class KonstantenFalter(startDatei: File): ProgrammDurchlaufer<Wert?>(startDatei)
 
   private fun falteKonstante(originalerAusdruck: AST.Satz.Ausdruck): AST.Satz.Ausdruck {
     return when (val konstanterWert = evaluiereAusdruck(originalerAusdruck)) {
-      is germanskript.intern.Zahl -> AST.Satz.Ausdruck.Zahl(TypedToken.imaginäresToken(TokenTyp.ZAHL(konstanterWert),""))
-      is germanskript.intern.Zeichenfolge -> AST.Satz.Ausdruck.Zeichenfolge(TypedToken.imaginäresToken(TokenTyp.ZEICHENFOLGE(konstanterWert), ""))
-      is germanskript.intern.Boolean -> AST.Satz.Ausdruck.Boolean(TypedToken.imaginäresToken(TokenTyp.BOOLEAN(konstanterWert), ""))
+      is germanskript.intern.Zahl -> AST.Satz.Ausdruck.Zahl(TypedToken.imaginäresToken(TokenTyp.ZAHL(konstanterWert.zahl),""))
+      is germanskript.intern.Zeichenfolge -> AST.Satz.Ausdruck.Zeichenfolge(TypedToken.imaginäresToken(TokenTyp.ZEICHENFOLGE(konstanterWert.zeichenfolge), ""))
+      is germanskript.intern.Boolean -> AST.Satz.Ausdruck.Boolean(TypedToken.imaginäresToken(TokenTyp.BOOLEAN(konstanterWert.boolean), ""))
       else -> originalerAusdruck
     }
   }
 
-  override fun bevorDurchlaufeMethodenBereich(methodenBereich: AST.Satz.Ausdruck.MethodenBereich, blockObjekt: Wert?) {
+  override fun bevorDurchlaufeMethodenBereich(methodenBereich: AST.Satz.Ausdruck.MethodenBereich, blockObjekt: Objekt?) {
     // hier muss nichts gemacht werden
   }
 
   override fun sollteAbbrechen(): Boolean = false
   override fun sollteStackAufrollen(): Boolean = false
 
-  override fun durchlaufeFunktionsAufruf(funktionsAufruf: AST.Satz.Ausdruck.FunktionsAufruf, istAusdruck: Boolean): Wert? {
+  override fun durchlaufeFunktionsAufruf(funktionsAufruf: AST.Satz.Ausdruck.FunktionsAufruf, istAusdruck: Boolean): Objekt? {
     funktionsAufruf.argumente.forEach {arg -> arg.ausdruck = falteKonstante(arg.ausdruck)}
     return  null
   }
@@ -115,7 +115,7 @@ class KonstantenFalter(startDatei: File): ProgrammDurchlaufer<Wert?>(startDatei)
     geleseneVariablen.pop()
   }
 
-  override fun evaluiereVariable(name: AST.WortArt.Nomen): Wert? {
+  override fun evaluiereVariable(name: AST.WortArt.Nomen): Objekt? {
     val geleseneVariablen = geleseneVariablen.peek()
     geleseneVariablen[name.nominativ]?.also { variable ->
       variable.wurdeGelesen = true
@@ -123,21 +123,21 @@ class KonstantenFalter(startDatei: File): ProgrammDurchlaufer<Wert?>(startDatei)
     return super.evaluiereVariable(name)
   }
 
-  override fun evaluiereKonstante(konstante: AST.Satz.Ausdruck.Konstante): Wert? = evaluiereAusdruck(konstante.wert!!)
+  override fun evaluiereKonstante(konstante: AST.Satz.Ausdruck.Konstante): Objekt? = evaluiereAusdruck(konstante.wert!!)
 
-  override fun durchlaufeZurückgabe(zurückgabe: AST.Satz.Zurückgabe): Wert? {
+  override fun durchlaufeZurückgabe(zurückgabe: AST.Satz.Zurückgabe): Objekt? {
     zurückgabe.ausdruck = falteKonstante(zurückgabe.ausdruck)
     return null
   }
 
-  override fun durchlaufeBedingungsSatz(bedingungsSatz: AST.Satz.Ausdruck.Bedingung, istAusdruck: Boolean): Wert? {
+  override fun durchlaufeBedingungsSatz(bedingungsSatz: AST.Satz.Ausdruck.Bedingung, istAusdruck: Boolean): Objekt? {
     // dead code elimination
     val eliminierteBedingungen = mutableListOf<AST.Satz.BedingungsTerm>()
     for (index in bedingungsSatz.bedingungen.indices) {
       val bedingung = bedingungsSatz.bedingungen[index]
       bedingung.bedingung = falteKonstante(bedingung.bedingung)
       if (bedingung.bedingung is AST.Satz.Ausdruck.Boolean) {
-        if ((bedingung.bedingung as AST.Satz.Ausdruck.Boolean).boolean.typ.boolean.boolean) {
+        if ((bedingung.bedingung as AST.Satz.Ausdruck.Boolean).boolean.typ.boolean) {
           eliminierteBedingungen.addAll(
               bedingungsSatz.bedingungen.takeLast(bedingungsSatz.bedingungen.size-1-index))
           bedingungsSatz.sonst = null
@@ -153,7 +153,7 @@ class KonstantenFalter(startDatei: File): ProgrammDurchlaufer<Wert?>(startDatei)
     bedingungsSatz.bedingungen.removeAll(eliminierteBedingungen)
     val ersteBedingung = bedingungsSatz.bedingungen[0]
     if (ersteBedingung.bedingung is AST.Satz.Ausdruck.Boolean &&
-        (ersteBedingung.bedingung as AST.Satz.Ausdruck.Boolean).boolean.typ.boolean.boolean) {
+        (ersteBedingung.bedingung as AST.Satz.Ausdruck.Boolean).boolean.typ.boolean) {
       val bereich = bedingungsSatz.parent as AST.Satz.Bereich
       bereich.sätze[bereich.sätze.indexOf(bedingungsSatz)] = AST.Satz.Bereich(ersteBedingung.bereich.sätze)
       return durchlaufeBereich(ersteBedingung.bereich, true)
@@ -181,7 +181,7 @@ class KonstantenFalter(startDatei: File): ProgrammDurchlaufer<Wert?>(startDatei)
     umgebung.popBereich()
   }
 
-  override fun durchlaufeVersucheFange(versucheFange: AST.Satz.Ausdruck.VersucheFange): Wert? {
+  override fun durchlaufeVersucheFange(versucheFange: AST.Satz.Ausdruck.VersucheFange): Objekt? {
     durchlaufeBereich(versucheFange.bereich, true)
     for (fange in versucheFange.fange) {
       umgebung.pushBereich()
@@ -192,33 +192,36 @@ class KonstantenFalter(startDatei: File): ProgrammDurchlaufer<Wert?>(startDatei)
     return null
   }
 
-  override fun durchlaufeWerfe(werfe: AST.Satz.Ausdruck.Werfe): Wert? {
+  override fun durchlaufeWerfe(werfe: AST.Satz.Ausdruck.Werfe): Objekt? {
     werfe.ausdruck = falteKonstante(werfe.ausdruck)
     return null
   }
 
-  override fun durchlaufeIntern(intern: AST.Satz.Intern): Wert? {
+  override fun durchlaufeIntern(intern: AST.Satz.Intern): Objekt? {
     // hier muss nichts gemacht werden
     return null
   }
 
-  override fun evaluiereZeichenfolge(ausdruck: AST.Satz.Ausdruck.Zeichenfolge): Wert? = ausdruck.zeichenfolge.typ.zeichenfolge
+  override fun evaluiereZeichenfolge(ausdruck: AST.Satz.Ausdruck.Zeichenfolge): Objekt? =
+      germanskript.intern.Zeichenfolge(ausdruck.zeichenfolge.typ.zeichenfolge)
 
-  override fun evaluiereZahl(ausdruck: AST.Satz.Ausdruck.Zahl): Wert? = ausdruck.zahl.typ.zahl
+  override fun evaluiereZahl(ausdruck: AST.Satz.Ausdruck.Zahl): Objekt? =
+      germanskript.intern.Zahl(ausdruck.zahl.typ.zahl)
 
-  override fun evaluiereBoolean(ausdruck: AST.Satz.Ausdruck.Boolean): Wert? = ausdruck.boolean.typ.boolean
+  override fun evaluiereBoolean(ausdruck: AST.Satz.Ausdruck.Boolean): Objekt? =
+      germanskript.intern.Boolean(ausdruck.boolean.typ.boolean)
 
-  override fun evaluiereListe(ausdruck: AST.Satz.Ausdruck.Liste): Wert? {
+  override fun evaluiereListe(ausdruck: AST.Satz.Ausdruck.Liste): Objekt? {
     ausdruck.elemente = ausdruck.elemente.map(::falteKonstante)
     return null
   }
 
-  override fun evaluiereListenElement(listenElement: AST.Satz.Ausdruck.ListenElement): Wert? {
+  override fun evaluiereListenElement(listenElement: AST.Satz.Ausdruck.ListenElement): Objekt? {
     listenElement.index = falteKonstante(listenElement.index)
     return null
   }
 
-  override fun evaluiereBinärenAusdruck(ausdruck: AST.Satz.Ausdruck.BinärerAusdruck): Wert? {
+  override fun evaluiereBinärenAusdruck(ausdruck: AST.Satz.Ausdruck.BinärerAusdruck): Objekt? {
     val links = evaluiereAusdruck(ausdruck.links)
     val rechts = evaluiereAusdruck(ausdruck.rechts)
     val operator = ausdruck.operator.typ.operator
@@ -231,7 +234,7 @@ class KonstantenFalter(startDatei: File): ProgrammDurchlaufer<Wert?>(startDatei)
     }
   }
 
-  override fun evaluiereMinus(minus: AST.Satz.Ausdruck.Minus): Wert? {
+  override fun evaluiereMinus(minus: AST.Satz.Ausdruck.Minus): Objekt? {
     val zahl = evaluiereAusdruck(minus.ausdruck) as germanskript.intern.Zahl?
     return if (zahl != null) {
       -zahl
@@ -240,17 +243,17 @@ class KonstantenFalter(startDatei: File): ProgrammDurchlaufer<Wert?>(startDatei)
     }
   }
 
-  override fun evaluiereKonvertierung(konvertierung: AST.Satz.Ausdruck.Konvertierung): Wert? {
+  override fun evaluiereKonvertierung(konvertierung: AST.Satz.Ausdruck.Konvertierung): Objekt? {
     konvertierung.ausdruck = falteKonstante(konvertierung.ausdruck)
     return null
   }
 
-  override fun evaluiereObjektInstanziierung(instanziierung: AST.Satz.Ausdruck.ObjektInstanziierung): Wert? {
+  override fun evaluiereObjektInstanziierung(instanziierung: AST.Satz.Ausdruck.ObjektInstanziierung): Objekt? {
     instanziierung.eigenschaftsZuweisungen.forEach {zuweisung -> zuweisung.ausdruck = falteKonstante(zuweisung.ausdruck)}
     return null
   }
 
-  override fun evaluiereClosure(closure: AST.Satz.Ausdruck.Closure): Wert? {
+  override fun evaluiereClosure(closure: AST.Satz.Ausdruck.Closure): Objekt? {
     val signatur = (closure.schnittstelle.typ as Typ.Compound.Schnittstelle).definition.methodenSignaturen[0]
     umgebung.pushBereich()
     for (param in signatur.parameter) {
@@ -262,17 +265,17 @@ class KonstantenFalter(startDatei: File): ProgrammDurchlaufer<Wert?>(startDatei)
   }
 
   // TODO: Hier müssten man noch die Methoden, Eigenschaften usw. der anonymen Klasse durchlaufen
-  override fun evaluiereAnonymeKlasse(anonymeKlasse: AST.Satz.Ausdruck.AnonymeKlasse): Wert? = null
+  override fun evaluiereAnonymeKlasse(anonymeKlasse: AST.Satz.Ausdruck.AnonymeKlasse): Objekt? = null
 
-  override fun evaluiereEigenschaftsZugriff(eigenschaftsZugriff: AST.Satz.Ausdruck.EigenschaftsZugriff): Wert? = null
+  override fun evaluiereEigenschaftsZugriff(eigenschaftsZugriff: AST.Satz.Ausdruck.EigenschaftsZugriff): Objekt? = null
 
-  override fun evaluiereSelbstEigenschaftsZugriff(eigenschaftsZugriff: AST.Satz.Ausdruck.SelbstEigenschaftsZugriff): Wert? = null
+  override fun evaluiereSelbstEigenschaftsZugriff(eigenschaftsZugriff: AST.Satz.Ausdruck.SelbstEigenschaftsZugriff): Objekt? = null
 
-  override fun evaluiereMethodenBlockEigenschaftsZugriff(eigenschaftsZugriff: AST.Satz.Ausdruck.MethodenBereichEigenschaftsZugriff): Wert? = null
+  override fun evaluiereMethodenBlockEigenschaftsZugriff(eigenschaftsZugriff: AST.Satz.Ausdruck.MethodenBereichEigenschaftsZugriff): Objekt? = null
 
-  override fun evaluiereSelbstReferenz(): Wert? = null
+  override fun evaluiereSelbstReferenz(): Objekt? = null
 
-  override fun evaluiereTypÜberprüfung(typÜberprüfung: AST.Satz.Ausdruck.TypÜberprüfung): Wert? = null
+  override fun evaluiereTypÜberprüfung(typÜberprüfung: AST.Satz.Ausdruck.TypÜberprüfung): Objekt? = null
 }
 
 fun main() {

@@ -4,10 +4,11 @@ import germanskript.*
 import java.text.ParseException
 import kotlin.Boolean
 
-data class Zeichenfolge(val zeichenfolge: String): Wert.Objekt(Typ.Compound.KlassenTyp.BuildInType.Zeichenfolge), Comparable<Zeichenfolge> {
+data class Zeichenfolge(val zeichenfolge: String): Objekt(BuildIn.Klassen.zeichenfolge), Comparable<Zeichenfolge> {
 
-  override fun rufeMethodeAuf(aufruf: AST.IAufruf, injection: InterpretInjection): Wert {
+  override fun rufeMethodeAuf(aufruf: AST.IAufruf, injection: InterpretInjection): Objekt {
     return when (aufruf.vollerName!!) {
+      "addiere mich mit dem Operanden" -> addiereMichMitDemOperanden(injection)
       "als Zahl" -> konvertiereInZahl(aufruf, injection)
       "vergleiche mich mit dem Typ" -> vergleicheMichMitDerZeichenfolge(injection)
       "code an dem Index" -> codeAnDemIndex(aufruf, injection)
@@ -27,10 +28,10 @@ data class Zeichenfolge(val zeichenfolge: String): Wert.Objekt(Typ.Compound.Klas
     return zeichenfolge == other.zeichenfolge
   }
 
-  operator fun plus(zeichenfolge: Zeichenfolge) = this.zeichenfolge + zeichenfolge.zeichenfolge
+  operator fun plus(zeichenfolge: Zeichenfolge): Zeichenfolge = Zeichenfolge(this.zeichenfolge + zeichenfolge.zeichenfolge)
   override fun compareTo(other: Zeichenfolge): Int = this.zeichenfolge.compareTo(other.zeichenfolge)
 
-  override fun holeEigenschaft(eigenschaftsName: String): Wert {
+  override fun holeEigenschaft(eigenschaftsName: String): Objekt {
     if (eigenschaftsName == "Länge") {
       return Zahl(zeichenfolge.length.toDouble())
     } else {
@@ -38,7 +39,12 @@ data class Zeichenfolge(val zeichenfolge: String): Wert.Objekt(Typ.Compound.Klas
     }
   }
 
-  private fun konvertiereInZahl(aufruf: AST.IAufruf, injection: InterpretInjection): Wert {
+  private fun addiereMichMitDemOperanden(injection: InterpretInjection): Objekt {
+    val zeichenfolge = injection.umgebung.leseVariable("Operand")!!.wert as Zeichenfolge
+    return this + zeichenfolge
+  }
+
+  private fun konvertiereInZahl(aufruf: AST.IAufruf, injection: InterpretInjection): Objekt {
     return try {
       Zahl(zeichenfolge)
     }
@@ -52,7 +58,7 @@ data class Zeichenfolge(val zeichenfolge: String): Wert.Objekt(Typ.Compound.Klas
     return Zahl(this.zeichenfolge.compareTo(zeichenfolge.zeichenfolge).toDouble())
   }
 
-  private fun codeAnDemIndex(aufruf: AST.IAufruf, injection: InterpretInjection): Wert {
+  private fun codeAnDemIndex(aufruf: AST.IAufruf, injection: InterpretInjection): Objekt {
     val index = (injection.umgebung.leseVariable("Index")!!.wert as Zahl).toInt()
     if (index < 0 || index >= zeichenfolge.length)
       throw GermanSkriptFehler.LaufzeitFehler(aufruf.token, injection.aufrufStapel.toString(),
@@ -64,10 +70,10 @@ data class Zeichenfolge(val zeichenfolge: String): Wert.Objekt(Typ.Compound.Klas
 
   private fun buchstabierMichKlein() = Zeichenfolge(zeichenfolge.toLowerCase())
 
-  private fun trenneMichZwischenDemSeperator(injection: InterpretInjection): Wert {
+  private fun trenneMichZwischenDemSeperator(injection: InterpretInjection): Objekt {
     val separator = injection.umgebung.leseVariable("Separator")!!.wert as Zeichenfolge
 
-    return Liste(Typ.Compound.KlassenTyp.Liste(listOf(zeichenFolgenTypArgument)),
+    return Liste(Typ.Compound.Klasse(BuildIn.Klassen.liste ,listOf(zeichenFolgenTypArgument)),
         zeichenfolge.split(separator.zeichenfolge).map { Zeichenfolge(it) }.toMutableList())
   }
 }

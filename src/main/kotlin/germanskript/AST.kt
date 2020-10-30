@@ -442,7 +442,7 @@ sealed class AST {
     data class Import(
         val dateiPfad: TypedToken<TokenTyp.ZEICHENFOLGE>
     ): Definition() {
-      val pfad = dateiPfad.typ.zeichenfolge.zeichenfolge
+      val pfad = dateiPfad.typ.zeichenfolge
     }
 
     data class Verwende(
@@ -546,7 +546,6 @@ sealed class AST {
     }
 
     sealed class Ausdruck : Satz() {
-
       fun holeErstesToken(): Token {
         return when (this) {
           is Zeichenfolge -> zeichenfolge.toUntyped()
@@ -557,7 +556,7 @@ sealed class AST {
           is FunktionsAufruf -> verb.toUntyped()
           is ListenElement -> singular.vornomen!!.toUntyped()
           is BinärerAusdruck -> links.holeErstesToken()
-          is Minus -> ausdruck.holeErstesToken()
+          is Minus -> operator.toUntyped()
           is Konvertierung -> ausdruck.holeErstesToken()
           is ObjektInstanziierung -> klasse.name.bezeichnerToken
           is EigenschaftsZugriff -> eigenschaftsName.bezeichner.toUntyped()
@@ -685,7 +684,7 @@ sealed class AST {
         override val children = sequenceOf(links, rechts)
       }
 
-      data class Minus(val ausdruck: Ausdruck) : Ausdruck() {
+      data class Minus(val operator: TypedToken<TokenTyp.OPERATOR>, val ausdruck: Ausdruck) : Ausdruck() {
         override val children = sequenceOf(ausdruck)
       }
 
@@ -723,6 +722,8 @@ sealed class AST {
       }
 
       data class Closure(val schnittstelle: TypKnoten, val bindings: List<WortArt.Nomen>, val körper: Bereich): Ausdruck() {
+        lateinit var klasse: Typ.Compound.Klasse
+
         override val children = sequence {
           yield(schnittstelle)
           yieldAll(bindings)
@@ -731,7 +732,7 @@ sealed class AST {
       }
 
       data class AnonymeKlasse(val schnittstelle: TypKnoten, val bereich: Definition.ImplementierungsBereich): Ausdruck() {
-        var typ: Typ.Compound.KlassenTyp.Klasse? = null
+        lateinit var klasse: Typ.Compound.Klasse
 
         override val children = sequence {
           yield(schnittstelle)

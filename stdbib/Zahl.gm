@@ -2,14 +2,41 @@ Deklination Femininum Singular(Zahl) Plural(Zahlen)
 
 Nomen Zahl:.
 
-Implementiere die vergleichbare<Zahl> Zahl:
-
-    Verb(Zahl) vergleiche mich mit der Zahl:
-        gebe Ich - die Zahl zurück
-    .
-
+Implementiere die Zahl:
     Als Boolean:
         wenn Ich gleich 0 ist: gebe wahr zurück.
         sonst: gebe falsch zurück.
+    .
+.
+
+// implementiere die Rechenoperatoren
+Implementiere die
+    addierbare<Zahl, Zahl>,
+    subtrahierbare<Zahl, Zahl>,
+    multiplizierbare<Zahl, Zahl>,
+    dividierbare<Zahl, Zahl>,
+    potenzierbare<Zahl, Zahl>,
+    modulobare<Zahl, Zahl>,
+    negierbare<Zahl> Zahl:
+
+    Verb(Zahl) addiere mich mit der Zahl: intern.
+
+    Verb(Zahl) subtrahiere mich mit der Zahl: intern.
+
+    Verb(Zahl) multipliziere mich mit der Zahl: intern.
+
+    Verb(Zahl) dividiere mich mit der Zahl: intern.
+
+    Verb(Zahl) potenziere mich mit der Zahl: intern.
+
+    Verb(Zahl) moduliere mich mit der Zahl: intern.
+
+    Verb(Zahl) negiere mich: intern.
+.
+
+// Zahlen kann man miteinander vergleichen
+Implementiere die vergleichbare<Zahl> Zahl:
+    Verb(Zahl) vergleiche mich mit der Zahl:
+        gebe Ich - die Zahl zurück
     .
 .

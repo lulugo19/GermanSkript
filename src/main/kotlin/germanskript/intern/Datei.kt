@@ -4,13 +4,13 @@ import germanskript.*
 import java.io.BufferedWriter
 import java.io.File
 
-class Datei(typ: Typ.Compound.KlassenTyp, val eigenschaften: MutableMap<String, Wert>): Wert.Objekt(typ) {
+class Datei(typ: Typ.Compound.Klasse, val eigenschaften: MutableMap<String, Objekt>): Objekt(typ) {
 
   lateinit var file: File
 
   override fun rufeMethodeAuf(
       aufruf: AST.IAufruf,
-      injection: InterpretInjection): Wert {
+      injection: InterpretInjection): Objekt {
 
     return when (aufruf.vollerName!!) {
       "erstelle die Datei" -> konstruktor()
@@ -20,11 +20,11 @@ class Datei(typ: Typ.Compound.KlassenTyp, val eigenschaften: MutableMap<String, 
     }
   }
 
-  override fun holeEigenschaft(eigenschaftsName: String): Wert {
+  override fun holeEigenschaft(eigenschaftsName: String): Objekt {
     return eigenschaften.getValue(eigenschaftsName)
   }
 
-  override fun setzeEigenschaft(eigenschaftsName: String, wert: Wert) {
+  override fun setzeEigenschaft(eigenschaftsName: String, wert: Objekt) {
 
   }
 
@@ -34,17 +34,17 @@ class Datei(typ: Typ.Compound.KlassenTyp, val eigenschaften: MutableMap<String, 
   }
 
   private fun leseZeilen(): Liste {
-    val zeilen = file.readLines().map<String, Wert> { zeile -> Zeichenfolge(zeile) }.toMutableList()
-    return Liste(Typ.Compound.KlassenTyp.Liste(listOf(zeichenFolgenTypArgument)), zeilen)
+    val zeilen = file.readLines().map<String, Objekt> { zeile -> Zeichenfolge(zeile) }.toMutableList()
+    return Liste(Typ.Compound.Klasse(BuildIn.Klassen.liste ,listOf(zeichenFolgenTypArgument)), zeilen)
   }
 
   private fun holeSchreiber() : Schreiber {
-    return Schreiber(Typisierer.schreiberTyp, file.bufferedWriter())
+    return Schreiber(BuildIn.Klassen.schreiber, file.bufferedWriter())
   }
 }
 
-class Schreiber(typ: Typ.Compound.KlassenTyp, private val writer: BufferedWriter): Wert.Objekt(typ) {
-  override fun rufeMethodeAuf(aufruf: AST.IAufruf, injection: InterpretInjection): Wert {
+class Schreiber(typ: Typ.Compound.Klasse, private val writer: BufferedWriter): Objekt(typ) {
+  override fun rufeMethodeAuf(aufruf: AST.IAufruf, injection: InterpretInjection): Objekt {
     return when(aufruf.vollerName!!) {
       "schreibe die Zeile" -> schreibeDieZeile(injection)
       "schreibe die Zeichenfolge" -> schreibeDieZeichenfolge(injection)
@@ -55,11 +55,11 @@ class Schreiber(typ: Typ.Compound.KlassenTyp, private val writer: BufferedWriter
     }
   }
 
-  override fun holeEigenschaft(eigenschaftsName: String): Wert {
+  override fun holeEigenschaft(eigenschaftsName: String): Objekt {
     throw Exception("Die Klasse Schreiber hat keine Eigenschaften!")
   }
 
-  override fun setzeEigenschaft(eigenschaftsName: String, wert: Wert) {
+  override fun setzeEigenschaft(eigenschaftsName: String, wert: Objekt) {
     TODO("Not yet implemented")
   }
 

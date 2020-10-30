@@ -12,10 +12,6 @@ Nomen<Element> Liste:
     jene AnZahl ist 0
 .
 
-Adjektiv<Typ> vergleichbar:
-    Verb(Zahl) vergleiche mich mit dem Typ
-.
-
 Adjektiv<Typ> vergleichend:
     Verb(Zahl) vergleiche den TypA mit dem TypB
 .
@@ -115,6 +111,12 @@ Modul Standard::Collections:
                 vergleiche das ElementB mit dem Typ ElementA.
             zurück
         .
+    .
+
+    // Überlade den Plus-Operator für die Liste
+    Implementiere<Element> die addierbare<Liste<Element>, Liste<Element>> Liste<Element>:
+
+        Verb(Liste<Element>) addiere mich mit der Liste<Element>: intern.
     .
 
     Implementiere die Liste<Zahl>:

@@ -7,7 +7,7 @@ import java.text.DecimalFormat
 import kotlin.math.pow
 import kotlin.math.roundToInt
 
-class Zahl(val zahl: Double): Wert.Objekt(Typ.Compound.KlassenTyp.BuildInType.Zahl), Comparable<Zahl> {
+class Zahl(val zahl: Double): Objekt(BuildIn.Klassen.zahl), Comparable<Zahl> {
   object Static {
     val format = DecimalFormat()
     init {
@@ -33,7 +33,6 @@ class Zahl(val zahl: Double): Wert.Objekt(Typ.Compound.KlassenTyp.BuildInType.Za
   operator fun plus(other: Zahl) = Zahl(this.zahl + other.zahl)
   operator fun minus(other: Zahl) = Zahl(this.zahl - other.zahl)
   operator fun times(other: Zahl) = Zahl(this.zahl * other.zahl)
-
   operator fun div(other: Zahl) = Zahl(this.zahl / other.zahl)
 
   override fun equals(other: Any?): kotlin.Boolean {
@@ -57,4 +56,18 @@ class Zahl(val zahl: Double): Wert.Objekt(Typ.Compound.KlassenTyp.BuildInType.Za
   override fun compareTo(other: Zahl): Int = this.zahl.compareTo(other.zahl)
 
   fun isZero() = this.zahl == 0.0
+
+  override fun rufeMethodeAuf(aufruf: AST.IAufruf, injection: InterpretInjection): Objekt {
+    val operand = injection.umgebung.leseVariable("Zahl")?.wert as Zahl?
+    return when(aufruf.vollerName!!) {
+      "addiere mich mit dem Operanden" -> this + operand!!
+      "subtrahiere mich mit dem Operanden" -> this - operand!!
+      "multipliziere mich mit dem Operanden" -> this * operand!!
+      "dividiere mich mit dem Operanden" -> this / operand!!
+      "potenziere mich mit dem Operanden" -> pow(operand!!)
+      "moduliere mich mit dem Operanden" -> this % operand!!
+      "negiere mich" -> -this
+      else -> super.rufeMethodeAuf(aufruf, injection)
+    }
+  }
 }

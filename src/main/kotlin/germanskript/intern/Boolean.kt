@@ -1,9 +1,9 @@
 package germanskript.intern
 
-import germanskript.Typ
+import germanskript.BuildIn
 import kotlin.Boolean
 
-class Boolean(val boolean: Boolean): Wert.Objekt(Typ.Compound.KlassenTyp.BuildInType.Boolean) {
+class Boolean(val boolean: Boolean): Objekt(BuildIn.Klassen.boolean) {
   override fun toString(): String = if (this.boolean) "wahr" else "falsch"
 
   override fun equals(other: Any?): Boolean {

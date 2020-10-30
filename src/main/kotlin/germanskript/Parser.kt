@@ -437,8 +437,7 @@ private sealed class SubParser<T: AST>() {
           } else if (tokenTyp.operator != Operator.MINUS) {
             throw GermanSkriptFehler.SyntaxFehler.ParseFehler(next(), null)
           } else {
-            next()
-            AST.Satz.Ausdruck.Minus(parseEinzelnerAusdruck(false))
+            AST.Satz.Ausdruck.Minus(next().toTyped(), parseEinzelnerAusdruck(false))
           }
         }
         is TokenTyp.BEZEICHNER_GROSS ->
@@ -1574,7 +1573,7 @@ private sealed class SubParser<T: AST>() {
         val typParameter = parseTypParameter()
 
         val artikel = expect<TokenTyp.VORNOMEN.ARTIKEL.BESTIMMT>("bestimmter Artikel")
-
+        überspringeLeereZeilen()
         val (schnittstellen, typ) = parseSchnittstellenMitKlasse()
 
         typ.name.vornomen = artikel
@@ -1595,6 +1594,7 @@ private sealed class SubParser<T: AST>() {
               return Pair(schnittstellen, typ)
             }
             next()
+            überspringeLeereZeilen()
           } else {
             return  Pair(schnittstellen, adjektivOderNomen)
           }

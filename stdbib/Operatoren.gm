@@ -1,0 +1,48 @@
+Deklination Maskulinum Singular(Operand, Operanden, Operanden, Operanden) Plural(Operanden)
+Deklination Neutrum Singular(Ergebnis, Ergebnisses, Ergebnis, Ergebnis) Plural(Ergebnisse, Ergebnisse, Ergebnissen, Ergebnisse)
+
+// Wenn diese Adjektive implementiert werden, können bestimmte Operatoren verwendet werden
+
+// Region: Rechenoperatoren
+
+// plus
+Adjektiv<Operand, Ergebnis> addierbar:
+    Verb(Ergebnis) addiere mich mit dem Operanden
+.
+
+// minus
+Adjektiv<Operand, Ergebnis> subtrahierbar:
+    Verb(Ergebnis) subtrahiere mich mit dem Operanden
+.
+
+// mal
+Adjektiv<Operand, Ergebnis> multiplizierbar:
+    Verb(Ergebnis) multipliziere mich mit dem Operanden
+.
+
+// durch
+Adjektiv<Operand, Ergebnis> dividierbar:
+    Verb(Ergebnis) dividiere mich mit dem Operanden
+.
+
+// hoch
+Adjektiv<Operand, Ergebnis> potenzierbar:
+    Verb(Ergebnis) potenziere mich mit dem Operanden
+.
+
+// modulo
+Adjektiv<Operand, Ergebnis> modulobar:
+    Verb(Ergebnis) moduliere mich mit dem Operanden
+.
+
+// minus
+Adjektiv<Ergebnis> negierbare:
+    Verb(Ergebnis) negiere mich
+.
+
+// beende Region
+
+// größer, kleiner, größer gleich, kleiner gleich
+Adjektiv<Typ> vergleichbar:
+    Verb(Zahl) vergleiche mich mit dem Typ
+.

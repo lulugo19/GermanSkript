@@ -1,5 +1,5 @@
 package germanskript.intern
 
-import germanskript.Typ
+import germanskript.BuildIn
 
-object Niemals: Wert.Objekt(Typ.Compound.KlassenTyp.BuildInType.Niemals) {}
+object Niemals: Objekt(BuildIn.Klassen.niemals) {}

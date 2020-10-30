@@ -240,3 +240,8 @@ Implementiere die vergleichbare<Zeichenfolge>, iterierbare<Zeichenfolge> Zeichen
         gebe die Zeichen zurück
     .
 .
+
+// Überladung des Plus-Operators
+Implementiere die addierbare<Zeichenfolge, Zeichenfolge> Zeichenfolge:
+    Verb(Zeichenfolge) addiere mich mit der Zeichenfolge: intern.
+.

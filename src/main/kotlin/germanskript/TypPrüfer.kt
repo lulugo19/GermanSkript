@@ -10,12 +10,13 @@ class TypPrüfer(startDatei: File): PipelineKomponente(startDatei) {
   val logger = SimpleLogger()
   val ast: AST.Programm get() = typisierer.ast
 
+
   // ganz viele veränderliche Variablen :(
   // Da wir von der abstrakten Klasse 'ProgrammDurchlaufer' erben und dieser die Funktionen vorgibt, brauchen wir sie leider.
   // Alternativ könnte man sich überlegen, sich von dem ProgrammDurchlaufer zu trennen
   // und Funktionsparameter für den Kontext zu verwenden.
-  private var zuÜberprüfendeKlasse: Typ.Compound.KlassenTyp? = null
-  private var rückgabeTyp: Typ = Typ.Compound.KlassenTyp.BuildInType.Nichts
+  private var zuÜberprüfendeKlasse: Typ.Compound.Klasse? = null
+  private lateinit var rückgabeTyp: Typ
   private var funktionsTypParams: List<AST.Definition.TypParam>? = null
   private var klassenTypParams: List<AST.Definition.TypParam>? = null
   private var letzterFunktionsAufruf: AST.Satz.Ausdruck.FunktionsAufruf? = null
@@ -24,14 +25,12 @@ class TypPrüfer(startDatei: File): PipelineKomponente(startDatei) {
   private var erwarteterTyp: Typ? = null
   private var methodenObjekt: Typ.Compound? = null
   private var inSuperBlock = false
-  private lateinit var objektKlasse: AST.Definition.Typdefinition.Klasse
 
   fun prüfe() {
     typisierer.typisiere()
     definierer.konstanten.forEach(::prüfeKonstante)
     // Die Objekt-Klasse ist die Wurzel der Typ-Hierarchie in Germanskript und muss zuerst definiert werden
-    objektKlasse = definierer.holeTypDefinition("Objekt") as AST.Definition.Typdefinition.Klasse
-    prüfeKlasse(objektKlasse)
+    prüfeKlasse(BuildIn.Klassen.objekt.definition)
     // zuerst die Klassendefinitionen, damit noch private Eigenschaften definiert werden können
     definierer.holeDefinitionen<AST.Definition.Typdefinition.Klasse>().forEach(::prüfeKlasse)
     definierer.funktionsDefinitionen.forEach {funktion ->
@@ -39,7 +38,7 @@ class TypPrüfer(startDatei: File): PipelineKomponente(startDatei) {
     }
 
     // neue germanskript.Umgebung
-    durchlaufeAufruf(ast.programmStart!!, ast.programm, Umgebung(), true, Typ.Compound.KlassenTyp.BuildInType.Nichts, true)
+    durchlaufeAufruf(ast.programmStart!!, ast.programm, Umgebung(), true, BuildIn.Klassen.nichts, true)
   }
 
   private fun ausdruckMussTypSein(
@@ -72,24 +71,23 @@ class TypPrüfer(startDatei: File): PipelineKomponente(startDatei) {
   }
 
   fun typIstTyp(typ: Typ, sollTyp: Typ): Boolean {
-    fun überprüfeSchnittstelle(klasse: Typ.Compound.KlassenTyp, schnittstelle: Typ.Compound.Schnittstelle): Boolean {
+    fun überprüfeSchnittstelle(klasse: Typ.Compound.Klasse, schnittstelle: Typ.Compound.Schnittstelle): Boolean {
       if (klasse.definition.implementierteSchnittstellen.contains(schnittstelle)) {
         return true
       }
       if (klasse.definition.elternKlasse != null) {
-        return überprüfeSchnittstelle(klasse.definition.elternKlasse!!.klasse.typ!! as Typ.Compound.KlassenTyp, schnittstelle)
+        return überprüfeSchnittstelle(klasse.definition.elternKlasse.klasse.typ!! as Typ.Compound.Klasse, schnittstelle)
       }
       return false
     }
 
-
-    fun überprüfeKlassenHierarchie(klasse: Typ.Compound.KlassenTyp, elternKlasse: Typ.Compound.KlassenTyp): Boolean {
-      var laufTyp: Typ.Compound.KlassenTyp? = klasse
+    fun überprüfeKlassenHierarchie(klasse: Typ.Compound.Klasse, elternKlasse: Typ.Compound.Klasse): Boolean {
+      var laufTyp: Typ.Compound.Klasse? = klasse
       while (laufTyp != null) {
         if (laufTyp == elternKlasse) {
           return true
         }
-        laufTyp = laufTyp.definition.elternKlasse?.klasse?.typ as Typ.Compound.KlassenTyp?
+        laufTyp = laufTyp.definition.elternKlasse?.klasse?.typ as Typ.Compound.Klasse?
       }
       return false
     }
@@ -106,15 +104,27 @@ class TypPrüfer(startDatei: File): PipelineKomponente(startDatei) {
     return when (sollTyp) {
       is Typ.Compound.Schnittstelle -> when(typ) {
         is Typ.Generic -> typ.typParam.schnittstellen.find { it.typ!! == sollTyp } != null
-        is Typ.Compound.KlassenTyp -> überprüfeSchnittstelle(typ, sollTyp)
+        is Typ.Compound.Klasse -> überprüfeSchnittstelle(typ, sollTyp)
         else -> typ == sollTyp
       }
-      is Typ.Compound.KlassenTyp -> when(typ) {
+      is Typ.Compound.Klasse -> when(typ) {
         is Typ.Generic -> typ.typParam.elternKlasse?.typ == sollTyp
-        is Typ.Compound.KlassenTyp -> sollTyp.definition === objektKlasse || überprüfeKlassenHierarchie(typ, sollTyp)
+        is Typ.Compound.Klasse -> sollTyp == BuildIn.Klassen.objekt || überprüfeKlassenHierarchie(typ, sollTyp)
         else -> typ == sollTyp
       }
       else -> typ == sollTyp
+    }
+  }
+
+  /**
+   * Prüft ob ein Typ die Schnittstelle 'iterierbar' implementiert und gibt die Iterierbar-Schnittstelle wenn möglich zurück.
+   */
+  fun prüfeImplementiertSchnittstelle(typ: Typ, schnittstelle: AST.Definition.Typdefinition.Schnittstelle): Typ.Compound.Schnittstelle? {
+    return when (typ) {
+      is Typ.Generic -> typ.typParam.schnittstellen.find {
+        (it.typ!! as Typ.Compound.Schnittstelle).definition == schnittstelle }?.typ!! as Typ.Compound.Schnittstelle?
+      is Typ.Compound.Klasse -> typ.definition.implementierteSchnittstellen.find { it.definition == schnittstelle }
+      is Typ.Compound.Schnittstelle -> if (typ.definition == schnittstelle) typ else null
     }
   }
 
@@ -173,7 +183,7 @@ class TypPrüfer(startDatei: File): PipelineKomponente(startDatei) {
       typIstTyp(typA, typB) -> typB
       typIstTyp(typB, typA) -> typA
       // Wenn die Typen nicht übereinstimmen, dann kommt Objekt raus, Elternklasse von allen Typen
-      else -> Typ.Compound.KlassenTyp.BuildInType.Objekt
+      else -> BuildIn.Klassen.objekt
     }
   }
 
@@ -183,22 +193,17 @@ class TypPrüfer(startDatei: File): PipelineKomponente(startDatei) {
     }
   }
 
+
   private fun prüfeKonstante(konstante: AST.Definition.Konstante) {
     evaluiereKonstante = true
     val typ = evaluiereAusdruck(konstante.wert)
-    if (typ !is Typ.Compound.KlassenTyp.BuildInType) {
+    if (typ != BuildIn.Klassen.zahl && typ != BuildIn.Klassen.zeichenfolge && typ != BuildIn.Klassen.boolean) {
       throw GermanSkriptFehler.KonstantenFehler(konstante.wert.holeErstesToken())
     }
     konstante.typ = typ
     evaluiereKonstante = false
   }
 
-  private fun nichtErlaubtInKonstante(ausdruck: AST.Satz.Ausdruck) {
-    if (evaluiereKonstante) {
-      throw GermanSkriptFehler.KonstantenFehler(ausdruck.holeErstesToken())
-    }
-  }
-  
   private fun prüfeFunktion(funktion: AST.Definition.Funktion, funktionsUmgebung: Umgebung<Typ>) {
     funktionsUmgebung.pushBereich()
     for (parameter in funktion.signatur.parameter) {
@@ -224,18 +229,10 @@ class TypPrüfer(startDatei: File): PipelineKomponente(startDatei) {
       return
     }
     klasse.geprüft = true
-    typisierer.typisiereKlasse(klasse)
+
     // Da die Kindklasse abhängig von der Elternklasse ist, muss zuerst die Elternklasse geprüft werden
     if (klasse.elternKlasse != null) {
-      if (klasse.elternKlasse.klasse.typ == null) {
-        typisierer.bestimmeTyp(
-            klasse.elternKlasse.klasse,
-            null,
-            null,
-            istAliasErlaubt = true, erlaubeLeereTypArgumente = false
-        )
-      }
-      val elternKlasse = klasse.elternKlasse.klasse.typ as Typ.Compound.KlassenTyp
+      val elternKlasse = klasse.elternKlasse.klasse.typ as Typ.Compound.Klasse
       prüfeKlasse(elternKlasse.definition)
 
       // Überprüfe Elternklassen-Konstruktor
@@ -246,33 +243,13 @@ class TypPrüfer(startDatei: File): PipelineKomponente(startDatei) {
       evaluiereObjektInstanziierung(klasse.elternKlasse)
       umgebung.popBereich()
     }
-    zuÜberprüfendeKlasse = typAusKlassenDefinition(klasse, erstelleGenerischeTypArgumente(klasse.typParameter))
+
+    // überprüfe Konstruktor und Methoden
+    zuÜberprüfendeKlasse = Typ.Compound.Klasse(klasse, erstelleGenerischeTypArgumente(klasse.typParameter))
     klassenTypParams = klasse.typParameter
-    durchlaufeAufruf(klasse.name.bezeichner.toUntyped(), klasse.konstruktor, Umgebung(), true, Typ.Compound.KlassenTyp.BuildInType.Nichts, false)
+    durchlaufeAufruf(klasse.name.bezeichner.toUntyped(), klasse.konstruktor, Umgebung(), true, BuildIn.Klassen.nichts, false)
     klasse.implementierungen.forEach {implementierung -> prüfeImplementierung(klasse, implementierung)}
     klassenTypParams = null
-
-    fun fügeElternKlassenMethodenHinzu(elternKlasse: AST.Definition.Typdefinition.Klasse) {
-      for ((methodenName, methode) in elternKlasse.methoden) {
-        klasse.methoden.putIfAbsent(methodenName, methode)
-      }
-      for ((konvertierungsTyp, konvertierung) in elternKlasse.konvertierungen) {
-        klasse.konvertierungen.putIfAbsent(konvertierungsTyp, konvertierung)
-      }
-      if (elternKlasse.elternKlasse != null) {
-        fügeElternKlassenMethodenHinzu((elternKlasse.elternKlasse.klasse.typ as Typ.Compound.KlassenTyp).definition)
-      } else {
-        if (elternKlasse !== objektKlasse)
-        fügeElternKlassenMethodenHinzu(objektKlasse)
-      }
-    }
-
-    if (klasse.elternKlasse != null) {
-      fügeElternKlassenMethodenHinzu((klasse.elternKlasse.klasse.typ as Typ.Compound.KlassenTyp).definition)
-    } else if (klasse !== objektKlasse) {
-      // Kopiere die Definitionen der Objekt-Hierarchie-Wurzel runter
-      fügeElternKlassenMethodenHinzu(objektKlasse)
-    }
 
     zuÜberprüfendeKlasse = null
   }
@@ -286,7 +263,7 @@ class TypPrüfer(startDatei: File): PipelineKomponente(startDatei) {
           klasse.typParameter.size
       )
     }
-    zuÜberprüfendeKlasse = typAusKlassenDefinition(klasse, implementierung.klasse.typArgumente)
+    zuÜberprüfendeKlasse = Typ.Compound.Klasse(klasse, implementierung.klasse.typArgumente)
     prüfeImplementierungsBereich(implementierung.bereich, Umgebung())
     zuÜberprüfendeKlasse = null
   }
@@ -307,22 +284,11 @@ class TypPrüfer(startDatei: File): PipelineKomponente(startDatei) {
     }
   }
 
-  private fun typAusKlassenDefinition(klasse: AST.Definition.Typdefinition.Klasse, typArgumente: List<AST.TypKnoten>): Typ.Compound.KlassenTyp {
-    return when (klasse) {
-      Typ.Compound.KlassenTyp.Liste.definition -> Typ.Compound.KlassenTyp.Liste(typArgumente)
-      Typ.Compound.KlassenTyp.BuildInType.Zeichenfolge.definition -> Typ.Compound.KlassenTyp.BuildInType.Zeichenfolge
-      Typ.Compound.KlassenTyp.BuildInType.Zahl.definition -> Typ.Compound.KlassenTyp.BuildInType.Zahl
-      Typ.Compound.KlassenTyp.BuildInType.Boolean.definition -> Typ.Compound.KlassenTyp.BuildInType.Boolean
-      Typ.Compound.KlassenTyp.BuildInType.Nichts.definition -> Typ.Compound.KlassenTyp.BuildInType.Nichts
-      else -> Typ.Compound.KlassenTyp.Klasse(klasse, typArgumente)
-    }
-  }
-
   private fun durchlaufeBereich(bereich: AST.Satz.Bereich, neuerBereich: Boolean): Typ  {
     if (neuerBereich) {
       umgebung.pushBereich()
     }
-    var rückgabe: Typ = Typ.Compound.KlassenTyp.BuildInType.Nichts
+    var rückgabe: Typ = BuildIn.Klassen.nichts
     for (satz in bereich.sätze) {
       rückgabe = when (satz) {
         is AST.Satz.VariablenDeklaration -> durchlaufeVariablenDeklaration(satz)
@@ -339,7 +305,7 @@ class TypPrüfer(startDatei: File): PipelineKomponente(startDatei) {
         is AST.Satz.Ausdruck.Bedingung -> durchlaufeBedingungsSatz(satz, false)
         is AST.Satz.SolangeSchleife -> durchlaufeSolangeSchleife(satz)
         is AST.Satz.FürJedeSchleife -> durchlaufeFürJedeSchleife(satz)
-        is AST.Satz.SchleifenKontrolle -> Typ.Compound.KlassenTyp.BuildInType.Nichts
+        is AST.Satz.SchleifenKontrolle -> BuildIn.Klassen.nichts
         is AST.Satz.Ausdruck.VersucheFange -> durchlaufeVersucheFange(satz, false)
         is AST.Satz.Intern -> durchlaufeIntern(satz)
         is AST.Satz.Ausdruck -> evaluiereAusdruck(satz)
@@ -354,9 +320,9 @@ class TypPrüfer(startDatei: File): PipelineKomponente(startDatei) {
 
   private fun evaluiereAusdruck(ausdruck: AST.Satz.Ausdruck): Typ {
     return when (ausdruck) {
-      is AST.Satz.Ausdruck.Zeichenfolge -> Typ.Compound.KlassenTyp.BuildInType.Zeichenfolge
-      is AST.Satz.Ausdruck.Zahl -> Typ.Compound.KlassenTyp.BuildInType.Zahl
-      is AST.Satz.Ausdruck.Boolean -> Typ.Compound.KlassenTyp.BuildInType.Boolean
+      is AST.Satz.Ausdruck.Zeichenfolge -> BuildIn.Klassen.zeichenfolge
+      is AST.Satz.Ausdruck.Zahl -> BuildIn.Klassen.zahl
+      is AST.Satz.Ausdruck.Boolean -> BuildIn.Klassen.boolean
       is AST.Satz.Ausdruck.Variable -> evaluiereVariable(ausdruck)
       is AST.Satz.Ausdruck.Liste -> evaluiereListe(ausdruck)
       is AST.Satz.Ausdruck.ListenElement -> evaluiereListenElement(ausdruck)
@@ -376,7 +342,7 @@ class TypPrüfer(startDatei: File): PipelineKomponente(startDatei) {
       is AST.Satz.Ausdruck.TypÜberprüfung -> evaluiereTypÜberprüfung(ausdruck)
       is AST.Satz.Ausdruck.MethodenBereich -> durchlaufeMethodenBereich(ausdruck)
       is AST.Satz.Ausdruck.Bedingung -> durchlaufeBedingungsSatz(ausdruck, true)
-      is AST.Satz.Ausdruck.Nichts -> Typ.Compound.KlassenTyp.BuildInType.Nichts
+      is AST.Satz.Ausdruck.Nichts -> BuildIn.Klassen.nichts
       is AST.Satz.Ausdruck.VersucheFange -> durchlaufeVersucheFange(ausdruck, true)
       is AST.Satz.Ausdruck.Werfe -> evaluiereWerfe(ausdruck)
     }
@@ -384,7 +350,6 @@ class TypPrüfer(startDatei: File): PipelineKomponente(startDatei) {
 
   private fun durchlaufeMethodenBereich(methodenBereich: AST.Satz.Ausdruck.MethodenBereich): Typ {
     val wert = evaluiereAusdruck(methodenBereich.objekt)
-    bevorDurchlaufeMethodenBereich(methodenBereich, wert)
     umgebung.pushBereich(wert)
     return durchlaufeBereich(methodenBereich.bereich, false).also { umgebung.popBereich() }
   }
@@ -434,7 +399,7 @@ class TypPrüfer(startDatei: File): PipelineKomponente(startDatei) {
     this.umgebung = umgebung
     rückgabeErreicht = false
     return durchlaufeBereich(bereich, neuerBereich).also {
-      if (!impliziteRückgabe && !rückgabeErreicht && rückgabeTyp != Typ.Compound.KlassenTyp.BuildInType.Nichts) {
+      if (!impliziteRückgabe && !rückgabeErreicht && rückgabeTyp != BuildIn.Klassen.nichts) {
         throw GermanSkriptFehler.RückgabeFehler.RückgabeVergessen(token, rückgabeTyp)
       }
     }
@@ -479,14 +444,14 @@ class TypPrüfer(startDatei: File): PipelineKomponente(startDatei) {
         umgebung.überschreibeVariable(deklaration.name, wert)
       }
     }
-    return Typ.Compound.KlassenTyp.BuildInType.Nichts
+    return BuildIn.Klassen.nichts
   }
 
   private fun durchlaufeListenElementZuweisung(zuweisung: AST.Satz.ListenElementZuweisung): Typ {
-    ausdruckMussTypSein(zuweisung.index, Typ.Compound.KlassenTyp.BuildInType.Zahl)
+    ausdruckMussTypSein(zuweisung.index, BuildIn.Klassen.zahl)
     val elementTyp = evaluiereListenSingular(zuweisung.singular)
     ausdruckMussTypSein(zuweisung.wert, elementTyp)
-    return Typ.Compound.KlassenTyp.BuildInType.Nichts
+    return BuildIn.Klassen.nichts
   }
 
   /**
@@ -595,7 +560,7 @@ class TypPrüfer(startDatei: File): PipelineKomponente(startDatei) {
 
       // Wenn man in einem Super-Block ist, wird die Eltern-Methode aufgerufen
       funktionsSignatur = if (inSuperBlock && zuÜberprüfendeKlasse!!.definition.elternKlasse != null) {
-        val elternKlasse = zuÜberprüfendeKlasse!!.definition.elternKlasse!!.klasse.typ!! as Typ.Compound.KlassenTyp
+        val elternKlasse = zuÜberprüfendeKlasse!!.definition.elternKlasse!!.klasse.typ!! as Typ.Compound.Klasse
         val fund = findeMethode(
             funktionsAufruf,
             elternKlasse,
@@ -617,12 +582,17 @@ class TypPrüfer(startDatei: File): PipelineKomponente(startDatei) {
     // ist normale Funktion
     val undefiniertFehler = try {
       if (funktionsSignatur == null) {
-        funktionsAufruf.funktionsDefinition = definierer.holeFunktionsDefinition(funktionsAufruf)
+        val funktionsDefinition = definierer.holeFunktionsDefinition(funktionsAufruf)
+
         funktionsSignatur = überprüfePassendeFunktionsSignatur(
             funktionsAufruf,
-            funktionsAufruf.funktionsDefinition!!.signatur,
+            funktionsDefinition.signatur,
             FunktionsAufrufTyp.FUNKTIONS_AUFRUF, null
         )
+        if (funktionsSignatur != null) {
+          funktionsAufruf.funktionsDefinition = funktionsDefinition
+        }
+
         null
       } else {
         null
@@ -662,11 +632,11 @@ class TypPrüfer(startDatei: File): PipelineKomponente(startDatei) {
     // auch mit dem Objekt übereinstimmt
     if (methodenObjekt != null && funktionsAufruf.reflexivPronomen != null) {
       val reflexivPronomen = funktionsAufruf.reflexivPronomen.typ
-      if (methodenObjekt is Typ.Compound.KlassenTyp.Liste && funktionsAufruf.reflexivPronomen.typ.numerus == Numerus.SINGULAR) {
+      if (methodenObjekt!!.definition === BuildIn.Klassen.liste && funktionsAufruf.reflexivPronomen.typ.numerus == Numerus.SINGULAR) {
         val erwartetesPronomen = holeReflexivPronomenForm(true, reflexivPronomen.kasus.first(), Numerus.PLURAL)
         throw GermanSkriptFehler.GrammatikFehler.FalschesReflexivPronomen(
             funktionsAufruf.reflexivPronomen.toUntyped(), reflexivPronomen, erwartetesPronomen)
-      } else if (methodenObjekt !is Typ.Compound.KlassenTyp.Liste && funktionsAufruf.reflexivPronomen.typ.numerus == Numerus.PLURAL) {
+      } else if (methodenObjekt!!.definition !== BuildIn.Klassen.liste && funktionsAufruf.reflexivPronomen.typ.numerus == Numerus.PLURAL) {
         val erwartetesPronomen = holeReflexivPronomenForm(true, reflexivPronomen.kasus.first(), Numerus.SINGULAR)
         throw GermanSkriptFehler.GrammatikFehler.FalschesReflexivPronomen(
             funktionsAufruf.reflexivPronomen.toUntyped(), reflexivPronomen, erwartetesPronomen)
@@ -674,7 +644,7 @@ class TypPrüfer(startDatei: File): PipelineKomponente(startDatei) {
     }
 
     // Überprüfe ob die Typargumente des Methodenobjekts mit den Generic-Constrains übereinstimmen
-    if (methodenObjekt is Typ.Compound.KlassenTyp && methodenObjekt!!.typArgumente.isNotEmpty()) {
+    if (methodenObjekt is Typ.Compound.Klasse && methodenObjekt!!.typArgumente.isNotEmpty()) {
       val implementierung = funktionsSignatur.findNodeInParents<AST.Definition.Implementierung>()!!
       for (paramIndex in implementierung.klasse.typArgumente.indices) {
         if (!typIstTyp(methodenObjekt!!.typArgumente[paramIndex].typ!!, implementierung.klasse.typArgumente[paramIndex].typ!!)) {
@@ -746,7 +716,7 @@ class TypPrüfer(startDatei: File): PipelineKomponente(startDatei) {
       typ: Typ?
   ): AST.Definition.FunktionsSignatur? {
     return if (signatur != null && (!signatur.hatRückgabeObjekt || funktionsAufruf.rückgabeObjektMöglich)) {
-      if (typ is Typ.Compound.KlassenTyp && aufrufTyp == FunktionsAufrufTyp.METHODEN_SELBST_AUFRUF) {
+      if (typ is Typ.Compound.Klasse && aufrufTyp == FunktionsAufrufTyp.METHODEN_SELBST_AUFRUF) {
         funktionsAufruf.funktionsDefinition = typ.definition.methoden[funktionsAufruf.vollerName!!]
       }
       funktionsAufruf.hatRückgabeObjekt = signatur.hatRückgabeObjekt
@@ -814,7 +784,7 @@ class TypPrüfer(startDatei: File): PipelineKomponente(startDatei) {
   }
 
   private fun prüfeBedingung(bedingung: AST.Satz.BedingungsTerm): Typ {
-    ausdruckMussTypSein(bedingung.bedingung, Typ.Compound.KlassenTyp.BuildInType.Boolean)
+    ausdruckMussTypSein(bedingung.bedingung, BuildIn.Klassen.boolean)
     return durchlaufeBereich(bedingung.bereich, true)
   }
 
@@ -838,23 +808,23 @@ class TypPrüfer(startDatei: File): PipelineKomponente(startDatei) {
 
   private fun durchlaufeSolangeSchleife(schleife: AST.Satz.SolangeSchleife): Typ {
     prüfeBedingung(schleife.bedingung)
-    return Typ.Compound.KlassenTyp.BuildInType.Nichts
+    return BuildIn.Klassen.nichts
   }
 
   private fun durchlaufeFürJedeSchleife(schleife: AST.Satz.FürJedeSchleife): Typ {
     val elementTyp = when {
       schleife.iterierbares != null -> {
         val iterierbarerTyp = evaluiereAusdruck(schleife.iterierbares)
-        val iterierbareSchnittstelle = typisierer.prüfeIterierbar(iterierbarerTyp)
+        val iterierbareSchnittstelle = prüfeImplementiertSchnittstelle(iterierbarerTyp, BuildIn.Schnittstellen.iterierbar)
             ?: throw GermanSkriptFehler.TypFehler.IterierbarErwartet(schleife.iterierbares.holeErstesToken())
         val typArgumente = if (iterierbarerTyp is Typ.Compound) iterierbarerTyp.typArgumente else null
         ersetzeGenerics(iterierbareSchnittstelle.typArgumente[0], null, typArgumente).typ!!
       }
       schleife.reichweite != null -> {
         val (anfang, ende) = schleife.reichweite
-        ausdruckMussTypSein(anfang, Typ.Compound.KlassenTyp.BuildInType.Zahl)
-        ausdruckMussTypSein(ende, Typ.Compound.KlassenTyp.BuildInType.Zahl)
-        Typ.Compound.KlassenTyp.BuildInType.Zahl
+        ausdruckMussTypSein(anfang, BuildIn.Klassen.zahl)
+        ausdruckMussTypSein(ende, BuildIn.Klassen.zahl)
+        BuildIn.Klassen.zahl
       }
       else -> {
         evaluiereListenSingular(schleife.singular)
@@ -864,7 +834,7 @@ class TypPrüfer(startDatei: File): PipelineKomponente(startDatei) {
     umgebung.schreibeVariable(schleife.binder, elementTyp, false)
     durchlaufeBereich(schleife.bereich, true)
     umgebung.popBereich()
-    return Typ.Compound.KlassenTyp.BuildInType.Nichts
+    return BuildIn.Klassen.nichts
   }
 
   private fun durchlaufeVersucheFange(versucheFange: AST.Satz.Ausdruck.VersucheFange, istAusdruck: Boolean): Typ {
@@ -891,7 +861,7 @@ class TypPrüfer(startDatei: File): PipelineKomponente(startDatei) {
 
   private fun evaluiereWerfe(werfe: AST.Satz.Ausdruck.Werfe): Typ {
     evaluiereAusdruck(werfe.ausdruck)
-    return Typ.Compound.KlassenTyp.BuildInType.Niemals
+    return BuildIn.Klassen.niemals
   }
 
   fun durchlaufeIntern(intern: AST.Satz.Intern): Typ {
@@ -899,12 +869,6 @@ class TypPrüfer(startDatei: File): PipelineKomponente(startDatei) {
     // die internen Sachen sind schon von kotlin Typ-gecheckt :)
     rückgabeErreicht = true
     return rückgabeTyp
-  }
-
-  private fun bevorDurchlaufeMethodenBereich(methodenBereich: AST.Satz.Ausdruck.MethodenBereich, blockObjekt: Typ?) {
-    if (blockObjekt !is Typ.Compound && blockObjekt !is Typ.Compound.Schnittstelle) {
-      throw GermanSkriptFehler.TypFehler.ObjektErwartet(methodenBereich.objekt.holeErstesToken())
-    }
   }
 
   private fun evaluiereKonstante(konstante: AST.Satz.Ausdruck.Konstante): Typ {
@@ -915,26 +879,24 @@ class TypPrüfer(startDatei: File): PipelineKomponente(startDatei) {
   }
 
   private fun evaluiereListe(ausdruck: AST.Satz.Ausdruck.Liste): Typ {
-    nichtErlaubtInKonstante(ausdruck)
     val listenTyp = typisierer.bestimmeTyp(
         ausdruck.pluralTyp,
         funktionsTypParams,
         klassenTypParams,
         istAliasErlaubt = true,
         erlaubeLeereTypArgumente = false
-    ) as Typ.Compound.KlassenTyp.Liste
+    ) as Typ.Compound.Klasse
     ausdruck.elemente.forEach {element -> ausdruckMussTypSein(element, listenTyp.typArgumente[0].typ!!)}
     return listenTyp
   }
 
   private fun evaluiereListenElement(listenElement: AST.Satz.Ausdruck.ListenElement): Typ {
-    nichtErlaubtInKonstante(listenElement)
-    ausdruckMussTypSein(listenElement.index, Typ.Compound.KlassenTyp.BuildInType.Zahl)
+    ausdruckMussTypSein(listenElement.index, BuildIn.Klassen.zahl)
     val zeichenfolge = evaluiereVariable(listenElement.singular.nominativ)
     // Bei einem Zugriff auf einen Listenindex kann es sich auch um eine Zeichenfolge handeln
-    if (zeichenfolge != null && zeichenfolge == Typ.Compound.KlassenTyp.BuildInType.Zeichenfolge) {
+    if (zeichenfolge != null && zeichenfolge == BuildIn.Klassen.zeichenfolge) {
       listenElement.istZeichenfolgeZugriff = true
-      return Typ.Compound.KlassenTyp.BuildInType.Zeichenfolge
+      return BuildIn.Klassen.zeichenfolge
     }
     return evaluiereListenSingular(listenElement.singular)
   }
@@ -947,14 +909,13 @@ class TypPrüfer(startDatei: File): PipelineKomponente(startDatei) {
         TokenTyp.VORNOMEN.POSSESSIV_PRONOMEN.MEIN ->
           holeNormaleEigenschaftAusKlasse(singular, zuÜberprüfendeKlasse!!, Numerus.PLURAL).typKnoten.typ!!
         TokenTyp.VORNOMEN.POSSESSIV_PRONOMEN.DEIN -> holeNormaleEigenschaftAusKlasse(
-            singular, umgebung.holeMethodenBlockObjekt()!! as Typ.Compound.KlassenTyp, Numerus.PLURAL).typKnoten.typ!!
+            singular, umgebung.holeMethodenBlockObjekt()!! as Typ.Compound.Klasse, Numerus.PLURAL).typKnoten.typ!!
         else -> throw Exception("Dieser Fall sollte nie eintreten.")
     }
-    return (liste as Typ.Compound.KlassenTyp.Liste).typArgumente[0].typ!!
+    return (liste as Typ.Compound.Klasse).typArgumente[0].typ!!
   }
 
   private fun evaluiereObjektInstanziierung(instanziierung: AST.Satz.Ausdruck.ObjektInstanziierung): Typ {
-    nichtErlaubtInKonstante(instanziierung)
     val klasse = typisierer.bestimmeTyp(
         instanziierung.klasse,
         funktionsTypParams,
@@ -962,8 +923,9 @@ class TypPrüfer(startDatei: File): PipelineKomponente(startDatei) {
         istAliasErlaubt = true,
         erlaubeLeereTypArgumente = true
     )!!
-    if (klasse !is Typ.Compound.KlassenTyp) {
-      throw GermanSkriptFehler.TypFehler.ObjektErwartet(instanziierung.klasse.name.bezeichnerToken)
+
+    if (klasse !is Typ.Compound.Klasse) {
+      TODO("Werfe Fehler")
     }
     inferiereTypArgumente(klasse, instanziierung.klasse.name.bezeichnerToken)
 
@@ -1042,31 +1004,28 @@ class TypPrüfer(startDatei: File): PipelineKomponente(startDatei) {
   }
 
   private fun evaluiereEigenschaftsZugriff(eigenschaftsZugriff: AST.Satz.Ausdruck.EigenschaftsZugriff): Typ {
-    nichtErlaubtInKonstante(eigenschaftsZugriff)
     val klasse = evaluiereAusdruck(eigenschaftsZugriff.objekt)
-    return if (klasse is Typ.Compound.KlassenTyp) {
+    return if (klasse is Typ.Compound.Klasse) {
       holeEigenschaftAusKlasse(eigenschaftsZugriff, klasse)
     }
     else {
-      throw GermanSkriptFehler.TypFehler.ObjektErwartet(eigenschaftsZugriff.objekt.holeErstesToken())
+      TODO("Klasse erwartet")
     }
   }
 
   private fun evaluiereSelbstEigenschaftsZugriff(eigenschaftsZugriff: AST.Satz.Ausdruck.SelbstEigenschaftsZugriff): Typ {
-    nichtErlaubtInKonstante(eigenschaftsZugriff)
     return holeEigenschaftAusKlasse(eigenschaftsZugriff, zuÜberprüfendeKlasse!!)
   }
 
 
   private fun evaluiereMethodenBlockEigenschaftsZugriff(eigenschaftsZugriff: AST.Satz.Ausdruck.MethodenBereichEigenschaftsZugriff): Typ {
-    nichtErlaubtInKonstante(eigenschaftsZugriff)
-    val methodenBlockObjekt = umgebung.holeMethodenBlockObjekt() as Typ.Compound.KlassenTyp
+    val methodenBlockObjekt = umgebung.holeMethodenBlockObjekt() as Typ.Compound.Klasse
     return holeEigenschaftAusKlasse(eigenschaftsZugriff, methodenBlockObjekt)
   }
 
   private fun holeNormaleEigenschaftAusKlasse(
       eigenschaftsName: AST.WortArt.Nomen,
-      klasse: Typ.Compound.KlassenTyp,
+      klasse: Typ.Compound.Klasse,
       numerus: Numerus = eigenschaftsName.numerus
   ): AST.Definition.Parameter {
     val eigName = eigenschaftsName.ganzesWort(Kasus.NOMINATIV, numerus, true)
@@ -1079,7 +1038,7 @@ class TypPrüfer(startDatei: File): PipelineKomponente(startDatei) {
     if (klasse.definition.elternKlasse != null) {
       try {
         return holeNormaleEigenschaftAusKlasse(eigenschaftsName,
-          klasse.definition.elternKlasse!!.klasse.typ!! as Typ.Compound.KlassenTyp, numerus)
+          klasse.definition.elternKlasse.klasse.typ!! as Typ.Compound.Klasse, numerus)
       }
       catch (fehler: GermanSkriptFehler.Undefiniert) {
         // mache nichts hier
@@ -1088,7 +1047,7 @@ class TypPrüfer(startDatei: File): PipelineKomponente(startDatei) {
     throw GermanSkriptFehler.Undefiniert.Eigenschaft(eigenschaftsName.bezeichner.toUntyped(), eigName, klasse.definition.name.nominativ)
   }
 
-  private fun holeEigenschaftAusKlasse(eigenschaftsZugriff: AST.Satz.Ausdruck.IEigenschaftsZugriff, klasse: Typ.Compound.KlassenTyp): Typ {
+  private fun holeEigenschaftAusKlasse(eigenschaftsZugriff: AST.Satz.Ausdruck.IEigenschaftsZugriff, klasse: Typ.Compound.Klasse): Typ {
     val eigenschaftsName = eigenschaftsZugriff.eigenschaftsName
     val klassenDefinition = klasse.definition
     val typ = try {
@@ -1098,7 +1057,7 @@ class TypPrüfer(startDatei: File): PipelineKomponente(startDatei) {
         if (klasse.definition.elternKlasse != null) {
           try {
             return holeEigenschaftAusKlasse(eigenschaftsZugriff,
-                klasse.definition.elternKlasse!!.klasse.typ!! as Typ.Compound.KlassenTyp
+                klasse.definition.elternKlasse.klasse.typ!! as Typ.Compound.Klasse
             )
           } catch (_: GermanSkriptFehler.Undefiniert.Eigenschaft) {
             throw fehler
@@ -1114,22 +1073,59 @@ class TypPrüfer(startDatei: File): PipelineKomponente(startDatei) {
   }
 
   private fun evaluiereBinärenAusdruck(ausdruck: AST.Satz.Ausdruck.BinärerAusdruck): Typ {
-    val linkerTyp = evaluiereAusdruck(ausdruck.links)
     val operator = ausdruck.operator.typ.operator
-    if (!linkerTyp.definierteOperatoren.containsKey(operator)) {
-      throw GermanSkriptFehler.Undefiniert.Operator(ausdruck.operator.toUntyped(), linkerTyp.name)
+
+    // die Boolschen Operatoren sind nur für Booleans vorhanden
+    if (operator.klasse == OperatorKlasse.LOGISCH) {
+      ausdruckMussTypSein(ausdruck.links, BuildIn.Klassen.boolean)
+      ausdruckMussTypSein(ausdruck.rechts, BuildIn.Klassen.boolean)
+      return BuildIn.Klassen.boolean
     }
-    // es wird erwartete, dass bei einem binären Ausdruck beide Operanden vom selben Typen sind
-    ausdruckMussTypSein(ausdruck.rechts, linkerTyp)
-    return linkerTyp.definierteOperatoren.getValue(operator)
+
+    if (operator == Operator.GLEICH || operator == Operator.UNGLEICH) {
+      return BuildIn.Klassen.boolean
+    }
+
+    val linkerTyp = evaluiereAusdruck(ausdruck.links)
+
+    val zuImplementierendeSchnittstelle = when(operator) {
+      Operator.GRÖßER,
+      Operator.KLEINER,
+      Operator.GRÖSSER_GLEICH,
+      Operator.KLEINER_GLEICH -> {
+        BuildIn.Schnittstellen.vergleichbar
+      }
+      Operator.PLUS -> BuildIn.Schnittstellen.addierbar
+      Operator.MINUS -> BuildIn.Schnittstellen.subtrahierbar
+      Operator.MAL -> BuildIn.Schnittstellen.multiplizierbar
+      Operator.GETEILT -> BuildIn.Schnittstellen.dividierbar
+      Operator.MODULO -> BuildIn.Schnittstellen.modulobar
+      Operator.HOCH -> BuildIn.Schnittstellen.potenzierbar
+      else -> throw Exception("Dieser Fall sollte nie auftreten.")
+    }
+
+    val schnittstelle = prüfeImplementiertSchnittstelle(linkerTyp, zuImplementierendeSchnittstelle)
+        ?: throw GermanSkriptFehler.TypFehler.SchnittstelleFürOperatorErwartet(
+            ausdruck.links.holeErstesToken(), zuImplementierendeSchnittstelle, operator)
+
+    ausdruckMussTypSein(ausdruck.rechts, schnittstelle.typArgumente[0].typ!!)
+
+    return if (operator.klasse == OperatorKlasse.ARITHMETISCH) {
+      schnittstelle.typArgumente[1].typ!!
+    }  else {
+      BuildIn.Klassen.boolean
+    }
   }
 
   private fun evaluiereMinus(minus: AST.Satz.Ausdruck.Minus): Typ {
-    return ausdruckMussTypSein(minus.ausdruck, Typ.Compound.KlassenTyp.BuildInType.Zahl)
+    val ausdruck = evaluiereAusdruck(minus.ausdruck)
+    val schnittstelle = prüfeImplementiertSchnittstelle(ausdruck, BuildIn.Schnittstellen.negierbar)
+        ?: throw GermanSkriptFehler.TypFehler.SchnittstelleFürOperatorErwartet(
+            minus.ausdruck.holeErstesToken(), BuildIn.Schnittstellen.negierbar, Operator.NEGATION)
+    return schnittstelle.typArgumente[0].typ!!
   }
 
   private fun evaluiereKonvertierung(konvertierung: AST.Satz.Ausdruck.Konvertierung): Typ{
-    nichtErlaubtInKonstante(konvertierung)
     val ausdruck = evaluiereAusdruck(konvertierung.ausdruck)
     val konvertierungsTyp = typisierer.bestimmeTyp(konvertierung.typ, null, null,
         istAliasErlaubt = true, erlaubeLeereTypArgumente = false)!!
@@ -1151,15 +1147,9 @@ class TypPrüfer(startDatei: File): PipelineKomponente(startDatei) {
 
     return when (typ) {
       is Typ.Generic -> typ.typParam.elternKlasse?.let {
-        (it.typ as Typ.Compound.KlassenTyp).definition.konvertierungen.containsKey(konvertierung.typ.vollständigerName)
+        (it.typ as Typ.Compound.Klasse).definition.konvertierungen.containsKey(konvertierung.typ.vollständigerName)
       } ?: false
-      is Typ.Compound.KlassenTyp -> {
-        if (konvertierungsTyp is Typ.Compound.KlassenTyp.BuildInType.Zeichenfolge) {
-          true
-        } else {
-          typ.definition.konvertierungen.containsKey(konvertierung.typ.vollständigerName)
-        }
-      }
+      is Typ.Compound.Klasse -> typ.definition.konvertierungen.containsKey(konvertierung.typ.vollständigerName)
       // TODO: Schnittstellen sollen eventuell auch Konvertierungsdefinitionen
       //  haben und auch in Zeichenfolgen konvertiert werden können
       is Typ.Compound.Schnittstelle -> false
@@ -1168,8 +1158,7 @@ class TypPrüfer(startDatei: File): PipelineKomponente(startDatei) {
 
   private fun evaluiereSelbstReferenz() = zuÜberprüfendeKlasse!!
 
-  private fun evaluiereClosure(closure: AST.Satz.Ausdruck.Closure): Typ.Compound.Schnittstelle {
-    nichtErlaubtInKonstante(closure)
+  private fun evaluiereClosure(closure: AST.Satz.Ausdruck.Closure): Typ.Compound.Klasse {
     val schnittstelle = typisierer.bestimmeTyp(
         closure.schnittstelle,
         funktionsTypParams,
@@ -1215,15 +1204,24 @@ class TypPrüfer(startDatei: File): PipelineKomponente(startDatei) {
         else typ
       else -> typ
     }
-    if (erwarteterRückgabeTyp != Typ.Compound.KlassenTyp.BuildInType.Nichts && !typIstTyp(rückgabe, erwarteterRückgabeTyp)) {
+    if (erwarteterRückgabeTyp != BuildIn.Klassen.nichts && !typIstTyp(rückgabe, erwarteterRückgabeTyp)) {
       throw GermanSkriptFehler.ClosureFehler.FalscheRückgabe(closure.schnittstelle.name.bezeichnerToken, rückgabe, erwarteterRückgabeTyp)
     }
     umgebung.popBereich()
-    return schnittstelle
+
+    val klassenDefinition = AST.Definition.Typdefinition.Klasse(
+        emptyList(), closure.schnittstelle.name as AST.WortArt.Nomen,
+        null, mutableListOf(), AST.Satz.Bereich(mutableListOf())
+    )
+    klassenDefinition.methoden[signatur.vollerName!!] = AST.Definition.Funktion(signatur, closure.körper)
+    klassenDefinition.implementierteSchnittstellen.add(schnittstelle)
+
+    val klasse = Typ.Compound.Klasse(klassenDefinition, emptyList())
+    closure.klasse = klasse
+    return klasse
   }
 
   private fun evaluiereAnonymeKlasse(anonymeKlasse: AST.Satz.Ausdruck.AnonymeKlasse): Typ {
-    nichtErlaubtInKonstante(anonymeKlasse)
     val schnittstelle = typisierer.bestimmeTyp(
         anonymeKlasse.schnittstelle,
         funktionsTypParams,
@@ -1258,25 +1256,24 @@ class TypPrüfer(startDatei: File): PipelineKomponente(startDatei) {
         anonymeKlasse.schnittstelle.name.bezeichnerToken,
         klassenDefinition,
         schnittstelle,
-        anonymeKlasse.bereich,
-        null
+        anonymeKlasse.bereich
     )
 
-    val klassenTyp = Typ.Compound.KlassenTyp.Klasse(klassenDefinition, emptyList())
-    anonymeKlasse.typ = klassenTyp
+    val klasse = Typ.Compound.Klasse(klassenDefinition, emptyList())
+    anonymeKlasse.klasse = klasse
 
     val vorherigeKlasse = zuÜberprüfendeKlasse
-    zuÜberprüfendeKlasse = klassenTyp
+    zuÜberprüfendeKlasse = klasse
     prüfeImplementierungsBereich(anonymeKlasse.bereich, umgebung)
     zuÜberprüfendeKlasse = vorherigeKlasse
 
-    return klassenTyp
+    return klasse
   }
 
   private fun evaluiereTypÜberprüfung(typÜberprüfung: AST.Satz.Ausdruck.TypÜberprüfung): Typ {
     typisierer.bestimmeTyp(typÜberprüfung.typ, funktionsTypParams, klassenTypParams,
         istAliasErlaubt = true, erlaubeLeereTypArgumente = false)
-    return Typ.Compound.KlassenTyp.BuildInType.Boolean
+    return BuildIn.Klassen.boolean
   }
 }
 

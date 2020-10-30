@@ -3,6 +3,8 @@ package germanskript
 import germanskript.util.Peekable
 import java.io.File
 import java.lang.Integer.max
+import java.math.RoundingMode
+import java.text.DecimalFormat
 import java.util.*
 
 enum class Assoziativität {
@@ -32,7 +34,6 @@ enum class Operator(val bindungsKraft: Int, val assoziativität: Assoziativität
     GETEILT(5, Assoziativität.LINKS, OperatorKlasse.ARITHMETISCH),
     MODULO(5, Assoziativität.LINKS, OperatorKlasse.ARITHMETISCH),
     HOCH(6, Assoziativität.RECHTS, OperatorKlasse.ARITHMETISCH),
-
     NEGATION(3, Assoziativität.RECHTS, OperatorKlasse.ARITHMETISCH),
 }
 
@@ -236,9 +237,9 @@ sealed class TokenTyp(val anzeigeName: String) {
 
     // Literale
     object NICHTS: TokenTyp("'nichts'")
-    data class BOOLEAN(val boolean: germanskript.intern.Boolean): TokenTyp("'richtig' oder 'falsch'")
-    data class ZAHL(val zahl: germanskript.intern.Zahl): TokenTyp("Zahl")
-    data class ZEICHENFOLGE(val zeichenfolge: germanskript.intern.Zeichenfolge): TokenTyp("Zeichenfolge")
+    data class BOOLEAN(val boolean: Boolean): TokenTyp("'richtig' oder 'falsch'")
+    data class ZAHL(val zahl: Double): TokenTyp("Zahl")
+    data class ZEICHENFOLGE(val zeichenfolge: String): TokenTyp("Zeichenfolge")
 
     object UNDEFINIERT: TokenTyp("undefiniert")
 }
@@ -329,8 +330,8 @@ private val WORT_MAPPING = mapOf<String, TokenTyp>(
     "Modul" to TokenTyp.MODUL,
     "Super" to TokenTyp.SUPER,
     // Werte
-    "wahr" to TokenTyp.BOOLEAN(germanskript.intern.Boolean(true)),
-    "falsch" to TokenTyp.BOOLEAN(germanskript.intern.Boolean(false)),
+    "wahr" to TokenTyp.BOOLEAN(true),
+    "falsch" to TokenTyp.BOOLEAN(false),
     "nichts" to TokenTyp.NICHTS,
 
     // Operatoren
@@ -421,6 +422,16 @@ private val WORT_MAPPING = mapOf<String, TokenTyp>(
 class Lexer(startDatei: File): PipelineKomponente(startDatei) {
     companion object {
         const val STANDARD_BIB_PATH = "./stdbib"
+
+        val zahlenFormat = DecimalFormat()
+        init {
+            with (zahlenFormat) {
+                decimalFormatSymbols.groupingSeparator = '.'
+                decimalFormatSymbols.decimalSeparator = ','
+                roundingMode = RoundingMode.HALF_UP
+                maximumFractionDigits = 20
+            }
+        }
     }
 
     private var iterator: Peekable<Char>? = null
@@ -577,7 +588,7 @@ class Lexer(startDatei: File): PipelineKomponente(startDatei) {
             }
         }
         try {
-            yield(Token(TokenTyp.ZAHL(germanskript.intern.Zahl(zahlenString)), zahlenString, currentFile, startPos))
+            yield(Token(TokenTyp.ZAHL(zahlenFormat.parse(zahlenString).toDouble()), zahlenString, currentFile, startPos))
         } catch (error: Exception) {
             val fehlerToken = Token(TokenTyp.FEHLER, zahlenString, currentFile, startPos)
             throw GermanSkriptFehler.SyntaxFehler.LexerFehler(fehlerToken, null)
@@ -610,7 +621,7 @@ class Lexer(startDatei: File): PipelineKomponente(startDatei) {
             throw GermanSkriptFehler.SyntaxFehler.LexerFehler(eofToken, null)
         }
         next()
-        val token = Token(TokenTyp.ZEICHENFOLGE(germanskript.intern.Zeichenfolge(zeichenfolge)),
+        val token = Token(TokenTyp.ZEICHENFOLGE(zeichenfolge),
             '"' + zeichenfolge + '"', currentFile, startPos)
         yield(token)
     }
@@ -635,7 +646,7 @@ class Lexer(startDatei: File): PipelineKomponente(startDatei) {
     private fun starteStringInterpolation(zeichenfolge: String, startPosition: Token.Position) = sequence<Token> {
         // String Interpolation
         yield(Token(
-            TokenTyp.ZEICHENFOLGE(germanskript.intern.Zeichenfolge(zeichenfolge)),
+            TokenTyp.ZEICHENFOLGE(zeichenfolge),
             '"' + zeichenfolge + '"', currentFile, startPosition))
         next() // #
         next() // {

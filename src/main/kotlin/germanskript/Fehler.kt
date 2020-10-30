@@ -1,6 +1,6 @@
 package germanskript
 
-import germanskript.intern.Wert
+import germanskript.intern.Objekt
 
 sealed class GermanSkriptFehler(private val fehlerName: String, val token: Token): Exception() {
   abstract val nachricht: String
@@ -302,10 +302,6 @@ sealed class GermanSkriptFehler(private val fehlerName: String, val token: Token
       override val nachricht = "Die Typen '$typA' und '$typB' können nicht in einen gemeinsamen Typen vereint werden."
     }
 
-    class ObjektErwartet(token: Token): TypFehler(token) {
-      override val nachricht = "Es wird ein Objekt erwartet und kein primitiver Typ (Zahl, Zeichenfolge, Boolean)."
-    }
-
     class FalscherSchnittstellenTyp(
         token: Token,
         schnittstelle: Typ.Compound.Schnittstelle,
@@ -339,6 +335,12 @@ sealed class GermanSkriptFehler(private val fehlerName: String, val token: Token
 
     class IterierbarErwartet(token: Token): TypFehler(token) {
       override val nachricht = "Der Ausdruck muss die Schnittstelle 'iterierbar' implementieren. Also die Methode 'hole den Iterator zurückgeben'."
+    }
+
+    class SchnittstelleFürOperatorErwartet(
+        token: Token, schnittstelle: AST.Definition.Typdefinition.Schnittstelle, operator: Operator): TypFehler(token) {
+      override val nachricht = "Der Ausdruck muss die Schnittstelle '${schnittstelle.name.bezeichner.wert}' implementieren,\n" +
+          "damit der Operator '${operator}' auf den Ausdruck angewendet werden kann."
     }
   }
 
@@ -383,6 +385,6 @@ sealed class GermanSkriptFehler(private val fehlerName: String, val token: Token
       get() = "$fehlerMeldung\n$aufrufStapelString"
   }
 
-  class UnbehandelterFehler(token: Token, aufrufStapelString: String, fehlerMeldung: String, val fehlerObjekt: Wert):
+  class UnbehandelterFehler(token: Token, aufrufStapelString: String, fehlerMeldung: String, val fehlerObjekt: Objekt):
       LaufzeitFehler(token, aufrufStapelString, "Unbehandelter Fehler. $fehlerMeldung")
 }
