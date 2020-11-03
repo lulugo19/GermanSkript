@@ -13,7 +13,7 @@
     - wie bei Kotlin
     - Bedingung kann jetzt als Ausdruck stehen
     - genauso wie Methodenbereiche
-    - bei Closures wird das letze Statement implizit als Rückgabewert gewertet
+    - bei Lambdas wird das letze Statement implizit als Rückgabewert gewertet
 - Bedingungs-Aufrufweise einer Methode
 
 #### Erstellung der Standardbibliothek

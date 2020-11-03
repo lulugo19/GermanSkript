@@ -45,7 +45,7 @@ class TypPrüfer(startDatei: File): PipelineKomponente(startDatei) {
       ausdruck: AST.Satz.Ausdruck,
       erwarteterTyp: Typ
   ): Typ {
-    // verwende den erwarteten Typen um für Objektinitialisierung und Closures Typargumente zu inferieren
+    // verwende den erwarteten Typen um für Objektinitialisierung und Lambdas Typargumente zu inferieren
     this.erwarteterTyp = erwarteterTyp
     val ausdruckTyp = evaluiereAusdruck(ausdruck)
     this.erwarteterTyp = null
@@ -336,7 +336,7 @@ class TypPrüfer(startDatei: File): PipelineKomponente(startDatei) {
       is AST.Satz.Ausdruck.MethodenBereichEigenschaftsZugriff -> evaluiereMethodenBlockEigenschaftsZugriff(ausdruck)
       is AST.Satz.Ausdruck.SelbstReferenz -> evaluiereSelbstReferenz()
       is AST.Satz.Ausdruck.MethodenBereichReferenz -> evaluiereMethodenBlockReferenz()
-      is AST.Satz.Ausdruck.Closure -> evaluiereClosure(ausdruck)
+      is AST.Satz.Ausdruck.Lambda -> evaluiereLambda(ausdruck)
       is AST.Satz.Ausdruck.AnonymeKlasse -> evaluiereAnonymeKlasse(ausdruck)
       is AST.Satz.Ausdruck.Konstante -> evaluiereKonstante(ausdruck)
       is AST.Satz.Ausdruck.TypÜberprüfung -> evaluiereTypÜberprüfung(ausdruck)
@@ -1202,33 +1202,33 @@ class TypPrüfer(startDatei: File): PipelineKomponente(startDatei) {
 
   private fun evaluiereSelbstReferenz() = zuÜberprüfendeKlasse!!
 
-  private fun evaluiereClosure(closure: AST.Satz.Ausdruck.Closure): Typ.Compound.Klasse {
+  private fun evaluiereLambda(lambda: AST.Satz.Ausdruck.Lambda): Typ.Compound.Klasse {
     val schnittstelle = typisierer.bestimmeTyp(
-        closure.schnittstelle,
+        lambda.schnittstelle,
         funktionsTypParams,
         klassenTypParams,
         istAliasErlaubt = true,
         erlaubeLeereTypArgumente = true
     )
     if (schnittstelle !is Typ.Compound.Schnittstelle) {
-      throw GermanSkriptFehler.SchnittstelleErwartet(closure.schnittstelle.name.bezeichnerToken)
+      throw GermanSkriptFehler.SchnittstelleErwartet(lambda.schnittstelle.name.bezeichnerToken)
     }
-    inferiereTypArgumente(schnittstelle, closure.schnittstelle.name.bezeichnerToken)
+    inferiereTypArgumente(schnittstelle, lambda.schnittstelle.name.bezeichnerToken)
     if (schnittstelle.definition.methodenSignaturen.size != 1) {
-      throw GermanSkriptFehler.ClosureFehler.UngültigeClosureSchnittstelle(closure.schnittstelle.name.bezeichnerToken, schnittstelle.definition)
+      throw GermanSkriptFehler.LambdaFehler.UngültigeLambdaSchnittstelle(lambda.schnittstelle.name.bezeichnerToken, schnittstelle.definition)
     }
     val signatur = schnittstelle.definition.methodenSignaturen[0]
     val parameter = signatur.parameter.toList()
-    if (closure.bindings.size > signatur.parameter.count()) {
-      throw GermanSkriptFehler.ClosureFehler.ZuVieleBinder(
-          closure.bindings[parameter.size].bezeichner.toUntyped(),
+    if (lambda.bindings.size > signatur.parameter.count()) {
+      throw GermanSkriptFehler.LambdaFehler.ZuVieleBinder(
+          lambda.bindings[parameter.size].bezeichner.toUntyped(),
           parameter.size
       )
     }
     umgebung.pushBereich()
     for (paramIndex in parameter.indices) {
       val param = parameter[paramIndex]
-      val paramName = closure.bindings.getOrElse(paramIndex) {
+      val paramName = lambda.bindings.getOrElse(paramIndex) {
         holeParamName(param, schnittstelle.typArgumente)
       }
       val paramTyp = holeParamTyp(param, schnittstelle.typArgumente)
@@ -1236,8 +1236,8 @@ class TypPrüfer(startDatei: File): PipelineKomponente(startDatei) {
     }
 
     val rückgabe = durchlaufeAufruf(
-        closure.schnittstelle.name.bezeichnerToken,
-        closure.körper, umgebung,
+        lambda.schnittstelle.name.bezeichnerToken,
+        lambda.körper, umgebung,
         false,
         rückgabeTyp,
         true
@@ -1245,19 +1245,19 @@ class TypPrüfer(startDatei: File): PipelineKomponente(startDatei) {
     val erwarteterRückgabeTyp = ersetzeGenerics(signatur.rückgabeTyp, null, schnittstelle.typArgumente).typ!!
 
     if (erwarteterRückgabeTyp != BuildIn.Klassen.nichts && !typIstTyp(rückgabe, erwarteterRückgabeTyp)) {
-      throw GermanSkriptFehler.ClosureFehler.FalscheRückgabe(closure.schnittstelle.name.bezeichnerToken, rückgabe, erwarteterRückgabeTyp)
+      throw GermanSkriptFehler.LambdaFehler.FalscheRückgabe(lambda.schnittstelle.name.bezeichnerToken, rückgabe, erwarteterRückgabeTyp)
     }
     umgebung.popBereich()
 
     val klassenDefinition = AST.Definition.Typdefinition.Klasse(
-        emptyList(), closure.schnittstelle.name as AST.WortArt.Nomen,
+        emptyList(), lambda.schnittstelle.name as AST.WortArt.Nomen,
         null, mutableListOf(), AST.Satz.Bereich(mutableListOf())
     )
-    klassenDefinition.methoden[signatur.vollerName!!] = AST.Definition.Funktion(signatur, closure.körper)
+    klassenDefinition.methoden[signatur.vollerName!!] = AST.Definition.Funktion(signatur, lambda.körper)
     klassenDefinition.implementierteSchnittstellen.add(schnittstelle)
 
     val klasse = Typ.Compound.Klasse(klassenDefinition, schnittstelle.typArgumente)
-    closure.klasse = klasse
+    lambda.klasse = klasse
     return klasse
   }
 

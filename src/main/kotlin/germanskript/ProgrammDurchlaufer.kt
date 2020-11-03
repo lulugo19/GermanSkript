@@ -119,7 +119,7 @@ abstract  class ProgrammDurchlaufer<T>(startDatei: File): PipelineKomponente(sta
       is AST.Satz.Ausdruck.MethodenBereichEigenschaftsZugriff -> evaluiereMethodenBlockEigenschaftsZugriff(ausdruck)
       is AST.Satz.Ausdruck.SelbstReferenz -> evaluiereSelbstReferenz()
       is AST.Satz.Ausdruck.MethodenBereichReferenz -> evaluiereMethodenBlockReferenz()
-      is AST.Satz.Ausdruck.Closure -> evaluiereClosure(ausdruck)
+      is AST.Satz.Ausdruck.Lambda -> evaluiereLambda(ausdruck)
       is AST.Satz.Ausdruck.AnonymeKlasse -> evaluiereAnonymeKlasse(ausdruck)
       is AST.Satz.Ausdruck.Konstante -> evaluiereKonstante(ausdruck)
       is AST.Satz.Ausdruck.TypÜberprüfung -> evaluiereTypÜberprüfung(ausdruck)
@@ -164,7 +164,7 @@ abstract  class ProgrammDurchlaufer<T>(startDatei: File): PipelineKomponente(sta
   protected abstract fun evaluiereSelbstEigenschaftsZugriff(eigenschaftsZugriff: AST.Satz.Ausdruck.SelbstEigenschaftsZugriff): T
   protected abstract fun evaluiereMethodenBlockEigenschaftsZugriff(eigenschaftsZugriff: AST.Satz.Ausdruck.MethodenBereichEigenschaftsZugriff): T
   protected abstract fun evaluiereSelbstReferenz(): T
-  protected abstract fun evaluiereClosure(closure: AST.Satz.Ausdruck.Closure): T
+  protected abstract fun evaluiereLambda(lambda: AST.Satz.Ausdruck.Lambda): T
   protected abstract fun evaluiereAnonymeKlasse(anonymeKlasse: AST.Satz.Ausdruck.AnonymeKlasse): T
   protected abstract fun evaluiereKonstante(konstante: AST.Satz.Ausdruck.Konstante): T
   protected abstract fun evaluiereTypÜberprüfung(typÜberprüfung: AST.Satz.Ausdruck.TypÜberprüfung): T

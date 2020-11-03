@@ -1,17 +1,17 @@
 # Iteration 4
 
 ## hinzugefügte Features
-- Closures
+- Lambdas
 - Alias
 - berechnete Eigenschaften einer Klasse
 - Konstanten
 - Für-Jede-Schleife über Zahlen
 
-## Closures
+## Lambdas
 `etwas Bezeichner: Sätze.`
 
-Closures funktionieren über die Schnittstellen (Adjektive). Wenn eine Schnittstelle nur eine einzige
-Methode definiert, dann kann man für diese Schnittstelle ein Closure erstellen. 
+Lambdas funktionieren über die Schnittstellen (Adjektive). Wenn eine Schnittstelle nur eine einzige
+Methode definiert, dann kann man für diese Schnittstelle ein Lambda erstellen. 
 Der Bezeichner, der nach dem Vornomen `etwas` kommt ist das nominalisierte Adjektiv der Schnittstelle.
 
 ```

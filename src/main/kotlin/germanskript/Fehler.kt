@@ -81,20 +81,20 @@ sealed class GermanSkriptFehler(private val fehlerName: String, val token: Token
       get() = "Es wird eine Schnittstelle erwartet. Eine Klasse oder ein primitiver Typ sind hier nicht erlaubt."
   }
 
-  sealed class ClosureFehler(token: Token): GermanSkriptFehler("Closure-Fehler", token) {
-    class UngültigeClosureSchnittstelle(token: Token, schnittstelle: AST.Definition.Typdefinition.Schnittstelle):
-        ClosureFehler(token) {
+  sealed class LambdaFehler(token: Token): GermanSkriptFehler("Lambda-Fehler", token) {
+    class UngültigeLambdaSchnittstelle(token: Token, schnittstelle: AST.Definition.Typdefinition.Schnittstelle):
+        LambdaFehler(token) {
       override val nachricht: String
-         = "Die Schnittstelle '${schnittstelle.namensToken.wert}' in ${schnittstelle.namensToken.position} kann nicht für ein Closure verwendet werden,\n" +
+         = "Die Schnittstelle '${schnittstelle.namensToken.wert}' in ${schnittstelle.namensToken.position} kann nicht für ein Lambda verwendet werden,\n" +
             "da sie genau eine Methode definieren muss."
     }
 
-    class ZuVieleBinder(token: Token,  maxAnzahlBinder: Int): ClosureFehler(token) {
-      override val nachricht = "Das Closure bindet zu viele Namen. Es dürfen maximal $maxAnzahlBinder Namen gebunden werden."
+    class ZuVieleBinder(token: Token,  maxAnzahlBinder: Int): LambdaFehler(token) {
+      override val nachricht = "Das Lambda bindet zu viele Namen. Es dürfen maximal $maxAnzahlBinder Namen gebunden werden."
     }
 
-    class FalscheRückgabe(token: Token, rückgabeTyp: Typ, erwarteterRückgabeTyp: Typ): ClosureFehler(token) {
-      override val nachricht = "Es wird erwartet, dass das Closure einen Wert des Typs '$erwarteterRückgabeTyp' zurückgibt.\n" +
+    class FalscheRückgabe(token: Token, rückgabeTyp: Typ, erwarteterRückgabeTyp: Typ): LambdaFehler(token) {
+      override val nachricht = "Es wird erwartet, dass das Lambda einen Wert des Typs '$erwarteterRückgabeTyp' zurückgibt.\n" +
           "Es gibt jedoch einen Wert des Typs '$rückgabeTyp' zurück."
     }
   }

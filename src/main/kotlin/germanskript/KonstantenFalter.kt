@@ -253,13 +253,13 @@ class KonstantenFalter(startDatei: File): ProgrammDurchlaufer<Objekt?>(startDate
     return null
   }
 
-  override fun evaluiereClosure(closure: AST.Satz.Ausdruck.Closure): Objekt? {
-    val signatur = (closure.schnittstelle.typ as Typ.Compound.Schnittstelle).definition.methodenSignaturen[0]
+  override fun evaluiereLambda(lambda: AST.Satz.Ausdruck.Lambda): Objekt? {
+    val signatur = (lambda.schnittstelle.typ as Typ.Compound.Schnittstelle).definition.methodenSignaturen[0]
     umgebung.pushBereich()
     for (param in signatur.parameter) {
       umgebung.schreibeVariable(param.name, null, true)
     }
-    durchlaufeBereich(closure.körper, false)
+    durchlaufeBereich(lambda.körper, false)
     umgebung.popBereich()
     return null
   }

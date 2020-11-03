@@ -567,7 +567,7 @@ sealed class AST {
           is MethodenBereichEigenschaftsZugriff -> eigenschaftsName.bezeichner.toUntyped()
           is SelbstReferenz -> ich.toUntyped()
           is MethodenBereichReferenz -> du.toUntyped()
-          is Closure -> schnittstelle.name.bezeichnerToken
+          is Lambda -> schnittstelle.name.bezeichnerToken
           is AnonymeKlasse -> schnittstelle.name.bezeichnerToken
           is Konstante -> name.toUntyped()
           is MethodenBereich -> objekt.holeErstesToken()
@@ -728,7 +728,7 @@ sealed class AST {
         }
       }
 
-      data class Closure(val schnittstelle: TypKnoten, val bindings: List<WortArt.Nomen>, val körper: Bereich): Ausdruck() {
+      data class Lambda(val schnittstelle: TypKnoten, val bindings: List<WortArt.Nomen>, val körper: Bereich): Ausdruck() {
         lateinit var klasse: Typ.Compound.Klasse
 
         override val children = sequence {

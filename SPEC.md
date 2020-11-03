@@ -534,13 +534,13 @@ Konstanten sind unveränderbar und können nur einmal zugewiesen werden. Nur Zah
 
 Beispiel: `Konstante PI ist 3,14159265359`
 
-### Closures
+### Lambdas
 `etwas Bezeichner: Sätze.`
 
-Closures funktionieren über die Schnittstellen (Adjektive). Wenn eine Schnittstelle nur eine einzige
-Methode definiert, dann kann man für diese Schnittstelle ein Closure erstellen. 
+Lambdas funktionieren über die Schnittstellen (Adjektive). Wenn eine Schnittstelle nur eine einzige
+Methode definiert, dann kann man für diese Schnittstelle ein Lambda erstellen. 
 Der Bezeichner, der nach dem Vornomen `etwas` kommt ist das nominalisierte Adjektiv der Schnittstelle.
-Closures bilden einen neuen Typen.
+Lambdas bilden einen neuen Typen.
 
 ```
 Adjektiv klickbar:

@@ -260,9 +260,9 @@ class Interpretierer(startDatei: File): PipelineKomponente(startDatei) {
   }
 
   /**
-   * Bei Closures werden die Parameternamen bei generischen Parametern mit dem Namen des eingesetzen Typen ersetzt.
+   * Bei Lambdas werden die Parameternamen bei generischen Parametern mit dem Namen des eingesetzen Typen ersetzt.
    */
-  private fun holeParameterNamenFürClosure(objekt: Objekt.Lambda): List<AST.WortArt.Nomen> {
+  private fun holeParameterNamenFürLambda(objekt: Objekt.Lambda): List<AST.WortArt.Nomen> {
     val typArgumente = objekt.klasse.typArgumente
     val signatur = objekt.klasse.definition.methoden.values.first().signatur
     return signatur.parameter.toList().mapIndexed { index, param ->
@@ -302,7 +302,7 @@ class Interpretierer(startDatei: File): PipelineKomponente(startDatei) {
         }
         val signatur = methode.signatur
         val parameter = if (objekt is Objekt.Lambda) {
-          holeParameterNamenFürClosure(objekt)
+          holeParameterNamenFürLambda(objekt)
         } else {
           signatur.parameter.map {it.name}.toList()
         }
@@ -415,7 +415,7 @@ class Interpretierer(startDatei: File): PipelineKomponente(startDatei) {
       is AST.Satz.Ausdruck.MethodenBereichEigenschaftsZugriff -> evaluiereMethodenBlockEigenschaftsZugriff(ausdruck)
       is AST.Satz.Ausdruck.SelbstReferenz -> evaluiereSelbstReferenz()
       is AST.Satz.Ausdruck.MethodenBereichReferenz -> evaluiereMethodenBlockReferenz()
-      is AST.Satz.Ausdruck.Closure -> evaluiereClosure(ausdruck)
+      is AST.Satz.Ausdruck.Lambda -> evaluiereLambda(ausdruck)
       is AST.Satz.Ausdruck.AnonymeKlasse -> evaluiereAnonymeKlasse(ausdruck)
       is AST.Satz.Ausdruck.Konstante -> evaluiereKonstante(ausdruck)
       is AST.Satz.Ausdruck.TypÜberprüfung -> evaluiereTypÜberprüfung(ausdruck)
@@ -731,8 +731,8 @@ class Interpretierer(startDatei: File): PipelineKomponente(startDatei) {
     )
   }
 
-  private fun evaluiereClosure(closure: AST.Satz.Ausdruck.Closure): Objekt {
-    return Objekt.Lambda(closure.klasse, umgebung, closure)
+  private fun evaluiereLambda(lambda: AST.Satz.Ausdruck.Lambda): Objekt {
+    return Objekt.Lambda(lambda.klasse, umgebung, lambda)
   }
 
   private fun evaluiereAnonymeKlasse(anonymeKlasse: AST.Satz.Ausdruck.AnonymeKlasse): Objekt {

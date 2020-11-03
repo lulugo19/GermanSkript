@@ -28,7 +28,7 @@ enum class ASTKnotenID {
   VERWENDE,
   SCHNITTSTELLE,
   SUPER_BLOCK,
-  CLOSURE,
+  Lambda,
   ALIAS,
   EIGENSCHAFTS_DEFINITION,
   KONSTANTE,
@@ -587,7 +587,7 @@ private sealed class SubParser<T: AST>() {
       is TokenTyp.VORNOMEN.ETWAS -> {
         val schnittstelle = AST.TypKnoten(modulPfad!!, nomen, typArgumente)
         if (peekType(0) == TokenTyp.OFFENE_KLAMMER) {
-          subParse(Satz.Ausdruck.NomenAusdruck.Closure(schnittstelle, inBedingungsTerm))
+          subParse(Satz.Ausdruck.NomenAusdruck.Lambda(schnittstelle, inBedingungsTerm))
         } else {
           var i = 1
           while (peekType(i) == TokenTyp.NEUE_ZEILE) {
@@ -596,7 +596,7 @@ private sealed class SubParser<T: AST>() {
           when (peekType(i)) {
             TokenTyp.VERB, TokenTyp.EIGENSCHAFT, TokenTyp.ALS_GROß, is TokenTyp.VORNOMEN.DEMONSTRATIV_PRONOMEN ->
               subParse(Satz.Ausdruck.NomenAusdruck.AnonymeKlasse(schnittstelle, inBedingungsTerm))
-            else -> subParse(Satz.Ausdruck.NomenAusdruck.Closure(schnittstelle, inBedingungsTerm))
+            else -> subParse(Satz.Ausdruck.NomenAusdruck.Lambda(schnittstelle, inBedingungsTerm))
           }
         }
       }
@@ -1122,11 +1122,11 @@ private sealed class SubParser<T: AST>() {
           }
         }
 
-        class Closure(val typKnoten: AST.TypKnoten, inBedingungsTerm: Boolean):
-            NomenAusdruck<AST.Satz.Ausdruck.Closure>(typKnoten.name as AST.WortArt.Nomen, inBedingungsTerm) {
-          override val id: ASTKnotenID = ASTKnotenID.CLOSURE
+        class Lambda(val typKnoten: AST.TypKnoten, inBedingungsTerm: Boolean):
+            NomenAusdruck<AST.Satz.Ausdruck.Lambda>(typKnoten.name as AST.WortArt.Nomen, inBedingungsTerm) {
+          override val id: ASTKnotenID = ASTKnotenID.Lambda
 
-          override fun parseImpl(): AST.Satz.Ausdruck.Closure {
+          override fun parseImpl(): AST.Satz.Ausdruck.Lambda {
             val bindings = if (peekType() is TokenTyp.OFFENE_KLAMMER) {
               expect<TokenTyp.OFFENE_KLAMMER>("'('")
               parseListeMitEnde<AST.WortArt.Nomen, TokenTyp.KOMMA, TokenTyp.GESCHLOSSENE_KLAMMER>(true) {
@@ -1134,7 +1134,7 @@ private sealed class SubParser<T: AST>() {
               }.also { expect<TokenTyp.GESCHLOSSENE_KLAMMER>("')'") }
             } else emptyList()
             val körper = parseSätze()
-            return AST.Satz.Ausdruck.Closure(typKnoten, bindings, körper)
+            return AST.Satz.Ausdruck.Lambda(typKnoten, bindings, körper)
           }
         }
 

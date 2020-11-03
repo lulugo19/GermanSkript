@@ -673,8 +673,8 @@ class GermanSkriptTest {
   }
 
   @Test
-  @DisplayName("Closure")
-  fun closures() {
+  @DisplayName("Lambda")
+  fun Lambdas() {
     val quellCode = """
       Adjektiv klickbar:
           Verb klick mich
@@ -700,8 +700,8 @@ class GermanSkriptTest {
   }
 
   @Test
-  @DisplayName("Closure zurückgeben")
-  fun closureZurückgeben() {
+  @DisplayName("Lambda zurückgeben")
+  fun LambdaZurückgeben() {
     val quellCode = """
       Adjektiv zählbar:
         Verb(Zahl) zähle weiter
@@ -1471,8 +1471,8 @@ class GermanSkriptTest {
   }
 
   @Test
-  @DisplayName("Closure mit expliziten Parameternamen")
-  fun closureMitExplizitenParameterNamen() {
+  @DisplayName("Lambda mit expliziten Parameternamen")
+  fun LambdaMitExplizitenParameterNamen() {
     val quellCode = """
       die Zahlen sind einige Zahlen[2, 3, 5, 7, 11, 13]
       die sortiertenZahlen sind sortiere die Zahlen mit etwas Vergleichendem(X, Y): das Y - das X.

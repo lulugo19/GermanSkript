@@ -43,7 +43,7 @@ open class Objekt(internal val klasse: Typ.Compound.Klasse) {
   class Lambda(
       typ: Typ.Compound.Klasse,
       val umgebung: Umgebung<Objekt>,
-      val ausdruck: AST.Satz.Ausdruck.Closure
+      val ausdruck: AST.Satz.Ausdruck.Lambda
   ): SkriptObjekt(typ, mutableMapOf())
 
   open fun rufeMethodeAuf(
