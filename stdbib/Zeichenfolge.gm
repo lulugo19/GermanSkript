@@ -208,15 +208,14 @@ Implementiere die vergleichbare<Zeichenfolge>, iterierbare<Zeichenfolge> Zeichen
         gebe wahr zurück
     .
 
-    Verb(Boolean) startet mit der ZeichenfolgeSTART:
-        wenn die Länge der ZeichenfolgeSTART > meine Länge ist: gebe falsch zurück.
-        die Zeichenfolge ist Ich
-        ein I ist 0
-        solange das I kleiner als die Länge der ZeichenfolgeSTART ist:
-            wenn die Zeichenfolge[I] != der ZeichenfolgeSTART[I] ist:
+    Verb(Boolean) startet mit der Zeichenfolge:
+        wenn die Länge der Zeichenfolge > meine Länge ist: gebe falsch zurück.
+        ein Index ist 0
+        solange der Index kleiner als die Länge der Zeichenfolge ist:
+            wenn (hole die Zeichenfolge mit dem Index) != der Zeichenfolge[Index] ist:
                 gebe falsch zurück
             .
-            ein I ist das I + 1
+            ein Index ist der Index + 1
         .
         gebe wahr zurück
     .
@@ -239,6 +238,10 @@ Implementiere die vergleichbare<Zeichenfolge>, iterierbare<Zeichenfolge> Zeichen
         .
         gebe die Zeichen zurück
     .
+.
+
+Implementiere die indizierte<Zahl, Zeichenfolge> Zeichenfolge:
+    Verb hole (die Zeichenfolge) mit der Zahl Index: intern.
 .
 
 // Überladung des Plus-Operators

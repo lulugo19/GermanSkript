@@ -4,7 +4,10 @@ import java.util.*
 
 
 sealed class Typ() {
+  // Der Name enthält auch die Typargument usw. des Typs
   abstract val name: String
+  // Der einfache Name enthält nur den Klassennamen
+  abstract val einfacherName: String
   override fun toString(): String = name
 
   abstract fun inTypKnoten(): AST.TypKnoten
@@ -14,7 +17,8 @@ sealed class Typ() {
       val index: Int,
       val kontext: TypParamKontext
   ) : Typ() {
-    override val name = "Generic"
+    override val einfacherName = typParam.binder.nominativ
+    override val name = "Generic<$einfacherName>"
 
     override fun inTypKnoten(): AST.TypKnoten {
       val typKnoten = AST.TypKnoten(emptyList(), typParam.binder, emptyList())
@@ -29,10 +33,10 @@ sealed class Typ() {
     }
   }
 
-  sealed class Compound(private val typName: String): Typ() {
+  sealed class Compound(override val einfacherName: String): Typ() {
     abstract val definition: AST.Definition.Typdefinition
     abstract var typArgumente: List<AST.TypKnoten>
-    override val name get() = typName + if (typArgumente.isEmpty()) "" else "<${typArgumente.joinToString(", ") {it.vollständigerName}}>"
+    override val name get() = einfacherName + if (typArgumente.isEmpty()) "" else "<${typArgumente.joinToString(", ") {it.vollständigerName}}>"
 
     abstract fun copy(typArgumente: List<AST.TypKnoten>): Compound
 
@@ -125,6 +129,8 @@ class Typisierer(startDatei: File): PipelineKomponente(startDatei) {
     BuildIn.Schnittstellen.modulobar = definierer.holeTypDefinition("Modulobare") as AST.Definition.Typdefinition.Schnittstelle
     BuildIn.Schnittstellen.negierbar = definierer.holeTypDefinition("Negierbare") as AST.Definition.Typdefinition.Schnittstelle
     BuildIn.Schnittstellen.vergleichbar = definierer.holeTypDefinition("Vergleichbare") as AST.Definition.Typdefinition.Schnittstelle
+    BuildIn.Schnittstellen.indiziert = definierer.holeTypDefinition("Indizierte") as AST.Definition.Typdefinition.Schnittstelle
+    BuildIn.Schnittstellen.indizierbar = definierer.holeTypDefinition("Indizierbare") as AST.Definition.Typdefinition.Schnittstelle
   }
 
   fun bestimmeTyp(
@@ -292,7 +298,7 @@ class Typisierer(startDatei: File): PipelineKomponente(startDatei) {
     typisiereImplementierungsBereich(implementierung.bereich, implementierung.typParameter)
     implementierung.schnittstellen.forEach { schnittstelle ->
       schnittstelle.typArgumente.forEach { arg ->
-        bestimmeTyp(arg, null, klasse.typParameter, true)}
+        bestimmeTyp(arg, null, implementierung.typParameter, true)}
       val schnittstellenTyp = holeTypDefinition(
           schnittstelle, null, implementierung.typParameter, true)
       if (schnittstellenTyp !is Typ.Compound.Schnittstelle) {

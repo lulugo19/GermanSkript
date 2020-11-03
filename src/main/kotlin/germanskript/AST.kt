@@ -453,6 +453,7 @@ sealed class AST {
 
 
   sealed class Satz : AST() {
+
     data class Intern(val intern: TypedToken<TokenTyp.INTERN>) :Satz(), IAufruf {
       override val token = intern.toUntyped()
       override val vollerName = "intern"
@@ -481,6 +482,8 @@ sealed class AST {
         val zuweisung: TypedToken<TokenTyp.ZUWEISUNG>,
         var wert: Ausdruck
     ): Satz() {
+      var numerus: Numerus = Numerus.SINGULAR
+      var implementierteSchnittstelle: Typ.Compound.Schnittstelle? = null
       override val children = sequenceOf(singular, wert)
       val istEigenschaft = singular.vornomen!!.typ is TokenTyp.VORNOMEN.DEMONSTRATIV_PRONOMEN
     }
@@ -671,7 +674,9 @@ sealed class AST {
           val singular: WortArt.Nomen,
           var index: Ausdruck
       ): Ausdruck() {
-        var istZeichenfolgeZugriff = false
+        // gibt an, ob das Indizierbare über die Einzahl oder Mehrzahl gefunden wurde
+        var numerus = Numerus.SINGULAR
+        var implementierteSchnittstelle: Typ.Compound.Schnittstelle? = null
         override val children = sequenceOf(singular, index)
       }
 
@@ -681,6 +686,8 @@ sealed class AST {
           val rechts: Ausdruck,
           val istAnfang: kotlin.Boolean,
           val inStringInterpolation: kotlin.Boolean) : Ausdruck() {
+
+        var implementierteSchnittstelle: Typ.Compound.Schnittstelle? = null
         override val children = sequenceOf(links, rechts)
       }
 

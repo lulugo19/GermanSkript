@@ -23,9 +23,9 @@ class HashMap(typ: Typ.Compound.Klasse, val eigenschaften: MutableMap<String, Ob
     return when (aufruf.vollerName) {
       "entferne den Schlüssel" -> entferneDenSchlüssel(aufruf, injection)
       "enthält den Schlüssel" -> enthältDenSchlüssel(aufruf, injection)
-      "füge den Schlüssel mit dem Objekt hinzu" -> fügeDenSchlüsselMitDemWertHinzu(aufruf, injection)
-      "hole den Objekt mit dem Schlüssel" -> holeDenWertMitDemSchlüssel(aufruf, injection)
-      "hole den Objekt mit dem Schlüssel, dem Objekt" -> holeDenWertMitDemSchlüsselUndDemStandardWert(aufruf, injection)
+      "füge den Schlüssel mit dem Wert hinzu" -> fügeDenSchlüsselMitDemWertHinzu(aufruf, injection)
+      "hole den Wert mit dem Schlüssel" -> holeDenWertMitDemSchlüssel(aufruf, injection)
+      "hole den Wert mit dem Schlüssel, dem Wert" -> holeDenWertMitDemSchlüsselUndDemStandardWert(aufruf, injection)
       "lösche alles" -> löscheAlles(aufruf, injection)
       else -> super.rufeMethodeAuf(aufruf, injection)
     }
@@ -44,7 +44,7 @@ class HashMap(typ: Typ.Compound.Klasse, val eigenschaften: MutableMap<String, Ob
 
   private fun fügeDenSchlüsselMitDemWertHinzu(aufruf: AST.IAufruf, injection: InterpretInjection): Objekt {
     val schlüssel = injection.umgebung.leseVariable("Schlüssel")!!.wert
-    val wert = injection.umgebung.leseVariable("Objekt")!!.wert
+    val wert = injection.umgebung.leseVariable("Wert")!!.wert
     map[schlüssel] = wert
     return Nichts
   }

@@ -8,6 +8,9 @@ Nomen KonvertierungsFehler mit
 Nomen SchlüsselNichtGefundenFehler mit
     der Zeichenfolge FehlerMeldung als Fehler:.
 
+Nomen IndexFehler mit
+    der Zeichenfolge FehlerMeldung als Fehler:.
+
 Implementiere den Fehler:
     Als Zeichenfolge: gebe meine FehlerMeldung zurück.
 .

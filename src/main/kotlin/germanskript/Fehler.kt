@@ -250,11 +250,6 @@ sealed class GermanSkriptFehler(private val fehlerName: String, val token: Token
         = "Die Konstante '${konstante.vollständigerName}' ist nicht definiert."
     }
 
-    class Operator(token: Token, private val typ: String): Undefiniert(token){
-      override val nachricht: String
-        get() = "Der Operator '${token.wert}' ist für den Typen '$typ' nicht definiert."
-    }
-
     class Eigenschaft(token: Token, eigenschaftsName: String, klasse: String): Undefiniert(token) {
       override val nachricht = "Die Eigenschaft '$eigenschaftsName' ist für die Klasse '$klasse' nicht definiert."
     }
@@ -333,13 +328,19 @@ sealed class GermanSkriptFehler(private val fehlerName: String, val token: Token
       override val nachricht = "Die Typargumente können nicht inferiert werden. Bitte gebe die Typargumente an."
     }
 
-    class IterierbarErwartet(token: Token): TypFehler(token) {
-      override val nachricht = "Der Ausdruck muss die Schnittstelle 'iterierbar' implementieren. Also die Methode 'hole den Iterator zurückgeben'."
+    class IterierbarErwartet(token: Token, typ: Typ): TypFehler(token) {
+      override val nachricht = "Der Ausdruck vom Typ '${typ.name}' muss die Schnittstelle 'iterierbar' implementieren.\n" +
+          "Also die Methode 'hole den Iterator zurückgeben'."
+    }
+
+    class IndizierbarErwartet(token: Token, typ: Typ): TypFehler(token) {
+      override val nachricht = "Der Ausdruck vom Typ '${typ.name}' muss die Schnittstelle 'indizierbar' implementieren,\n" +
+          "damit die eckigen Klammern '[]' verwendet werden können."
     }
 
     class SchnittstelleFürOperatorErwartet(
-        token: Token, schnittstelle: AST.Definition.Typdefinition.Schnittstelle, operator: Operator): TypFehler(token) {
-      override val nachricht = "Der Ausdruck muss die Schnittstelle '${schnittstelle.name.bezeichner.wert}' implementieren,\n" +
+        token: Token, typ: Typ, schnittstelle: AST.Definition.Typdefinition.Schnittstelle, operator: Operator): TypFehler(token) {
+      override val nachricht = "Der Ausdruck vom Typ '${typ.name}' muss die Schnittstelle '${schnittstelle.name.bezeichner.wert}' implementieren,\n" +
           "damit der Operator '${operator}' auf den Ausdruck angewendet werden kann."
     }
   }

@@ -139,7 +139,7 @@ class GermanSkriptTest {
   @Test
   @DisplayName("Listenindex")
   fun listen() {
-    val source = """
+    val quellCode = """
       die Zahlen sind einige Zahlen [1, 2, 3]
       schreibe die Zahl[0]
       ein Index ist 1
@@ -150,14 +150,14 @@ class GermanSkriptTest {
 
     """.trimIndent()
 
-    val expectedOutput = """
+    val erwarteteAusgabe = """
       1
       2
       3
       
     """.trimIndent()
 
-    testeGermanSkriptCode(source, expectedOutput)
+    testeGermanSkriptCode(quellCode, erwarteteAusgabe)
   }
 
   @Test
@@ -1924,11 +1924,13 @@ class GermanSkriptTest {
         füge den Schlüssel "Englisch" mit dem Wert "Hello" hinzu
         füge den Schlüssel "Französisch" mit dem Wert "Salut" hinzu
         füge den Schlüssel "Spanisch" mit dem Wert "Ola" hinzu
+        die HashMap["Russisch"] ist "Priwet"
         
         schreibe die Zeile (hole den Wert mit dem Schlüssel "Deutsch")
         schreibe die Zeile (hole den Wert mit dem Schlüssel "Englisch")
         schreibe die Zeile (hole den Wert mit dem Schlüssel "Französisch")
         schreibe die Zeile (hole den Wert mit dem Schlüssel "Spanisch")
+        schreibe die Zeile HashMap["Russisch"]
         
         versuche:
           schreibe die Zeile (hole den Wert mit dem Schlüssel "Türkisch")
@@ -1945,6 +1947,7 @@ class GermanSkriptTest {
       Hello
       Salut
       Ola
+      Priwet
       Der Schlüssel 'Türkisch' konnte in der HashMap nicht gefunden werden.
       N/A
       

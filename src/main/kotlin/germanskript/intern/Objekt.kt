@@ -37,9 +37,14 @@ open class Objekt(internal val klasse: Typ.Compound.Klasse) {
   class AnonymesSkriptObjekt(
       typ: Typ.Compound.Klasse,
       eigenschaften: MutableMap<String, Objekt>,
-      val umgebung: Umgebung<Objekt>,
-      val istLambda: kotlin.Boolean
+      val umgebung: Umgebung<Objekt>
   ): SkriptObjekt(typ, eigenschaften)
+
+  class Lambda(
+      typ: Typ.Compound.Klasse,
+      val umgebung: Umgebung<Objekt>,
+      val ausdruck: AST.Satz.Ausdruck.Closure
+  ): SkriptObjekt(typ, mutableMapOf())
 
   open fun rufeMethodeAuf(
       aufruf: AST.IAufruf,
@@ -48,7 +53,7 @@ open class Objekt(internal val klasse: Typ.Compound.Klasse) {
       "gleicht dem Objekt" -> gleichtDemObjekt(injection)
       "als Zeichenfolge" -> alsZeichenfolge()
       "hashe mich" -> hash()
-      else -> throw Exception("Ungültiger Aufruf '${aufruf.vollerName}' für das Objekt ${this}!")
+      else -> throw Exception("Ungültiger Aufruf '${aufruf.vollerName}' für das Objekt '$this'!")
     }
   }
 

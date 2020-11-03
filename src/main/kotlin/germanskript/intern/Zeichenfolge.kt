@@ -8,9 +8,13 @@ data class Zeichenfolge(val zeichenfolge: String): Objekt(BuildIn.Klassen.zeiche
 
   override fun rufeMethodeAuf(aufruf: AST.IAufruf, injection: InterpretInjection): Objekt {
     return when (aufruf.vollerName!!) {
-      "addiere mich mit dem Operanden" -> addiereMichMitDemOperanden(injection)
+      "addiere mich mit dem Operanden",
+      "addiere mich mit der Zeichenfolge" -> addiereMichMitDemOperanden(injection)
       "als Zahl" -> konvertiereInZahl(aufruf, injection)
-      "vergleiche mich mit dem Typ" -> vergleicheMichMitDerZeichenfolge(injection)
+      "vergleiche mich mit dem Typ",
+      "vergleiche mich mit der Zeichenfolge" -> vergleicheMichMitDerZeichenfolge(injection)
+      "hole den Typ mit dem Index",
+      "hole die Zeichenfolge mit dem Index" -> holeDenTypMitDemIndex(aufruf, injection)
       "code an dem Index" -> codeAnDemIndex(aufruf, injection)
       "buchstabiere mich groß" -> buchstabiereMichGroß()
       "buchstabiere mich klein" -> buchstabierMichKlein()
@@ -39,8 +43,18 @@ data class Zeichenfolge(val zeichenfolge: String): Objekt(BuildIn.Klassen.zeiche
     }
   }
 
+  private fun holeDenTypMitDemIndex(aufruf: AST.IAufruf, injection: InterpretInjection): Objekt {
+    val index = (injection.umgebung.leseVariable("Index")!!.wert as Zahl).zahl.toInt()
+    return if (index >= zeichenfolge.length) {
+      injection.werfeFehler(
+          "Index außerhalb des Bereichs. Der Index ist $index, doch die Länge der Zeichenfolge ist ${zeichenfolge.length}.\n", "IndexFehler", aufruf.token)
+    } else {
+      Zeichenfolge(this.zeichenfolge[index].toString())
+    }
+  }
+
   private fun addiereMichMitDemOperanden(injection: InterpretInjection): Objekt {
-    val zeichenfolge = injection.umgebung.leseVariable("Operand")!!.wert as Zeichenfolge
+    val zeichenfolge = injection.umgebung.leseVariable("Zeichenfolge")!!.wert as Zeichenfolge
     return this + zeichenfolge
   }
 

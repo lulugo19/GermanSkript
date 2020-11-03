@@ -9,6 +9,8 @@ import kotlin.math.*
 import kotlin.random.Random
 
 typealias SchnittstellenAufruf = (Objekt, String, argumente: Array<Objekt>) -> Objekt?
+
+// Fehlermeldung, KlassenName, Token
 typealias WerfeFehler = (String, String, Token) -> Objekt
 
 class InterpretInjection(
@@ -217,15 +219,26 @@ class Interpretierer(startDatei: File): PipelineKomponente(startDatei) {
   }
 
   private fun durchlaufeListenElementZuweisung(zuweisung: AST.Satz.ListenElementZuweisung): Objekt {
-    val liste = evaluiereListenSingular(zuweisung.singular)
-    val index = (evaluiereAusdruck(zuweisung.index) as germanskript.intern.Zahl).toInt()
-    if (index >= liste.elemente.size) {
-      throw GermanSkriptFehler.LaufzeitFehler(zuweisung.index.holeErstesToken(),
-          aufrufStapel.toString(), "Index außerhalb des Bereichs. Der Index ist $index, doch die Länge der Liste ist ${liste.elemente.size}.\n")
-    }
-    liste.elemente[index] = evaluiereAusdruck(zuweisung.wert)
+    val indizierbar = evaluiereIndizierbarSingularOderPlural(zuweisung.singular, zuweisung.numerus)
+    val index = evaluiereAusdruck(zuweisung.index)
+    val wert = evaluiereAusdruck(zuweisung.wert)
 
-    return germanskript.intern.Nichts
+    val aufrufUmgebung = Umgebung<Objekt>()
+    aufrufUmgebung.pushBereich()
+    aufrufUmgebung.schreibeVariable("Index", index)
+    aufrufUmgebung.schreibeVariable(zuweisung.implementierteSchnittstelle!!.typArgumente[1].typ!!.einfacherName, wert)
+
+    val methodenName = zuweisung.implementierteSchnittstelle!!.definition.methodenSignaturen[0].vollerName
+
+    return durchlaufeAufruf(
+        object : AST.IAufruf {
+          override val token = zuweisung.singular.bezeichnerToken
+          override val vollerName = methodenName
+        },
+        indizierbar.klasse.definition.methoden[methodenName]!!.körper,
+        aufrufUmgebung, false,
+        indizierbar
+    )
   }
 
   private fun durchlaufeAufruf(
@@ -239,7 +252,7 @@ class Interpretierer(startDatei: File): PipelineKomponente(startDatei) {
     aufrufStapel.push(aufruf, umgebung, objekt)
     return durchlaufeBereich(bereich, neuerBereich).also {
       aufrufStapel.pop()
-      val impliziterRückgabeTyp = objekt is Objekt.AnonymesSkriptObjekt && objekt.istLambda
+      val impliziterRückgabeTyp = objekt is Objekt.Lambda
       if (!impliziterRückgabeTyp) {
         flags.remove(Flag.ZURÜCK)
       }
@@ -249,10 +262,9 @@ class Interpretierer(startDatei: File): PipelineKomponente(startDatei) {
   /**
    * Bei Closures werden die Parameternamen bei generischen Parametern mit dem Namen des eingesetzen Typen ersetzt.
    */
-  /*
-  private fun holeParameterNamenFürClosure(objekt: Objekt.Closure): List<AST.WortArt.Nomen> {
+  private fun holeParameterNamenFürClosure(objekt: Objekt.Lambda): List<AST.WortArt.Nomen> {
     val typArgumente = objekt.klasse.typArgumente
-    val signatur = objekt.klasse.definition.methoden[0]
+    val signatur = objekt.klasse.definition.methoden.values.first().signatur
     return signatur.parameter.toList().mapIndexed { index, param ->
       if (index < objekt.ausdruck.bindings.size) objekt.ausdruck.bindings[index]
       else when (val typ = param.typKnoten.typ!!) {
@@ -262,12 +274,10 @@ class Interpretierer(startDatei: File): PipelineKomponente(startDatei) {
       }
     }
   }
-  */
 
   private fun durchlaufeFunktionsAufruf(funktionsAufruf: AST.Satz.Ausdruck.FunktionsAufruf): Objekt {
     var funktionsUmgebung = Umgebung<Objekt>()
     var objekt: Objekt? = null
-    var impliziterRückgabeTyp = false
     val (körper, parameterNamen) = if (funktionsAufruf.aufrufTyp == FunktionsAufrufTyp.FUNKTIONS_AUFRUF) {
       val definition = funktionsAufruf.funktionsDefinition!!
       Pair(definition.körper, definition.signatur.parameter.map{it.name}.toList())
@@ -287,10 +297,16 @@ class Interpretierer(startDatei: File): PipelineKomponente(startDatei) {
         // funktionsAufruf.vollerName = "für ${objekt.typ.definition.name.nominativ}: ${methode.signatur.vollerName}"
         if (objekt is Objekt.AnonymesSkriptObjekt) {
           funktionsUmgebung = objekt.umgebung
-          impliziterRückgabeTyp = objekt.istLambda
+        } else if (objekt is Objekt.Lambda) {
+          funktionsUmgebung = objekt.umgebung
         }
         val signatur = methode.signatur
-        Pair(methode.körper, signatur.parameter.map {it.name}.toList())
+        val parameter = if (objekt is Objekt.Lambda) {
+          holeParameterNamenFürClosure(objekt)
+        } else {
+          signatur.parameter.map {it.name}.toList()
+        }
+        Pair(methode.körper, parameter)
       }
     }
     funktionsUmgebung.pushBereich()
@@ -301,7 +317,7 @@ class Interpretierer(startDatei: File): PipelineKomponente(startDatei) {
     }
 
     return durchlaufeAufruf(funktionsAufruf, körper, funktionsUmgebung, false, objekt)
-        .let { if (impliziterRückgabeTyp) it else rückgabeWert }
+        .let { if (objekt is Objekt.Lambda) it else rückgabeWert }
   }
 
   private fun durchlaufeZurückgabe(zurückgabe: AST.Satz.Zurückgabe): Objekt {
@@ -528,6 +544,16 @@ class Interpretierer(startDatei: File): PipelineKomponente(startDatei) {
 
     val rechts = evaluiereAusdruck(ausdruck.rechts)
 
+    if (operator.klasse == OperatorKlasse.LOGISCH) {
+      return when (operator) {
+        Operator.ODER -> germanskript.intern.Boolean(
+            (links as germanskript.intern.Boolean).boolean || (rechts as germanskript.intern.Boolean).boolean)
+        Operator.UND -> germanskript.intern.Boolean(
+          (links as germanskript.intern.Boolean).boolean && (rechts as germanskript.intern.Boolean).boolean)
+        else -> throw Exception("Dieser Fall sollte nie eintreten!")
+      }
+    }
+
     var methodenName: String
 
     val aufrufUmgebung = Umgebung<Objekt>()
@@ -536,6 +562,20 @@ class Interpretierer(startDatei: File): PipelineKomponente(startDatei) {
     if ((operator == Operator.GLEICH || operator == Operator.UNGLEICH)) {
       methodenName = "gleicht dem Objekt"
       aufrufUmgebung.schreibeVariable("Objekt", rechts)
+      val istGleich = durchlaufeAufruf(
+          object : AST.IAufruf {
+            override val token = ausdruck.operator.toUntyped()
+            override val vollerName = methodenName
+          },
+          links.klasse.definition.methoden[methodenName]!!.körper,
+          aufrufUmgebung, false,
+          links
+      ) as germanskript.intern.Boolean
+      return if (operator == Operator.GLEICH) {
+        istGleich
+      } else {
+        germanskript.intern.Boolean(!istGleich.boolean)
+      }
     }
     else if (operator.klasse == OperatorKlasse.ARITHMETISCH) {
       methodenName = when(operator) {
@@ -548,14 +588,13 @@ class Interpretierer(startDatei: File): PipelineKomponente(startDatei) {
         else -> throw Exception("Dieser Fall sollte nie eintreten!")
       } + " mich mit dem Operanden"
 
-      aufrufUmgebung.schreibeVariable(rechts.klasse.definition.name.nominativ, rechts)
+      aufrufUmgebung.schreibeVariable(ausdruck.implementierteSchnittstelle!!.typArgumente[1].typ!!.einfacherName, rechts)
     }
     else {
       // Vergleich
       methodenName = "vergleiche mich mit dem Typ"
-
-      aufrufUmgebung.schreibeVariable(rechts.klasse.definition.name.nominativ, rechts)
-
+      ausdruck.implementierteSchnittstelle
+      aufrufUmgebung.schreibeVariable(ausdruck.implementierteSchnittstelle!!.typArgumente[0].typ!!.einfacherName, rechts)
       val vergleich = durchlaufeAufruf(
           object : AST.IAufruf {
             override val token = ausdruck.operator.toUntyped()
@@ -587,7 +626,7 @@ class Interpretierer(startDatei: File): PipelineKomponente(startDatei) {
   }
 
   companion object {
-  val preloadedKlassenDefinitionen = arrayOf("Fehler", "KonvertierungsFehler", "SchlüsselNichtGefundenFehler")
+  val preloadedKlassenDefinitionen = arrayOf("Fehler", "KonvertierungsFehler", "SchlüsselNichtGefundenFehler", "IndexFehler")
 
   fun zeichenFolgenOperation(
       operator: Operator,
@@ -656,51 +695,51 @@ class Interpretierer(startDatei: File): PipelineKomponente(startDatei) {
     )
   }
 
-  private fun evaluiereListenSingular(singular: AST.WortArt.Nomen): germanskript.intern.Liste {
+  private fun evaluiereIndizierbarSingularOderPlural(singular: AST.WortArt.Nomen, numerus: Numerus): Objekt {
     return when (val vornomenTyp = singular.vornomen?.typ) {
       is TokenTyp.VORNOMEN.POSSESSIV_PRONOMEN -> {
         val objekt = when (vornomenTyp) {
           TokenTyp.VORNOMEN.POSSESSIV_PRONOMEN.MEIN -> aufrufStapel.top().objekt!!
           TokenTyp.VORNOMEN.POSSESSIV_PRONOMEN.DEIN -> umgebung.holeMethodenBlockObjekt()!!
         }
-        objekt.holeEigenschaft(singular.ganzesWort(Kasus.NOMINATIV, Numerus.PLURAL, true)) as germanskript.intern.Liste
+        objekt.holeEigenschaft(singular.ganzesWort(Kasus.NOMINATIV, numerus, true))
       }
       is TokenTyp.VORNOMEN.ARTIKEL.BESTIMMT, null ->
-        evaluiereVariable(singular.ganzesWort(Kasus.NOMINATIV, Numerus.PLURAL, true)) as germanskript.intern.Liste
+        evaluiereVariable(singular.ganzesWort(Kasus.NOMINATIV, numerus, true))!!
       else -> throw Exception("Dieser Fall sollte nie eintreten!")
     }
   }
 
   private fun evaluiereListenElement(listenElement: AST.Satz.Ausdruck.ListenElement): Objekt {
-    val index = (evaluiereAusdruck(listenElement.index) as germanskript.intern.Zahl).toInt()
+    val indizierbar = evaluiereIndizierbarSingularOderPlural(listenElement.singular, listenElement.numerus)
+    val index = evaluiereAusdruck(listenElement.index)
 
-    if (listenElement.istZeichenfolgeZugriff) {
-      val zeichenfolge = (evaluiereVariable(listenElement.singular.nominativ) as germanskript.intern.Zeichenfolge).zeichenfolge
-      if (index >= zeichenfolge.length) {
-        throw GermanSkriptFehler.LaufzeitFehler(listenElement.index.holeErstesToken(),
-            aufrufStapel.toString(), "Index außerhalb des Bereichs. Der Index ist $index, doch die Länge der Zeichenfolge ist ${zeichenfolge.length}.\n")
-      }
-      return germanskript.intern.Zeichenfolge(zeichenfolge[index].toString())
-    }
+    val aufrufUmgebung = Umgebung<Objekt>()
+    aufrufUmgebung.pushBereich()
+    aufrufUmgebung.schreibeVariable("Index", index)
 
-    val liste = evaluiereListenSingular(listenElement.singular)
+    val methodenName = listenElement.implementierteSchnittstelle!!.definition.methodenSignaturen[0].vollerName
 
-    if (index >= liste.elemente.size) {
-      throw GermanSkriptFehler.LaufzeitFehler(listenElement.index.holeErstesToken(),
-          aufrufStapel.toString(), "Index außerhalb des Bereichs. Der Index ist $index, doch die Länge der Liste ist ${liste.elemente.size}.\n")
-    }
-    return liste.elemente[index]
+    return durchlaufeAufruf(
+        object : AST.IAufruf {
+          override val token = listenElement.singular.bezeichnerToken
+          override val vollerName = methodenName
+        },
+        indizierbar.klasse.definition.methoden[methodenName]!!.körper,
+        aufrufUmgebung, false,
+        indizierbar
+    )
   }
 
   private fun evaluiereClosure(closure: AST.Satz.Ausdruck.Closure): Objekt {
-    return Objekt.AnonymesSkriptObjekt(closure.klasse, mutableMapOf(), umgebung, true)
+    return Objekt.Lambda(closure.klasse, umgebung, closure)
   }
 
   private fun evaluiereAnonymeKlasse(anonymeKlasse: AST.Satz.Ausdruck.AnonymeKlasse): Objekt {
     val eigenschaften = anonymeKlasse.bereich.eigenschaften
         .map { it.name.nominativ to evaluiereAusdruck(it.wert) }
         .toMap().toMutableMap()
-    return Objekt.AnonymesSkriptObjekt(anonymeKlasse.klasse, eigenschaften, umgebung, false)
+    return Objekt.AnonymesSkriptObjekt(anonymeKlasse.klasse, eigenschaften, umgebung)
   }
 
   private fun evaluiereTypÜberprüfung(typÜberprüfung: AST.Satz.Ausdruck.TypÜberprüfung): Objekt {

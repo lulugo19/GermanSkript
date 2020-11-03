@@ -60,12 +60,18 @@ class Zahl(val zahl: Double): Objekt(BuildIn.Klassen.zahl), Comparable<Zahl> {
   override fun rufeMethodeAuf(aufruf: AST.IAufruf, injection: InterpretInjection): Objekt {
     val operand = injection.umgebung.leseVariable("Zahl")?.wert as Zahl?
     return when(aufruf.vollerName!!) {
-      "addiere mich mit dem Operanden" -> this + operand!!
-      "subtrahiere mich mit dem Operanden" -> this - operand!!
-      "multipliziere mich mit dem Operanden" -> this * operand!!
-      "dividiere mich mit dem Operanden" -> this / operand!!
-      "potenziere mich mit dem Operanden" -> pow(operand!!)
-      "moduliere mich mit dem Operanden" -> this % operand!!
+      "addiere mich mit dem Operanden",
+      "addiere mich mit der Zahl" -> this + operand!!
+      "subtrahiere mich mit dem Operanden",
+      "subtrahiere mich mit der Zahl" -> this - operand!!
+      "multipliziere mich mit dem Operanden",
+      "multipliziere mich mit der Zahl" -> this * operand!!
+      "dividiere mich mit dem Operanden",
+      "dividiere mich mit der Zahl" -> this / operand!!
+      "potenziere mich mit dem Operanden",
+      "potenziere mich mit der Zahl" -> pow(operand!!)
+      "moduliere mich mit dem Operanden",
+      "moduliere mich mit der Zahl" -> this % operand!!
       "negiere mich" -> -this
       else -> super.rufeMethodeAuf(aufruf, injection)
     }

@@ -119,7 +119,7 @@ class TypPrüfer(startDatei: File): PipelineKomponente(startDatei) {
   /**
    * Prüft ob ein Typ die Schnittstelle 'iterierbar' implementiert und gibt die Iterierbar-Schnittstelle wenn möglich zurück.
    */
-  fun prüfeImplementiertSchnittstelle(typ: Typ, schnittstelle: AST.Definition.Typdefinition.Schnittstelle): Typ.Compound.Schnittstelle? {
+  private fun prüfeImplementiertSchnittstelle(typ: Typ, schnittstelle: AST.Definition.Typdefinition.Schnittstelle): Typ.Compound.Schnittstelle? {
     return when (typ) {
       is Typ.Generic -> typ.typParam.schnittstellen.find {
         (it.typ!! as Typ.Compound.Schnittstelle).definition == schnittstelle }?.typ!! as Typ.Compound.Schnittstelle?
@@ -448,9 +448,17 @@ class TypPrüfer(startDatei: File): PipelineKomponente(startDatei) {
   }
 
   private fun durchlaufeListenElementZuweisung(zuweisung: AST.Satz.ListenElementZuweisung): Typ {
-    ausdruckMussTypSein(zuweisung.index, BuildIn.Klassen.zahl)
-    val elementTyp = evaluiereListenSingular(zuweisung.singular)
-    ausdruckMussTypSein(zuweisung.wert, elementTyp)
+    val indizierbar = findeIterierbares(zuweisung.singular).let { (typ, numerus) ->
+      zuweisung.numerus = numerus
+      typ
+    }
+    val indizierbarSchnittstelle = prüfeImplementiertSchnittstelle(indizierbar, BuildIn.Schnittstellen.indizierbar)
+        ?: throw GermanSkriptFehler.TypFehler.IndizierbarErwartet(zuweisung.singular.bezeichnerToken, indizierbar)
+
+    zuweisung.implementierteSchnittstelle = indizierbarSchnittstelle
+
+    ausdruckMussTypSein(zuweisung.index, indizierbarSchnittstelle.typArgumente[0].typ!!)
+    ausdruckMussTypSein(zuweisung.wert, indizierbarSchnittstelle.typArgumente[1].typ!!)
     return BuildIn.Klassen.nichts
   }
 
@@ -731,8 +739,10 @@ class TypPrüfer(startDatei: File): PipelineKomponente(startDatei) {
       aufrufTyp: FunktionsAufrufTyp,
       ersetzeObjekt: String? = null
   ): Pair<AST.Definition.FunktionsSignatur, Typ.Compound>? {
-    if (ersetzeObjekt != null) {
-      funktionsAufruf.vollerName = definierer.holeVollenNamenVonFunktionsAufruf(funktionsAufruf, ersetzeObjekt)
+    val vollerName = if (ersetzeObjekt != null) {
+      definierer.holeVollenNamenVonFunktionsAufruf(funktionsAufruf, ersetzeObjekt)
+    } else {
+      funktionsAufruf.vollerName!!
     }
 
     if (typ is Typ.Generic) {
@@ -749,8 +759,11 @@ class TypPrüfer(startDatei: File): PipelineKomponente(startDatei) {
     }
 
     // ist Methodenaufruf von Block-Variable
-    typ.definition.findeMethode(funktionsAufruf.vollerName!!)?.also { signatur ->
-      überprüfePassendeFunktionsSignatur(funktionsAufruf, signatur, aufrufTyp, typ)?.also { return Pair(it, typ) }
+    typ.definition.findeMethode(vollerName)?.also { signatur ->
+      überprüfePassendeFunktionsSignatur(funktionsAufruf, signatur, aufrufTyp, typ)?.also {
+        funktionsAufruf.vollerName = vollerName
+        return Pair(it, typ)
+      }
     }
 
     if (typ.definition.typParameter.isNotEmpty()) {
@@ -760,8 +773,10 @@ class TypPrüfer(startDatei: File): PipelineKomponente(startDatei) {
 
       typ.definition.findeMethode(ersetzeTypArgsName)?.also { signatur ->
         // TODO: Die Typparameternamen müssen für den Interpreter später hier ersetzt werden
-        funktionsAufruf.vollerName = ersetzeTypArgsName
-        überprüfePassendeFunktionsSignatur(funktionsAufruf, signatur, aufrufTyp, typ)?.also { return Pair(it, typ) }
+        überprüfePassendeFunktionsSignatur(funktionsAufruf, signatur, aufrufTyp, typ)?.also {
+          funktionsAufruf.vollerName = ersetzeTypArgsName
+          return Pair(it, typ)
+        }
       }
     }
 
@@ -816,7 +831,7 @@ class TypPrüfer(startDatei: File): PipelineKomponente(startDatei) {
       schleife.iterierbares != null -> {
         val iterierbarerTyp = evaluiereAusdruck(schleife.iterierbares)
         val iterierbareSchnittstelle = prüfeImplementiertSchnittstelle(iterierbarerTyp, BuildIn.Schnittstellen.iterierbar)
-            ?: throw GermanSkriptFehler.TypFehler.IterierbarErwartet(schleife.iterierbares.holeErstesToken())
+            ?: throw GermanSkriptFehler.TypFehler.IterierbarErwartet(schleife.iterierbares.holeErstesToken(), iterierbarerTyp)
         val typArgumente = if (iterierbarerTyp is Typ.Compound) iterierbarerTyp.typArgumente else null
         ersetzeGenerics(iterierbareSchnittstelle.typArgumente[0], null, typArgumente).typ!!
       }
@@ -864,7 +879,7 @@ class TypPrüfer(startDatei: File): PipelineKomponente(startDatei) {
     return BuildIn.Klassen.niemals
   }
 
-  fun durchlaufeIntern(intern: AST.Satz.Intern): Typ {
+  private fun durchlaufeIntern(intern: AST.Satz.Intern): Typ {
     // Hier muss nicht viel gemacht werden
     // die internen Sachen sind schon von kotlin Typ-gecheckt :)
     rückgabeErreicht = true
@@ -891,14 +906,39 @@ class TypPrüfer(startDatei: File): PipelineKomponente(startDatei) {
   }
 
   private fun evaluiereListenElement(listenElement: AST.Satz.Ausdruck.ListenElement): Typ {
-    ausdruckMussTypSein(listenElement.index, BuildIn.Klassen.zahl)
-    val zeichenfolge = evaluiereVariable(listenElement.singular.nominativ)
-    // Bei einem Zugriff auf einen Listenindex kann es sich auch um eine Zeichenfolge handeln
-    if (zeichenfolge != null && zeichenfolge == BuildIn.Klassen.zeichenfolge) {
-      listenElement.istZeichenfolgeZugriff = true
-      return BuildIn.Klassen.zeichenfolge
+    val indizierTyp = findeIterierbares(listenElement.singular).let { (typ, numerus) ->
+      listenElement.numerus = numerus
+      typ
+    } as Typ.Compound
+
+    val schnittstelle = prüfeImplementiertSchnittstelle(indizierTyp, BuildIn.Schnittstellen.indiziert)
+        ?: throw GermanSkriptFehler.TypFehler.IndizierbarErwartet(listenElement.singular.bezeichnerToken, indizierTyp)
+
+    listenElement.implementierteSchnittstelle = schnittstelle
+
+    ausdruckMussTypSein(listenElement.index, schnittstelle.typArgumente[0].typ!!)
+    return ersetzeGenerics(schnittstelle.typArgumente[1], null, indizierTyp.typArgumente).typ!!
+  }
+
+  private fun findeIterierbares(singular: AST.WortArt.Nomen): Pair<Typ, Numerus> {
+    val plural = singular.ganzesWort(Kasus.NOMINATIV, Numerus.PLURAL, true)
+
+    fun holeEigenschaftAusKlasseSingularOderPlural(klasse: Typ.Compound.Klasse): Pair<Typ, Numerus> {
+      return try {
+        holeNormaleEigenschaftAusKlasse(singular, klasse, Numerus.SINGULAR).typKnoten.typ!! to Numerus.SINGULAR
+      } catch (fehler: GermanSkriptFehler.Undefiniert.Eigenschaft) {
+        holeNormaleEigenschaftAusKlasse(singular, klasse, Numerus.PLURAL).typKnoten.typ!! to Numerus.PLURAL
+      }
     }
-    return evaluiereListenSingular(listenElement.singular)
+
+    return when(singular.vornomen?.typ) {
+      TokenTyp.VORNOMEN.ARTIKEL.BESTIMMT, TokenTyp.VORNOMEN.JEDE, null ->
+        evaluiereVariable(plural)?.let{ it to Numerus.PLURAL } ?: evaluiereVariable(singular) to Numerus.SINGULAR
+      TokenTyp.VORNOMEN.POSSESSIV_PRONOMEN.MEIN -> holeEigenschaftAusKlasseSingularOderPlural(zuÜberprüfendeKlasse!!)
+      TokenTyp.VORNOMEN.POSSESSIV_PRONOMEN.DEIN -> holeEigenschaftAusKlasseSingularOderPlural(
+          umgebung.holeMethodenBlockObjekt()!! as Typ.Compound.Klasse)
+      else -> throw Exception("Dieser Fall sollte nie eintreten.")
+    }
   }
 
   private fun evaluiereListenSingular(singular: AST.WortArt.Nomen): Typ {
@@ -1083,6 +1123,8 @@ class TypPrüfer(startDatei: File): PipelineKomponente(startDatei) {
     }
 
     if (operator == Operator.GLEICH || operator == Operator.UNGLEICH) {
+      evaluiereAusdruck(ausdruck.links)
+      evaluiereAusdruck(ausdruck.rechts)
       return BuildIn.Klassen.boolean
     }
 
@@ -1106,7 +1148,9 @@ class TypPrüfer(startDatei: File): PipelineKomponente(startDatei) {
 
     val schnittstelle = prüfeImplementiertSchnittstelle(linkerTyp, zuImplementierendeSchnittstelle)
         ?: throw GermanSkriptFehler.TypFehler.SchnittstelleFürOperatorErwartet(
-            ausdruck.links.holeErstesToken(), zuImplementierendeSchnittstelle, operator)
+            ausdruck.links.holeErstesToken(), linkerTyp, zuImplementierendeSchnittstelle, operator)
+
+    ausdruck.implementierteSchnittstelle = schnittstelle
 
     ausdruckMussTypSein(ausdruck.rechts, schnittstelle.typArgumente[0].typ!!)
 
@@ -1121,7 +1165,7 @@ class TypPrüfer(startDatei: File): PipelineKomponente(startDatei) {
     val ausdruck = evaluiereAusdruck(minus.ausdruck)
     val schnittstelle = prüfeImplementiertSchnittstelle(ausdruck, BuildIn.Schnittstellen.negierbar)
         ?: throw GermanSkriptFehler.TypFehler.SchnittstelleFürOperatorErwartet(
-            minus.ausdruck.holeErstesToken(), BuildIn.Schnittstellen.negierbar, Operator.NEGATION)
+            minus.ausdruck.holeErstesToken(), ausdruck, BuildIn.Schnittstellen.negierbar, Operator.NEGATION)
     return schnittstelle.typArgumente[0].typ!!
   }
 
@@ -1198,12 +1242,8 @@ class TypPrüfer(startDatei: File): PipelineKomponente(startDatei) {
         rückgabeTyp,
         true
     )
-    val erwarteterRückgabeTyp = when(val typ = signatur.rückgabeTyp.typ!!) {
-      is Typ.Generic ->
-        if (typ.kontext == TypParamKontext.Klasse) schnittstelle.typArgumente[typ.index].typ!!
-        else typ
-      else -> typ
-    }
+    val erwarteterRückgabeTyp = ersetzeGenerics(signatur.rückgabeTyp, null, schnittstelle.typArgumente).typ!!
+
     if (erwarteterRückgabeTyp != BuildIn.Klassen.nichts && !typIstTyp(rückgabe, erwarteterRückgabeTyp)) {
       throw GermanSkriptFehler.ClosureFehler.FalscheRückgabe(closure.schnittstelle.name.bezeichnerToken, rückgabe, erwarteterRückgabeTyp)
     }
@@ -1216,7 +1256,7 @@ class TypPrüfer(startDatei: File): PipelineKomponente(startDatei) {
     klassenDefinition.methoden[signatur.vollerName!!] = AST.Definition.Funktion(signatur, closure.körper)
     klassenDefinition.implementierteSchnittstellen.add(schnittstelle)
 
-    val klasse = Typ.Compound.Klasse(klassenDefinition, emptyList())
+    val klasse = Typ.Compound.Klasse(klassenDefinition, schnittstelle.typArgumente)
     closure.klasse = klasse
     return klasse
   }

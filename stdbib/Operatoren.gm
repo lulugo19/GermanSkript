@@ -46,3 +46,12 @@ Adjektiv<Ergebnis> negierbare:
 Adjektiv<Typ> vergleichbar:
     Verb(Zahl) vergleiche mich mit dem Typ
 .
+
+// eckige Klammern
+Adjektiv<IndexTyp, Typ> indiziert:
+    Verb hole (den Typ) mit dem IndexTyp Index
+.
+
+Adjektiv<IndexTyp, Typ> indizierbar:
+    Verb setze den IndexTyp Index auf den Typ
+.

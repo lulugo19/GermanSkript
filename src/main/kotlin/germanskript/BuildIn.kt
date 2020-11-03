@@ -23,5 +23,7 @@ object BuildIn {
     lateinit var modulobar: AST.Definition.Typdefinition.Schnittstelle
     lateinit var negierbar: AST.Definition.Typdefinition.Schnittstelle
     lateinit var vergleichbar: AST.Definition.Typdefinition.Schnittstelle
+    lateinit var indiziert: AST.Definition.Typdefinition.Schnittstelle
+    lateinit var indizierbar: AST.Definition.Typdefinition.Schnittstelle
   }
 }
