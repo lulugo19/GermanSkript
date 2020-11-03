@@ -292,7 +292,7 @@ class TypPrüfer(startDatei: File): PipelineKomponente(startDatei) {
     for (satz in bereich.sätze) {
       rückgabe = when (satz) {
         is AST.Satz.VariablenDeklaration -> durchlaufeVariablenDeklaration(satz)
-        is AST.Satz.ListenElementZuweisung -> durchlaufeListenElementZuweisung(satz)
+        is AST.Satz.IndexZuweisung -> durchlaufeIndexZuweisung(satz)
         is AST.Satz.Bereich -> durchlaufeBereich(satz, true)
         is AST.Satz.SuperBlock -> {
           val prevInSuperBlock = inSuperBlock
@@ -325,7 +325,7 @@ class TypPrüfer(startDatei: File): PipelineKomponente(startDatei) {
       is AST.Satz.Ausdruck.Boolean -> BuildIn.Klassen.boolean
       is AST.Satz.Ausdruck.Variable -> evaluiereVariable(ausdruck)
       is AST.Satz.Ausdruck.Liste -> evaluiereListe(ausdruck)
-      is AST.Satz.Ausdruck.ListenElement -> evaluiereListenElement(ausdruck)
+      is AST.Satz.Ausdruck.IndexZugriff -> evaluiereIndexZugriff(ausdruck)
       is AST.Satz.Ausdruck.FunktionsAufruf -> durchlaufeFunktionsAufruf(ausdruck)
       is AST.Satz.Ausdruck.BinärerAusdruck -> evaluiereBinärenAusdruck(ausdruck)
       is AST.Satz.Ausdruck.Minus -> evaluiereMinus(ausdruck)
@@ -447,7 +447,7 @@ class TypPrüfer(startDatei: File): PipelineKomponente(startDatei) {
     return BuildIn.Klassen.nichts
   }
 
-  private fun durchlaufeListenElementZuweisung(zuweisung: AST.Satz.ListenElementZuweisung): Typ {
+  private fun durchlaufeIndexZuweisung(zuweisung: AST.Satz.IndexZuweisung): Typ {
     val indizierbar = findeIterierbares(zuweisung.singular).let { (typ, numerus) ->
       zuweisung.numerus = numerus
       typ
@@ -905,18 +905,18 @@ class TypPrüfer(startDatei: File): PipelineKomponente(startDatei) {
     return listenTyp
   }
 
-  private fun evaluiereListenElement(listenElement: AST.Satz.Ausdruck.ListenElement): Typ {
-    val indizierTyp = findeIterierbares(listenElement.singular).let { (typ, numerus) ->
-      listenElement.numerus = numerus
+  private fun evaluiereIndexZugriff(indexZugriff: AST.Satz.Ausdruck.IndexZugriff): Typ {
+    val indizierTyp = findeIterierbares(indexZugriff.singular).let { (typ, numerus) ->
+      indexZugriff.numerus = numerus
       typ
     } as Typ.Compound
 
     val schnittstelle = prüfeImplementiertSchnittstelle(indizierTyp, BuildIn.Schnittstellen.indiziert)
-        ?: throw GermanSkriptFehler.TypFehler.IndizierbarErwartet(listenElement.singular.bezeichnerToken, indizierTyp)
+        ?: throw GermanSkriptFehler.TypFehler.IndizierbarErwartet(indexZugriff.singular.bezeichnerToken, indizierTyp)
 
-    listenElement.implementierteSchnittstelle = schnittstelle
+    indexZugriff.implementierteSchnittstelle = schnittstelle
 
-    ausdruckMussTypSein(listenElement.index, schnittstelle.typArgumente[0].typ!!)
+    ausdruckMussTypSein(indexZugriff.index, schnittstelle.typArgumente[0].typ!!)
     return ersetzeGenerics(schnittstelle.typArgumente[1], null, indizierTyp.typArgumente).typ!!
   }
 

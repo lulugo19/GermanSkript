@@ -456,7 +456,7 @@ private sealed class SubParser<T: AST>() {
             else when (peekType(1)) {
               is TokenTyp.DOPPEL_DOPPELPUNKT -> parseFunktionOderKonstante()
               is TokenTyp.OFFENE_ECKIGE_KLAMMER ->
-                subParse(Satz.Ausdruck.NomenAusdruck.ListenElement(parseNomenOhneVornomen(true), inBedingungsTerm))
+                subParse(Satz.Ausdruck.NomenAusdruck.IndexZugriff(parseNomenOhneVornomen(true), inBedingungsTerm))
               else -> AST.Satz.Ausdruck.Variable(parseNomenOhneVornomen(true))
             }
           }
@@ -557,7 +557,7 @@ private sealed class SubParser<T: AST>() {
     val nächstesToken = peek()
     val ausdruck = when (vornomen.typ) {
       is TokenTyp.VORNOMEN.ARTIKEL.BESTIMMT -> when (nächstesToken.typ) {
-        is TokenTyp.OFFENE_ECKIGE_KLAMMER -> subParse(Satz.Ausdruck.NomenAusdruck.ListenElement(nomen, inBedingungsTerm))
+        is TokenTyp.OFFENE_ECKIGE_KLAMMER -> subParse(Satz.Ausdruck.NomenAusdruck.IndexZugriff(nomen, inBedingungsTerm))
         is TokenTyp.VORNOMEN.ARTIKEL -> {
           when (nächstesToken.wert) {
             "des", "der", "meiner", "meines", "deiner", "deines" ->
@@ -601,10 +601,10 @@ private sealed class SubParser<T: AST>() {
         }
       }
       TokenTyp.VORNOMEN.POSSESSIV_PRONOMEN.MEIN ->
-        if (nächstesToken.typ is TokenTyp.OFFENE_ECKIGE_KLAMMER) subParse(Satz.Ausdruck.NomenAusdruck.ListenElement(nomen, inBedingungsTerm))
+        if (nächstesToken.typ is TokenTyp.OFFENE_ECKIGE_KLAMMER) subParse(Satz.Ausdruck.NomenAusdruck.IndexZugriff(nomen, inBedingungsTerm))
         else  AST.Satz.Ausdruck.SelbstEigenschaftsZugriff(nomen)
       TokenTyp.VORNOMEN.POSSESSIV_PRONOMEN.DEIN ->
-        if (nächstesToken.typ is TokenTyp.OFFENE_ECKIGE_KLAMMER) subParse(Satz.Ausdruck.NomenAusdruck.ListenElement(nomen, inBedingungsTerm))
+        if (nächstesToken.typ is TokenTyp.OFFENE_ECKIGE_KLAMMER) subParse(Satz.Ausdruck.NomenAusdruck.IndexZugriff(nomen, inBedingungsTerm))
         else   AST.Satz.Ausdruck.MethodenBereichEigenschaftsZugriff(nomen)
       is TokenTyp.VORNOMEN.DEMONSTRATIV_PRONOMEN -> throw GermanSkriptFehler.SyntaxFehler.ParseFehler(vornomen.toUntyped(), null,
           "Die Demonstrativpronomen 'diese' und 'jene' dürfen nicht in Ausdrücken verwendet werden.")
@@ -717,7 +717,7 @@ private sealed class SubParser<T: AST>() {
         is TokenTyp.INTERN -> subParse(Satz.Intern)
         is TokenTyp.VORNOMEN -> {
           if (peekType(2) is TokenTyp.OFFENE_ECKIGE_KLAMMER)
-            subParse(Satz.ListenElementZuweisung)
+            subParse(Satz.IndexZuweisung)
           else {
             if (peekType(1) is TokenTyp.NEU || peekType(2) is TokenTyp.ZUWEISUNG)
               subParse(Satz.VariablenDeklaration)
@@ -887,24 +887,24 @@ private sealed class SubParser<T: AST>() {
       }
     }
 
-    object ListenElementZuweisung: Satz<AST.Satz>() {
+    object IndexZuweisung: Satz<AST.Satz>() {
       override val id = ASTKnotenID.LISTEN_ELEMENT_ZUWEISUNG
 
       override fun parseImpl(): AST.Satz {
         val name = parseNomenMitVornomen<TokenTyp.VORNOMEN>("Vornomen", true)
         if (name.vornomen!!.typ is TokenTyp.VORNOMEN.ARTIKEL.UNBESTIMMT) {
           throw GermanSkriptFehler.SyntaxFehler.ParseFehler(name.vornomen!!.toUntyped(), "Vornomen",
-            "Bei Listenelement-Zuweisungen sind unbestimmte Artikel nicht erlaubt.")
+            "Bei Index-Zuweisungen sind unbestimmte Artikel nicht erlaubt.")
         }
         expect<TokenTyp.OFFENE_ECKIGE_KLAMMER>("'['")
         val index = parseAusdruck(mitVornomen = false, optionalesIstNachVergleich = false)
         expect<TokenTyp.GESCHLOSSENE_ECKIGE_KLAMMER>("']'")
         return if (peekType() !is TokenTyp.ZUWEISUNG) {
-          AST.Satz.Ausdruck.ListenElement(name, index)
+          AST.Satz.Ausdruck.IndexZugriff(name, index)
         } else {
           val zuweisung = expect<TokenTyp.ZUWEISUNG>("'ist'")
           val wert = parseAusdruck(mitVornomen = true, optionalesIstNachVergleich = false)
-          AST.Satz.ListenElementZuweisung(name, index, zuweisung, wert)
+          AST.Satz.IndexZuweisung(name, index, zuweisung, wert)
         }
       }
     }
@@ -1066,16 +1066,16 @@ private sealed class SubParser<T: AST>() {
           }
         }
 
-        class ListenElement(nomen: AST.WortArt.Nomen, inBedingungsTerm: Boolean)
-          : NomenAusdruck<AST.Satz.Ausdruck.ListenElement>(nomen, inBedingungsTerm) {
+        class IndexZugriff(nomen: AST.WortArt.Nomen, inBedingungsTerm: Boolean)
+          : NomenAusdruck<AST.Satz.Ausdruck.IndexZugriff>(nomen, inBedingungsTerm) {
           override val id: ASTKnotenID
             get() = ASTKnotenID.LISTEN_ELEMENT
 
-          override fun parseImpl(): AST.Satz.Ausdruck.ListenElement {
+          override fun parseImpl(): AST.Satz.Ausdruck.IndexZugriff {
             expect<TokenTyp.OFFENE_ECKIGE_KLAMMER>("'['")
             val index = parseAusdruck(mitVornomen = false, optionalesIstNachVergleich = false)
             expect<TokenTyp.GESCHLOSSENE_ECKIGE_KLAMMER>("']'")
-            return AST.Satz.Ausdruck.ListenElement(nomen, index)
+            return AST.Satz.Ausdruck.IndexZugriff(nomen, index)
           }
         }
 

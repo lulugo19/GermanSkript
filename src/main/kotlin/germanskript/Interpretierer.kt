@@ -166,7 +166,7 @@ class Interpretierer(startDatei: File): PipelineKomponente(startDatei) {
       @Suppress("IMPLICIT_CAST_TO_ANY")
       rückgabe = when (satz) {
         is AST.Satz.VariablenDeklaration -> durchlaufeVariablenDeklaration(satz)
-        is AST.Satz.ListenElementZuweisung -> durchlaufeListenElementZuweisung(satz)
+        is AST.Satz.IndexZuweisung -> durchlaufeIndexZuweisung(satz)
         is AST.Satz.Bereich -> durchlaufeBereich(satz, true)
         is AST.Satz.SuperBlock -> durchlaufeBereich(satz.bereich, true)
         is AST.Satz.Zurückgabe -> durchlaufeZurückgabe(satz)
@@ -218,7 +218,7 @@ class Interpretierer(startDatei: File): PipelineKomponente(startDatei) {
     return germanskript.intern.Nichts
   }
 
-  private fun durchlaufeListenElementZuweisung(zuweisung: AST.Satz.ListenElementZuweisung): Objekt {
+  private fun durchlaufeIndexZuweisung(zuweisung: AST.Satz.IndexZuweisung): Objekt {
     val indizierbar = evaluiereIndizierbarSingularOderPlural(zuweisung.singular, zuweisung.numerus)
     val index = evaluiereAusdruck(zuweisung.index)
     val wert = evaluiereAusdruck(zuweisung.wert)
@@ -404,7 +404,7 @@ class Interpretierer(startDatei: File): PipelineKomponente(startDatei) {
       is AST.Satz.Ausdruck.Boolean -> evaluiereBoolean(ausdruck)
       is AST.Satz.Ausdruck.Variable -> evaluiereVariable(ausdruck)
       is AST.Satz.Ausdruck.Liste -> evaluiereListe(ausdruck)
-      is AST.Satz.Ausdruck.ListenElement -> evaluiereListenElement(ausdruck)
+      is AST.Satz.Ausdruck.IndexZugriff -> evaluiereIndexZugriff(ausdruck)
       is AST.Satz.Ausdruck.FunktionsAufruf -> durchlaufeFunktionsAufruf(ausdruck)
       is AST.Satz.Ausdruck.BinärerAusdruck -> evaluiereBinärenAusdruck(ausdruck)
       is AST.Satz.Ausdruck.Minus -> evaluiereMinus(ausdruck)
@@ -710,19 +710,19 @@ class Interpretierer(startDatei: File): PipelineKomponente(startDatei) {
     }
   }
 
-  private fun evaluiereListenElement(listenElement: AST.Satz.Ausdruck.ListenElement): Objekt {
-    val indizierbar = evaluiereIndizierbarSingularOderPlural(listenElement.singular, listenElement.numerus)
-    val index = evaluiereAusdruck(listenElement.index)
+  private fun evaluiereIndexZugriff(indexZugriff: AST.Satz.Ausdruck.IndexZugriff): Objekt {
+    val indizierbar = evaluiereIndizierbarSingularOderPlural(indexZugriff.singular, indexZugriff.numerus)
+    val index = evaluiereAusdruck(indexZugriff.index)
 
     val aufrufUmgebung = Umgebung<Objekt>()
     aufrufUmgebung.pushBereich()
     aufrufUmgebung.schreibeVariable("Index", index)
 
-    val methodenName = listenElement.implementierteSchnittstelle!!.definition.methodenSignaturen[0].vollerName
+    val methodenName = indexZugriff.implementierteSchnittstelle!!.definition.methodenSignaturen[0].vollerName
 
     return durchlaufeAufruf(
         object : AST.IAufruf {
-          override val token = listenElement.singular.bezeichnerToken
+          override val token = indexZugriff.singular.bezeichnerToken
           override val vollerName = methodenName
         },
         indizierbar.klasse.definition.methoden[methodenName]!!.körper,

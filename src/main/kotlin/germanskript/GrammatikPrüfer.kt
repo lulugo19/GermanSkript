@@ -31,7 +31,7 @@ class GrammatikPrüfer(startDatei: File): PipelineKomponente(startDatei) {
         is AST.Definition.Typdefinition.Schnittstelle -> prüfeSchnittstelle(knoten)
         is AST.Definition.Typdefinition.Alias -> prüfeAlias(knoten)
         is AST.Satz.VariablenDeklaration -> prüfeVariablendeklaration(knoten)
-        is AST.Satz.ListenElementZuweisung -> prüfeListenElementZuweisung(knoten)
+        is AST.Satz.IndexZuweisung -> prüfeIndexZuweisung(knoten)
         is AST.Satz.Zurückgabe -> prüfeKontextbasiertenAusdruck(knoten.ausdruck, null, EnumSet.of(Kasus.AKKUSATIV))
         is AST.Satz.FürJedeSchleife -> prüfeFürJedeSchleife(knoten)
         is AST.Satz.Ausdruck.Fange -> prüfeParameter(knoten.param, EnumSet.of(Kasus.AKKUSATIV))
@@ -217,7 +217,7 @@ class GrammatikPrüfer(startDatei: File): PipelineKomponente(startDatei) {
     when (ausdruck) {
       is AST.Satz.Ausdruck.Variable -> prüfeVariable(ausdruck, kontextNomen, fälle)
       is AST.Satz.Ausdruck.Liste ->  prüfeListe(ausdruck, kontextNomen, fälle)
-      is AST.Satz.Ausdruck.ListenElement -> prüfeListenElement(ausdruck, kontextNomen, fälle)
+      is AST.Satz.Ausdruck.IndexZugriff -> prüfeIndexZugriff(ausdruck, kontextNomen, fälle)
       is AST.Satz.Ausdruck.ObjektInstanziierung -> prüfeObjektinstanziierung(ausdruck, kontextNomen, fälle)
       is AST.Satz.Ausdruck.EigenschaftsZugriff -> prüfeEigenschaftsZugriff(ausdruck, kontextNomen, fälle)
       is AST.Satz.Ausdruck.MethodenBereichEigenschaftsZugriff -> prüfeNomenKontextBasiert(ausdruck.eigenschaftsName, kontextNomen, fälle)
@@ -275,12 +275,12 @@ class GrammatikPrüfer(startDatei: File): PipelineKomponente(startDatei) {
     }
   }
 
-  private fun prüfeListenElement(listenElement: AST.Satz.Ausdruck.ListenElement, kontextNomen: AST.WortArt.Nomen?, fälle: EnumSet<Kasus>) {
-    prüfeNomen(listenElement.singular, fälle, EnumSet.of(Numerus.SINGULAR))
+  private fun prüfeIndexZugriff(indexZugriff: AST.Satz.Ausdruck.IndexZugriff, kontextNomen: AST.WortArt.Nomen?, fälle: EnumSet<Kasus>) {
+    prüfeNomen(indexZugriff.singular, fälle, EnumSet.of(Numerus.SINGULAR))
     if (kontextNomen != null) {
       prüfeNumerus(kontextNomen, Numerus.SINGULAR)
     }
-    prüfeKontextbasiertenAusdruck(listenElement.index, null, EnumSet.of(Kasus.NOMINATIV))
+    prüfeKontextbasiertenAusdruck(indexZugriff.index, null, EnumSet.of(Kasus.NOMINATIV))
   }
 
   private fun prüfeLambda(lambda: AST.Satz.Ausdruck.Lambda, kontextNomen: AST.WortArt.Nomen?, fälle: EnumSet<Kasus>) {
@@ -318,7 +318,7 @@ class GrammatikPrüfer(startDatei: File): PipelineKomponente(startDatei) {
     prüfeKontextbasiertenAusdruck(variablenDeklaration.wert, nomen, EnumSet.of(Kasus.NOMINATIV))
   }
 
-  private fun prüfeListenElementZuweisung(elementZuweisung: AST.Satz.ListenElementZuweisung) {
+  private fun prüfeIndexZuweisung(elementZuweisung: AST.Satz.IndexZuweisung) {
     val nomen = elementZuweisung.singular
     prüfeNomen(elementZuweisung.singular, EnumSet.of(Kasus.NOMINATIV), EnumSet.of(Numerus.SINGULAR))
     if (nomen.numerus != elementZuweisung.zuweisung.typ.numerus) {

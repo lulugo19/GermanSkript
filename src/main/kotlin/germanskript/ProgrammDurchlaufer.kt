@@ -38,7 +38,7 @@ abstract  class ProgrammDurchlaufer<T>(startDatei: File): PipelineKomponente(sta
       @Suppress("IMPLICIT_CAST_TO_ANY")
       rückgabe = when (satz) {
         is AST.Satz.VariablenDeklaration -> durchlaufeVariablenDeklaration(satz)
-        is AST.Satz.ListenElementZuweisung -> durchlaufeListenElementZuweisung(satz)
+        is AST.Satz.IndexZuweisung -> durchlaufeIndexZuweisung(satz)
         is AST.Satz.Ausdruck.FunktionsAufruf -> durchlaufeFunktionsAufruf(satz, false)
         is AST.Satz.Bereich -> durchlaufeBereich(satz, true)
         is AST.Satz.Ausdruck.MethodenBereich -> durchlaufeMethodenBereich(satz)
@@ -84,7 +84,7 @@ abstract  class ProgrammDurchlaufer<T>(startDatei: File): PipelineKomponente(sta
   protected abstract fun sollteStackAufrollen(): Boolean
   protected abstract fun durchlaufeFunktionsAufruf(funktionsAufruf: AST.Satz.Ausdruck.FunktionsAufruf, istAusdruck: Boolean): T
   protected abstract fun durchlaufeVariablenDeklaration(deklaration: AST.Satz.VariablenDeklaration)
-  protected abstract fun durchlaufeListenElementZuweisung(zuweisung: AST.Satz.ListenElementZuweisung)
+  protected abstract fun durchlaufeIndexZuweisung(zuweisung: AST.Satz.IndexZuweisung)
   protected abstract fun durchlaufeZurückgabe(zurückgabe: AST.Satz.Zurückgabe): T
   protected abstract fun durchlaufeBedingungsSatz(bedingungsSatz: AST.Satz.Ausdruck.Bedingung, istAusdruck: Boolean): T
   protected abstract fun durchlaufeAbbrechen()
@@ -108,7 +108,7 @@ abstract  class ProgrammDurchlaufer<T>(startDatei: File): PipelineKomponente(sta
       is AST.Satz.Ausdruck.Boolean -> evaluiereBoolean(ausdruck)
       is AST.Satz.Ausdruck.Variable -> evaluiereVariable(ausdruck)
       is AST.Satz.Ausdruck.Liste -> evaluiereListe(ausdruck)
-      is AST.Satz.Ausdruck.ListenElement -> evaluiereListenElement(ausdruck)
+      is AST.Satz.Ausdruck.IndexZugriff -> evaluiereIndexZugriff(ausdruck)
       is AST.Satz.Ausdruck.FunktionsAufruf -> durchlaufeFunktionsAufruf(ausdruck, true)!!
       is AST.Satz.Ausdruck.BinärerAusdruck -> evaluiereBinärenAusdruck(ausdruck)
       is AST.Satz.Ausdruck.Minus -> evaluiereMinus(ausdruck)
@@ -155,7 +155,7 @@ abstract  class ProgrammDurchlaufer<T>(startDatei: File): PipelineKomponente(sta
   protected abstract fun evaluiereZahl(ausdruck: AST.Satz.Ausdruck.Zahl): T
   protected abstract fun evaluiereBoolean(ausdruck: AST.Satz.Ausdruck.Boolean): T
   protected abstract fun evaluiereListe(ausdruck: AST.Satz.Ausdruck.Liste): T
-  protected abstract fun evaluiereListenElement(listenElement: AST.Satz.Ausdruck.ListenElement): T
+  protected abstract fun evaluiereIndexZugriff(indexZugriff: AST.Satz.Ausdruck.IndexZugriff): T
   protected abstract fun evaluiereBinärenAusdruck(ausdruck: AST.Satz.Ausdruck.BinärerAusdruck): T
   protected abstract fun evaluiereMinus(minus: AST.Satz.Ausdruck.Minus): T
   protected abstract fun evaluiereKonvertierung(konvertierung: AST.Satz.Ausdruck.Konvertierung): T

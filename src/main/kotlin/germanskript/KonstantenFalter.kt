@@ -100,7 +100,7 @@ class KonstantenFalter(startDatei: File): ProgrammDurchlaufer<Objekt?>(startDate
     }
   }
 
-  override fun durchlaufeListenElementZuweisung(zuweisung: AST.Satz.ListenElementZuweisung) {
+  override fun durchlaufeIndexZuweisung(zuweisung: AST.Satz.IndexZuweisung) {
     falteKonstante(zuweisung.wert)
   }
 
@@ -216,8 +216,8 @@ class KonstantenFalter(startDatei: File): ProgrammDurchlaufer<Objekt?>(startDate
     return null
   }
 
-  override fun evaluiereListenElement(listenElement: AST.Satz.Ausdruck.ListenElement): Objekt? {
-    listenElement.index = falteKonstante(listenElement.index)
+  override fun evaluiereIndexZugriff(indexZugriff: AST.Satz.Ausdruck.IndexZugriff): Objekt? {
+    indexZugriff.index = falteKonstante(indexZugriff.index)
     return null
   }
 

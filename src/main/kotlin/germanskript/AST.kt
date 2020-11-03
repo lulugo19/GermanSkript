@@ -476,7 +476,7 @@ sealed class AST {
       val istEigenschaft = name.vornomen != null && name.vornomen!!.typ is TokenTyp.VORNOMEN.DEMONSTRATIV_PRONOMEN
     }
 
-    data class ListenElementZuweisung(
+    data class IndexZuweisung(
         val singular: WortArt.Nomen,
         val index: Ausdruck,
         val zuweisung: TypedToken<TokenTyp.ZUWEISUNG>,
@@ -485,7 +485,6 @@ sealed class AST {
       var numerus: Numerus = Numerus.SINGULAR
       var implementierteSchnittstelle: Typ.Compound.Schnittstelle? = null
       override val children = sequenceOf(singular, wert)
-      val istEigenschaft = singular.vornomen!!.typ is TokenTyp.VORNOMEN.DEMONSTRATIV_PRONOMEN
     }
 
     data class BedingungsTerm(
@@ -557,7 +556,7 @@ sealed class AST {
           is Boolean -> boolean.toUntyped()
           is Variable -> name.bezeichner.toUntyped()
           is FunktionsAufruf -> verb.toUntyped()
-          is ListenElement -> singular.vornomen!!.toUntyped()
+          is IndexZugriff -> singular.vornomen!!.toUntyped()
           is BinärerAusdruck -> links.holeErstesToken()
           is Minus -> operator.toUntyped()
           is Konvertierung -> ausdruck.holeErstesToken()
@@ -670,7 +669,7 @@ sealed class AST {
         }
       }
 
-      data class ListenElement(
+      data class IndexZugriff(
           val singular: WortArt.Nomen,
           var index: Ausdruck
       ): Ausdruck() {
