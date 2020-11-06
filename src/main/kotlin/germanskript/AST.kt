@@ -491,7 +491,7 @@ sealed class AST {
         val token: Token,
         var bedingung: Ausdruck,
         val bereich: Bereich
-    ): Satz() {
+    ): AST() {
       override val children = sequence {
           yield(bedingung)
           yield(bereich)
@@ -606,6 +606,10 @@ sealed class AST {
         override var vollerName: String? = null
         var funktionsDefinition: Definition.Funktion? = null
         var aufrufTyp: FunktionsAufrufTyp = FunktionsAufrufTyp.FUNKTIONS_AUFRUF
+
+        // brauchen wir, um generische Parameter umzubenennen
+        var objektTyp: Typ.Compound.Klasse? = null
+
         val vollständigerName: String get() = modulPfad.joinToString("::") { it.wert } +
             (if (modulPfad.isEmpty()) "" else "::") + vollerName
 
@@ -623,7 +627,7 @@ sealed class AST {
         }
 
         val argumente get() = sequence {
-          if (objekt != null && !hatRückgabeObjekt) {
+          if (objekt != null && !hatRückgabeObjekt && aufrufTyp != FunktionsAufrufTyp.METHODEN_REFLEXIV_AUFRUF) {
             yield(objekt!!)
           }
           for (präposition in präpositionsArgumente) {
@@ -761,7 +765,7 @@ sealed class AST {
       data class Sonst(
           val token: TypedToken<TokenTyp.SONST>,
           val bereich: Bereich
-      ): Satz() {
+      ): AST() {
         override val children = sequenceOf(bereich)
       }
 
@@ -828,7 +832,7 @@ sealed class AST {
           val fange: TypedToken<TokenTyp.FANGE>,
           val param: Definition.Parameter,
           val bereich: Bereich
-      ): Satz() {
+      ): AST() {
         override val children = sequenceOf(param, bereich)
       }
 

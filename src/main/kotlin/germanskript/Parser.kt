@@ -836,6 +836,16 @@ private sealed class SubParser<T: AST>() {
     }
   }
 
+  class BedingungsTerm(private val token: Token): SubParser<AST.Satz.BedingungsTerm>() {
+    override val id = ASTKnotenID.BEDINGUNGS_TERM
+
+    override fun parseImpl(): AST.Satz.BedingungsTerm {
+      val bedingung = parseAusdruck(mitVornomen = true, optionalesIstNachVergleich = true, inBedingungsTerm = true)
+      val sätze = parseSätze()
+      return AST.Satz.BedingungsTerm(token, bedingung, sätze)
+    }
+  }
+
   sealed class Satz<T: AST.Satz>(): SubParser<T>() {
     override fun bewacheKnoten() {
       if (parentNodeId == ASTKnotenID.MODUL) {
@@ -951,16 +961,6 @@ private sealed class SubParser<T: AST>() {
           expect<TokenTyp.ZURÜCK>("'zurück'")
           AST.Satz.Zurückgabe(gebe.toUntyped(), ausdruck)
         }
-      }
-    }
-
-    class BedingungsTerm(private val token: Token): Satz<AST.Satz.BedingungsTerm>() {
-      override val id = ASTKnotenID.BEDINGUNGS_TERM
-
-      override fun parseImpl(): AST.Satz.BedingungsTerm {
-        val bedingung = parseAusdruck(mitVornomen = true, optionalesIstNachVergleich = true, inBedingungsTerm = true)
-        val sätze = parseSätze()
-        return AST.Satz.BedingungsTerm(token, bedingung, sätze)
       }
     }
 

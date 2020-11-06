@@ -309,7 +309,6 @@ class TypPrüfer(startDatei: File): PipelineKomponente(startDatei) {
         is AST.Satz.Ausdruck.VersucheFange -> durchlaufeVersucheFange(satz, false)
         is AST.Satz.Intern -> durchlaufeIntern(satz)
         is AST.Satz.Ausdruck -> evaluiereAusdruck(satz)
-        else -> throw java.lang.Exception("Dieser Fall sollte nie eintreten!")
       }
     }
     if (neuerBereich) {
@@ -665,9 +664,8 @@ class TypPrüfer(startDatei: File): PipelineKomponente(startDatei) {
 
     val parameter = funktionsSignatur.parameter.toList()
     val argumente = funktionsAufruf.argumente.toList()
-    val j = if (funktionsAufruf.aufrufTyp == FunktionsAufrufTyp.METHODEN_REFLEXIV_AUFRUF) 1 else 0
-    val anzahlArgumente = argumente.size - j
-    if (anzahlArgumente != parameter.size) {
+
+    if (argumente.size != parameter.size) {
       throw GermanSkriptFehler.SyntaxFehler.AnzahlDerParameterFehler(funktionsSignatur.name.toUntyped())
     }
 
@@ -685,7 +683,7 @@ class TypPrüfer(startDatei: File): PipelineKomponente(startDatei) {
     // stimmen die Argument Typen mit den Parameter Typen überein?
     letzterFunktionsAufruf = funktionsAufruf
     for (i in parameter.indices) {
-      val argAusdruck = argumente[i+j].ausdruck
+      val argAusdruck = argumente[i].ausdruck
       if (genericsMüssenInferiertWerden) {
         val ausdruckTyp = evaluiereAusdruck(argAusdruck)
         val ausdruckToken = argAusdruck.holeErstesToken()
@@ -944,13 +942,13 @@ class TypPrüfer(startDatei: File): PipelineKomponente(startDatei) {
   private fun evaluiereListenSingular(singular: AST.WortArt.Nomen): Typ {
     val plural = singular.ganzesWort(Kasus.NOMINATIV, Numerus.PLURAL, true)
     val liste = when (singular.vornomen?.typ) {
-        TokenTyp.VORNOMEN.ARTIKEL.BESTIMMT, TokenTyp.VORNOMEN.JEDE, null -> evaluiereVariable(plural)?:
-          throw GermanSkriptFehler.Undefiniert.Variable(singular.bezeichner.toUntyped(), plural)
-        TokenTyp.VORNOMEN.POSSESSIV_PRONOMEN.MEIN ->
-          holeNormaleEigenschaftAusKlasse(singular, zuÜberprüfendeKlasse!!, Numerus.PLURAL).typKnoten.typ!!
-        TokenTyp.VORNOMEN.POSSESSIV_PRONOMEN.DEIN -> holeNormaleEigenschaftAusKlasse(
-            singular, umgebung.holeMethodenBlockObjekt()!! as Typ.Compound.Klasse, Numerus.PLURAL).typKnoten.typ!!
-        else -> throw Exception("Dieser Fall sollte nie eintreten.")
+      TokenTyp.VORNOMEN.ARTIKEL.BESTIMMT, TokenTyp.VORNOMEN.JEDE, null -> evaluiereVariable(plural)?:
+      throw GermanSkriptFehler.Undefiniert.Variable(singular.bezeichner.toUntyped(), plural)
+      TokenTyp.VORNOMEN.POSSESSIV_PRONOMEN.MEIN ->
+        holeNormaleEigenschaftAusKlasse(singular, zuÜberprüfendeKlasse!!, Numerus.PLURAL).typKnoten.typ!!
+      TokenTyp.VORNOMEN.POSSESSIV_PRONOMEN.DEIN -> holeNormaleEigenschaftAusKlasse(
+          singular, umgebung.holeMethodenBlockObjekt()!! as Typ.Compound.Klasse, Numerus.PLURAL).typKnoten.typ!!
+      else -> throw Exception("Dieser Fall sollte nie eintreten.")
     }
     return (liste as Typ.Compound.Klasse).typArgumente[0].typ!!
   }
@@ -999,13 +997,13 @@ class TypPrüfer(startDatei: File): PipelineKomponente(startDatei) {
           instanziierung.eigenschaftsZuweisungen.add(
               i-j, AST.Argument(null, eigenschaftsName, AST.Satz.Ausdruck.Variable(eigenschaftsName)))
         } ?:
-          if (zuweisung != null) {
-            throw GermanSkriptFehler.EigenschaftsFehler.UnerwarteterEigenschaftsName(
-                zuweisung.name.bezeichner.toUntyped(),
-                eigenschaft.name.hauptWort(Kasus.DATIV, eigenschaft.name.numerus))
-          } else {
-            throw GermanSkriptFehler.EigenschaftsFehler.EigenschaftVergessen(instanziierung.klasse.name.bezeichnerToken, eigenschaft.name.hauptWort)
-          }
+        if (zuweisung != null) {
+          throw GermanSkriptFehler.EigenschaftsFehler.UnerwarteterEigenschaftsName(
+              zuweisung.name.bezeichner.toUntyped(),
+              eigenschaft.name.hauptWort(Kasus.DATIV, eigenschaft.name.numerus))
+        } else {
+          throw GermanSkriptFehler.EigenschaftsFehler.EigenschaftVergessen(instanziierung.klasse.name.bezeichnerToken, eigenschaft.name.hauptWort)
+        }
       } else {
         null
       }
@@ -1078,7 +1076,7 @@ class TypPrüfer(startDatei: File): PipelineKomponente(startDatei) {
     if (klasse.definition.elternKlasse != null) {
       try {
         return holeNormaleEigenschaftAusKlasse(eigenschaftsName,
-          klasse.definition.elternKlasse.klasse.typ!! as Typ.Compound.Klasse, numerus)
+            klasse.definition.elternKlasse.klasse.typ!! as Typ.Compound.Klasse, numerus)
       }
       catch (fehler: GermanSkriptFehler.Undefiniert) {
         // mache nichts hier
