@@ -1472,7 +1472,7 @@ class GermanSkriptTest {
 
   @Test
   @DisplayName("Lambda mit expliziten Parameternamen")
-  fun LambdaMitExplizitenParameterNamen() {
+  fun lambdaMitExplizitenParameterNamen() {
     val quellCode = """
       die Zahlen sind einige Zahlen[2, 3, 5, 7, 11, 13]
       die sortiertenZahlen sind sortiere die Zahlen mit etwas Vergleichendem(X, Y): das Y - das X.

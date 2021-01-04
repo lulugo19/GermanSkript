@@ -7,7 +7,7 @@ sealed class Typ() {
   // Der Name enthält auch die Typargument usw. des Typs
   abstract val name: String
   // Der einfache Name enthält nur den Klassennamen
-  abstract val einfacherName: String
+  abstract val wort: AST.WortArt
   override fun toString(): String = name
 
   abstract fun inTypKnoten(): AST.TypKnoten
@@ -17,8 +17,8 @@ sealed class Typ() {
       val index: Int,
       val kontext: TypParamKontext
   ) : Typ() {
-    override val einfacherName = typParam.binder.nominativ
-    override val name = "Generic<$einfacherName>"
+    override val wort = typParam.binder
+    override val name = "Generic<${wort.nominativ}>"
 
     override fun inTypKnoten(): AST.TypKnoten {
       val typKnoten = AST.TypKnoten(emptyList(), typParam.binder, emptyList())
@@ -33,10 +33,10 @@ sealed class Typ() {
     }
   }
 
-  sealed class Compound(override val einfacherName: String): Typ() {
+  sealed class Compound(override val wort: AST.WortArt): Typ() {
     abstract val definition: AST.Definition.Typdefinition
     abstract var typArgumente: List<AST.TypKnoten>
-    override val name get() = einfacherName + if (typArgumente.isEmpty()) "" else "<${typArgumente.joinToString(", ") {it.vollständigerName}}>"
+    override val name get() = wort.nominativ + if (typArgumente.isEmpty()) "" else "<${typArgumente.joinToString(", ") {it.vollständigerName}}>"
 
     abstract fun copy(typArgumente: List<AST.TypKnoten>): Compound
 
@@ -59,7 +59,7 @@ sealed class Typ() {
     class Klasse(
         override val definition: AST.Definition.Typdefinition.Klasse,
         override var typArgumente: List<AST.TypKnoten>
-    ): Compound(definition.name.nominativ) {
+    ): Compound(definition.name) {
 
       override fun copy(typArgumente: List<AST.TypKnoten>): Compound {
         return Klasse(definition, typArgumente)
@@ -70,7 +70,7 @@ sealed class Typ() {
     class Schnittstelle(
         override val definition: AST.Definition.Typdefinition.Schnittstelle,
         override var typArgumente: List<AST.TypKnoten>
-    ): Compound(definition.namensToken.wert.capitalize()) {
+    ): Compound(definition.name) {
 
       override fun copy(typArgumente: List<AST.TypKnoten>): Compound {
         return Schnittstelle(definition, typArgumente)
@@ -360,6 +360,7 @@ class Typisierer(startDatei: File): PipelineKomponente(startDatei) {
           )
 
       // Füge den Namen der Signatur wo die Typargumente mit den Typparameternamen ersetzt wurden hinzu
+      // TODO: Untersuche diesen Sachverhalt nochmal gründlich
       klasse.methoden[signatur.vollerName!!] = methode
 
       val erwarteterTyp = ersetzeGeneric(signatur.rückgabeTyp.typ!!)
