@@ -225,17 +225,15 @@ class Interpretierer(startDatei: File): PipelineKomponente(startDatei) {
 
     val aufrufUmgebung = Umgebung<Objekt>()
     aufrufUmgebung.pushBereich()
-    aufrufUmgebung.schreibeVariable("Index", index)
-    aufrufUmgebung.schreibeVariable(zuweisung.implementierteSchnittstelle!!.typArgumente[1].typ!!.einfacherName, wert)
-
-    val methodenName = zuweisung.implementierteSchnittstelle!!.definition.methodenSignaturen[0].vollerName
+    aufrufUmgebung.schreibeVariable(zuweisung.parameterNamen!![0], index)
+    aufrufUmgebung.schreibeVariable(zuweisung.parameterNamen!![1], wert)
 
     return durchlaufeAufruf(
         object : AST.IAufruf {
           override val token = zuweisung.singular.bezeichnerToken
-          override val vollerName = methodenName
+          override val vollerName = zuweisung.methodenName!!
         },
-        indizierbar.klasse.definition.methoden[methodenName]!!.körper,
+        indizierbar.klasse.definition.methoden[zuweisung.methodenName!!]!!.körper,
         aufrufUmgebung, false,
         indizierbar
     )
@@ -554,67 +552,13 @@ class Interpretierer(startDatei: File): PipelineKomponente(startDatei) {
       }
     }
 
-    var methodenName: String
+    val methodenName = ausdruck.methodenName!!
 
     val aufrufUmgebung = Umgebung<Objekt>()
     aufrufUmgebung.pushBereich()
+    aufrufUmgebung.schreibeVariable(ausdruck.parameterNamen!![0], rechts)
 
-    if ((operator == Operator.GLEICH || operator == Operator.UNGLEICH)) {
-      methodenName = "gleicht dem Objekt"
-      aufrufUmgebung.schreibeVariable("Objekt", rechts)
-      val istGleich = durchlaufeAufruf(
-          object : AST.IAufruf {
-            override val token = ausdruck.operator.toUntyped()
-            override val vollerName = methodenName
-          },
-          links.klasse.definition.methoden[methodenName]!!.körper,
-          aufrufUmgebung, false,
-          links
-      ) as germanskript.intern.Boolean
-      return if (operator == Operator.GLEICH) {
-        istGleich
-      } else {
-        germanskript.intern.Boolean(!istGleich.boolean)
-      }
-    }
-    else if (operator.klasse == OperatorKlasse.ARITHMETISCH) {
-      methodenName = when(operator) {
-        Operator.PLUS -> "addiere"
-        Operator.MINUS -> "subtrahiere"
-        Operator.MAL -> "multipliziere"
-        Operator.GETEILT -> "dividiere"
-        Operator.MODULO -> "moduliere"
-        Operator.HOCH -> "potenziere"
-        else -> throw Exception("Dieser Fall sollte nie eintreten!")
-      } + " mich mit dem Operanden"
-
-      aufrufUmgebung.schreibeVariable(ausdruck.implementierteSchnittstelle!!.typArgumente[1].typ!!.einfacherName, rechts)
-    }
-    else {
-      // Vergleich
-      methodenName = "vergleiche mich mit dem Typ"
-      ausdruck.implementierteSchnittstelle
-      aufrufUmgebung.schreibeVariable(ausdruck.implementierteSchnittstelle!!.typArgumente[0].typ!!.einfacherName, rechts)
-      val vergleich = durchlaufeAufruf(
-          object : AST.IAufruf {
-            override val token = ausdruck.operator.toUntyped()
-            override val vollerName = methodenName
-          },
-          links.klasse.definition.methoden[methodenName]!!.körper,
-          aufrufUmgebung, false,
-          links
-      ) as germanskript.intern.Zahl
-
-      return germanskript.intern.Boolean(when (operator) {
-        Operator.GRÖßER -> vergleich.zahl > 0
-        Operator.KLEINER -> vergleich.zahl < 0
-        Operator.GRÖSSER_GLEICH -> vergleich.zahl >= 0
-        Operator.KLEINER_GLEICH -> vergleich.zahl <= 0
-        else -> throw Exception("Dieser Fall sollte nie auftreten.")
-      })
-    }
-
-    return durchlaufeAufruf(
+    val ergebnis = durchlaufeAufruf(
         object : AST.IAufruf {
           override val token = ausdruck.operator.toUntyped()
           override val vollerName = methodenName
@@ -623,6 +567,31 @@ class Interpretierer(startDatei: File): PipelineKomponente(startDatei) {
         aufrufUmgebung, false,
         links
     )
+
+    when {
+      operator == Operator.GLEICH || operator == Operator.UNGLEICH -> {
+        return if (operator == Operator.GLEICH) {
+          ergebnis as germanskript.intern.Boolean
+        } else {
+          germanskript.intern.Boolean(!(ergebnis as germanskript.intern.Boolean).boolean)
+        }
+      }
+      operator.klasse == OperatorKlasse.ARITHMETISCH -> {
+        return ergebnis
+      }
+      else -> {
+        // Vergleich
+        val vergleich = ergebnis as germanskript.intern.Zahl
+
+        return germanskript.intern.Boolean(when (operator) {
+          Operator.GRÖßER -> vergleich.zahl > 0
+          Operator.KLEINER -> vergleich.zahl < 0
+          Operator.GRÖSSER_GLEICH -> vergleich.zahl >= 0
+          Operator.KLEINER_GLEICH -> vergleich.zahl <= 0
+          else -> throw Exception("Dieser Fall sollte nie auftreten.")
+        })
+      }
+    }
   }
 
   companion object {
@@ -711,23 +680,23 @@ class Interpretierer(startDatei: File): PipelineKomponente(startDatei) {
   }
 
   private fun evaluiereIndexZugriff(indexZugriff: AST.Satz.Ausdruck.IndexZugriff): Objekt {
-    val indizierbar = evaluiereIndizierbarSingularOderPlural(indexZugriff.singular, indexZugriff.numerus)
+    val indiziert = evaluiereIndizierbarSingularOderPlural(indexZugriff.singular, indexZugriff.numerus)
     val index = evaluiereAusdruck(indexZugriff.index)
 
     val aufrufUmgebung = Umgebung<Objekt>()
     aufrufUmgebung.pushBereich()
     aufrufUmgebung.schreibeVariable("Index", index)
 
-    val methodenName = indexZugriff.implementierteSchnittstelle!!.definition.methodenSignaturen[0].vollerName
+    val methodenName = indexZugriff.methodenName!!
 
     return durchlaufeAufruf(
         object : AST.IAufruf {
           override val token = indexZugriff.singular.bezeichnerToken
           override val vollerName = methodenName
         },
-        indizierbar.klasse.definition.methoden[methodenName]!!.körper,
+        indiziert.klasse.definition.methoden[methodenName]!!.körper,
         aufrufUmgebung, false,
-        indizierbar
+        indiziert
     )
   }
 
