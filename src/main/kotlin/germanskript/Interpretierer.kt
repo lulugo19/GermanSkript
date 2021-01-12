@@ -308,10 +308,9 @@ class Interpretierer(startDatei: File): PipelineKomponente(startDatei) {
       }
     }
     funktionsUmgebung.pushBereich()
-    val j = if (funktionsAufruf.aufrufTyp == FunktionsAufrufTyp.METHODEN_REFLEXIV_AUFRUF) 1 else 0
     val argumente = funktionsAufruf.argumente.toList()
     for (i in parameterNamen.indices) {
-      funktionsUmgebung.schreibeVariable(parameterNamen[i], evaluiereAusdruck(argumente[i+j].ausdruck), false)
+      funktionsUmgebung.schreibeVariable(parameterNamen[i], evaluiereAusdruck(argumente[i].ausdruck), false)
     }
 
     return durchlaufeAufruf(funktionsAufruf, körper, funktionsUmgebung, false, objekt)

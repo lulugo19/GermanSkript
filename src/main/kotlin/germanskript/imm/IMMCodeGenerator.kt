@@ -100,9 +100,8 @@ class IMMCodeGenerator(startDatei: File): PipelineKomponente(startDatei) {
   private fun generiereIndexZuweisung(indexZuweisung: AST.Satz.IndexZuweisung): IMM_AST.Satz {
     val objekt = IMM_AST.Satz.Ausdruck.Variable(indexZuweisung.singular.ganzesWort(Kasus.NOMINATIV, indexZuweisung.numerus, true))
     val argumente = listOf(generiereAusdruck(indexZuweisung.index), generiereAusdruck(indexZuweisung.wert))
-    val methodenName = indexZuweisung.implementierteSchnittstelle!!.definition.methodenSignaturen[0].vollerName!!
     return IMM_AST.Satz.Ausdruck.MethodenAufruf(
-        methodenName,
+        indexZuweisung.methodenName!!,
         indexZuweisung.zuweisung.toUntyped(),
         argumente,
         objekt,
