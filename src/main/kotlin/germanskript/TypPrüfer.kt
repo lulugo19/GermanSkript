@@ -446,14 +446,6 @@ class TypPrüfer(startDatei: File): PipelineKomponente(startDatei) {
     return BuildIn.Klassen.nichts
   }
 
-  private fun weiseOperatorMethodenNameZu(
-      operatorMethode: AST.Satz.IOperatorMethode, methodenAnfang: String, kasus: Kasus, typName: AST.WortArt) {
-
-    val argVornomen = GrammatikPrüfer.holeVornomen(TokenTyp.VORNOMEN.ARTIKEL.BESTIMMT, kasus, typName.genus, typName.numerus)
-
-    operatorMethode.methodenName = "$methodenAnfang ${argVornomen} ${typName.hauptWort(Kasus.AKKUSATIV, typName.numerus)}"
-  }
-
   private fun durchlaufeIndexZuweisung(zuweisung: AST.Satz.IndexZuweisung): Typ {
     val indizierbar = findeIterierbares(zuweisung.singular).let { (typ, numerus) ->
       zuweisung.numerus = numerus
@@ -461,9 +453,6 @@ class TypPrüfer(startDatei: File): PipelineKomponente(startDatei) {
     }
     val indizierbarSchnittstelle = prüfeImplementiertSchnittstelle(indizierbar, BuildIn.Schnittstellen.indizierbar)
         ?: throw GermanSkriptFehler.TypFehler.IndizierbarErwartet(zuweisung.singular.bezeichnerToken, indizierbar)
-
-    zuweisung.methodenName = indizierbarSchnittstelle.definition.methodenSignaturen[0].vollerName
-    zuweisung.parameterNamen = arrayOf("Index", indizierbarSchnittstelle.typArgumente[1].name.nominativ)
 
     ausdruckMussTypSein(zuweisung.index, indizierbarSchnittstelle.typArgumente[0].typ!!)
     ausdruckMussTypSein(zuweisung.wert, indizierbarSchnittstelle.typArgumente[1].typ!!)
@@ -853,9 +842,6 @@ class TypPrüfer(startDatei: File): PipelineKomponente(startDatei) {
       }
     }
 
-    schleife.methodenName = "hole den Typ"
-    // weiseOperatorMethodenNameZu(schleife, "hole", Kasus.AKKUSATIV, elementTyp.wort)
-
     umgebung.pushBereich()
     umgebung.schreibeVariable(schleife.binder, elementTyp, false)
     durchlaufeBereich(schleife.bereich, true)
@@ -924,12 +910,6 @@ class TypPrüfer(startDatei: File): PipelineKomponente(startDatei) {
 
     val schnittstelle = prüfeImplementiertSchnittstelle(indizierTyp, BuildIn.Schnittstellen.indiziert)
         ?: throw GermanSkriptFehler.TypFehler.IndizierbarErwartet(indexZugriff.singular.bezeichnerToken, indizierTyp)
-
-    val typName = schnittstelle.typArgumente[1].name
-    indexZugriff.methodenName = schnittstelle.definition.methodenSignaturen[0].vollerName
-    //val vorNomen = GrammatikPrüfer.holeVornomen(TokenTyp.VORNOMEN.ARTIKEL.BESTIMMT, Kasus.AKKUSATIV, typName.genus, typName.numerus)
-    //indexZugriff.methodenName = "hole ${vorNomen} ${typName.ganzesWort(Kasus.AKKUSATIV, typName.numerus, true)} mit dem Index"
-    indexZugriff.parameterNamen = arrayOf("Index")
 
     ausdruckMussTypSein(indexZugriff.index, schnittstelle.typArgumente[0].typ!!)
     return ersetzeGenerics(schnittstelle.typArgumente[1], null, indizierTyp.typArgumente).typ!!
@@ -1138,8 +1118,6 @@ class TypPrüfer(startDatei: File): PipelineKomponente(startDatei) {
     }
 
     if (operator == Operator.GLEICH || operator == Operator.UNGLEICH) {
-      ausdruck.methodenName = "gleicht dem Objekt"
-      ausdruck.parameterNamen = arrayOf("Objekt")
       evaluiereAusdruck(ausdruck.links)
       evaluiereAusdruck(ausdruck.rechts)
       return BuildIn.Klassen.boolean
@@ -1170,21 +1148,8 @@ class TypPrüfer(startDatei: File): PipelineKomponente(startDatei) {
     ausdruckMussTypSein(ausdruck.rechts, schnittstelle.typArgumente[0].typ!!)
 
     return if (operator.klasse == OperatorKlasse.ARITHMETISCH) {
-      val methodenAnfang = when(operator) {
-        Operator.PLUS -> "addiere mich mit"
-        Operator.MINUS -> "subtrahiere mich mit"
-        Operator.MAL -> "multipliziere mich mit"
-        Operator.GETEILT -> "dividiere mich mit"
-        Operator.MODULO -> "moduliere mich mit"
-        Operator.HOCH -> "potenziere mich mit"
-        else -> throw Exception("Dieser Fall sollte nie auftreten!")
-      }
-      weiseOperatorMethodenNameZu(ausdruck, methodenAnfang, Kasus.DATIV, schnittstelle.typArgumente[0].name)
-      ausdruck.parameterNamen = arrayOf(schnittstelle.typArgumente[0].name.nominativ)
       schnittstelle.typArgumente[1].typ!!
     }  else {
-      weiseOperatorMethodenNameZu(ausdruck, "vergleiche mich mit", Kasus.DATIV, schnittstelle.typArgumente[0].name)
-      ausdruck.parameterNamen = arrayOf(schnittstelle.typArgumente[0].name.nominativ)
       BuildIn.Klassen.boolean
     }
   }
@@ -1194,9 +1159,6 @@ class TypPrüfer(startDatei: File): PipelineKomponente(startDatei) {
     val schnittstelle = prüfeImplementiertSchnittstelle(ausdruck, BuildIn.Schnittstellen.negierbar)
         ?: throw GermanSkriptFehler.TypFehler.SchnittstelleFürOperatorErwartet(
             minus.ausdruck.holeErstesToken(), ausdruck, BuildIn.Schnittstellen.negierbar, Operator.NEGATION)
-
-    minus.methodenName = "negiere mich"
-    minus.parameterNamen = emptyArray()
 
     return schnittstelle.typArgumente[0].typ!!
   }

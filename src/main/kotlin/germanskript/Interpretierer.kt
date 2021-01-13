@@ -223,17 +223,19 @@ class Interpretierer(startDatei: File): PipelineKomponente(startDatei) {
     val index = evaluiereAusdruck(zuweisung.index)
     val wert = evaluiereAusdruck(zuweisung.wert)
 
+    val methode = indizierbar.klasse.definition.methoden.getValue("setze den Index auf den Typ")
+    val parameter = methode.signatur.parameter.toList()
     val aufrufUmgebung = Umgebung<Objekt>()
     aufrufUmgebung.pushBereich()
-    aufrufUmgebung.schreibeVariable(zuweisung.parameterNamen!![0], index)
-    aufrufUmgebung.schreibeVariable(zuweisung.parameterNamen!![1], wert)
+    aufrufUmgebung.schreibeVariable(parameter[0].name.nominativ, index)
+    aufrufUmgebung.schreibeVariable(parameter[1].name.nominativ, wert)
 
     return durchlaufeAufruf(
         object : AST.IAufruf {
           override val token = zuweisung.singular.bezeichnerToken
-          override val vollerName = zuweisung.methodenName!!
+          override val vollerName = methode.signatur.vollerName
         },
-        indizierbar.klasse.definition.methoden[zuweisung.methodenName!!]!!.körper,
+        methode.körper,
         aufrufUmgebung, false,
         indizierbar
     )
@@ -541,48 +543,41 @@ class Interpretierer(startDatei: File): PipelineKomponente(startDatei) {
 
     val rechts = evaluiereAusdruck(ausdruck.rechts)
 
-    if (operator.klasse == OperatorKlasse.LOGISCH) {
-      return when (operator) {
+    return if (operator.klasse == OperatorKlasse.LOGISCH) {
+      when (operator) {
         Operator.ODER -> germanskript.intern.Boolean(
             (links as germanskript.intern.Boolean).boolean || (rechts as germanskript.intern.Boolean).boolean)
         Operator.UND -> germanskript.intern.Boolean(
-          (links as germanskript.intern.Boolean).boolean && (rechts as germanskript.intern.Boolean).boolean)
+            (links as germanskript.intern.Boolean).boolean && (rechts as germanskript.intern.Boolean).boolean)
         else -> throw Exception("Dieser Fall sollte nie eintreten!")
       }
-    }
-
-    val methodenName = ausdruck.methodenName!!
-
-    val aufrufUmgebung = Umgebung<Objekt>()
-    aufrufUmgebung.pushBereich()
-    aufrufUmgebung.schreibeVariable(ausdruck.parameterNamen!![0], rechts)
-
-    val ergebnis = durchlaufeAufruf(
-        object : AST.IAufruf {
-          override val token = ausdruck.operator.toUntyped()
-          override val vollerName = methodenName
-        },
-        links.klasse.definition.methoden[methodenName]!!.körper,
-        aufrufUmgebung, false,
-        links
-    )
-
-    when {
-      operator == Operator.GLEICH || operator == Operator.UNGLEICH -> {
-        return if (operator == Operator.GLEICH) {
+    } else {
+      val methode = links.klasse.definition.methoden.getValue(operator.methodenName!!)
+      val parameterName = methode.signatur.parameter.first().name.nominativ
+      val aufrufUmgebung = Umgebung<Objekt>()
+      aufrufUmgebung.pushBereich()
+      aufrufUmgebung.schreibeVariable(parameterName, rechts)
+      val ergebnis = durchlaufeAufruf(
+          object : AST.IAufruf {
+            override val token = ausdruck.operator.toUntyped()
+            override val vollerName = methode.signatur.vollerName
+          },
+          methode.körper,
+          aufrufUmgebung, false,
+          links
+      )
+      return if (operator.klasse == OperatorKlasse.ARITHMETISCH) {
+        ergebnis
+      } else if (operator == Operator.GLEICH || operator == Operator.UNGLEICH) {
+        if (operator == Operator.GLEICH) {
           ergebnis as germanskript.intern.Boolean
         } else {
           germanskript.intern.Boolean(!(ergebnis as germanskript.intern.Boolean).boolean)
         }
-      }
-      operator.klasse == OperatorKlasse.ARITHMETISCH -> {
-        return ergebnis
-      }
-      else -> {
-        // Vergleich
+      } else {
         val vergleich = ergebnis as germanskript.intern.Zahl
 
-        return germanskript.intern.Boolean(when (operator) {
+        germanskript.intern.Boolean(when (operator) {
           Operator.GRÖßER -> vergleich.zahl > 0
           Operator.KLEINER -> vergleich.zahl < 0
           Operator.GRÖSSER_GLEICH -> vergleich.zahl >= 0
@@ -682,18 +677,17 @@ class Interpretierer(startDatei: File): PipelineKomponente(startDatei) {
     val indiziert = evaluiereIndizierbarSingularOderPlural(indexZugriff.singular, indexZugriff.numerus)
     val index = evaluiereAusdruck(indexZugriff.index)
 
+    val methode = indiziert.klasse.definition.methoden.getValue("hole den Typ mit dem Index")
     val aufrufUmgebung = Umgebung<Objekt>()
     aufrufUmgebung.pushBereich()
-    aufrufUmgebung.schreibeVariable("Index", index)
-
-    val methodenName = indexZugriff.methodenName!!
+    aufrufUmgebung.schreibeVariable(methode.signatur.parameter.first().name.nominativ, index)
 
     return durchlaufeAufruf(
         object : AST.IAufruf {
           override val token = indexZugriff.singular.bezeichnerToken
-          override val vollerName = methodenName
+          override val vollerName = methode.signatur.vollerName
         },
-        indiziert.klasse.definition.methoden[methodenName]!!.körper,
+        methode.körper,
         aufrufUmgebung, false,
         indiziert
     )

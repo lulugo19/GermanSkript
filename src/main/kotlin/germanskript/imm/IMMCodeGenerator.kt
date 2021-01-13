@@ -101,7 +101,7 @@ class IMMCodeGenerator(startDatei: File): PipelineKomponente(startDatei) {
     val objekt = IMM_AST.Satz.Ausdruck.Variable(indexZuweisung.singular.ganzesWort(Kasus.NOMINATIV, indexZuweisung.numerus, true))
     val argumente = listOf(generiereAusdruck(indexZuweisung.index), generiereAusdruck(indexZuweisung.wert))
     return IMM_AST.Satz.Ausdruck.MethodenAufruf(
-        indexZuweisung.methodenName!!,
+        "setze den Index auf den Typ",
         indexZuweisung.zuweisung.toUntyped(),
         argumente,
         objekt,
@@ -296,7 +296,7 @@ class IMMCodeGenerator(startDatei: File): PipelineKomponente(startDatei) {
       Operator.HOCH -> "hoch"
       Operator.NEGATION -> throw Exception("Dieser Fall sollte nie eintreten!")
     }
-    return TODO()
+    TODO()
   }
 
   // endregion

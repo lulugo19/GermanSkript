@@ -19,22 +19,22 @@ enum class OperatorKlasse(val kasus: Kasus) {
     LOGISCH(Kasus.NOMINATIV),
 }
 
-enum class Operator(val bindungsKraft: Int, val assoziativität: Assoziativität, val klasse: OperatorKlasse) {
+enum class Operator(val bindungsKraft: Int, val assoziativität: Assoziativität, val klasse: OperatorKlasse, val methodenName: String? = null) {
     ODER(1, Assoziativität.LINKS, OperatorKlasse.LOGISCH),
     UND(2, Assoziativität.LINKS, OperatorKlasse.LOGISCH),
-    GLEICH(3, Assoziativität.LINKS, OperatorKlasse.VERGLEICH_GLEICH),
-    UNGLEICH(3, Assoziativität.LINKS, OperatorKlasse.VERGLEICH_GLEICH),
-    GRÖßER(3, Assoziativität.LINKS, OperatorKlasse.VERGLEICH_ALS),
-    KLEINER(3, Assoziativität.LINKS, OperatorKlasse.VERGLEICH_ALS),
-    GRÖSSER_GLEICH(3, Assoziativität.LINKS, OperatorKlasse.VERGLEICH_GLEICH),
-    KLEINER_GLEICH(3, Assoziativität.LINKS, OperatorKlasse.VERGLEICH_GLEICH),
-    PLUS(4, Assoziativität.LINKS, OperatorKlasse.ARITHMETISCH),
-    MINUS(4, Assoziativität.LINKS, OperatorKlasse.ARITHMETISCH),
-    MAL(5, Assoziativität.LINKS, OperatorKlasse.ARITHMETISCH),
-    GETEILT(5, Assoziativität.LINKS, OperatorKlasse.ARITHMETISCH),
-    MODULO(5, Assoziativität.LINKS, OperatorKlasse.ARITHMETISCH),
-    HOCH(6, Assoziativität.RECHTS, OperatorKlasse.ARITHMETISCH),
-    NEGATION(3, Assoziativität.RECHTS, OperatorKlasse.ARITHMETISCH),
+    GLEICH(3, Assoziativität.LINKS, OperatorKlasse.VERGLEICH_GLEICH, "gleicht dem Objekt"),
+    UNGLEICH(3, Assoziativität.LINKS, OperatorKlasse.VERGLEICH_GLEICH, "gleicht dem Objekt"),
+    GRÖßER(3, Assoziativität.LINKS, OperatorKlasse.VERGLEICH_ALS, "vergleiche mich mit dem Typ"),
+    KLEINER(3, Assoziativität.LINKS, OperatorKlasse.VERGLEICH_ALS, "vergleiche mich mit dem Typ"),
+    GRÖSSER_GLEICH(3, Assoziativität.LINKS, OperatorKlasse.VERGLEICH_GLEICH, "vergleiche mich mit dem Typ"),
+    KLEINER_GLEICH(3, Assoziativität.LINKS, OperatorKlasse.VERGLEICH_GLEICH, "vergleiche mich mit dem Typ"),
+    PLUS(4, Assoziativität.LINKS, OperatorKlasse.ARITHMETISCH, "addiere mich mit dem Operanden"),
+    MINUS(4, Assoziativität.LINKS, OperatorKlasse.ARITHMETISCH, "subtrahiere mich mit dem Operanden"),
+    MAL(5, Assoziativität.LINKS, OperatorKlasse.ARITHMETISCH, "multipliziere mich mit dem Operanden"),
+    GETEILT(5, Assoziativität.LINKS, OperatorKlasse.ARITHMETISCH, "dividiere mich mit dem Operanden"),
+    MODULO(5, Assoziativität.LINKS, OperatorKlasse.ARITHMETISCH, "moduliere mich mit dem Operanden"),
+    HOCH(6, Assoziativität.RECHTS, OperatorKlasse.ARITHMETISCH, "potenziere mich mit dem Operanden"),
+    NEGATION(3, Assoziativität.RECHTS, OperatorKlasse.ARITHMETISCH, "negiere mich"),
 }
 
 // Genus (Geschlecht)

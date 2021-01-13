@@ -454,11 +454,6 @@ sealed class AST {
 
   sealed class Satz : AST() {
 
-    interface IOperatorMethode {
-      var methodenName: String?
-      var parameterNamen: Array<String>?
-    }
-
     data class Intern(val intern: TypedToken<TokenTyp.INTERN>) :Satz(), IAufruf {
       override val token = intern.toUntyped()
       override val vollerName = "intern"
@@ -486,12 +481,10 @@ sealed class AST {
         val index: Ausdruck,
         val zuweisung: TypedToken<TokenTyp.ZUWEISUNG>,
         var wert: Ausdruck
-    ): Satz(), IOperatorMethode {
+    ): Satz() {
       var numerus: Numerus = Numerus.SINGULAR
 
       override val children = sequenceOf(singular, wert)
-      override var methodenName: String? = null
-      override var parameterNamen: Array<String>? = null
     }
 
     data class BedingungsTerm(
@@ -528,7 +521,7 @@ sealed class AST {
         val iterierbares: Ausdruck?,
         val reichweite: Reichweite?,
         val bereich: Bereich
-    ): Satz(), IOperatorMethode {
+    ): Satz() {
       override val children = sequence {
           yield(singular)
           yield(binder)
@@ -540,9 +533,6 @@ sealed class AST {
           }
           yield(bereich)
         }
-
-      override var methodenName: String? = null
-      override var parameterNamen: Array<String>? = null
     }
 
     data class Reichweite(val anfang: Ausdruck, val ende: Ausdruck) : AST() {
@@ -686,11 +676,9 @@ sealed class AST {
       data class IndexZugriff(
           val singular: WortArt.Nomen,
           var index: Ausdruck
-      ): Ausdruck(), IOperatorMethode {
+      ): Ausdruck() {
         // gibt an, ob das Indizierbare über die Einzahl oder Mehrzahl gefunden wurde
         var numerus = Numerus.SINGULAR
-        override var methodenName: String? = null
-        override var parameterNamen: Array<String>? = null
         override val children = sequenceOf(singular, index)
       }
 
@@ -699,17 +687,13 @@ sealed class AST {
           val links: Ausdruck,
           val rechts: Ausdruck,
           val istAnfang: kotlin.Boolean,
-          val inStringInterpolation: kotlin.Boolean) : Ausdruck(), IOperatorMethode {
+          val inStringInterpolation: kotlin.Boolean) : Ausdruck() {
 
-        override var methodenName: String? = null
-        override var parameterNamen: Array<String>? = null
         override val children = sequenceOf(links, rechts)
       }
 
-      data class Minus(val operator: TypedToken<TokenTyp.OPERATOR>, val ausdruck: Ausdruck) : Ausdruck(), IOperatorMethode {
+      data class Minus(val operator: TypedToken<TokenTyp.OPERATOR>, val ausdruck: Ausdruck) : Ausdruck() {
         override val children = sequenceOf(ausdruck)
-        override var methodenName: String? = null
-        override var parameterNamen: Array<String>? = null
       }
 
       data class Konvertierung(
