@@ -259,22 +259,6 @@ class Interpretierer(startDatei: File): PipelineKomponente(startDatei) {
     }
   }
 
-  /**
-   * Bei Lambdas werden die Parameternamen bei generischen Parametern mit dem Namen des eingesetzen Typen ersetzt.
-   */
-  private fun holeParameterNamenFürLambda(objekt: Objekt.Lambda): List<AST.WortArt.Nomen> {
-    val typArgumente = objekt.klasse.typArgumente
-    val signatur = objekt.klasse.definition.methoden.values.first().signatur
-    return signatur.parameter.toList().mapIndexed { index, param ->
-      if (index < objekt.ausdruck.bindings.size) objekt.ausdruck.bindings[index]
-      else when (val typ = param.typKnoten.typ!!) {
-        is Typ.Generic ->
-          if (param.typIstName) param.name.tauscheHauptWortAus(typArgumente[typ.index].name.deklination!!) else param.name
-        else -> param.name
-      }
-    }
-  }
-
   private fun durchlaufeFunktionsAufruf(funktionsAufruf: AST.Satz.Ausdruck.FunktionsAufruf): Objekt {
     var funktionsUmgebung = Umgebung<Objekt>()
     var objekt: Objekt? = null
@@ -291,7 +275,7 @@ class Interpretierer(startDatei: File): PipelineKomponente(startDatei) {
       }
       if (funktionsAufruf.funktionsDefinition != null) {
         val definition = funktionsAufruf.funktionsDefinition!!
-        Pair(definition.körper, definition.signatur.parameter.map{it.name}.toList())
+        Pair(definition.körper, definition.signatur.parameterNamen)
       } else {
         val methode = objekt.klasse.definition.methoden.getValue(funktionsAufruf.vollerName!!)
         // funktionsAufruf.vollerName = "für ${objekt.typ.definition.name.nominativ}: ${methode.signatur.vollerName}"
@@ -300,13 +284,7 @@ class Interpretierer(startDatei: File): PipelineKomponente(startDatei) {
         } else if (objekt is Objekt.Lambda) {
           funktionsUmgebung = objekt.umgebung
         }
-        val signatur = methode.signatur
-        val parameter = if (objekt is Objekt.Lambda) {
-          holeParameterNamenFürLambda(objekt)
-        } else {
-          signatur.parameter.map {it.name}.toList()
-        }
-        Pair(methode.körper, parameter)
+        Pair(methode.körper, methode.signatur.parameterNamen)
       }
     }
     funktionsUmgebung.pushBereich()
@@ -477,8 +455,10 @@ class Interpretierer(startDatei: File): PipelineKomponente(startDatei) {
       else -> Objekt.SkriptObjekt(klassenTyp, eigenschaften)
     }
 
-    fun führeKonstruktorAus(definition: AST.Definition.Typdefinition.Klasse, eigenschaftsZuweisungen: List<AST.Argument>) {
+    fun führeKonstruktorAus(instanziierung: AST.Satz.Ausdruck.ObjektInstanziierung) {
       // Führe zuerst den Konstruktor der Elternklasse aus
+      val definition = (instanziierung.klasse.typ!! as Typ.Compound.Klasse).definition
+      val eigenschaftsZuweisungen = instanziierung.eigenschaftsZuweisungen
       val evaluierteAusdrücke = eigenschaftsZuweisungen.map { evaluiereAusdruck(it.ausdruck) }
       if (definition.elternKlasse != null) {
         val konstruktorUmgebung = Umgebung<Objekt>()
@@ -487,20 +467,19 @@ class Interpretierer(startDatei: File): PipelineKomponente(startDatei) {
           konstruktorUmgebung.schreibeVariable(eigenschaftsZuweisungen[index].name, evaluierteAusdrücke[index], false)
         }
         aufrufStapel.push(definition.elternKlasse, konstruktorUmgebung)
-        führeKonstruktorAus(
-            (definition.elternKlasse.klasse.typ!! as Typ.Compound.Klasse).definition,
-            definition.elternKlasse.eigenschaftsZuweisungen
-        )
+        führeKonstruktorAus(definition.elternKlasse)
         aufrufStapel.pop()
       }
+
       for (index in eigenschaftsZuweisungen.indices) {
-        val eigenschaftsName = typPrüfer.holeParamName(definition.eigenschaften[index], klassenTyp.typArgumente)
-        eigenschaften[eigenschaftsName.nominativ] = evaluierteAusdrücke[index]
+        //val eigenschaftsName = typPrüfer.holeParamName(definition.eigenschaften[index], klassenTyp.typArgumente)
+        //eigenschaften[eigenschaftsName.nominativ] = evaluierteAusdrücke[index]
+        eigenschaften[instanziierung.eigenschaftsNamen[index].nominativ] = evaluierteAusdrücke[index]
       }
       durchlaufeAufruf(instanziierung, definition.konstruktor, Umgebung(), true, objekt)
     }
 
-    führeKonstruktorAus(klassenTyp.definition, instanziierung.eigenschaftsZuweisungen)
+    führeKonstruktorAus(instanziierung)
     return  objekt
   }
 

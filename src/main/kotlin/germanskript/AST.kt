@@ -291,6 +291,8 @@ sealed class AST {
         var vollerName: String? = null
     ): Definition() {
 
+      var parameterNamen: MutableList<WortArt.Nomen> = mutableListOf()
+
       override val children = sequence {
         yieldAll(typParameter)
         yield(rückgabeTyp)
@@ -711,6 +713,9 @@ sealed class AST {
           val klasse: TypKnoten,
           val eigenschaftsZuweisungen: MutableList<Argument>
       ): Ausdruck(), IAufruf {
+
+        val eigenschaftsNamen: MutableList<WortArt.Nomen> = mutableListOf()
+
         override val children = sequence {
           yield(klasse)
           yieldAll(eigenschaftsZuweisungen)

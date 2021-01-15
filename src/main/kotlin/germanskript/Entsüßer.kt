@@ -127,12 +127,17 @@ class Entsüßer(startDatei: File): PipelineKomponente(startDatei) {
     endNomen.numera = EnumSet.of(Numerus.SINGULAR)
     endNomen.deklination = Deklination(Genus.MASKULINUM, Array(4) {"Ende"}, Array(4) {"Ende"})
 
-    return AST.Satz.Ausdruck.ObjektInstanziierung(
+    val reichweite = AST.Satz.Ausdruck.ObjektInstanziierung(
         reichweitenKlasse,
         mutableListOf(
             AST.Argument(null, startNomen,reichweite.anfang),
             AST.Argument(null, endNomen, reichweite.ende)
         )
     )
+
+    reichweite.eigenschaftsNamen.add(startNomen)
+    reichweite.eigenschaftsNamen.add(endNomen)
+
+    return reichweite
   }
 }

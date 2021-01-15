@@ -208,6 +208,7 @@ class TypPrüfer(startDatei: File): PipelineKomponente(startDatei) {
     funktionsUmgebung.pushBereich()
     for (parameter in funktion.signatur.parameter) {
       funktionsUmgebung.schreibeVariable(parameter.name, parameter.typKnoten.typ!!, false)
+      funktion.signatur.parameterNamen.add(parameter.name)
     }
     val signatur = funktion.signatur
     funktionsTypParams = signatur.typParameter
@@ -975,15 +976,16 @@ class TypPrüfer(startDatei: File): PipelineKomponente(startDatei) {
     var j = 0
     for (i in definition.eigenschaften.indices) {
       val eigenschaft = definition.eigenschaften[i]
+      // Wenn es es sich um eine generische Eigenschaft handelt, verwende den Namen des Typarguments
+      val eigenschaftsName = holeParamName(eigenschaft, instanziierung.klasse.typArgumente)
+      instanziierung.eigenschaftsNamen.add(eigenschaftsName)
+
       if (eigenschaft.istPrivat) {
         j++
         continue
       }
 
       val zuweisung = instanziierung.eigenschaftsZuweisungen.getOrNull(i-j)
-
-      // Wenn es es sich um eine generische Eigenschaft handelt, verwende den Namen des Typarguments
-      val eigenschaftsName = holeParamName(eigenschaft, instanziierung.klasse.typArgumente)
 
       // Es wird überprüft, ob das Hauptwort gleich ist, Adjektive können weggelassen werden
       val eigenschaftsVariable = if (zuweisung == null ||
@@ -1211,7 +1213,9 @@ class TypPrüfer(startDatei: File): PipelineKomponente(startDatei) {
     if (schnittstelle.definition.methodenSignaturen.size != 1) {
       throw GermanSkriptFehler.LambdaFehler.UngültigeLambdaSchnittstelle(lambda.schnittstelle.name.bezeichnerToken, schnittstelle.definition)
     }
-    val signatur = schnittstelle.definition.methodenSignaturen[0]
+    val signatur = schnittstelle.definition.methodenSignaturen[0].copy()
+    signatur.parameterNamen.clear()
+
     val parameter = signatur.parameter.toList()
     if (lambda.bindings.size > signatur.parameter.count()) {
       throw GermanSkriptFehler.LambdaFehler.ZuVieleBinder(
@@ -1225,6 +1229,7 @@ class TypPrüfer(startDatei: File): PipelineKomponente(startDatei) {
       val paramName = lambda.bindings.getOrElse(paramIndex) {
         holeParamName(param, schnittstelle.typArgumente)
       }
+      signatur.parameterNamen.add(paramName)
       val paramTyp = holeParamTyp(param, schnittstelle.typArgumente)
       umgebung.schreibeVariable(paramName, paramTyp, false)
     }
