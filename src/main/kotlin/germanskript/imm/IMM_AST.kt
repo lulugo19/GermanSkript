@@ -1,14 +1,11 @@
 package germanskript.imm
 
-import germanskript.Operator
-import germanskript.Token
-import germanskript.TokenTyp
-import germanskript.TypedToken
+import germanskript.*
 
 sealed class IMM_AST {
   sealed class Definition {
     class Funktion(val parameter: List<String>) {
-      lateinit var bereich: Satz.Ausdruck.Bereich
+      var körper: Satz.Ausdruck.Bereich? = null
     }
     class Klasse(val name: String, val methoden: HashMap<String, Funktion>)
   }
@@ -20,9 +17,9 @@ sealed class IMM_AST {
 
     data class Zurückgabe(val ausdruck: Ausdruck): Satz()
 
-    data class VariablenDeklaration(val name: String, val wert: Ausdruck, val überschreibe: kotlin.Boolean): Satz()
+    data class VariablenDeklaration(val name: String, val wert: Ausdruck, val überschreibe: Boolean): Satz()
 
-    data class SetzeEigenschaft(val name: String, val ausdruck: Ausdruck): Satz()
+    data class SetzeEigenschaft(val objekt: Ausdruck, val name: String, val ausdruck: Ausdruck): Satz()
 
     data class BedingungsTerm(val bedingung: Ausdruck, val bereich: Ausdruck.Bereich): IMM_AST()
 
@@ -30,11 +27,18 @@ sealed class IMM_AST {
 
     sealed class Ausdruck: Satz() {
 
-      data class LogischesUnd(val links: Ausdruck, val rechts: Ausdruck)
-      data class LogischesOder(val links: Ausdruck, val rechts: Ausdruck)
-      data class LogischesNicht(val links: Ausdruck, val rechts: Ausdruck)
-      data class VergleichOhneGleich(val links: MethodenAufruf, val rechts: MethodenAufruf)
-      data class VergleichMitGleich(val links: MethodenAufruf, val rechts: MethodenAufruf)
+      data class LogischesUnd(val links: Ausdruck, val rechts: Ausdruck): Ausdruck()
+      data class LogischesOder(val links: Ausdruck, val rechts: Ausdruck): Ausdruck()
+      data class LogischesNicht(val ausdruck: Ausdruck): Ausdruck()
+
+      enum class VergleichsOperator {
+        KLEINER,
+        GRÖSSER,
+        KLEINER_GLEICH,
+        GRÖSSER_GLEICH
+      }
+
+      data class Vergleich(val vergleichsMethode: MethodenAufruf, val operator: VergleichsOperator): Ausdruck()
 
       data class Bereich(val sätze: List<Satz>): Ausdruck()
 
@@ -66,7 +70,7 @@ sealed class IMM_AST {
 
       data class Eigenschaft(val name: String, val objekt: Ausdruck): Ausdruck()
 
-      data class ObjektInstanziierung(val klasse: Definition.Klasse, val istClosure: Boolean): Ausdruck()
+      data class ObjektInstanziierung(val typ: Typ.Compound.Klasse, val klasse: Definition.Klasse, val istClosure: Boolean): Ausdruck()
 
       sealed class Konstante(): Ausdruck() {
         data class Zahl(val zahl: Double): Konstante()
@@ -74,6 +78,17 @@ sealed class IMM_AST {
         data class Boolean(val boolean: kotlin.Boolean): Konstante()
         object Nichts: Konstante()
       }
+
+      data class VersucheFange(
+          val versuchBereich: Bereich,
+          val fange: List<Fange>,
+          val schlussendlich: Bereich?
+      ): Ausdruck()
+
+      data class Fange (
+          val param: String,
+          val bereich: Bereich
+      ): IMM_AST()
     }
   }
 }

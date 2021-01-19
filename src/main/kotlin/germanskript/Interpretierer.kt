@@ -673,7 +673,7 @@ class Interpretierer(startDatei: File): PipelineKomponente(startDatei) {
   }
 
   private fun evaluiereLambda(lambda: AST.Satz.Ausdruck.Lambda): Objekt {
-    return Objekt.Lambda(lambda.klasse, umgebung, lambda)
+    return Objekt.Lambda(lambda.klasse, umgebung)
   }
 
   private fun evaluiereAnonymeKlasse(anonymeKlasse: AST.Satz.Ausdruck.AnonymeKlasse): Objekt {
