@@ -1,13 +1,15 @@
 package germanskript.intern
 
 import germanskript.*
+import germanskript.IMM_AST
+import germanskript.Interpretierer
 import java.text.ParseException
 import kotlin.Boolean
 
-data class Zeichenfolge(val zeichenfolge: String): Objekt(BuildIn.Klassen.zeichenfolge), Comparable<Zeichenfolge> {
+data class Zeichenfolge(val zeichenfolge: String): Objekt(BuildIn.IMMKlassen.zeichenfolge, BuildIn.Klassen.zeichenfolge), Comparable<Zeichenfolge> {
 
-  override fun rufeMethodeAuf(aufruf: AST.IAufruf, injection: InterpretInjection): Objekt {
-    return when (aufruf.vollerName!!) {
+  override fun rufeMethodeAuf(aufruf: IMM_AST.Satz.Ausdruck.IAufruf, injection: Interpretierer.InterpretInjection): Objekt {
+    return when (aufruf.name) {
       "addiere mich mit dem Operanden",
       "addiere mich mit der Zeichenfolge" -> addiereMichMitDemOperanden(injection)
       "als Zahl" -> konvertiereInZahl(aufruf, injection)
@@ -43,8 +45,8 @@ data class Zeichenfolge(val zeichenfolge: String): Objekt(BuildIn.Klassen.zeiche
     }
   }
 
-  private fun holeDenTypMitDemIndex(aufruf: AST.IAufruf, injection: InterpretInjection): Objekt {
-    val index = (injection.umgebung.leseVariable("Index")!!.wert as Zahl).zahl.toInt()
+  private fun holeDenTypMitDemIndex(aufruf: IMM_AST.Satz.Ausdruck.IAufruf, injection: Interpretierer.InterpretInjection): Objekt {
+    val index = (injection.umgebung.leseVariable("Index") as Zahl).zahl.toInt()
     return if (index >= zeichenfolge.length) {
       injection.werfeFehler(
           "Index außerhalb des Bereichs. Der Index ist $index, doch die Länge der Zeichenfolge ist ${zeichenfolge.length}.\n", "IndexFehler", aufruf.token)
@@ -53,12 +55,12 @@ data class Zeichenfolge(val zeichenfolge: String): Objekt(BuildIn.Klassen.zeiche
     }
   }
 
-  private fun addiereMichMitDemOperanden(injection: InterpretInjection): Objekt {
-    val zeichenfolge = injection.umgebung.leseVariable("Zeichenfolge")!!.wert as Zeichenfolge
+  private fun addiereMichMitDemOperanden(injection: Interpretierer.InterpretInjection): Objekt {
+    val zeichenfolge = injection.umgebung.leseVariable("Zeichenfolge") as Zeichenfolge
     return this + zeichenfolge
   }
 
-  private fun konvertiereInZahl(aufruf: AST.IAufruf, injection: InterpretInjection): Objekt {
+  private fun konvertiereInZahl(aufruf: IMM_AST.Satz.Ausdruck.IAufruf, injection: Interpretierer.InterpretInjection): Objekt {
     return try {
       Zahl(zeichenfolge)
     }
@@ -67,13 +69,13 @@ data class Zeichenfolge(val zeichenfolge: String): Objekt(BuildIn.Klassen.zeiche
     }
   }
 
-  private fun vergleicheMichMitDerZeichenfolge(injection: InterpretInjection): Zahl {
-    val zeichenfolge = injection.umgebung.leseVariable("Zeichenfolge")!!.wert as Zeichenfolge
+  private fun vergleicheMichMitDerZeichenfolge(injection: Interpretierer.InterpretInjection): Zahl {
+    val zeichenfolge = injection.umgebung.leseVariable("Zeichenfolge") as Zeichenfolge
     return Zahl(this.zeichenfolge.compareTo(zeichenfolge.zeichenfolge).toDouble())
   }
 
-  private fun codeAnDemIndex(aufruf: AST.IAufruf, injection: InterpretInjection): Objekt {
-    val index = (injection.umgebung.leseVariable("Index")!!.wert as Zahl).toInt()
+  private fun codeAnDemIndex(aufruf: IMM_AST.Satz.Ausdruck.IAufruf, injection: Interpretierer.InterpretInjection): Objekt {
+    val index = (injection.umgebung.leseVariable("Index") as Zahl).toInt()
     if (index < 0 || index >= zeichenfolge.length)
       throw GermanSkriptFehler.LaufzeitFehler(aufruf.token, injection.aufrufStapel.toString(),
           "Index außerhalb des Bereichs. Der Index ist $index, doch die Länge der Zeichenfolge ist ${zeichenfolge.length}.\n")
@@ -84,8 +86,8 @@ data class Zeichenfolge(val zeichenfolge: String): Objekt(BuildIn.Klassen.zeiche
 
   private fun buchstabierMichKlein() = Zeichenfolge(zeichenfolge.toLowerCase())
 
-  private fun trenneMichZwischenDemSeperator(injection: InterpretInjection): Objekt {
-    val separator = injection.umgebung.leseVariable("Separator")!!.wert as Zeichenfolge
+  private fun trenneMichZwischenDemSeperator(injection: Interpretierer.InterpretInjection): Objekt {
+    val separator = injection.umgebung.leseVariable("Separator") as Zeichenfolge
 
     return Liste(Typ.Compound.Klasse(BuildIn.Klassen.liste ,listOf(zeichenFolgenTypArgument)),
         zeichenfolge.split(separator.zeichenfolge).map { Zeichenfolge(it) }.toMutableList())

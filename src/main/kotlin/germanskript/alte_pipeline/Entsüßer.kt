@@ -1,5 +1,6 @@
-package germanskript
+package germanskript.alte_pipeline
 
+import germanskript.*
 import java.io.File
 import java.util.*
 
@@ -56,7 +57,7 @@ class Entsüßer(startDatei: File): PipelineKomponente(startDatei) {
 
     val unsichtbaresIteratorNomen = AST.WortArt.Nomen(
         null,
-        TypedToken.imaginäresToken(TokenTyp.BEZEICHNER_GROSS(arrayOf("_Iterator"),"", null), "_Iterator"))
+        TypedToken.imaginäresToken(TokenTyp.BEZEICHNER_GROSS(arrayOf("_Iterator"), "", null), "_Iterator"))
 
     unsichtbaresIteratorNomen.deklination = Deklination(Genus.MASKULINUM, Array(4) {"_Iterator"}, Array(4) {"_Iterator"})
     unsichtbaresIteratorNomen.numera = EnumSet.of(Numerus.SINGULAR)
@@ -130,7 +131,7 @@ class Entsüßer(startDatei: File): PipelineKomponente(startDatei) {
     val reichweite = AST.Satz.Ausdruck.ObjektInstanziierung(
         reichweitenKlasse,
         mutableListOf(
-            AST.Argument(null, startNomen,reichweite.anfang),
+            AST.Argument(null, startNomen, reichweite.anfang),
             AST.Argument(null, endNomen, reichweite.ende)
         )
     )

@@ -1,13 +1,10 @@
-package germanskript.imm.intern
+package germanskript.alte_pipeline.intern
 
 import germanskript.*
-import germanskript.imm.IMM_AST
-import germanskript.imm.Interpretierer
+import germanskript.alte_pipeline.InterpretInjection
 
-open class Objekt(val klasse: IMM_AST.Definition.Klasse, internal val typ: Typ.Compound.Klasse) {
-  override fun toString() = "${typ.name}@${this.hashCode()}"
-
-  protected val eigenschaften: MutableMap<String, Objekt> = mutableMapOf()
+open class Objekt(internal val klasse: Typ.Compound.Klasse) {
+  override fun toString() = "${klasse.name}@${this.hashCode()}"
 
   open fun holeEigenschaft(eigenschaftsName: String): Objekt {
     TODO("Not yet implemented")
@@ -29,35 +26,39 @@ open class Objekt(val klasse: IMM_AST.Definition.Klasse, internal val typ: Typ.C
   }
 
   open class SkriptObjekt(
-      klasse: IMM_AST.Definition.Klasse,
-      typ: Typ.Compound.Klasse
-  ) : Objekt(klasse, typ) {
+      typ: Typ.Compound.Klasse,
+      val eigenschaften: MutableMap<String, Objekt>
+  ) : Objekt(typ) {
     override fun holeEigenschaft(eigenschaftsName: String) = eigenschaften.getValue(eigenschaftsName)
     override fun setzeEigenschaft(eigenschaftsName: String, wert: Objekt) {
       eigenschaften[eigenschaftsName] = wert
     }
   }
 
-  class ClosureObjekt(
-      klasse: IMM_AST.Definition.Klasse,
+  class AnonymesSkriptObjekt(
       typ: Typ.Compound.Klasse,
-      val umgebung: Interpretierer.Umgebung,
-      val objektArt: IMM_AST.Satz.Ausdruck.ObjektArt
-  ): SkriptObjekt(klasse, typ)
+      eigenschaften: MutableMap<String, Objekt>,
+      val umgebung: Umgebung<Objekt>
+  ): SkriptObjekt(typ, eigenschaften)
+
+  class Lambda(
+      typ: Typ.Compound.Klasse,
+      val umgebung: Umgebung<Objekt>
+  ): SkriptObjekt(typ, mutableMapOf())
 
   open fun rufeMethodeAuf(
-      aufruf: IMM_AST.Satz.Ausdruck.IAufruf,
-      injection: Interpretierer.InterpretInjection): Objekt {
-    return when (aufruf.name) {
+      aufruf: AST.IAufruf,
+      injection: InterpretInjection): Objekt {
+    return when (aufruf.vollerName) {
       "gleicht dem Objekt" -> gleichtDemObjekt(injection)
       "als Zeichenfolge" -> alsZeichenfolge()
       "hashe mich" -> hash()
-      else -> throw Exception("Ungültiger Aufruf '${aufruf.name}' für das Objekt '$this'!")
+      else -> throw Exception("Ungültiger Aufruf '${aufruf.vollerName}' für das Objekt '$this'!")
     }
   }
 
-  private fun gleichtDemObjekt(injection: Interpretierer.InterpretInjection): Objekt {
-    val objekt = injection.umgebung.leseVariable("Objekt")
+  private fun gleichtDemObjekt(injection: InterpretInjection): Objekt {
+    val objekt = injection.umgebung.leseVariable("Objekt")!!.wert
     return Boolean(this == objekt)
   }
 

@@ -1,7 +1,5 @@
 package germanskript
 
-import germanskript.imm.IMM_AST
-
 object BuildIn {
   object Klassen {
     lateinit var objekt: Typ.Compound.Klasse

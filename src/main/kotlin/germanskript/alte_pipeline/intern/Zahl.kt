@@ -1,15 +1,14 @@
-package germanskript.imm.intern
+package germanskript.alte_pipeline.intern
 
 import germanskript.*
-import germanskript.imm.IMM_AST
-import germanskript.imm.Interpretierer
+import germanskript.alte_pipeline.InterpretInjection
 import java.math.MathContext
 import java.math.RoundingMode
 import java.text.DecimalFormat
 import kotlin.math.pow
 import kotlin.math.roundToInt
 
-class Zahl(val zahl: Double): Objekt(BuildIn.IMMKlassen.zahl, BuildIn.Klassen.zahl), Comparable<Zahl> {
+class Zahl(val zahl: Double): Objekt(BuildIn.Klassen.zahl), Comparable<Zahl> {
   object Static {
     val format = DecimalFormat()
     init {
@@ -59,20 +58,21 @@ class Zahl(val zahl: Double): Objekt(BuildIn.IMMKlassen.zahl, BuildIn.Klassen.za
 
   fun isZero() = this.zahl == 0.0
 
-  override fun rufeMethodeAuf(aufruf: IMM_AST.Satz.Ausdruck.IAufruf, injection: Interpretierer.InterpretInjection): Objekt {
-    return when(aufruf.name) {
+  override fun rufeMethodeAuf(aufruf: AST.IAufruf, injection: InterpretInjection): Objekt {
+    val operand = injection.umgebung.leseVariable("Zahl")?.wert as Zahl?
+    return when(aufruf.vollerName!!) {
       "addiere mich mit dem Operanden",
-      "addiere mich mit der Zahl" -> this + injection.umgebung.leseVariable("Zahl") as Zahl
+      "addiere mich mit der Zahl" -> this + operand!!
       "subtrahiere mich mit dem Operanden",
-      "subtrahiere mich mit der Zahl" -> this - injection.umgebung.leseVariable("Zahl") as Zahl
+      "subtrahiere mich mit der Zahl" -> this - operand!!
       "multipliziere mich mit dem Operanden",
-      "multipliziere mich mit der Zahl" -> this * injection.umgebung.leseVariable("Zahl") as Zahl
+      "multipliziere mich mit der Zahl" -> this * operand!!
       "dividiere mich mit dem Operanden",
-      "dividiere mich mit der Zahl" -> this / injection.umgebung.leseVariable("Zahl") as Zahl
+      "dividiere mich mit der Zahl" -> this / operand!!
       "potenziere mich mit dem Operanden",
-      "potenziere mich mit der Zahl" -> pow(injection.umgebung.leseVariable("Zahl") as Zahl)
+      "potenziere mich mit der Zahl" -> pow(operand!!)
       "moduliere mich mit dem Operanden",
-      "moduliere mich mit der Zahl" -> this % injection.umgebung.leseVariable("Zahl") as Zahl
+      "moduliere mich mit der Zahl" -> this % operand!!
       "negiere mich" -> -this
       else -> super.rufeMethodeAuf(aufruf, injection)
     }

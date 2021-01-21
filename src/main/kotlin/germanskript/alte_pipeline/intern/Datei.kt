@@ -1,24 +1,23 @@
-package germanskript.imm.intern
+package germanskript.alte_pipeline.intern
 
 import germanskript.*
-import germanskript.imm.IMM_AST
-import germanskript.imm.Interpretierer
+import germanskript.alte_pipeline.InterpretInjection
 import java.io.BufferedWriter
 import java.io.File
 
-class Datei(): Objekt(BuildIn.IMMKlassen.datei, BuildIn.Klassen.datei) {
+class Datei(typ: Typ.Compound.Klasse, val eigenschaften: MutableMap<String, Objekt>): Objekt(typ) {
 
   lateinit var file: File
 
   override fun rufeMethodeAuf(
-      aufruf: IMM_AST.Satz.Ausdruck.IAufruf,
-      injection: Interpretierer.InterpretInjection): Objekt {
+      aufruf: AST.IAufruf,
+      injection: InterpretInjection): Objekt {
 
-    return when (aufruf.name) {
+    return when (aufruf.vollerName!!) {
       "erstelle die Datei" -> konstruktor()
       "lese die Zeilen" -> leseZeilen()
       "hole den Schreiber" -> holeSchreiber()
-      else -> throw Exception("Die Methode '${aufruf.name}' ist nicht definiert!")
+      else -> throw Exception("Die Methode '${aufruf.vollerName!!}' ist nicht definiert!")
     }
   }
 
@@ -41,13 +40,13 @@ class Datei(): Objekt(BuildIn.IMMKlassen.datei, BuildIn.Klassen.datei) {
   }
 
   private fun holeSchreiber() : Schreiber {
-    return Schreiber(file.bufferedWriter())
+    return Schreiber(BuildIn.Klassen.schreiber, file.bufferedWriter())
   }
 }
 
-class Schreiber(private val writer: BufferedWriter): Objekt(BuildIn.IMMKlassen.schreiber, BuildIn.Klassen.schreiber) {
-  override fun rufeMethodeAuf(aufruf: IMM_AST.Satz.Ausdruck.IAufruf, injection: Interpretierer.InterpretInjection): Objekt {
-    return when(aufruf.name) {
+class Schreiber(typ: Typ.Compound.Klasse, private val writer: BufferedWriter): Objekt(typ) {
+  override fun rufeMethodeAuf(aufruf: AST.IAufruf, injection: InterpretInjection): Objekt {
+    return when(aufruf.vollerName!!) {
       "schreibe die Zeile" -> schreibeDieZeile(injection)
       "schreibe die Zeichenfolge" -> schreibeDieZeichenfolge(injection)
       "füge die Zeile hinzu" -> fügeDieZeileHinzu(injection)
@@ -65,27 +64,27 @@ class Schreiber(private val writer: BufferedWriter): Objekt(BuildIn.IMMKlassen.s
     TODO("Not yet implemented")
   }
 
-  private fun schreibeDieZeichenfolge(injection: Interpretierer.InterpretInjection): Nichts {
-    val zeile = injection.umgebung.leseVariable("Zeichenfolge") as Zeichenfolge
+  private fun schreibeDieZeichenfolge(injection: InterpretInjection): Nichts {
+    val zeile = injection.umgebung.leseVariable("Zeichenfolge")!!.wert as Zeichenfolge
     writer.write(zeile.zeichenfolge)
     return Nichts
   }
 
-  private fun schreibeDieZeile(injection: Interpretierer.InterpretInjection): Nichts {
-    val zeile = injection.umgebung.leseVariable("Zeile") as Zeichenfolge
+  private fun schreibeDieZeile(injection: InterpretInjection): Nichts {
+    val zeile = injection.umgebung.leseVariable("Zeile")!!.wert as Zeichenfolge
     writer.write(zeile.zeichenfolge)
     writer.newLine()
     return Nichts
   }
 
-  private fun fügeDieZeichenfolgeHinzu(injection: Interpretierer.InterpretInjection): Nichts {
-    val zeile = injection.umgebung.leseVariable("Zeichenfolge") as Zeichenfolge
+  private fun fügeDieZeichenfolgeHinzu(injection: InterpretInjection): Nichts {
+    val zeile = injection.umgebung.leseVariable("Zeichenfolge")!!.wert as Zeichenfolge
     writer.append(zeile.zeichenfolge)
     return Nichts
   }
 
-  private fun fügeDieZeileHinzu(injection: Interpretierer.InterpretInjection): Nichts {
-    val zeile = injection.umgebung.leseVariable("Zeile") as Zeichenfolge
+  private fun fügeDieZeileHinzu(injection: InterpretInjection): Nichts {
+    val zeile = injection.umgebung.leseVariable("Zeile")!!.wert as Zeichenfolge
     writer.appendln(zeile.zeichenfolge)
     return Nichts
   }

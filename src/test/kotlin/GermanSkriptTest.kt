@@ -1,5 +1,6 @@
 import germanskript.GermanSkriptFehler
 import germanskript.IInterpretierer
+import germanskript.alte_pipeline.Interpretierer
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatExceptionOfType
 import org.junit.jupiter.api.DisplayName
@@ -23,8 +24,8 @@ class GermanSkriptTest {
     tempFile.writeText(germanSkriptSource)
 
     val interpretierer: IInterpretierer = when (version) {
-      CompilerPipelineVersion.VERALTET -> germanskript.Interpretierer(tempFile)
-      CompilerPipelineVersion.AKTUELL -> germanskript.imm.Interpretierer(tempFile)
+      CompilerPipelineVersion.VERALTET -> Interpretierer(tempFile)
+      CompilerPipelineVersion.AKTUELL -> germanskript.Interpretierer(tempFile)
     }
     try {
       interpretierer.interpretiere()

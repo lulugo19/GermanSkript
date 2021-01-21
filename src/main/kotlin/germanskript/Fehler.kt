@@ -1,6 +1,6 @@
 package germanskript
 
-import germanskript.intern.Objekt
+import germanskript.alte_pipeline.intern.Objekt
 
 sealed class GermanSkriptFehler(private val fehlerName: String, val token: Token): Exception() {
   abstract val nachricht: String

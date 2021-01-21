@@ -1,6 +1,5 @@
-package germanskript.imm
+package germanskript
 
-import germanskript.*
 import java.io.File
 import kotlin.collections.HashMap
 
@@ -162,9 +161,9 @@ class CodeGenerator(startDatei: File): PipelineKomponente(startDatei) {
       schleife.reichweite != null -> IMM_AST.Satz.Ausdruck.Bereich(
           listOf(
               IMM_AST.Satz.VariablenDeklaration(INIT_OBJEKT_VAR_NAME, IMM_AST.Satz.Ausdruck.ObjektInstanziierung(
-              BuildIn.Klassen.reichweite,
-              klassen.getValue(BuildIn.Klassen.reichweite.definition),
-              IMM_AST.Satz.Ausdruck.ObjektArt.Klasse), false),
+                  BuildIn.Klassen.reichweite,
+                  klassen.getValue(BuildIn.Klassen.reichweite.definition),
+                  IMM_AST.Satz.Ausdruck.ObjektArt.Klasse), false),
               IMM_AST.Satz.SetzeEigenschaft(IMM_AST.Satz.Ausdruck.Variable(INIT_OBJEKT_VAR_NAME), "Start", generiereAusdruck(schleife.reichweite.anfang)),
               IMM_AST.Satz.SetzeEigenschaft(IMM_AST.Satz.Ausdruck.Variable(INIT_OBJEKT_VAR_NAME), "Ende", generiereAusdruck(schleife.reichweite.ende)),
               IMM_AST.Satz.Ausdruck.Variable(INIT_OBJEKT_VAR_NAME)
@@ -368,7 +367,8 @@ class CodeGenerator(startDatei: File): PipelineKomponente(startDatei) {
 
   private fun generiereKonvertierung(konvertierung: AST.Satz.Ausdruck.Konvertierung): IMM_AST.Satz.Ausdruck {
     return when(konvertierung.konvertierungsArt) {
-      AST.Satz.Ausdruck.KonvertierungsArt.Cast -> generiereAusdruck(konvertierung.ausdruck)
+      AST.Satz.Ausdruck.KonvertierungsArt.Cast ->
+        IMM_AST.Satz.Ausdruck.TypCast(generiereAusdruck(konvertierung.ausdruck), konvertierung.typ.typ!!, konvertierung.token)
       AST.Satz.Ausdruck.KonvertierungsArt.Methode -> IMM_AST.Satz.Ausdruck.MethodenAufruf(
           "als " + konvertierung.typName.nominativ,
           konvertierung.token, emptyList(),
@@ -443,7 +443,8 @@ class CodeGenerator(startDatei: File): PipelineKomponente(startDatei) {
       IMM_AST.Satz.SetzeEigenschaft(
           IMM_AST.Satz.Ausdruck.Variable(INIT_OBJEKT_VAR_NAME),
           it.name.nominativ,
-          generiereAusdruck(it.wert)) })
+          generiereAusdruck(it.wert))
+    })
     sätze.add(IMM_AST.Satz.Ausdruck.Variable(INIT_OBJEKT_VAR_NAME))
     return IMM_AST.Satz.Ausdruck.Bereich(sätze)
   }
@@ -475,11 +476,13 @@ class CodeGenerator(startDatei: File): PipelineKomponente(startDatei) {
   private fun generiereVersucheFange(versucheFange: AST.Satz.Ausdruck.VersucheFange): IMM_AST.Satz.Ausdruck {
     return IMM_AST.Satz.Ausdruck.VersucheFange(
         generiereBereich(versucheFange.bereich),
-        versucheFange.fange.map { IMM_AST.Satz.Ausdruck.Fange(
-            it.param.name.nominativ,
-            it.param.typKnoten.typ!! as Typ.Compound,
-            generiereBereich(it.bereich)
-        ) },
+        versucheFange.fange.map {
+          IMM_AST.Satz.Ausdruck.Fange(
+              it.param.name.nominativ,
+              it.param.typKnoten.typ!! as Typ.Compound,
+              generiereBereich(it.bereich)
+          )
+        },
         versucheFange.schlussendlich?.let { generiereBereich(it) }
     )
   }
@@ -494,7 +497,7 @@ class CodeGenerator(startDatei: File): PipelineKomponente(startDatei) {
   private fun generiereTypÜberprüfung(typÜberprüfung: AST.Satz.Ausdruck.TypÜberprüfung): IMM_AST.Satz.Ausdruck {
     return IMM_AST.Satz.Ausdruck.TypÜberprüfung(
         generiereAusdruck(typÜberprüfung.ausdruck),
-        typÜberprüfung.typ
+        typÜberprüfung.typ.typ!!
     )
   }
   // endregion

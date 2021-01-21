@@ -3,7 +3,7 @@ package germanskript.intern
 import germanskript.BuildIn
 import kotlin.Boolean
 
-class Boolean(val boolean: Boolean): Objekt(BuildIn.Klassen.boolean) {
+class Boolean(val boolean: Boolean): Objekt(BuildIn.IMMKlassen.boolean, BuildIn.Klassen.boolean) {
   override fun toString(): String = if (this.boolean) "wahr" else "falsch"
 
   override fun equals(other: Any?): Boolean {

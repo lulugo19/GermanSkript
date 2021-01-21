@@ -1,6 +1,4 @@
-package germanskript.imm
-
-import germanskript.*
+package germanskript
 
 sealed class IMM_AST {
   sealed class Definition {
@@ -104,7 +102,13 @@ sealed class IMM_AST {
 
       data class TypÜberprüfung(
           val ausdruck: Ausdruck,
-          val typ: AST.TypKnoten
+          val typ: Typ
+      ): Ausdruck()
+
+      data class TypCast(
+          val ausdruck: Ausdruck,
+          val zielTyp: Typ,
+          val token: Token
       ): Ausdruck()
     }
   }

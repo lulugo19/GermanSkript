@@ -1,9 +1,11 @@
 package germanskript.intern
 
 import germanskript.*
+import germanskript.IMM_AST
+import germanskript.Interpretierer
 
-class Liste(typ: Typ.Compound.Klasse, val elemente: MutableList<Objekt>): Objekt(typ) {
-  operator fun plus(liste: Liste) = Liste(klasse, (this.elemente + liste.elemente).toMutableList())
+class Liste(typ: Typ.Compound.Klasse, val elemente: MutableList<Objekt>): Objekt(BuildIn.IMMKlassen.liste, typ) {
+  operator fun plus(liste: Liste) = Liste(typ, (this.elemente + liste.elemente).toMutableList())
 
   override fun toString(): String {
     return "[${elemente.joinToString(", ")}]"
@@ -20,8 +22,8 @@ class Liste(typ: Typ.Compound.Klasse, val elemente: MutableList<Objekt>): Objekt
     // vielleicht kommt hier später mal was, sieht aber nicht danach aus
   }
 
-  override fun rufeMethodeAuf(aufruf: AST.IAufruf, injection: InterpretInjection): Objekt {
-    return when (aufruf.vollerName!!) {
+  override fun rufeMethodeAuf(aufruf: IMM_AST.Satz.Ausdruck.IAufruf, injection: Interpretierer.InterpretInjection): Objekt {
+    return when (aufruf.name) {
       "addiere mich mit dem Operanden",
       "addiere mich mit der Liste" -> addiereMichMitDemOperanden(injection)
       "enthalten das Element" -> enthaltenDenTyp(injection)
@@ -31,44 +33,43 @@ class Liste(typ: Typ.Compound.Klasse, val elemente: MutableList<Objekt>): Objekt
       "setze den Index auf den Typ",
       "setze den Index auf das Element" -> setzeDenIndexAufDenTyp(aufruf, injection)
       "entferne an dem Index" -> entferneAnDemIndex(injection)
-      "sortiere mich mit dem Vergleichenden" -> sortiereMichMitDemVergleichbaren(injection)
       else -> super.rufeMethodeAuf(aufruf, injection)
     }
   }
 
-  private fun addiereMichMitDemOperanden(injection: InterpretInjection): Objekt {
-    val andereListe = injection.umgebung.leseVariable("Operand")!!.wert as Liste
+  private fun addiereMichMitDemOperanden(injection: Interpretierer.InterpretInjection): Objekt {
+    val andereListe = injection.umgebung.leseVariable("Operand") as Liste
     return this + andereListe
   }
 
-  private fun enthaltenDenTyp(injection: InterpretInjection): Objekt {
-    val element = injection.umgebung.leseVariable("Element")!!.wert
+  private fun enthaltenDenTyp(injection: Interpretierer.InterpretInjection): Objekt {
+    val element = injection.umgebung.leseVariable("Element")
     return Boolean(elemente.contains(element))
   }
 
-  private fun fügeDasElementHinzu(injection: InterpretInjection): Objekt {
-    val element = injection.umgebung.leseVariable("Element")!!.wert
+  private fun fügeDasElementHinzu(injection: Interpretierer.InterpretInjection): Objekt {
+    val element = injection.umgebung.leseVariable("Element")
     elemente.add(element)
     return Nichts
   }
 
-  private fun holeDasElementMitDemIndex(aufruf: AST.IAufruf, injection: InterpretInjection): Objekt {
-    val index = (injection.umgebung.leseVariable("Index")!!.wert as Zahl).toInt()
+  private fun holeDasElementMitDemIndex(aufruf: IMM_AST.Satz.Ausdruck.IAufruf, injection: Interpretierer.InterpretInjection): Objekt {
+    val index = (injection.umgebung.leseVariable("Index") as Zahl).toInt()
 
     return prüfeIndex(index, aufruf, injection) ?:
         this.elemente[index]
   }
 
-  private fun setzeDenIndexAufDenTyp(aufruf: AST.IAufruf, injection: InterpretInjection): Objekt {
-    val index = (injection.umgebung.leseVariable("Index")!!.wert as Zahl).toInt()
+  private fun setzeDenIndexAufDenTyp(aufruf: IMM_AST.Satz.Ausdruck.IAufruf, injection: Interpretierer.InterpretInjection): Objekt {
+    val index = (injection.umgebung.leseVariable("Index") as Zahl).toInt()
     return prüfeIndex(index, aufruf, injection) ?: {
-      val wert = injection.umgebung.leseVariable("Element")!!.wert
+      val wert = injection.umgebung.leseVariable("Element")
       this.elemente[index] = wert
       Nichts
     }()
   }
 
-  private fun prüfeIndex(index: Int, aufruf: AST.IAufruf, injection: InterpretInjection): Objekt? {
+  private fun prüfeIndex(index: Int, aufruf: IMM_AST.Satz.Ausdruck.IAufruf, injection: Interpretierer.InterpretInjection): Objekt? {
     return if (index >= elemente.size) {
       injection.werfeFehler(
           "Index außerhalb des Bereichs. Der Index ist $index, doch die Länge der Liste ist ${elemente.size}.\n", "IndexFehler", aufruf.token)
@@ -77,19 +78,9 @@ class Liste(typ: Typ.Compound.Klasse, val elemente: MutableList<Objekt>): Objekt
     }
   }
 
-  private fun entferneAnDemIndex(injection: InterpretInjection): Objekt {
-    val index = injection.umgebung.leseVariable("Index")!!.wert as Zahl
+  private fun entferneAnDemIndex(injection: Interpretierer.InterpretInjection): Objekt {
+    val index = injection.umgebung.leseVariable("Index") as Zahl
     elemente.removeAt(index.toInt())
-    return Nichts
-  }
-
-  private fun sortiereMichMitDemVergleichbaren(injection: InterpretInjection): Objekt {
-    val typArg = klasse.typArgumente[0].name.nominativ
-    val vergleichbar = injection.umgebung.leseVariable("Vergleichbare")!!.wert
-    elemente.sortWith(kotlin.Comparator { a, b ->
-      (injection.schnittstellenAufruf(vergleichbar, "vergleiche den ${typArg}A mit dem ${typArg}B", arrayOf(a, b))
-          as Zahl).zahl.toInt()
-    })
     return Nichts
   }
 }

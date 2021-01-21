@@ -1,6 +1,9 @@
 package germanskript
 
-import germanskript.intern.Objekt
+import germanskript.alte_pipeline.Interpretierer
+import germanskript.alte_pipeline.intern.Objekt
+import germanskript.alte_pipeline.intern.Zahl
+import germanskript.alte_pipeline.intern.Zeichenfolge
 import java.io.File
 import java.util.*
 
@@ -56,9 +59,9 @@ class KonstantenFalter(startDatei: File): ProgrammDurchlaufer<Objekt?>(startDate
 
   private fun falteKonstante(originalerAusdruck: AST.Satz.Ausdruck): AST.Satz.Ausdruck {
     return when (val konstanterWert = evaluiereAusdruck(originalerAusdruck)) {
-      is germanskript.intern.Zahl -> AST.Satz.Ausdruck.Zahl(TypedToken.imaginäresToken(TokenTyp.ZAHL(konstanterWert.zahl),""))
-      is germanskript.intern.Zeichenfolge -> AST.Satz.Ausdruck.Zeichenfolge(TypedToken.imaginäresToken(TokenTyp.ZEICHENFOLGE(konstanterWert.zeichenfolge), ""))
-      is germanskript.intern.Boolean -> AST.Satz.Ausdruck.Boolean(TypedToken.imaginäresToken(TokenTyp.BOOLEAN(konstanterWert.boolean), ""))
+      is Zahl -> AST.Satz.Ausdruck.Zahl(TypedToken.imaginäresToken(TokenTyp.ZAHL(konstanterWert.zahl),""))
+      is Zeichenfolge -> AST.Satz.Ausdruck.Zeichenfolge(TypedToken.imaginäresToken(TokenTyp.ZEICHENFOLGE(konstanterWert.zeichenfolge), ""))
+      is germanskript.alte_pipeline.intern.Boolean -> AST.Satz.Ausdruck.Boolean(TypedToken.imaginäresToken(TokenTyp.BOOLEAN(konstanterWert.boolean), ""))
       else -> originalerAusdruck
     }
   }
@@ -203,13 +206,13 @@ class KonstantenFalter(startDatei: File): ProgrammDurchlaufer<Objekt?>(startDate
   }
 
   override fun evaluiereZeichenfolge(ausdruck: AST.Satz.Ausdruck.Zeichenfolge): Objekt? =
-      germanskript.intern.Zeichenfolge(ausdruck.zeichenfolge.typ.zeichenfolge)
+      Zeichenfolge(ausdruck.zeichenfolge.typ.zeichenfolge)
 
   override fun evaluiereZahl(ausdruck: AST.Satz.Ausdruck.Zahl): Objekt? =
-      germanskript.intern.Zahl(ausdruck.zahl.typ.zahl)
+      Zahl(ausdruck.zahl.typ.zahl)
 
   override fun evaluiereBoolean(ausdruck: AST.Satz.Ausdruck.Boolean): Objekt? =
-      germanskript.intern.Boolean(ausdruck.boolean.typ.boolean)
+      germanskript.alte_pipeline.intern.Boolean(ausdruck.boolean.typ.boolean)
 
   override fun evaluiereListe(ausdruck: AST.Satz.Ausdruck.Liste): Objekt? {
     ausdruck.elemente = ausdruck.elemente.map(::falteKonstante)
@@ -226,16 +229,16 @@ class KonstantenFalter(startDatei: File): ProgrammDurchlaufer<Objekt?>(startDate
     val rechts = evaluiereAusdruck(ausdruck.rechts)
     val operator = ausdruck.operator.typ.operator
     return when {
-      links is germanskript.intern.Zeichenfolge &&
-        rechts is germanskript.intern.Zeichenfolge  -> Interpretierer.zeichenFolgenOperation(operator, links, rechts)
-      links is germanskript.intern.Zahl && rechts is germanskript.intern.Zahl -> Interpretierer.zahlOperation(operator, links, rechts)
-      links is germanskript.intern.Boolean && rechts is germanskript.intern.Boolean -> Interpretierer.booleanOperation(operator, links, rechts)
+      links is Zeichenfolge &&
+        rechts is Zeichenfolge -> Interpretierer.zeichenFolgenOperation(operator, links, rechts)
+      links is Zahl && rechts is Zahl -> Interpretierer.zahlOperation(operator, links, rechts)
+      links is germanskript.alte_pipeline.intern.Boolean && rechts is germanskript.alte_pipeline.intern.Boolean -> Interpretierer.booleanOperation(operator, links, rechts)
       else -> null
     }
   }
 
   override fun evaluiereMinus(minus: AST.Satz.Ausdruck.Minus): Objekt? {
-    val zahl = evaluiereAusdruck(minus.ausdruck) as germanskript.intern.Zahl?
+    val zahl = evaluiereAusdruck(minus.ausdruck) as Zahl?
     return if (zahl != null) {
       -zahl
     } else {

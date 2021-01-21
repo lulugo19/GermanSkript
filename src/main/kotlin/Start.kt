@@ -1,5 +1,5 @@
 import germanskript.GermanSkriptFehler
-import germanskript.Interpretierer
+import germanskript.alte_pipeline.Interpretierer
 
 import java.io.File
 
