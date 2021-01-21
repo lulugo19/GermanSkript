@@ -723,6 +723,7 @@ class TypPrüfer(startDatei: File): PipelineKomponente(startDatei) {
     return if (signatur != null && (!signatur.hatRückgabeObjekt || funktionsAufruf.rückgabeObjektMöglich)) {
       if (typ is Typ.Compound.Klasse && aufrufTyp == FunktionsAufrufTyp.METHODEN_SELBST_AUFRUF) {
         funktionsAufruf.funktionsDefinition = typ.definition.methoden[funktionsAufruf.vollerName!!]
+        funktionsAufruf.objektTyp = typ
       }
       funktionsAufruf.hatRückgabeObjekt = signatur.hatRückgabeObjekt
       funktionsAufruf.aufrufTyp = aufrufTyp
@@ -1182,6 +1183,7 @@ class TypPrüfer(startDatei: File): PipelineKomponente(startDatei) {
     // oder eine Konvertierungsdefinition für die Konvertierung vorhanden ist.
     // Bei einem Generic wird übeprüft ob die Elternklasse in den gegebenen Typ konvertiert werden kann.
     if (typIstTyp(typ, konvertierungsTyp) || typIstTyp(konvertierungsTyp, typ)) {
+      konvertierung.konvertierungsArt = AST.Satz.Ausdruck.KonvertierungsArt.Cast
       return  true
     }
 

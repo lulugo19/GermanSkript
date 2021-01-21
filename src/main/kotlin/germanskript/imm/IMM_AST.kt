@@ -70,7 +70,13 @@ sealed class IMM_AST {
 
       data class Eigenschaft(val name: String, val objekt: Ausdruck): Ausdruck()
 
-      data class ObjektInstanziierung(val typ: Typ.Compound.Klasse, val klasse: Definition.Klasse, val istClosure: Boolean): Ausdruck()
+      enum class ObjektArt {
+        Klasse,
+        AnonymeKlasse,
+        Lambda
+      }
+
+      data class ObjektInstanziierung(val typ: Typ.Compound.Klasse, val klasse: Definition.Klasse, val objektArt: ObjektArt): Ausdruck()
 
       sealed class Konstante(): Ausdruck() {
         data class Zahl(val zahl: Double): Konstante()
@@ -87,8 +93,19 @@ sealed class IMM_AST {
 
       data class Fange (
           val param: String,
+          val typ: Typ.Compound,
           val bereich: Bereich
       ): IMM_AST()
+
+      data class Werfe (
+        val werfe: TypedToken<TokenTyp.WERFE>,
+        val ausdruck: Ausdruck
+      ): Ausdruck()
+
+      data class TypÜberprüfung(
+          val ausdruck: Ausdruck,
+          val typ: AST.TypKnoten
+      ): Ausdruck()
     }
   }
 }

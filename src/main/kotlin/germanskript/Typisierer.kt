@@ -117,7 +117,9 @@ class Typisierer(startDatei: File): PipelineKomponente(startDatei) {
     BuildIn.Klassen.boolean = Typ.Compound.Klasse(definierer.holeTypDefinition("Boolean", null) as AST.Definition.Typdefinition.Klasse, emptyList())
     BuildIn.Klassen.reichweite = Typ.Compound.Klasse(definierer.holeTypDefinition("ReichWeite", null) as AST.Definition.Typdefinition.Klasse, emptyList())
     BuildIn.Klassen.schreiber = Typ.Compound.Klasse(definierer.holeTypDefinition("Schreiber", arrayOf("IO")) as AST.Definition.Typdefinition.Klasse, emptyList())
+    BuildIn.Klassen.datei = Typ.Compound.Klasse(definierer.holeTypDefinition("Datei", arrayOf("IO"))  as AST.Definition.Typdefinition.Klasse, emptyList())
     BuildIn.Klassen.liste = definierer.holeTypDefinition("Liste") as AST.Definition.Typdefinition.Klasse
+    BuildIn.Klassen.hashMap = definierer.holeTypDefinition("HashMap") as AST.Definition.Typdefinition.Klasse
 
     // Build In Schnittstellen
     BuildIn.Schnittstellen.iterierbar = definierer.holeTypDefinition("Iterierbare") as AST.Definition.Typdefinition.Schnittstelle

@@ -9,17 +9,17 @@ class CodeGenerator(startDatei: File): PipelineKomponente(startDatei) {
   val ast = typPrüfer.ast
 
   val klassen = mutableMapOf<AST.Definition.Typdefinition.Klasse, IMM_AST.Definition.Klasse>()
-  val funktionen = mutableMapOf<AST.Definition, IMM_AST.Definition.Funktion>()
+  val funktionen = mutableMapOf<AST.Definition.Funktion, IMM_AST.Definition.Funktion>()
 
   companion object {
-    private const val SELBST_VAR_NAME = "_Selbst"
-    private const val METHODEN_BLOCK_VAR_NAME = "_MBObjekt"
-    private const val ITERATOR_VAR_NAME= "_Iterator"
-    private const val INIT_OBJEKT_VAR_NAME = "_Init_Objekt"
-    private const val LISTE_VAR_NAME = "_Liste"
+    const val SELBST_VAR_NAME = "_Selbst"
+    const val METHODEN_BLOCK_VAR_NAME = "_MBObjekt"
+    const val ITERATOR_VAR_NAME= "_Iterator"
+    const val INIT_OBJEKT_VAR_NAME = "_Init_Objekt"
+    const val LISTE_VAR_NAME = "_Liste"
   }
 
-  fun generiere(): IMM_AST {
+  fun generiere(): IMM_AST.Satz.Ausdruck.FunktionsAufruf {
     typPrüfer.prüfe()
 
     val definierer = typPrüfer.definierer
@@ -27,66 +27,80 @@ class CodeGenerator(startDatei: File): PipelineKomponente(startDatei) {
       funktionen[funktionsDef] = generiereFunktion(funktionsDef)
     }
     definierer.holeDefinitionen<AST.Definition.Typdefinition.Klasse>().forEach { klassenDef ->
-      klassen[klassenDef] = generiereKlasse(klassenDef, true)
+      klassen[klassenDef] = generiereKlasse(klassenDef, false)
     }
 
     // TODO: erstelle nur die Körper, die in dem Programm auch wirklich benutzt werden
     // generiere den Funktionskörper für jede Funktion
     for ((funktionsDef, funktion) in funktionen) {
-      when (funktionsDef) {
-        is AST.Definition.Funktion -> funktion.körper = generiereBereich(funktionsDef.körper)
-        is AST.Definition.Typdefinition.Klasse -> funktion.körper = generiereBereich(funktionsDef.konstruktor)
-        is AST.Definition.Konvertierung -> funktion.körper = generiereBereich(funktionsDef.definition)
-        is AST.Definition.Eigenschaft -> funktion.körper = generiereBereich(funktionsDef.definition)
-        else -> throw Exception("Dieser Fall sollte nie auftreten!")
-      }
+      funktion.körper = generiereBereich(funktionsDef.körper)
     }
 
-    return generiereBereich(ast.programm)
+    for ((klassenDef, klasse) in klassen) {
+      for ((name, methode) in klassenDef.methoden)
+        klasse.methoden.getValue(name).körper = generiereBereich(methode.körper)
+
+      for((name, konvertierung) in klassenDef.konvertierungen) {
+        klasse.methoden.getValue("als $name").körper = generiereBereich(konvertierung.definition)
+      }
+
+      for ((name, eigenschaft) in klassenDef.berechneteEigenschaften) {
+        klasse.methoden.getValue("$name von ${klassenDef.namensToken.wert}").körper = generiereBereich(eigenschaft.definition)
+      }
+
+      klasse.methoden.getValue("erstelle ${klasse.name}").körper = generiereBereich(klassenDef.konstruktor)
+    }
+
+    holeBuildInTypDefinitionen()
+
+    // TODO: Füge Kommandozeilen-Argumente hinzu
+    val funktionsDefinition = IMM_AST.Definition.Funktion(emptyList())
+    funktionsDefinition.körper = generiereBereich(ast.programm)
+    return IMM_AST.Satz.Ausdruck.FunktionsAufruf("starte das Programm", ast.token, emptyList(), funktionsDefinition)
+  }
+
+  private fun holeBuildInTypDefinitionen() {
+    BuildIn.IMMKlassen.objekt = klassen.getValue(BuildIn.Klassen.objekt.definition)
+    BuildIn.IMMKlassen.nichts = klassen.getValue(BuildIn.Klassen.nichts.definition)
+    BuildIn.IMMKlassen.niemals = klassen.getValue(BuildIn.Klassen.niemals.definition)
+    BuildIn.IMMKlassen.zahl = klassen.getValue(BuildIn.Klassen.zahl.definition)
+    BuildIn.IMMKlassen.zeichenfolge = klassen.getValue(BuildIn.Klassen.zeichenfolge.definition)
+    BuildIn.IMMKlassen.boolean = klassen.getValue(BuildIn.Klassen.boolean.definition)
+    BuildIn.IMMKlassen.datei = klassen.getValue(BuildIn.Klassen.datei.definition)
+    BuildIn.IMMKlassen.hashMap = klassen.getValue(BuildIn.Klassen.hashMap)
+    BuildIn.IMMKlassen.schreiber = klassen.getValue(BuildIn.Klassen.schreiber.definition)
+    BuildIn.IMMKlassen.liste = klassen.getValue(BuildIn.Klassen.liste)
   }
 
   private fun generiereFunktion(funktion: AST.Definition.Funktion): IMM_AST.Definition.Funktion {
     return IMM_AST.Definition.Funktion(funktion.signatur.parameterNamen.map { it.nominativ })
   }
 
-  private fun generiereKlasse(klasse: AST.Definition.Typdefinition.Klasse, registriereKlasse: Boolean): IMM_AST.Definition.Klasse {
-      val methoden = HashMap<String, IMM_AST.Definition.Funktion>()
+  private fun generiereKlasse(klasse: AST.Definition.Typdefinition.Klasse, generiereMethodenKörper: Boolean): IMM_AST.Definition.Klasse {
+    val methoden = HashMap<String, IMM_AST.Definition.Funktion>()
       for ((name, methode) in klasse.methoden) {
         val funktion = generiereFunktion(methode)
-        if (registriereKlasse)
-          funktionen[methode] = funktion
-        else
-          funktion.körper = generiereBereich(methode.körper)
+        if (generiereMethodenKörper) funktion.körper = generiereBereich(methode.körper)
         methoden[name] = funktion
       }
 
       // füge Konvertierungen als Methode hinzu
       for((name, konvertierung) in klasse.konvertierungen) {
         val funktion = IMM_AST.Definition.Funktion(emptyList())
-        if (registriereKlasse)
-          funktionen[konvertierung] = funktion
-        else
-          funktion.körper = generiereBereich(konvertierung.definition)
-        methoden["als " + name] = funktion
+        if (generiereMethodenKörper) funktion.körper = generiereBereich(konvertierung.definition)
+        methoden["als $name"] = funktion
       }
 
       // füge berechnete Eigenschaften als Methode hinzu
       for ((name, eigenschaft) in klasse.berechneteEigenschaften) {
         val funktion = IMM_AST.Definition.Funktion(emptyList())
-        methoden[name] = funktion
-        if (registriereKlasse)
-          funktionen[eigenschaft] = funktion
-        else
-          funktion.körper = generiereBereich(eigenschaft.definition)
+        methoden["$name von ${klasse.namensToken.wert}"] = funktion
+        if (generiereMethodenKörper) funktion.körper = generiereBereich(eigenschaft.definition)
       }
 
       // Füge Konstruktor als Methode hinzu
       val konstruktor = IMM_AST.Definition.Funktion(emptyList())
-      if (registriereKlasse)
-        funktionen[klasse] = konstruktor
-      else
-        konstruktor.körper = generiereBereich(klasse.konstruktor)
-
+      if (generiereMethodenKörper) konstruktor.körper = generiereBereich(klasse.konstruktor)
       methoden["erstelle " + klasse.name.nominativ] = konstruktor
 
       return IMM_AST.Definition.Klasse(klasse.name.nominativ, methoden)
@@ -145,10 +159,16 @@ class CodeGenerator(startDatei: File): PipelineKomponente(startDatei) {
 
     val iterierbar = when {
       schleife.iterierbares != null -> generiereAusdruck(schleife.iterierbares)
-      schleife.reichweite != null -> IMM_AST.Satz.Ausdruck.ObjektInstanziierung(
-          BuildIn.Klassen.reichweite,
-          klassen.getValue(BuildIn.Klassen.reichweite.definition),
-          false
+      schleife.reichweite != null -> IMM_AST.Satz.Ausdruck.Bereich(
+          listOf(
+              IMM_AST.Satz.VariablenDeklaration(INIT_OBJEKT_VAR_NAME, IMM_AST.Satz.Ausdruck.ObjektInstanziierung(
+              BuildIn.Klassen.reichweite,
+              klassen.getValue(BuildIn.Klassen.reichweite.definition),
+              IMM_AST.Satz.Ausdruck.ObjektArt.Klasse), false),
+              IMM_AST.Satz.SetzeEigenschaft(IMM_AST.Satz.Ausdruck.Variable(INIT_OBJEKT_VAR_NAME), "Start", generiereAusdruck(schleife.reichweite.anfang)),
+              IMM_AST.Satz.SetzeEigenschaft(IMM_AST.Satz.Ausdruck.Variable(INIT_OBJEKT_VAR_NAME), "Ende", generiereAusdruck(schleife.reichweite.ende)),
+              IMM_AST.Satz.Ausdruck.Variable(INIT_OBJEKT_VAR_NAME)
+          )
       )
       else -> IMM_AST.Satz.Ausdruck.Variable(schleife.singular.ganzesWort(Kasus.NOMINATIV, Numerus.PLURAL, true))
     }
@@ -214,14 +234,17 @@ class CodeGenerator(startDatei: File): PipelineKomponente(startDatei) {
       is AST.Satz.Ausdruck.Lambda -> generiereLambda(ausdruck)
       is AST.Satz.Ausdruck.AnonymeKlasse -> generiereAnonymeKlasse(ausdruck)
       is AST.Satz.Ausdruck.Bedingung -> generiereBedingung(ausdruck)
-      is AST.Satz.Ausdruck.TypÜberprüfung -> TODO()
-      is AST.Satz.Ausdruck.EigenschaftsZugriff -> generiereEigenschaftsZugriff(ausdruck)
-      is AST.Satz.Ausdruck.MethodenBereichEigenschaftsZugriff -> generiereMethodenBereichEigenschaftsZugriff(ausdruck)
-      is AST.Satz.Ausdruck.SelbstEigenschaftsZugriff -> generiereSelbstEigenschaftsZugriff(ausdruck)
+      is AST.Satz.Ausdruck.TypÜberprüfung -> generiereTypÜberprüfung(ausdruck)
+      is AST.Satz.Ausdruck.EigenschaftsZugriff ->
+        generiereEigenschaftsZugriff(ausdruck, generiereAusdruck(ausdruck.objekt))
+      is AST.Satz.Ausdruck.MethodenBereichEigenschaftsZugriff ->
+        generiereEigenschaftsZugriff(ausdruck, IMM_AST.Satz.Ausdruck.Variable(METHODEN_BLOCK_VAR_NAME))
+      is AST.Satz.Ausdruck.SelbstEigenschaftsZugriff ->
+        generiereEigenschaftsZugriff(ausdruck, IMM_AST.Satz.Ausdruck.Variable(SELBST_VAR_NAME))
       is AST.Satz.Ausdruck.SelbstReferenz -> IMM_AST.Satz.Ausdruck.Variable(SELBST_VAR_NAME)
       is AST.Satz.Ausdruck.MethodenBereichReferenz -> IMM_AST.Satz.Ausdruck.Variable(METHODEN_BLOCK_VAR_NAME)
       is AST.Satz.Ausdruck.VersucheFange -> generiereVersucheFange(ausdruck)
-      is AST.Satz.Ausdruck.Werfe -> TODO()
+      is AST.Satz.Ausdruck.Werfe -> generiereWerfe(ausdruck)
     }
   }
 
@@ -252,7 +275,7 @@ class CodeGenerator(startDatei: File): PipelineKomponente(startDatei) {
       }
 
       val funktionsDefinition = if (aufruf.funktionsDefinition != null)
-        funktionen.getValue(aufruf.funktionsDefinition!!) else null
+        klassen.getValue(aufruf.objektTyp!!.definition).methoden[aufruf.vollerName!!] else null
 
       IMM_AST.Satz.Ausdruck.MethodenAufruf(
           aufruf.vollerName!!,
@@ -281,7 +304,7 @@ class CodeGenerator(startDatei: File): PipelineKomponente(startDatei) {
     val erstelleListe = IMM_AST.Satz.Ausdruck.ObjektInstanziierung(
         Typ.Compound.Klasse(BuildIn.Klassen.liste, listOf(liste.pluralTyp)),
         klassen.getValue(BuildIn.Klassen.liste),
-        false
+        IMM_AST.Satz.Ausdruck.ObjektArt.Klasse
     )
     sätze.add(IMM_AST.Satz.VariablenDeklaration(LISTE_VAR_NAME, erstelleListe, false))
     for (element in liste.elemente) {
@@ -299,7 +322,7 @@ class CodeGenerator(startDatei: File): PipelineKomponente(startDatei) {
 
   private fun generiereIndexZugriff(indexZugriff: AST.Satz.Ausdruck.IndexZugriff): IMM_AST.Satz.Ausdruck {
       return IMM_AST.Satz.Ausdruck.MethodenAufruf(
-          "hole den Typ an dem Index",
+          "hole den Typ mit dem Index",
           indexZugriff.holeErstesToken(),
           listOf(generiereAusdruck(indexZugriff.index)),
           IMM_AST.Satz.Ausdruck.Variable(indexZugriff.singular.ganzesWort(Kasus.NOMINATIV, indexZugriff.numerus, true)),
@@ -343,13 +366,16 @@ class CodeGenerator(startDatei: File): PipelineKomponente(startDatei) {
         generiereAusdruck(minus.ausdruck), null)
   }
 
-  private fun generiereKonvertierung(ausdruck: AST.Satz.Ausdruck.Konvertierung): IMM_AST.Satz.Ausdruck {
-    return IMM_AST.Satz.Ausdruck.MethodenAufruf(
-        "als " + ausdruck.typName.nominativ,
-        ausdruck.token, emptyList(),
-        generiereAusdruck(ausdruck),
-        null
-    )
+  private fun generiereKonvertierung(konvertierung: AST.Satz.Ausdruck.Konvertierung): IMM_AST.Satz.Ausdruck {
+    return when(konvertierung.konvertierungsArt) {
+      AST.Satz.Ausdruck.KonvertierungsArt.Cast -> generiereAusdruck(konvertierung.ausdruck)
+      AST.Satz.Ausdruck.KonvertierungsArt.Methode -> IMM_AST.Satz.Ausdruck.MethodenAufruf(
+          "als " + konvertierung.typName.nominativ,
+          konvertierung.token, emptyList(),
+          generiereAusdruck(konvertierung.ausdruck),
+          null
+      )
+    }
   }
 
   private fun generiereObjektInstanziierung(instanziierung: AST.Satz.Ausdruck.ObjektInstanziierung): IMM_AST.Satz.Ausdruck {
@@ -358,7 +384,7 @@ class CodeGenerator(startDatei: File): PipelineKomponente(startDatei) {
     val objekt = IMM_AST.Satz.Ausdruck.ObjektInstanziierung(
         instanziierung.klasse.typ!! as Typ.Compound.Klasse,
         klasse,
-        false
+        IMM_AST.Satz.Ausdruck.ObjektArt.Klasse
     )
     val sätze = mutableListOf<IMM_AST.Satz>()
 
@@ -384,12 +410,15 @@ class CodeGenerator(startDatei: File): PipelineKomponente(startDatei) {
         )
       }
 
+      val klassenDefinition = (instanziierung.klasse.typ!! as Typ.Compound.Klasse).definition
+      val konstruktorName = "erstelle ${klassenDefinition.name.nominativ}"
+
       sätze.add(IMM_AST.Satz.Ausdruck.MethodenAufruf(
-          "erstelle " + klassenTyp.definition.name.nominativ,
+          konstruktorName,
           instanziierung.token,
           emptyList(),
           IMM_AST.Satz.Ausdruck.Variable(INIT_OBJEKT_VAR_NAME),
-          funktionen[definition]
+          klassen.getValue((instanziierung.klasse.typ!! as Typ.Compound.Klasse).definition).methoden.getValue(konstruktorName)
       ))
       return IMM_AST.Satz.Ausdruck.Bereich(sätze)
     }
@@ -401,13 +430,13 @@ class CodeGenerator(startDatei: File): PipelineKomponente(startDatei) {
   }
 
   private fun generiereLambda(lambda: AST.Satz.Ausdruck.Lambda): IMM_AST.Satz.Ausdruck {
-    val klasse = generiereKlasse(lambda.klasse.definition, false)
-    return IMM_AST.Satz.Ausdruck.ObjektInstanziierung(lambda.klasse, klasse, true)
+    val klasse = generiereKlasse(lambda.klasse.definition, true)
+    return IMM_AST.Satz.Ausdruck.ObjektInstanziierung(lambda.klasse, klasse, IMM_AST.Satz.Ausdruck.ObjektArt.Lambda)
   }
 
   private fun generiereAnonymeKlasse(anonymeKlasse: AST.Satz.Ausdruck.AnonymeKlasse): IMM_AST.Satz.Ausdruck {
-    val klasse = generiereKlasse(anonymeKlasse.klasse.definition, false)
-    val objekt = IMM_AST.Satz.Ausdruck.ObjektInstanziierung(anonymeKlasse.klasse, klasse, true)
+    val klasse = generiereKlasse(anonymeKlasse.klasse.definition, true)
+    val objekt = IMM_AST.Satz.Ausdruck.ObjektInstanziierung(anonymeKlasse.klasse, klasse, IMM_AST.Satz.Ausdruck.ObjektArt.AnonymeKlasse)
     val sätze: MutableList<IMM_AST.Satz> = mutableListOf()
     sätze.add(IMM_AST.Satz.VariablenDeklaration(INIT_OBJEKT_VAR_NAME, objekt, false))
     sätze.addAll(anonymeKlasse.bereich.eigenschaften.map {
@@ -415,6 +444,7 @@ class CodeGenerator(startDatei: File): PipelineKomponente(startDatei) {
           IMM_AST.Satz.Ausdruck.Variable(INIT_OBJEKT_VAR_NAME),
           it.name.nominativ,
           generiereAusdruck(it.wert)) })
+    sätze.add(IMM_AST.Satz.Ausdruck.Variable(INIT_OBJEKT_VAR_NAME))
     return IMM_AST.Satz.Ausdruck.Bereich(sätze)
   }
 
@@ -425,25 +455,21 @@ class CodeGenerator(startDatei: File): PipelineKomponente(startDatei) {
     )
   }
 
-  private fun generiereEigenschaftsZugriff(zugriff: AST.Satz.Ausdruck.EigenschaftsZugriff): IMM_AST.Satz.Ausdruck {
-    return IMM_AST.Satz.Ausdruck.Eigenschaft(
-        zugriff.eigenschaftsName.nominativ,
-        generiereAusdruck(zugriff.objekt)
-    )
-  }
-
-  private fun generiereMethodenBereichEigenschaftsZugriff(zugriff: AST.Satz.Ausdruck.MethodenBereichEigenschaftsZugriff): IMM_AST.Satz.Ausdruck.Eigenschaft {
-    return IMM_AST.Satz.Ausdruck.Eigenschaft(
-        zugriff.eigenschaftsName.nominativ,
-        IMM_AST.Satz.Ausdruck.Variable(METHODEN_BLOCK_VAR_NAME)
-    )
-  }
-
-  private fun generiereSelbstEigenschaftsZugriff(zugriff: AST.Satz.Ausdruck.SelbstEigenschaftsZugriff): IMM_AST.Satz.Ausdruck {
-    return IMM_AST.Satz.Ausdruck.Eigenschaft(
-        zugriff.eigenschaftsName.nominativ,
-        IMM_AST.Satz.Ausdruck.Variable(SELBST_VAR_NAME)
-    )
+  private fun generiereEigenschaftsZugriff(zugriff: AST.Satz.Ausdruck.IEigenschaftsZugriff, objekt: IMM_AST.Satz.Ausdruck): IMM_AST.Satz.Ausdruck {
+    return if (zugriff.aufrufName == null) {
+      IMM_AST.Satz.Ausdruck.Eigenschaft(
+          zugriff.eigenschaftsName.nominativ,
+          objekt
+      )
+    } else {
+      IMM_AST.Satz.Ausdruck.MethodenAufruf(
+          zugriff.aufrufName!!,
+          zugriff.token,
+          emptyList(),
+          objekt,
+          null
+      )
+    }
   }
 
   private fun generiereVersucheFange(versucheFange: AST.Satz.Ausdruck.VersucheFange): IMM_AST.Satz.Ausdruck {
@@ -451,9 +477,24 @@ class CodeGenerator(startDatei: File): PipelineKomponente(startDatei) {
         generiereBereich(versucheFange.bereich),
         versucheFange.fange.map { IMM_AST.Satz.Ausdruck.Fange(
             it.param.name.nominativ,
+            it.param.typKnoten.typ!! as Typ.Compound,
             generiereBereich(it.bereich)
         ) },
         versucheFange.schlussendlich?.let { generiereBereich(it) }
+    )
+  }
+
+  private fun generiereWerfe(werfe: AST.Satz.Ausdruck.Werfe): IMM_AST.Satz.Ausdruck.Werfe {
+    return IMM_AST.Satz.Ausdruck.Werfe(
+        werfe.werfe,
+        generiereAusdruck(werfe.ausdruck)
+    )
+  }
+
+  private fun generiereTypÜberprüfung(typÜberprüfung: AST.Satz.Ausdruck.TypÜberprüfung): IMM_AST.Satz.Ausdruck {
+    return IMM_AST.Satz.Ausdruck.TypÜberprüfung(
+        generiereAusdruck(typÜberprüfung.ausdruck),
+        typÜberprüfung.typ
     )
   }
   // endregion

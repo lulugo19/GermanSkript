@@ -21,7 +21,7 @@ class InterpretInjection(
   val umgebung: Umgebung<Objekt> get() = aufrufStapel.top().umgebung
 }
 
-class Interpretierer(startDatei: File): PipelineKomponente(startDatei) {
+class Interpretierer(startDatei: File): PipelineKomponente(startDatei), IInterpretierer {
   val entsüßer = Entsüßer(startDatei)
   val typPrüfer = entsüßer.typPrüfer
 
@@ -40,7 +40,7 @@ class Interpretierer(startDatei: File): PipelineKomponente(startDatei) {
 
   private lateinit var interpretInjection: InterpretInjection
 
-  fun interpretiere() {
+  override fun interpretiere() {
     entsüßer.entsüße()
     initKlassenDefinitionen()
     try {
@@ -336,7 +336,7 @@ class Interpretierer(startDatei: File): PipelineKomponente(startDatei) {
       if (fange != null) {
         flags.remove(Flag.FEHLER_GEWORFEN)
         umgebung.pushBereich()
-        umgebung.schreibeVariable(fange.param.name, fehlerObjekt, true)
+        umgebung.schreibeVariable(fange.param.name, fehlerObjekt, false)
         rückgabe = durchlaufeBereich(fange.bereich, false)
         umgebung.popBereich()
       }
@@ -353,9 +353,8 @@ class Interpretierer(startDatei: File): PipelineKomponente(startDatei) {
   }
 
   private fun durchlaufeWerfe(werfe: AST.Satz.Ausdruck.Werfe): Objekt {
-    val wert = evaluiereAusdruck(werfe.ausdruck)
+    geworfenerFehler = evaluiereAusdruck(werfe.ausdruck)
     geworfenerFehlerToken = werfe.werfe.toUntyped()
-    geworfenerFehler = wert
     flags.add(Flag.FEHLER_GEWORFEN)
     return germanskript.intern.Niemals
   }
@@ -787,17 +786,17 @@ class Interpretierer(startDatei: File): PipelineKomponente(startDatei) {
   private fun evaluiereKonvertierung(konvertierung: AST.Satz.Ausdruck.Konvertierung): Objekt {
     val wert = evaluiereAusdruck(konvertierung.ausdruck)
 
-    wert.klasse.definition.konvertierungen[konvertierung.typ.typ!!.name]?.also {
-      return durchlaufeAufruf(konvertierung, it.definition, Umgebung(), true, wert)
+    return when (konvertierung.konvertierungsArt) {
+      AST.Satz.Ausdruck.KonvertierungsArt.Cast -> wert
+      AST.Satz.Ausdruck.KonvertierungsArt.Methode -> wert.klasse.definition.konvertierungen.getValue(konvertierung.typ.typ!!.name).let {
+        return durchlaufeAufruf(konvertierung, it.definition, Umgebung(), true, wert)
+      }
     }
-
-    if (wert.klasse == konvertierung.typ.typ!!) {
-      return wert
-    }
-
+    /*
     val fehlerMeldung = "Ungültige Konvertierung!\n" +
         "Die Klasse '${wert}' kann nicht nach '${konvertierung.typ.typ!!}' konvertiert werden."
     return werfeFehler(fehlerMeldung, "KonvertierungsFehler", konvertierung.token)
+    */
   }
 
   private fun werfeFehler(fehlerMeldung: String, fehlerKlassenName: String, token: Token): Objekt {

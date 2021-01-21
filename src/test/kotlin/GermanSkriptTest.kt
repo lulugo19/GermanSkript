@@ -1,5 +1,5 @@
 import germanskript.GermanSkriptFehler
-import germanskript.Interpretierer
+import germanskript.IInterpretierer
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatExceptionOfType
 import org.junit.jupiter.api.DisplayName
@@ -8,12 +8,24 @@ import java.io.*
 import kotlin.Exception
 
 class GermanSkriptTest {
-  private fun führeGermanSkriptCodeAus(germanSkriptSource: String) {
+
+  enum class CompilerPipelineVersion {
+    VERALTET,
+    AKTUELL,
+  }
+
+  private fun führeGermanSkriptCodeAus(
+      germanSkriptSource: String,
+      version: CompilerPipelineVersion = CompilerPipelineVersion.AKTUELL
+  ) {
     // erstelle temporäre Datei mit dem Source-Code
     val tempFile = createTempFile("germanskript_test_temp", ".gm")
     tempFile.writeText(germanSkriptSource)
 
-    val interpretierer = Interpretierer(tempFile)
+    val interpretierer: IInterpretierer = when (version) {
+      CompilerPipelineVersion.VERALTET -> germanskript.Interpretierer(tempFile)
+      CompilerPipelineVersion.AKTUELL -> germanskript.imm.Interpretierer(tempFile)
+    }
     try {
       interpretierer.interpretiere()
     }
@@ -61,7 +73,7 @@ class GermanSkriptTest {
   @Test
   @DisplayName("Bedingungen")
   fun bedingungen() {
-    val source = """
+    val quellCode = """
       Verb teste die Zahl:
           wenn die Zahl gleich 3 ist:
             schreibe die Zeile "Alle guten Dinge sind drei!".
@@ -75,7 +87,7 @@ class GermanSkriptTest {
       teste die Zahl 12
     """.trimIndent()
 
-    val expectedOutput = """
+    val erwarteteAusgabe = """
       11
       Alle guten Dinge sind drei!
       Die Antwort auf alles.
@@ -83,13 +95,13 @@ class GermanSkriptTest {
       
     """.trimIndent()
 
-    testeGermanSkriptCode(source, expectedOutput)
+    testeGermanSkriptCode(quellCode, erwarteteAusgabe)
   }
 
   @Test
   @DisplayName("Fakultät")
   fun fakultät() {
-    val source = """
+    val quellCode = """
       Verb(Zahl) fakultät von der Zahl:
         wenn die Zahl gleich 0 ist: gebe 1 zurück.
         sonst: gebe die Zahl * (fakultät von der Zahl - 1) zurück.
@@ -100,14 +112,14 @@ class GermanSkriptTest {
       schreibe die Zahl (fakultät von der Zahl 6)
     """.trimIndent()
 
-    val expectedOutput = """
+    val erwarteteAusgabe = """
       6
       120
       720
       
     """.trimIndent()
 
-    testeGermanSkriptCode(source, expectedOutput)
+    testeGermanSkriptCode(quellCode, erwarteteAusgabe)
   }
 
   @Test

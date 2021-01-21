@@ -558,7 +558,7 @@ sealed class AST {
           is Boolean -> boolean.toUntyped()
           is Variable -> name.bezeichner.toUntyped()
           is FunktionsAufruf -> verb.toUntyped()
-          is IndexZugriff -> singular.vornomen!!.toUntyped()
+          is IndexZugriff -> singular.bezeichner.toUntyped()
           is BinärerAusdruck -> links.holeErstesToken()
           is Minus -> operator.toUntyped()
           is Konvertierung -> ausdruck.holeErstesToken()
@@ -698,6 +698,11 @@ sealed class AST {
         override val children = sequenceOf(ausdruck)
       }
 
+      enum class KonvertierungsArt {
+        Cast,
+        Methode
+      }
+
       data class Konvertierung(
           var ausdruck: Ausdruck,
           val typ: TypKnoten
@@ -706,6 +711,7 @@ sealed class AST {
         override val token = typName.bezeichner.toUntyped()
         override val vollerName get() = "als ${typName.nominativ}"
 
+        var konvertierungsArt: KonvertierungsArt = KonvertierungsArt.Methode
         override val children = sequenceOf(ausdruck, typ)
       }
 
