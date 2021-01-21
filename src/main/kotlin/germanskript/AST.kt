@@ -64,7 +64,6 @@ sealed class AST {
     abstract var fälle: Array<EnumSet<Kasus>>
     abstract var vornomen: TypedToken<TokenTyp.VORNOMEN>?
     abstract val hauptWort: String
-    abstract val teilWörterAnzahl: Int
 
     val numerus: Numerus get() = numera.first()
     val geprüft get() = numera.size != 0
@@ -87,7 +86,6 @@ sealed class AST {
       override var deklination: Deklination? = null
       override var numera: EnumSet<Numerus> = EnumSet.noneOf(Numerus::class.java)
       override var fälle: Array<EnumSet<Kasus>> = arrayOf(EnumSet.noneOf(Kasus::class.java), EnumSet.noneOf(Kasus::class.java))
-      override val teilWörterAnzahl = bezeichner.typ.teilWörter.size
 
       private var _adjektiv: Adjektiv? = null
       var adjektiv: Adjektiv?
@@ -144,7 +142,6 @@ sealed class AST {
       override var deklination: Deklination? = null
       override var fälle: Array<EnumSet<Kasus>> = arrayOf(EnumSet.noneOf(Kasus::class.java), EnumSet.noneOf(Kasus::class.java))
       override val bezeichnerToken = bezeichner.toUntyped()
-      override val teilWörterAnzahl = 1
       var normalisierung: String = ""
 
       override val hauptWort = bezeichner.wert.capitalize()
