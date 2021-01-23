@@ -217,7 +217,7 @@ sealed class TokenTyp(val anzeigeName: String) {
 
     // Identifier
     data class BEZEICHNER_KLEIN(val name: String): TokenTyp("bezeichner")
-    data class BEZEICHNER_GROSS(val teilWörter: Array<String>, val symbol: String = "", val adjektiv: TypedToken<BEZEICHNER_KLEIN>?): TokenTyp("Bezeichner") {
+    data class BEZEICHNER_GROSS(val teilWörter: Array<String>, val symbol: String = "", val adjektiv: TypedToken<BEZEICHNER_KLEIN>? = null): TokenTyp("Bezeichner") {
         val istSymbol get() = teilWörter.isEmpty()
         val hatSymbol get() = symbol.isNotEmpty()
         val hatAdjektiv get() = adjektiv != null

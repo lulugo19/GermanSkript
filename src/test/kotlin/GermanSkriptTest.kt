@@ -1510,8 +1510,8 @@ class GermanSkriptTest {
   }
 
   @Test
-  @DisplayName("Filter Map Reduce")
-  fun filterMapReduce() {
+  @DisplayName("filtern, transformieren, reduzieren")
+  fun filternTransformierenReduzieren() {
     val quellCode = """
       Deklination Femininum Singular(Summe) Plural(Summen)
 
@@ -1526,6 +1526,21 @@ class GermanSkriptTest {
     """.trimIndent()
 
     testeGermanSkriptCode(quellCode, "220\n")
+  }
+
+  @Test
+  @DisplayName("Transformiere Methoden-Reflexiv-Aufruf")
+  fun transformiereMethodenReflexivAufruf() {
+    val quellCode = """
+      einige Zahlen sind einige Zahlen[1, 2, 3, 4, 5]
+      einige Zahlen sind (transformiere<Zahl> die Zahlen mit etwas Transformierendem: die Zahl hoch 2.)
+      
+      schreibe die Zeile (die Zahlen als Zeichenfolge)
+    """.trimIndent()
+
+    val erwarteteAusgabe = "[1, 4, 9, 16, 25]\n"
+
+    testeGermanSkriptCode(quellCode, erwarteteAusgabe)
   }
 
   @Test

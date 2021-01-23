@@ -1215,6 +1215,15 @@ class TypPrüfer(startDatei: File): PipelineKomponente(startDatei) {
     if (schnittstelle.definition.methodenSignaturen.size != 1) {
       throw GermanSkriptFehler.LambdaFehler.UngültigeLambdaSchnittstelle(lambda.schnittstelle.name.bezeichnerToken, schnittstelle.definition)
     }
+
+    if (schnittstelle.typArgumente.size != schnittstelle.definition.typParameter.size) {
+      throw GermanSkriptFehler.TypFehler.TypArgumentFehler(
+          lambda.schnittstelle.name.bezeichnerToken,
+          schnittstelle.typArgumente.size,
+          schnittstelle.definition.typParameter.size
+      )
+    }
+
     val signatur = schnittstelle.definition.methodenSignaturen[0].copy()
     signatur.parameterNamen.clear()
 
