@@ -1099,8 +1099,8 @@ class TypPrüfer(startDatei: File): PipelineKomponente(startDatei) {
   private fun holeEigenschaftAusKlasse(eigenschaftsZugriff: AST.Satz.Ausdruck.IEigenschaftsZugriff, klasse: Typ.Compound.Klasse): Typ {
     val eigenschaftsName = eigenschaftsZugriff.eigenschaftsName
     val klassenDefinition = klasse.definition
-    val typ = try {
-      holeNormaleEigenschaftAusKlasse(eigenschaftsName, klasse).typKnoten.typ!!
+    return try {
+      ersetzeGenerics(holeNormaleEigenschaftAusKlasse(eigenschaftsName, klasse).typKnoten, null, klasse.typArgumente).typ!!
     } catch (fehler: GermanSkriptFehler.Undefiniert.Eigenschaft) {
       if (!klassenDefinition.berechneteEigenschaften.containsKey(eigenschaftsName.nominativ)) {
         if (klasse.definition.elternKlasse != null) {
@@ -1115,10 +1115,9 @@ class TypPrüfer(startDatei: File): PipelineKomponente(startDatei) {
         throw fehler
       } else {
         eigenschaftsZugriff.aufrufName = "${eigenschaftsName.nominativ} von ${klassenDefinition.namensToken.wert}"
-        klassenDefinition.berechneteEigenschaften.getValue(eigenschaftsName.nominativ).rückgabeTyp.typ!!
+        ersetzeGenerics(klassenDefinition.berechneteEigenschaften.getValue(eigenschaftsName.nominativ).rückgabeTyp, null, klasse.typArgumente).typ!!
       }
     }
-    return if (typ is Typ.Generic) klasse.typArgumente[typ.index].typ!! else typ
   }
 
   private fun evaluiereBinärenAusdruck(ausdruck: AST.Satz.Ausdruck.BinärerAusdruck): Typ {
