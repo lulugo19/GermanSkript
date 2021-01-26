@@ -19,28 +19,28 @@ class HashMap(typ: Typ.Compound.Klasse): Objekt(BuildIn.IMMKlassen.hashMap, typ)
 
   override fun rufeMethodeAuf(aufruf: IMM_AST.Satz.Ausdruck.IAufruf, injection: Interpretierer.InterpretInjection): Objekt {
     return when (aufruf.name) {
-      "entferne den Schlüssel" -> entferneDenSchlüssel(aufruf, injection)
-      "enthält den Schlüssel" -> enthältDenSchlüssel(aufruf, injection)
-      "füge den Schlüssel mit dem Wert hinzu" -> fügeDenSchlüsselMitDemWertHinzu(aufruf, injection)
+      "entferne den Schlüssel" -> entferneDenSchlüssel(injection)
+      "enthält den Schlüssel" -> enthältDenSchlüssel(injection)
+      "füge den Schlüssel mit dem Wert hinzu" -> fügeDenSchlüsselMitDemWertHinzu(injection)
       "hole den Wert mit dem Schlüssel" -> holeDenWertMitDemSchlüssel(aufruf, injection)
-      "hole den Wert mit dem Schlüssel, dem Wert" -> holeDenWertMitDemSchlüsselUndDemStandardWert(aufruf, injection)
-      "lösche alles" -> löscheAlles(aufruf, injection)
-      "SchlüsselWertePaare von HashMap" -> schlüsselWertePaarEigenschaft(aufruf)
+      "hole den Wert mit dem Schlüssel, dem Wert" -> holeDenWertMitDemSchlüsselUndDemStandardWert(injection)
+      "lösche alles" -> löscheAlles()
+      "SchlüsselWertePaare von HashMap" -> schlüsselWertePaarEigenschaft()
       else -> super.rufeMethodeAuf(aufruf, injection)
     }
   }
 
-  private fun entferneDenSchlüssel(aufruf: IMM_AST.Satz.Ausdruck.IAufruf, injection: Interpretierer.InterpretInjection): Objekt {
+  private fun entferneDenSchlüssel(injection: Interpretierer.InterpretInjection): Objekt {
     val schlüssel = injection.umgebung.leseVariable("Schlüssel")
     return Boolean(map.remove(schlüssel) != null)
   }
 
-  private fun enthältDenSchlüssel(aufruf: IMM_AST.Satz.Ausdruck.IAufruf, injection: Interpretierer.InterpretInjection): Objekt {
+  private fun enthältDenSchlüssel(injection: Interpretierer.InterpretInjection): Objekt {
     val schlüssel = injection.umgebung.leseVariable("Schlüssel")
     return Boolean(map.containsKey(schlüssel))
   }
 
-  private fun fügeDenSchlüsselMitDemWertHinzu(aufruf: IMM_AST.Satz.Ausdruck.IAufruf, injection: Interpretierer.InterpretInjection): Objekt {
+  private fun fügeDenSchlüsselMitDemWertHinzu(injection: Interpretierer.InterpretInjection): Objekt {
     val schlüssel = injection.umgebung.leseVariable("Schlüssel")
     val wert = injection.umgebung.leseVariable("Wert")
     map[schlüssel] = wert
@@ -58,18 +58,18 @@ class HashMap(typ: Typ.Compound.Klasse): Objekt(BuildIn.IMMKlassen.hashMap, typ)
     }
   }
 
-  private fun holeDenWertMitDemSchlüsselUndDemStandardWert(aufruf: IMM_AST.Satz.Ausdruck.IAufruf, injection: Interpretierer.InterpretInjection): Objekt {
+  private fun holeDenWertMitDemSchlüsselUndDemStandardWert(injection: Interpretierer.InterpretInjection): Objekt {
     val schlüssel = injection.umgebung.leseVariable("Schlüssel")
     val standardWert = injection.umgebung.leseVariable("StandardWert")
     return map.getOrDefault(schlüssel, standardWert)
   }
 
-  private fun löscheAlles(aufruf: IMM_AST.Satz.Ausdruck.IAufruf, injection: Interpretierer.InterpretInjection): Objekt {
+  private fun löscheAlles(): Objekt {
     map.clear()
     return Nichts
   }
 
-  private fun schlüsselWertePaarEigenschaft(aufruf: IMM_AST.Satz.Ausdruck.IAufruf): Objekt {
+  private fun schlüsselWertePaarEigenschaft(): Objekt {
     val typ = Typ.Compound.Klasse(BuildIn.Klassen.liste, emptyList())
     return Liste(typ, map.entries.map { entry ->
       SkriptObjekt(BuildIn.IMMKlassen.paar, Typ.Compound.Klasse(BuildIn.Klassen.paar, typ.typArgumente)).also {

@@ -67,6 +67,7 @@ class CodeGenerator(startDatei: File): PipelineKomponente(startDatei) {
     BuildIn.IMMKlassen.boolean = klassen.getValue(BuildIn.Klassen.boolean.definition)
     BuildIn.IMMKlassen.datei = klassen.getValue(BuildIn.Klassen.datei.definition)
     BuildIn.IMMKlassen.hashMap = klassen.getValue(BuildIn.Klassen.hashMap)
+    BuildIn.IMMKlassen.hashSet = klassen.getValue(BuildIn.Klassen.hashSet)
     BuildIn.IMMKlassen.schreiber = klassen.getValue(BuildIn.Klassen.schreiber.definition)
     BuildIn.IMMKlassen.liste = klassen.getValue(BuildIn.Klassen.liste)
     BuildIn.IMMKlassen.paar = klassen.getValue(BuildIn.Klassen.paar)

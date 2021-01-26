@@ -433,7 +433,7 @@ class Interpretierer(startDatei: File): PipelineKomponente(startDatei), IInterpr
   }
 
   private fun evaluiereBoolean(ausdruck: AST.Satz.Ausdruck.Boolean): Objekt {
-    return germanskript.alte_pipeline.intern.Boolean(ausdruck.boolean.typ.boolean)
+    return Boolean(ausdruck.boolean.typ.boolean)
   }
 
   private fun evaluiereKonstante(konstante: AST.Satz.Ausdruck.Konstante): Objekt = evaluiereAusdruck(konstante.wert!!)
@@ -452,6 +452,7 @@ class Interpretierer(startDatei: File): PipelineKomponente(startDatei), IInterpr
     val objekt = when(instanziierung.klasse.name.nominativ) {
       "Datei" -> Datei(klassenTyp, eigenschaften)
       "HashMap" -> germanskript.alte_pipeline.intern.HashMap(klassenTyp, eigenschaften)
+      "HashSet" -> TODO("interne HashSet für alte Pipeline")
       else -> Objekt.SkriptObjekt(klassenTyp, eigenschaften)
     }
 
@@ -524,9 +525,9 @@ class Interpretierer(startDatei: File): PipelineKomponente(startDatei), IInterpr
 
     return if (operator.klasse == OperatorKlasse.LOGISCH) {
       when (operator) {
-        Operator.ODER -> germanskript.alte_pipeline.intern.Boolean(
+        Operator.ODER -> Boolean(
             (links as germanskript.alte_pipeline.intern.Boolean).boolean || (rechts as germanskript.alte_pipeline.intern.Boolean).boolean)
-        Operator.UND -> germanskript.alte_pipeline.intern.Boolean(
+        Operator.UND -> Boolean(
             (links as germanskript.alte_pipeline.intern.Boolean).boolean && (rechts as germanskript.alte_pipeline.intern.Boolean).boolean)
         else -> throw Exception("Dieser Fall sollte nie eintreten!")
       }
@@ -551,12 +552,12 @@ class Interpretierer(startDatei: File): PipelineKomponente(startDatei), IInterpr
         if (operator == Operator.GLEICH) {
           ergebnis as germanskript.alte_pipeline.intern.Boolean
         } else {
-          germanskript.alte_pipeline.intern.Boolean(!(ergebnis as germanskript.alte_pipeline.intern.Boolean).boolean)
+          Boolean(!(ergebnis as germanskript.alte_pipeline.intern.Boolean).boolean)
         }
       } else {
         val vergleich = ergebnis as Zahl
 
-        germanskript.alte_pipeline.intern.Boolean(when (operator) {
+        Boolean(when (operator) {
           Operator.GRÖßER -> vergleich.zahl > 0
           Operator.KLEINER -> vergleich.zahl < 0
           Operator.GRÖSSER_GLEICH -> vergleich.zahl >= 0
@@ -576,12 +577,12 @@ class Interpretierer(startDatei: File): PipelineKomponente(startDatei), IInterpr
       rechts: Zeichenfolge
   ): Objekt {
     return when (operator) {
-      Operator.GLEICH -> germanskript.alte_pipeline.intern.Boolean(links == rechts)
-      Operator.UNGLEICH -> germanskript.alte_pipeline.intern.Boolean(links != rechts)
-      Operator.GRÖßER -> germanskript.alte_pipeline.intern.Boolean(links > rechts)
-      Operator.KLEINER -> germanskript.alte_pipeline.intern.Boolean(links < rechts)
-      Operator.GRÖSSER_GLEICH -> germanskript.alte_pipeline.intern.Boolean(links >= rechts)
-      Operator.KLEINER_GLEICH -> germanskript.alte_pipeline.intern.Boolean(links <= rechts)
+      Operator.GLEICH -> Boolean(links == rechts)
+      Operator.UNGLEICH -> Boolean(links != rechts)
+      Operator.GRÖßER -> Boolean(links > rechts)
+      Operator.KLEINER -> Boolean(links < rechts)
+      Operator.GRÖSSER_GLEICH -> Boolean(links >= rechts)
+      Operator.KLEINER_GLEICH -> Boolean(links <= rechts)
       Operator.PLUS -> links + rechts
       else -> throw Exception("Operator $operator ist für den Typen Zeichenfolge nicht definiert.")
     }
@@ -589,12 +590,12 @@ class Interpretierer(startDatei: File): PipelineKomponente(startDatei), IInterpr
 
   fun zahlOperation(operator: Operator, links: Zahl, rechts: Zahl): Objekt {
     return when (operator) {
-      Operator.GLEICH -> germanskript.alte_pipeline.intern.Boolean(links == rechts)
-      Operator.UNGLEICH -> germanskript.alte_pipeline.intern.Boolean(links != rechts)
-      Operator.GRÖßER -> germanskript.alte_pipeline.intern.Boolean(links > rechts)
-      Operator.KLEINER -> germanskript.alte_pipeline.intern.Boolean(links < rechts)
-      Operator.GRÖSSER_GLEICH -> germanskript.alte_pipeline.intern.Boolean(links >= rechts)
-      Operator.KLEINER_GLEICH -> germanskript.alte_pipeline.intern.Boolean(links <= rechts)
+      Operator.GLEICH -> Boolean(links == rechts)
+      Operator.UNGLEICH -> Boolean(links != rechts)
+      Operator.GRÖßER -> Boolean(links > rechts)
+      Operator.KLEINER -> Boolean(links < rechts)
+      Operator.GRÖSSER_GLEICH -> Boolean(links >= rechts)
+      Operator.KLEINER_GLEICH -> Boolean(links <= rechts)
       Operator.PLUS -> links + rechts
       Operator.MINUS -> links - rechts
       Operator.MAL -> links * rechts
@@ -607,10 +608,10 @@ class Interpretierer(startDatei: File): PipelineKomponente(startDatei), IInterpr
 
   fun booleanOperation(operator: Operator, links: germanskript.alte_pipeline.intern.Boolean, rechts: germanskript.alte_pipeline.intern.Boolean): Objekt {
     return when (operator) {
-      Operator.ODER -> germanskript.alte_pipeline.intern.Boolean(links.boolean || rechts.boolean)
-      Operator.UND -> germanskript.alte_pipeline.intern.Boolean(links.boolean && rechts.boolean)
-      Operator.GLEICH -> germanskript.alte_pipeline.intern.Boolean(links.boolean == rechts.boolean)
-      Operator.UNGLEICH -> germanskript.alte_pipeline.intern.Boolean(links.boolean != rechts.boolean)
+      Operator.ODER -> Boolean(links.boolean || rechts.boolean)
+      Operator.UND -> Boolean(links.boolean && rechts.boolean)
+      Operator.GLEICH -> Boolean(links.boolean == rechts.boolean)
+      Operator.UNGLEICH -> Boolean(links.boolean != rechts.boolean)
       else -> throw Exception("Operator $operator ist für den Typen Boolean nicht definiert.")
     }
   }
@@ -686,7 +687,7 @@ class Interpretierer(startDatei: File): PipelineKomponente(startDatei), IInterpr
   private fun evaluiereTypÜberprüfung(typÜberprüfung: AST.Satz.Ausdruck.TypÜberprüfung): Objekt {
     val klasse = evaluiereAusdruck(typÜberprüfung.ausdruck).klasse
     val istTyp = typPrüfer.typIstTyp(klasse, typÜberprüfung.typ.typ!!)
-    return germanskript.alte_pipeline.intern.Boolean(istTyp)
+    return Boolean(istTyp)
   }
 
   // endregion

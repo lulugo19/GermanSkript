@@ -201,7 +201,7 @@ class Interpretierer(startDatei: File): PipelineKomponente(startDatei), IInterpr
       is IMM_AST.Satz.Ausdruck.ObjektInstanziierung -> interpretiereObjektInstanziierung(ausdruck)
       is IMM_AST.Satz.Ausdruck.Konstante.Zahl -> Zahl(ausdruck.zahl)
       is IMM_AST.Satz.Ausdruck.Konstante.Zeichenfolge -> Zeichenfolge(ausdruck.zeichenfolge)
-      is IMM_AST.Satz.Ausdruck.Konstante.Boolean -> germanskript.intern.Boolean(ausdruck.boolean)
+      is IMM_AST.Satz.Ausdruck.Konstante.Boolean -> Boolean(ausdruck.boolean)
       IMM_AST.Satz.Ausdruck.Konstante.Nichts -> Nichts
       is IMM_AST.Satz.Ausdruck.VersucheFange -> interpretiereVersucheFange(ausdruck)
       is IMM_AST.Satz.Ausdruck.Werfe -> interpretiereWerfe(ausdruck)
@@ -215,6 +215,7 @@ class Interpretierer(startDatei: File): PipelineKomponente(startDatei), IInterpr
     return when(instanziierung.klasse.name) {
       "Liste" -> Liste(instanziierung.typ, mutableListOf())
       "HashMap" -> germanskript.intern.HashMap(instanziierung.typ)
+      "HashSet" -> germanskript.intern.HashSet(instanziierung.typ)
       "Datei" -> Datei()
       else ->
         if (instanziierung.objektArt != IMM_AST.Satz.Ausdruck.ObjektArt.Klasse)
@@ -285,7 +286,7 @@ class Interpretierer(startDatei: File): PipelineKomponente(startDatei), IInterpr
   private fun interpretiereTypÜberprüfung(typÜberprüfung: IMM_AST.Satz.Ausdruck.TypÜberprüfung): Objekt {
     val typ = interpretiereAusdruck(typÜberprüfung.ausdruck).typ
     val istTyp = typPrüfer.typIstTyp(typ, typÜberprüfung.typ)
-    return germanskript.intern.Boolean(istTyp)
+    return Boolean(istTyp)
   }
 
   private fun interpretiereTypCast(typCast: IMM_AST.Satz.Ausdruck.TypCast): Objekt {
@@ -300,30 +301,30 @@ class Interpretierer(startDatei: File): PipelineKomponente(startDatei), IInterpr
   }
 
   private fun interpretiereLogischesUnd(logischesUnd: IMM_AST.Satz.Ausdruck.LogischesUnd): Objekt {
-      return germanskript.intern.Boolean(
+      return Boolean(
           (interpretiereAusdruck(logischesUnd.links) as germanskript.intern.Boolean).boolean &&
               (interpretiereAusdruck(logischesUnd.rechts) as germanskript.intern.Boolean).boolean
       )
   }
 
   private fun interpretiereLogischesOder(logischesOder: IMM_AST.Satz.Ausdruck.LogischesOder): Objekt {
-    return germanskript.intern.Boolean(
+    return Boolean(
         (interpretiereAusdruck(logischesOder.links) as germanskript.intern.Boolean).boolean ||
             (interpretiereAusdruck(logischesOder.rechts) as germanskript.intern.Boolean).boolean
     )
   }
 
   private fun interpretiereLogischesNicht(logischesNicht: IMM_AST.Satz.Ausdruck.LogischesNicht): Objekt {
-    return germanskript.intern.Boolean(!(interpretiereAusdruck(logischesNicht.ausdruck) as germanskript.intern.Boolean).boolean)
+    return Boolean(!(interpretiereAusdruck(logischesNicht.ausdruck) as germanskript.intern.Boolean).boolean)
   }
 
   private fun interpretiereVergleich(vergleich: IMM_AST.Satz.Ausdruck.Vergleich): Objekt {
     val vergleichsWert = (interpretiereMethodenAufruf(vergleich.vergleichsMethode) as Zahl).zahl
     return when (vergleich.operator) {
-      IMM_AST.Satz.Ausdruck.VergleichsOperator.KLEINER -> germanskript.intern.Boolean(vergleichsWert < 0)
-      IMM_AST.Satz.Ausdruck.VergleichsOperator.GRÖSSER -> germanskript.intern.Boolean(vergleichsWert > 0)
-      IMM_AST.Satz.Ausdruck.VergleichsOperator.KLEINER_GLEICH -> germanskript.intern.Boolean(vergleichsWert <= 0)
-      IMM_AST.Satz.Ausdruck.VergleichsOperator.GRÖSSER_GLEICH -> germanskript.intern.Boolean(vergleichsWert >= 0)
+      IMM_AST.Satz.Ausdruck.VergleichsOperator.KLEINER -> Boolean(vergleichsWert < 0)
+      IMM_AST.Satz.Ausdruck.VergleichsOperator.GRÖSSER -> Boolean(vergleichsWert > 0)
+      IMM_AST.Satz.Ausdruck.VergleichsOperator.KLEINER_GLEICH -> Boolean(vergleichsWert <= 0)
+      IMM_AST.Satz.Ausdruck.VergleichsOperator.GRÖSSER_GLEICH -> Boolean(vergleichsWert >= 0)
     }
   }
 

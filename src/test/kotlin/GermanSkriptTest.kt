@@ -1990,4 +1990,40 @@ class GermanSkriptTest {
 
     testeGermanSkriptCode(quellCode, erwarteteAusgabe)
   }
+
+  @Test
+  @DisplayName("HashSet")
+  fun hashSet() {
+    val quellCode = """
+      das HashSet ist ein HashSet<Zahl>
+      HashSet:
+        füge die Zahl 2 hinzu
+        füge die Zahl 3 hinzu
+        füge die Zahl 5 hinzu
+        füge die Zahl 2 hinzu
+        
+        schreibe die Zahl (deine Größe)
+        
+        schreibe die Zeile (enthält die Zahl 2) als Zeichenfolge
+        
+        entferne die Zahl 2
+        
+        schreibe die Zeile (enthält die Zahl 2) als Zeichenfolge
+        
+        lösche alles
+        
+        schreibe die Zahl (deine Größe)
+      !
+    """.trimIndent()
+
+    val erwarteteAusgabe = """
+      3
+      wahr
+      falsch
+      0
+      
+    """.trimIndent()
+
+    testeGermanSkriptCode(quellCode, erwarteteAusgabe)
+  }
 }

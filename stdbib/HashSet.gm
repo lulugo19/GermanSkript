@@ -1,0 +1,18 @@
+Deklination Neutrum Singular(Set) Plural(Sets)
+
+Nomen<Wert> HashSet:
+  jene Größe ist 0
+.
+
+Implementiere<Wert> das HashSet<Wert>:
+  
+  Verb(Boolean) enthält den Wert: intern.
+
+  Verb füge den Wert hinzu: intern.
+
+  Verb(Boolean) entferne den Wert: intern.
+
+  Verb lösche alles: intern.
+
+  Eigenschaft(Liste<Wert>) Werte: intern.
+.

@@ -120,6 +120,7 @@ class Typisierer(startDatei: File): PipelineKomponente(startDatei) {
     BuildIn.Klassen.datei = Typ.Compound.Klasse(definierer.holeTypDefinition("Datei", arrayOf("IO"))  as AST.Definition.Typdefinition.Klasse, emptyList())
     BuildIn.Klassen.liste = definierer.holeTypDefinition("Liste") as AST.Definition.Typdefinition.Klasse
     BuildIn.Klassen.hashMap = definierer.holeTypDefinition("HashMap") as AST.Definition.Typdefinition.Klasse
+    BuildIn.Klassen.hashSet = definierer.holeTypDefinition("HashSet") as AST.Definition.Typdefinition.Klasse
     BuildIn.Klassen.paar = definierer.holeTypDefinition("Paar") as AST.Definition.Typdefinition.Klasse
 
     // Build In Schnittstellen

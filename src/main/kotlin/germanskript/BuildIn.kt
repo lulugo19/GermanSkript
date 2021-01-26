@@ -13,6 +13,7 @@ object BuildIn {
     lateinit var schreiber: Typ.Compound.Klasse
     lateinit var liste: AST.Definition.Typdefinition.Klasse
     lateinit var hashMap: AST.Definition.Typdefinition.Klasse
+    lateinit var hashSet: AST.Definition.Typdefinition.Klasse
     lateinit var paar: AST.Definition.Typdefinition.Klasse
   }
 
@@ -25,6 +26,7 @@ object BuildIn {
     lateinit var boolean: IMM_AST.Definition.Klasse
     lateinit var datei: IMM_AST.Definition.Klasse
     lateinit var hashMap: IMM_AST.Definition.Klasse
+    lateinit var hashSet: IMM_AST.Definition.Klasse
     lateinit var schreiber: IMM_AST.Definition.Klasse
     lateinit var liste: IMM_AST.Definition.Klasse
     lateinit var paar: IMM_AST.Definition.Klasse
