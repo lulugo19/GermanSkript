@@ -39,7 +39,9 @@ enum class ASTKnotenID {
   BEDINGUNGS_TERM,
   LISTEN_ELEMENT_ZUWEISUNG,
   TYP_ÜBERPRÜFUNG,
-  ANONYME_KLASSE
+  ANONYME_KLASSE,
+  SelbstEigenschaftsZugriff,
+  MethodenBereichsEigenschaftsZugriff
 }
 
 class Parser(startDatei: File): PipelineKomponente(startDatei) {
@@ -567,8 +569,8 @@ private sealed class SubParser<T: AST>() {
         }
         else -> when(vornomen.typ) {
           TokenTyp.VORNOMEN.ARTIKEL.BESTIMMT -> AST.Satz.Ausdruck.Variable(nomen)
-          TokenTyp.VORNOMEN.POSSESSIV_PRONOMEN.MEIN -> AST.Satz.Ausdruck.SelbstEigenschaftsZugriff(nomen)
-          TokenTyp.VORNOMEN.POSSESSIV_PRONOMEN.DEIN -> AST.Satz.Ausdruck.MethodenBereichEigenschaftsZugriff(nomen)
+          TokenTyp.VORNOMEN.POSSESSIV_PRONOMEN.MEIN -> subParse(Satz.Ausdruck.SelbstEigenschaftsZugriff(nomen))
+          TokenTyp.VORNOMEN.POSSESSIV_PRONOMEN.DEIN -> subParse(Satz.Ausdruck.MethodenBereichsEigenschaftsZugriff(nomen))
           else -> throw GermanSkriptFehler.SyntaxFehler.ParseFehler(vornomen.toUntyped(), "bestimmter Artikel oder Possessivpronomen")
         }
       }
@@ -602,10 +604,10 @@ private sealed class SubParser<T: AST>() {
       }
       TokenTyp.VORNOMEN.POSSESSIV_PRONOMEN.MEIN ->
         if (nächstesToken.typ is TokenTyp.OFFENE_ECKIGE_KLAMMER) subParse(Satz.Ausdruck.NomenAusdruck.IndexZugriff(nomen, inBedingungsTerm))
-        else  AST.Satz.Ausdruck.SelbstEigenschaftsZugriff(nomen)
+        else subParse(Satz.Ausdruck.SelbstEigenschaftsZugriff(nomen))
       TokenTyp.VORNOMEN.POSSESSIV_PRONOMEN.DEIN ->
         if (nächstesToken.typ is TokenTyp.OFFENE_ECKIGE_KLAMMER) subParse(Satz.Ausdruck.NomenAusdruck.IndexZugriff(nomen, inBedingungsTerm))
-        else   AST.Satz.Ausdruck.MethodenBereichEigenschaftsZugriff(nomen)
+        else subParse(Satz.Ausdruck.MethodenBereichsEigenschaftsZugriff(nomen))
       is TokenTyp.VORNOMEN.DEMONSTRATIV_PRONOMEN -> throw GermanSkriptFehler.SyntaxFehler.ParseFehler(vornomen.toUntyped(), null,
           "Die Demonstrativpronomen 'diese' und 'jene' dürfen nicht in Ausdrücken verwendet werden.")
       else -> throw Exception("Dieser Fall sollte nie ausgeführt werden.")
@@ -1109,9 +1111,9 @@ private sealed class SubParser<T: AST>() {
               val eigenschaft = parseNomenOhneVornomen(false)
               val vornomenTyp = nomen.vornomen!!.typ
               val objekt: AST.Satz.Ausdruck = if (vornomenTyp is TokenTyp.VORNOMEN.POSSESSIV_PRONOMEN.MEIN) {
-                AST.Satz.Ausdruck.SelbstEigenschaftsZugriff(eigenschaft)
+                subParse(SelbstEigenschaftsZugriff(eigenschaft))
               } else {
-                AST.Satz.Ausdruck.MethodenBereichEigenschaftsZugriff(eigenschaft)
+                subParse(MethodenBereichsEigenschaftsZugriff(eigenschaft))
               }
               AST.Satz.Ausdruck.EigenschaftsZugriff(nomen, objekt)
             } else {
@@ -1308,6 +1310,44 @@ private sealed class SubParser<T: AST>() {
           )
           return AST.Satz.Ausdruck.Werfe(werfe, ausdruck)
         }
+      }
+
+      class SelbstEigenschaftsZugriff(val eigenschaftsName: AST.WortArt.Nomen):
+          Ausdruck<AST.Satz.Ausdruck.SelbstEigenschaftsZugriff>() {
+
+        override val id: ASTKnotenID = ASTKnotenID.SelbstEigenschaftsZugriff
+
+        override fun bewacheKnoten() {
+          if (!hierarchyContainsAnyNode(ASTKnotenID.IMPLEMENTIERUNG, ASTKnotenID.KLASSEN_DEFINITION)) {
+            val vornomen = eigenschaftsName.vornomen!!
+            throw GermanSkriptFehler.SyntaxFehler.ParseFehler(vornomen.toUntyped(), null,
+                "Das Possessivpronomen '${vornomen.wert}' darf nur innerhalb einer Klassen-Implementierung verwendet werden.")
+          }
+        }
+
+        override fun parseImpl(): AST.Satz.Ausdruck.SelbstEigenschaftsZugriff {
+          return AST.Satz.Ausdruck.SelbstEigenschaftsZugriff(eigenschaftsName)
+        }
+
+      }
+
+      class MethodenBereichsEigenschaftsZugriff(val eigenschaftsName: AST.WortArt.Nomen):
+          Ausdruck<AST.Satz.Ausdruck.MethodenBereichEigenschaftsZugriff>() {
+
+        override val id: ASTKnotenID = ASTKnotenID.MethodenBereichsEigenschaftsZugriff
+
+        override fun bewacheKnoten() {
+          if (!hierarchyContainsNode(ASTKnotenID.METHODEN_BEREICH)) {
+            val vornomen = eigenschaftsName.vornomen!!
+            throw GermanSkriptFehler.SyntaxFehler.ParseFehler(vornomen.toUntyped(), null,
+                "Das Possessivpronomen '${vornomen.wert}' darf nur in Methodenblöcken verwendet werden.")
+          }
+        }
+
+        override fun parseImpl(): AST.Satz.Ausdruck.MethodenBereichEigenschaftsZugriff {
+          return AST.Satz.Ausdruck.MethodenBereichEigenschaftsZugriff(eigenschaftsName)
+        }
+
       }
     }
   }
