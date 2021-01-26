@@ -13,6 +13,7 @@ object BuildIn {
     lateinit var schreiber: Typ.Compound.Klasse
     lateinit var liste: AST.Definition.Typdefinition.Klasse
     lateinit var hashMap: AST.Definition.Typdefinition.Klasse
+    lateinit var paar: AST.Definition.Typdefinition.Klasse
   }
 
   object IMMKlassen {
@@ -26,6 +27,7 @@ object BuildIn {
     lateinit var hashMap: IMM_AST.Definition.Klasse
     lateinit var schreiber: IMM_AST.Definition.Klasse
     lateinit var liste: IMM_AST.Definition.Klasse
+    lateinit var paar: IMM_AST.Definition.Klasse
   }
 
   object Schnittstellen {

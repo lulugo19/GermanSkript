@@ -1694,8 +1694,7 @@ class GermanSkriptTest {
 
     val erwarteteAusgabe = "15\n"
 
-    führeGermanSkriptCodeAus(quellCode)
-    //testeGermanSkriptCode(quellCode, erwarteteAusgabe)
+    testeGermanSkriptCode(quellCode, erwarteteAusgabe)
   }
 
   @Test
@@ -1968,6 +1967,12 @@ class GermanSkriptTest {
           schreibe die Zeile (der Fehler als Zeichenfolge)
         .
         schreibe die Zeile (hole den Wert mit dem Schlüssel "Türkisch", dem StandardWert "N/A")
+
+        für jedes Paar in deinen SchlüsselWertePaaren:
+          wenn der ersteWert des Paars gleich "Deutsch" ist:
+            schreibe die Zeile "#{der ersteWert des Paars} -> #{der zweiteWert des Paars}"
+          .
+        .
       !
     """.trimIndent()
 
@@ -1979,6 +1984,7 @@ class GermanSkriptTest {
       Priwet
       Der Schlüssel 'Türkisch' konnte in der HashMap nicht gefunden werden.
       N/A
+      Deutsch -> Hallo
       
     """.trimIndent()
 

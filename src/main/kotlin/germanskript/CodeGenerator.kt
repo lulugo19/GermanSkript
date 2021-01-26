@@ -69,6 +69,7 @@ class CodeGenerator(startDatei: File): PipelineKomponente(startDatei) {
     BuildIn.IMMKlassen.hashMap = klassen.getValue(BuildIn.Klassen.hashMap)
     BuildIn.IMMKlassen.schreiber = klassen.getValue(BuildIn.Klassen.schreiber.definition)
     BuildIn.IMMKlassen.liste = klassen.getValue(BuildIn.Klassen.liste)
+    BuildIn.IMMKlassen.paar = klassen.getValue(BuildIn.Klassen.paar)
   }
 
   private fun generiereFunktion(funktion: AST.Definition.Funktion): IMM_AST.Definition.Funktion {

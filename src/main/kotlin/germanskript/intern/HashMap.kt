@@ -1,9 +1,6 @@
 package germanskript.intern
 
-import germanskript.BuildIn
-import germanskript.Typ
-import germanskript.IMM_AST
-import germanskript.Interpretierer
+import germanskript.*
 
 class HashMap(typ: Typ.Compound.Klasse): Objekt(BuildIn.IMMKlassen.hashMap, typ) {
 
@@ -28,14 +25,14 @@ class HashMap(typ: Typ.Compound.Klasse): Objekt(BuildIn.IMMKlassen.hashMap, typ)
       "hole den Wert mit dem Schlüssel" -> holeDenWertMitDemSchlüssel(aufruf, injection)
       "hole den Wert mit dem Schlüssel, dem Wert" -> holeDenWertMitDemSchlüsselUndDemStandardWert(aufruf, injection)
       "lösche alles" -> löscheAlles(aufruf, injection)
+      "SchlüsselWertePaare von HashMap" -> schlüsselWertePaarEigenschaft(aufruf)
       else -> super.rufeMethodeAuf(aufruf, injection)
     }
   }
 
   private fun entferneDenSchlüssel(aufruf: IMM_AST.Satz.Ausdruck.IAufruf, injection: Interpretierer.InterpretInjection): Objekt {
     val schlüssel = injection.umgebung.leseVariable("Schlüssel")
-    map.remove(schlüssel)
-    return Nichts
+    return Boolean(map.remove(schlüssel) != null)
   }
 
   private fun enthältDenSchlüssel(aufruf: IMM_AST.Satz.Ausdruck.IAufruf, injection: Interpretierer.InterpretInjection): Objekt {
@@ -70,5 +67,15 @@ class HashMap(typ: Typ.Compound.Klasse): Objekt(BuildIn.IMMKlassen.hashMap, typ)
   private fun löscheAlles(aufruf: IMM_AST.Satz.Ausdruck.IAufruf, injection: Interpretierer.InterpretInjection): Objekt {
     map.clear()
     return Nichts
+  }
+
+  private fun schlüsselWertePaarEigenschaft(aufruf: IMM_AST.Satz.Ausdruck.IAufruf): Objekt {
+    val typ = Typ.Compound.Klasse(BuildIn.Klassen.liste, emptyList())
+    return Liste(typ, map.entries.map { entry ->
+      SkriptObjekt(BuildIn.IMMKlassen.paar, Typ.Compound.Klasse(BuildIn.Klassen.paar, typ.typArgumente)).also {
+        it.setzeEigenschaft("ersteWert", entry.key)
+        it.setzeEigenschaft("zweiteWert", entry.value)
+      }
+    }.toMutableList())
   }
 }

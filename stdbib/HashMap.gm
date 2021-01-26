@@ -11,7 +11,7 @@ Implementiere<Schlüssel, Wert> die HashMap<Schlüssel, Wert>:
 
     Verb(Boolean) enthält den Schlüssel: intern.
 
-    Verb entferne den Schlüssel: intern.
+    Verb(Boolean) entferne den Schlüssel: intern.
 
     Verb füge den Schlüssel mit dem Wert hinzu: intern.
 
@@ -20,6 +20,8 @@ Implementiere<Schlüssel, Wert> die HashMap<Schlüssel, Wert>:
     Verb hole (den Wert) mit dem Schlüssel, dem StandardWert: intern.
 
     Verb lösche alles: intern.
+
+    Eigenschaft(Liste<Paar<Schlüssel, Wert>>) SchlüsselWertePaare: intern.
 .
 
 Implementiere<Schlüssel, Wert> die
