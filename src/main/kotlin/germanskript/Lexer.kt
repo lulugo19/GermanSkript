@@ -221,7 +221,7 @@ sealed class TokenTyp(val anzeigeName: String) {
         val istSymbol get() = teilWörter.isEmpty()
         val hatSymbol get() = symbol.isNotEmpty()
         val hatAdjektiv get() = adjektiv != null
-        val istUnsichtbarerBezeichner get() = teilWörter[0][0] == '_' || (istSymbol && symbol[0] == '_')
+        private val istUnsichtbarerBezeichner get() = teilWörter[0][0] == '_' || (istSymbol && symbol[0] == '_')
         val hauptWort: String? get() = if (teilWörter.isNotEmpty()) teilWörter[teilWörter.size-1].removePrefix("_") else null
 
         fun ersetzeHauptWort(wort: String, mitSymbol: Boolean, maxAnzahlTeilWörter: Int = Int.MAX_VALUE): String {
@@ -230,7 +230,7 @@ sealed class TokenTyp(val anzeigeName: String) {
                 return symbol
             } else {
                 val dropAnzahl = max(0, teilWörter.size - maxAnzahlTeilWörter)
-                teilWörter.drop(dropAnzahl).dropLast(1).joinToString() + wort + (if (mitSymbol) symbol else "")
+                teilWörter.drop(dropAnzahl).dropLast(1).joinToString("") + wort + (if (mitSymbol) symbol else "")
             }
         }
     }
