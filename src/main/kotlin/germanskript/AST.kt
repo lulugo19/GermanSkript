@@ -87,6 +87,8 @@ sealed class AST {
       override var numera: EnumSet<Numerus> = EnumSet.noneOf(Numerus::class.java)
       override var fälle: Array<EnumSet<Kasus>> = arrayOf(EnumSet.noneOf(Kasus::class.java), EnumSet.noneOf(Kasus::class.java))
 
+      val teilwörterAnzahl get() = bezeichner.typ.teilWörter.size
+
       private var _adjektiv: Adjektiv? = null
       var adjektiv: Adjektiv?
         get() {

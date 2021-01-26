@@ -71,6 +71,16 @@ Modul Standard::Collections:
             gebe die transformiertenElemente zurück
         .
 
+        Verb<Typ>(Typ) reduziere uns mit dem Reduzierenden<Element, Typ>:
+            die Elemente sind Ich
+            ein Akkumulator ist das Element[0]
+
+            für jeden Index von 1 bis zu meiner AnZahl:
+                ein Akkumulator ist Reduzierendes: reduziere den Akkumulator mit dem Typ Element[Index]!
+            .
+            gebe den Akkumulator zurück
+        .
+
         Verb<Typ>(Typ) reduziere uns mit dem Typ AnfangsWert, dem Reduzierenden<Element, Typ>:
             die Elemente sind Ich
             ein Akkumulator ist der AnfangsWert
@@ -133,17 +143,12 @@ Modul Standard::Collections:
         Verb(Liste<Element>) addiere mich mit der Liste<Element>: intern.
     .
 
-    Implementiere die Liste<Zahl>:
-        Verb(Zahl) summiere uns:
-            eine Summe ist 0
-            die Zahlen sind Ich
-            für jede Zahl:
-                eine Summe ist die Summe plus die Zahl
-            .
-            gebe die Summe zurück
+    Implementiere<Element> die Liste<Addierbar<Element, Element>>:
+        Verb(Element) summiere uns:
+            gebe (reduziere<Element> uns mit etwas Reduzierendem: der Akkumulator plus das Addierbare.) zurück
         .
 
-        Eigenschaft(Zahl) Summe:
+        Eigenschaft(Element) Summe:
             gebe summiere uns zurück
         .
     .

@@ -171,7 +171,7 @@ class Typisierer(startDatei: File): PipelineKomponente(startDatei) {
     }
     if (typ == null && typTypParams != null) {
       val typParamIndex = typTypParams.indexOfFirst { param ->
-        param.binder.nominativ == typKnoten.name.ganzesWort(Kasus.NOMINATIV, Numerus.SINGULAR, false)
+        param.binder.nominativ == typKnoten.name.ganzesWort(Kasus.NOMINATIV, Numerus.SINGULAR, false, param.binder.teilwörterAnzahl)
       }
       if (typParamIndex != -1) {
         val typParam = typTypParams[typParamIndex]

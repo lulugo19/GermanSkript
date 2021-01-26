@@ -46,9 +46,10 @@ class TypPrüfer(startDatei: File): PipelineKomponente(startDatei) {
       erwarteterTyp: Typ
   ): Typ {
     // verwende den erwarteten Typen um für Objektinitialisierung und Lambdas Typargumente zu inferieren
+    val prevErwarteterTyp = erwarteterTyp
     this.erwarteterTyp = erwarteterTyp
     val ausdruckTyp = evaluiereAusdruck(ausdruck)
-    this.erwarteterTyp = null
+    this.erwarteterTyp = prevErwarteterTyp
 
     if (!typIstTyp(ausdruckTyp, erwarteterTyp)) {
       throw GermanSkriptFehler.TypFehler.FalscherTyp(
@@ -71,6 +72,13 @@ class TypPrüfer(startDatei: File): PipelineKomponente(startDatei) {
   }
 
   fun typIstTyp(typ: Typ, sollTyp: Typ): Boolean {
+    // Setze die Typ-Constraints bei Generics ein
+    val typ = if (typ is Typ.Generic && typ.kontext == TypParamKontext.Klasse) {
+      zuÜberprüfendeKlasse!!.typArgumente[typ.index].typ!!
+    } else {
+      typ
+    }
+
     fun überprüfeSchnittstelle(klasse: Typ.Compound.Klasse, schnittstelle: Typ.Compound.Schnittstelle): Boolean {
       if (klasse.definition.implementierteSchnittstellen.contains(schnittstelle)) {
         return true
@@ -649,12 +657,15 @@ class TypPrüfer(startDatei: File): PipelineKomponente(startDatei) {
       }
     }
 
-    // Überprüfe ob die Typargumente des Methodenobjekts mit den Generic-Constrains übereinstimmen
+    // Überprüfe ob die Typargumente des Methodenobjekts mit den Generic-Constraints übereinstimmen
     if (methodenObjekt is Typ.Compound.Klasse && methodenObjekt!!.typArgumente.isNotEmpty()) {
-      val implementierung = funktionsSignatur.findNodeInParents<AST.Definition.Implementierung>()!!
-      for (paramIndex in implementierung.klasse.typArgumente.indices) {
-        if (!typIstTyp(methodenObjekt!!.typArgumente[paramIndex].typ!!, implementierung.klasse.typArgumente[paramIndex].typ!!)) {
-          throw GermanSkriptFehler.Undefiniert.Methode(funktionsAufruf.token, funktionsAufruf, methodenObjekt!!.name)
+      val implementierung = funktionsSignatur.findNodeInParents<AST.Definition.Implementierung>()
+      // anonyme Klassen und Lambdas haben kein Implementierungsblock und dort muss nicht überprüft werden
+      if (implementierung != null) {
+        for (paramIndex in implementierung.klasse.typArgumente.indices) {
+          if (!typIstTyp(methodenObjekt!!.typArgumente[paramIndex].typ!!, implementierung.klasse.typArgumente[paramIndex].typ!!)) {
+            throw GermanSkriptFehler.Undefiniert.Methode(funktionsAufruf.token, funktionsAufruf, methodenObjekt!!.name)
+          }
         }
       }
     }
@@ -1309,7 +1320,19 @@ class TypPrüfer(startDatei: File): PipelineKomponente(startDatei) {
         anonymeKlasse.bereich
     )
 
-    val klasse = Typ.Compound.Klasse(klassenDefinition, emptyList())
+    val typArgumente = if (anonymeKlasse.schnittstelle.typArgumente.isNotEmpty()) {
+      anonymeKlasse.schnittstelle.typArgumente
+    } else if (erwarteterTyp != null && erwarteterTyp is Typ.Compound) {
+      (erwarteterTyp!! as Typ.Compound).typArgumente
+    } else {
+      emptyList()
+    }
+
+    val klasse = Typ.Compound.Klasse(
+        klassenDefinition,
+        typArgumente
+    )
+
     anonymeKlasse.klasse = klasse
 
     val vorherigeKlasse = zuÜberprüfendeKlasse

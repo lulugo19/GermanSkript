@@ -3,34 +3,34 @@ Deklination Maskulinum Singular(Wert, Werts, Wert, Wert) Plural(Werte)
 Deklination Maskulinum Singular(Schlüssel, Schlüssels, Schlüssel, Schlüssel) Plural(Schlüssel)
 Deklination Femininum Singular(Größe) Plural(Größen)
 
-Nomen<Wert, Schlüssel> HashMap:
+Nomen<Schlüssel, Wert> HashMap:
     jene Größe ist 0
 .
 
-Implementiere<SchlüsselTyp, WertTyp> die HashMap<SchlüsselTyp, WertTyp>:
+Implementiere<Schlüssel, Wert> die HashMap<Schlüssel, Wert>:
 
-    Verb enthält den SchlüsselTyp Schlüssel: intern.
+    Verb(Boolean) enthält den Schlüssel: intern.
 
-    Verb entferne den SchlüsselTyp Schlüssel: intern.
+    Verb entferne den Schlüssel: intern.
 
-    Verb füge den SchlüsselTyp Schlüssel mit dem WertTyp Wert hinzu: intern.
+    Verb füge den Schlüssel mit dem Wert hinzu: intern.
 
-    Verb hole (den WertTyp Wert) mit dem SchlüsselTyp Schlüssel: intern.
+    Verb hole (den Wert) mit dem Schlüssel: intern.
 
-    Verb hole (den WertTyp Wert) mit dem SchlüsselTyp Schlüssel, dem WertTyp StandardWert: intern.
+    Verb hole (den Wert) mit dem Schlüssel, dem StandardWert: intern.
 
     Verb lösche alles: intern.
 .
 
-Implementiere<SchlüsselTyp, WertTyp> die
-    indizierte<SchlüsselTyp, WertTyp>,
-    indizierbare<SchlüsselTyp, WertTyp> HashMap<SchlüsselTyp, WertTyp>:
+Implementiere<Schlüssel, Wert> die
+    indizierte<Schlüssel, Wert>,
+    indizierbare<Schlüssel, Wert> HashMap<Schlüssel, Wert>:
 
-    Verb hole (den WertTyp) mit dem SchlüsselTyp Index:
-        gebe hole den Wert mit dem Schlüssel Index zurück
+    Verb hole (den Wert) mit dem Schlüssel Index:
+        gebe (hole den Wert mit dem Schlüssel Index) zurück
     .
 
-    Verb setze den SchlüsselTyp Index auf den WertTyp:
-        füge den Schlüssel Index mit dem Wert WertTyp hinzu
+    Verb setze den Schlüssel Index auf den Wert:
+        füge den Schlüssel Index mit dem Wert hinzu
     .
 .
