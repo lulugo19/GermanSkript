@@ -635,6 +635,7 @@ class TypPrüfer(startDatei: File): PipelineKomponente(startDatei) {
         )
         funktionsSignatur = fund?.first
         methodenObjekt = fund?.second
+        evaluiereAusdruck(funktionsAufruf.objekt.ausdruck)
       }
     }
 
