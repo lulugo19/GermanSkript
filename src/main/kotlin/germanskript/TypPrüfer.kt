@@ -130,11 +130,12 @@ class TypPrüfer(startDatei: File): PipelineKomponente(startDatei) {
   private fun prüfeImplementiertSchnittstelle(typ: Typ, schnittstelle: AST.Definition.Typdefinition.Schnittstelle): Typ.Compound.Schnittstelle? {
     return when (typ) {
       is Typ.Generic -> typ.typParam.schnittstellen.find {
-        (it.typ!! as Typ.Compound.Schnittstelle).definition == schnittstelle }?.typ!! as Typ.Compound.Schnittstelle?
+        (it.typ!! as Typ.Compound.Schnittstelle).definition == schnittstelle }?.typ as Typ.Compound.Schnittstelle?
       is Typ.Compound.Klasse -> typ.definition.implementierteSchnittstellen.find { it.definition == schnittstelle }
       is Typ.Compound.Schnittstelle -> if (typ.definition == schnittstelle) typ else null
     }
   }
+
 
   /**
    * inferiert Typargumente basierend auf den erwarteten Typen
@@ -1193,20 +1194,23 @@ class TypPrüfer(startDatei: File): PipelineKomponente(startDatei) {
     // oder eine Konvertierung in eine Zeichenfolge erfolgt (diese ist immer möglich)
     // oder eine Konvertierungsdefinition für die Konvertierung vorhanden ist.
     // Bei einem Generic wird übeprüft ob die Elternklasse in den gegebenen Typ konvertiert werden kann.
-    if (typIstTyp(typ, konvertierungsTyp) || typIstTyp(konvertierungsTyp, typ)) {
-      konvertierung.konvertierungsArt = AST.Satz.Ausdruck.KonvertierungsArt.Cast
-      return  true
+    if (konvertierungsTyp == BuildIn.Klassen.zeichenfolge) {
+      return true
     }
 
-    return when (typ) {
+    if (when (typ) {
       is Typ.Generic -> typ.typParam.elternKlasse?.let {
         (it.typ as Typ.Compound.Klasse).definition.konvertierungen.containsKey(konvertierung.typ.vollständigerName)
-      } ?: false
+      } == true
       is Typ.Compound.Klasse -> typ.definition.konvertierungen.containsKey(konvertierung.typ.vollständigerName)
       // TODO: Schnittstellen sollen eventuell auch Konvertierungsdefinitionen
       //  haben und auch in Zeichenfolgen konvertiert werden können
       is Typ.Compound.Schnittstelle -> false
+    }) {
+      return true
     }
+    konvertierung.konvertierungsArt = AST.Satz.Ausdruck.KonvertierungsArt.Cast
+    return typIstTyp(typ, konvertierungsTyp) || typIstTyp(konvertierungsTyp, typ)
   }
 
   private fun evaluiereSelbstReferenz() = zuÜberprüfendeKlasse!!
