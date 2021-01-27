@@ -160,26 +160,24 @@ class Typisierer(startDatei: File): PipelineKomponente(startDatei) {
 
     var typ: Typ? = null
     if (funktionsTypParams != null ) {
-      val funktionTypParamIndex = funktionsTypParams.indexOfFirst { param ->
-        param.binder.nominativ == typKnoten.name.ganzesWort(Kasus.NOMINATIV, Numerus.SINGULAR, false) }
-      if (funktionTypParamIndex != -1) {
-        val typParam = funktionsTypParams[funktionTypParamIndex]
+      val typParam = funktionsTypParams.withIndex().sortedByDescending {it.value.binder.teilwörterAnzahl}.find {
+        it.value.binder.nominativ == typKnoten.name.ganzesWort(Kasus.NOMINATIV, Numerus.SINGULAR, false, it.value.binder.teilwörterAnzahl) }
+      if (typParam != null) {
         typ = Typ.Generic(
-            typParam,
-            funktionTypParamIndex,
+            typParam.value,
+            typParam.index,
             TypParamKontext.Funktion
         )
       }
     }
     if (typ == null && typTypParams != null) {
-      val typParamIndex = typTypParams.indexOfFirst { param ->
-        param.binder.nominativ == typKnoten.name.ganzesWort(Kasus.NOMINATIV, Numerus.SINGULAR, false, param.binder.teilwörterAnzahl)
+      val typParam = typTypParams.withIndex().sortedByDescending {it.value.binder.teilwörterAnzahl}.find {
+        it.value.binder.nominativ == typKnoten.name.ganzesWort(Kasus.NOMINATIV, Numerus.SINGULAR, false, it.value.binder.teilwörterAnzahl)
       }
-      if (typParamIndex != -1) {
-        val typParam = typTypParams[typParamIndex]
+      if (typParam != null) {
         typ = Typ.Generic(
-            typParam,
-            typParamIndex,
+            typParam.value,
+            typParam.index,
             TypParamKontext.Klasse
         )
       }

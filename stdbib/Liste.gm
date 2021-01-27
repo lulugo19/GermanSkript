@@ -52,9 +52,9 @@ Modul Standard::Collections:
         .
 
         Verb(Zeichenfolge) verbinde uns mit der Zeichenfolge Separator:
-            gebe reduziere<Zeichenfolge> uns mit etwas Reduzierendem: 
-                der Akkumulator als Zeichenfolge + den Separator + das Element als Zeichenfolge
-            . zurück
+            gebe transformiere<Zeichenfolge> uns mit etwas Transformierendem: das Element als Zeichenfolge.:
+                reduziere euch mit etwas Reduzierendem: der Akkumulator + den Separator + die Zeichenfolge.
+            ! zurück
         .
 
         Verb(Elemente) sortiere uns mit dem Vergleichenden<Element>:
@@ -84,7 +84,7 @@ Modul Standard::Collections:
             gebe die transformiertenElemente zurück
         .
 
-        Verb<Typ>(Typ) reduziere uns mit dem Reduzierenden<Element, Typ>:
+        Verb(Element) reduziere uns mit dem Reduzierenden<Element, Element>:
             die Elemente sind Ich
             ein Akkumulator ist das Element[0]
 
