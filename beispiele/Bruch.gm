@@ -1,0 +1,98 @@
+Deklination Maskulinum Singular(Bruch, Bruchs, Bruch, Bruch) Plural(Brüche, Brüche, Brüchen, Brüche)
+Deklination Maskulinum Singular(Zähler, Zählers, Zähler, Zähler) Plural(Zähler)
+Deklination Maskulinum Singular(Nenner, Nenners, Nenner, Nenner) Plural(Nenner)
+Deklination Maskulinum Singular(Teiler, Teilers, Teiler, Teiler) Plural(Teiler, Teiler, Teilern, Teiler)
+Deklination Neutrum Singular(Vielfache, Vielfachen, Vielfachen, Vielfache) Plural(Vielfachen)
+
+Verb(Zahl) ggt von der ZahlA, der ZahlB:
+  wenn die ZahlA gleich der ZahlB ist oder die ZahlB gleich 0 ist: gebe die ZahlA zurück.
+  sonst: gebe (ggt von der ZahlB, der ZahlA mod die ZahlB) zurück.
+.
+
+Verb(Zahl) kgv von der ZahlA, der ZahlB:
+  gebe (die ZahlA * die ZahlB) / (ggt von der ZahlA, der ZahlB) zurück
+.
+
+Nomen Bruch mit 
+  einer Zahl Zähler,
+  einer Zahl Nenner:.
+
+Implementiere den Bruch:
+  Verb(Bruch) kürze mich:
+    der Teiler ist ggt von der Zahl mein Nenner, der Zahl mein Zähler
+    mein Zähler ist mein Zähler / den Teiler
+    mein Nenner ist mein Nenner / den Teiler
+    gebe Ich zurück
+  .
+
+  Verb(Boolean) gleicht dem Objekt:
+    wenn das Objekt ein Bruch ist:
+      der Bruch ist das Objekt als Bruch
+      gebe den Zähler des Bruchs gleich meinen Zähler und der Nenner des Bruchs gleich meinen Nenner zurück
+    .
+    sonst: gebe falsch zurück.
+  .
+
+  Als Zeichenfolge:
+    gebe "#{mein Zähler}/#{mein Nenner}" zurück
+  .
+.
+
+Implementiere den 
+addierbaren<Bruch, Bruch>, 
+multiplizierbaren<Bruch, Bruch> Bruch:
+
+  Verb(Bruch) addiere mich mit dem Bruch:
+    der gemeinsameNenner ist kgv von der Zahl (mein Nenner), der Zahl (der Nenner des Bruchs)
+
+    die ZahlA ist der gemeinsameNenner / meinen Nenner
+    die ZahlB ist der gemeinsameNenner / (den Nenner des Bruchs)
+    
+    gebe kürze einen Bruch mit 
+      dem Zähler (mein Zähler * die ZahlA + den Zähler des Bruchs * die ZahlB),
+      dem gemeinsamenNenner
+    zurück
+  .
+
+  Verb(Bruch) multipliziere mich mit dem Bruch:
+    gebe kürze einen Bruch mit
+      dem Zähler (mein Zähler mal den Zähler des Bruchs),
+      dem Nenner (mein Nenner mal den Nenner des Bruchs)
+    zurück
+  .
+.
+
+Implementiere die Zeichenfolge:
+  Als Bruch:
+    die Zeichenfolgen sind trenne mich zwischen dem Separator "/"
+    der Zähler ist die Zeichenfolge[0] als Zahl
+    der Nenner ist die Zeichenfolge[1] als Zahl
+    gebe (einen Bruch mit dem Zähler, dem Nenner) zurück
+  .
+.
+
+der BruchA ist ein Bruch mit dem Zähler 1, dem Nenner 4
+der BruchB ist "1/8" als Bruch
+
+der BruchC ist der BruchA + den BruchB
+schreibe die Zeile "#{der BruchA} + #{der BruchB} = #{der BruchC}"
+
+der erwarteteBruch ist ein Bruch mit dem Zähler 3, dem Nenner 8
+wenn der BruchC gleich dem erwartetenBruch ist:
+  schreibe die Zeile "Das Ergebnis ist richtig!"
+.
+sonst:
+  schreibe die Zeile "Das Ergebnis ist falsch!"
+.
+
+die Brüche sind einige Brüche [
+  "2/3" als Bruch,
+  "3/4" als Bruch,
+  "1/5" als Bruch,
+  "3/8" als Bruch
+]
+
+schreibe die Zeile ""
+schreibe die Zeile "Brüche: #{die Brüche}"
+schreibe die Zeile "Summe: #{die Summe der Brüche}"
+schreibe die Zeile "Produkt: #{das Produkt der Brüche}"

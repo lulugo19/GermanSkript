@@ -1688,11 +1688,15 @@ class GermanSkriptTest {
   fun summe() {
     val quellCode = """
       die Zahlen sind einige Zahlen[1, 2, 3, 4, 5]
-      die Summe ist summiere die Zahlen
-      schreibe die Zeile (Summe als Zeichenfolge)
+      schreibe die Zeile "#{die Summe der Zahlen}"
+      schreibe die Zeile "#{das Produkt der Zahlen}"
     """.trimIndent()
 
-    val erwarteteAusgabe = "15\n"
+    val erwarteteAusgabe = """
+      15
+      120
+      
+    """.trimIndent()
 
     testeGermanSkriptCode(quellCode, erwarteteAusgabe)
   }

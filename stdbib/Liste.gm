@@ -5,6 +5,7 @@ Deklination Maskulinum Singular(Iterator, Iterators, Iterator, Iterator) Plural(
 Deklination Maskulinum Singular(Akkumulator, Akkumulators, Akkumulator, Akkumulator) Plural(Akkumulatoren)
 Deklination Maskulinum Singular(Wert, Werts, Wert, Wert) Plural(Werte)
 Deklination Femininum Singular(Summe) Plural(Summen)
+Deklination Neutrum Singular(Produkt, Produkts, Produkt, Produkt) Plural(Produkte, Produkte, Produkten, Produkte)
 
 // der Listentyp ist in Germanskript ein so elementarer Typ (Plural, spezielle Syntax nur für Liste),
 // dass er außerhalb des Moduls definiert wird
@@ -44,6 +45,18 @@ Modul Standard::Collections:
         Verb füge das Element hinzu: intern.
         Verb entferne an der Zahl Index: intern.
 
+        Als Zeichenfolge:
+            gebe wenn meine AnZahl gleich 0 ist: "[]".
+                sonst: "[#{verbinde uns mit dem Separator ", "}]".
+            zurück
+        .
+
+        Verb(Zeichenfolge) verbinde uns mit der Zeichenfolge Separator:
+            gebe reduziere<Zeichenfolge> uns mit etwas Reduzierendem: 
+                der Akkumulator als Zeichenfolge + den Separator + das Element als Zeichenfolge
+            . zurück
+        .
+
         Verb(Elemente) sortiere uns mit dem Vergleichenden<Element>:
             die ElementeKOPIE sind kopiere die Elemente Ich
             merge_sortiere die ElementeKOPIE mit dem Vergleichenden
@@ -75,8 +88,10 @@ Modul Standard::Collections:
             die Elemente sind Ich
             ein Akkumulator ist das Element[0]
 
-            für jeden Index von 1 bis zu meiner AnZahl:
+            ein Index ist 1
+            solange der Index kleiner als meine AnZahl ist:
                 ein Akkumulator ist Reduzierendes: reduziere den Akkumulator mit dem Typ Element[Index]!
+                ein Index ist der Index + 1
             .
             gebe den Akkumulator zurück
         .
@@ -150,6 +165,16 @@ Modul Standard::Collections:
 
         Eigenschaft(Element) Summe:
             gebe summiere uns zurück
+        .
+    .
+
+    Implementiere<Element> die Liste<Multiplizierbares<Element, Element>>:
+        Verb(Element) multipliziere uns:
+            gebe (reduziere<Element> uns mit etwas Reduzierendem: der Akkumulator mal das Multiplizierbare.) zurück
+        .
+
+        Eigenschaft(Element) Produkt:
+            gebe multipliziere uns zurück
         .
     .
 
