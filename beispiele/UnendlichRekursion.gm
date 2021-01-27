@@ -1,0 +1,8 @@
+Deklination Femininum Singular(Tiefe) Plural(Tiefen)
+
+Verb rekursiere mit der Zahl Tiefe:
+    schreibe die Zeile "Tiefe: #{die Tiefe}"
+    rekursiere mit der Tiefe + 1
+.
+
+rekursiere mit der Tiefe 0

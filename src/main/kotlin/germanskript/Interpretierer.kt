@@ -117,7 +117,23 @@ class Interpretierer(startDatei: File): PipelineKomponente(startDatei), IInterpr
     val programm = codeGenerator.generiere()
     initKlassenDefinitionen()
     interpretInjection = InterpretInjection(aufrufStapel, ::werfeFehler)
-    interpretiereFunktionsAufruf(programm)
+    try {
+      interpretiereFunktionsAufruf(programm)
+    }
+    catch (fehler: Throwable) {
+      when (fehler) {
+        // Ein StackOverflow wird als Laufzeitfehler in Germanskript gehandelt
+        is StackOverflowError -> throw GermanSkriptFehler.LaufzeitFehler(
+            aufrufStapel.top().funktionsAufruf.token,
+            aufrufStapel.toString(),
+            "Stack Overflow")
+        // andere Fehler sollten nicht auftreten
+        else -> {
+          System.err.println(aufrufStapel.toString())
+          throw fehler
+        }
+      }
+    }
   }
 
   private fun initKlassenDefinitionen() {
