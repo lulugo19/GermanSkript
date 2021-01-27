@@ -84,6 +84,9 @@
             "include": "#booleans"
           },
           {
+            "include": "#conversion"
+          },
+          {
             "include": "#operators"
           },
           {
@@ -132,6 +135,14 @@
           }
         ]
       },
+      "operators": {
+        "name": "keyword.operator.germanskript",
+        "match": "(\\||&|=|!=|>|<|>=|<=|\\+|-|\\*|\\/|\\bmod\\b|\\^)|(\\b(ist|sind|oder|und|gleich|ungleich|größer|kleiner|plus|mal|durch|modulo|hoch|als)\\b)"
+      },
+      "functions": {
+        "name": "entity.name.function.germanskript",
+        "match": "\\b[a-zöäüß_]+"
+      },
       "numbers": {
         "name": "meta.expression.numeric",
         "match": "(\\b(der|die|das|den|des|dem)\\s+([a-zöäüß]*([A-ZÖÄÜ][a-zöäüß]*)+)\\s+)?(\\b-?([1-9]\\d{1,2}|\\d)(?:\\.\\d{3})*(?:,\\d+)?)",
@@ -159,7 +170,7 @@
       },
       "objects": {
         "name": "meta.expression.object",
-        "match": "(\\b(der|die|das|den|des|dem)\\s+([a-zöäüß]*([A-ZÖÄÜ][a-zöäüß]*)+)\\s+)?\\b(ein|eine)\\s+(([A-ZÖÄÜ][a-zöäüß]*)+)(\\s+(mit))?",
+        "match": "(\\b(der|die|das|den|des|dem)\\s+([a-zöäüß]*([A-ZÖÄÜ][a-zöäüß]*)+)\\s+)?\\b(ein|eine|eines|einer|einen|einem)\\s+(([A-ZÖÄÜ][a-zöäüß]*)+)(\\s+(mit))?",
         "captures": {
           "1": {
             "name": "variable.parameter.germanskript"
@@ -239,6 +250,28 @@
             "match": "(([A-ZÖÄÜ][a-zöäüß]*)+)"
           }
         ]
+      },
+      "conversion": {
+        "match": "\\b(als)\\s+((([A-ZÖÄÜ][a-zöäüß]*)+)::)*(([A-ZÖÄÜ][a-zöäüß]*)+)",
+        "captures": {
+          "1": {
+            "name": "keyword.operator.als.germanskript"
+          },
+          "3": {
+            "name": "entity.name.type.modul.germanskript"
+          },
+          "5": {
+            "name": "entity.name.type.germanskript"
+          }
+        }
+      },
+      "modulscope": {
+        "match": "\\s*(([A-ZÖÄÜ][a-zöäüß]*)+)::",
+        "captures": {
+          "1": {
+            "name": "entity.name.type.modul.germanskript"
+          }
+        }
       },
       "parenthesized": {
         "name": "meta.expression.parenthesized",
@@ -481,7 +514,7 @@
         },
         "patterns": [
           {
-            "name": "meta.declination.sub",
+            "name": "meta.declination.sub.germanskript",
             "begin": "\\b(Singular|Plural|Duden)\\s*\\(",
             "end": "\\)",
             "beginCaptures": {
@@ -529,22 +562,6 @@
         "4": {
           "name": "variable.other.germanskript"
         }
-        }
-      },
-      "operators": {
-        "name": "keyword.operator.germanskript",
-        "match": "(\\||&|=|!=|>|<|>=|<=|\\+|-|\\*|\\/|\\bmod\\b|\\^)|(\\b(ist|sind|oder|und|gleich|ungleich|größer|kleiner|mal|durch|modulo|hoch|als)\\b)"
-      },
-      "functions": {
-        "name": "entity.name.function",
-        "match": "\\b[a-zöäüß_]+"
-      },
-      "modulscope": {
-        "match": "\\s*(([A-ZÖÄÜ][a-zöäüß]*)+)::",
-        "captures": {
-          "1": {
-            "name": "entity.name.type.modul"
-          }
         }
       }
 	  }
