@@ -43,8 +43,7 @@ class TypPrüfer(startDatei: File): PipelineKomponente(startDatei) {
 
   private fun ausdruckMussTypSein(
       ausdruck: AST.Satz.Ausdruck,
-      erwarteterTyp: Typ,
-      vergleicheGenerics: Boolean = true
+      erwarteterTyp: Typ
   ): Typ {
     // verwende den erwarteten Typen um für Objektinitialisierung und Lambdas Typargumente zu inferieren
     val prevErwarteterTyp = erwarteterTyp
@@ -52,7 +51,7 @@ class TypPrüfer(startDatei: File): PipelineKomponente(startDatei) {
     val ausdruckTyp = evaluiereAusdruck(ausdruck)
     this.erwarteterTyp = prevErwarteterTyp
 
-    if (!typIstTyp(ausdruckTyp, erwarteterTyp, vergleicheGenerics)) {
+    if (!typIstTyp(ausdruckTyp, erwarteterTyp)) {
       throw GermanSkriptFehler.TypFehler.FalscherTyp(
           ausdruck.holeErstesToken(), ausdruckTyp, erwarteterTyp.name
       )
@@ -72,8 +71,8 @@ class TypPrüfer(startDatei: File): PipelineKomponente(startDatei) {
     }
   }
 
-  fun typIstTyp(typ: Typ, sollTyp: Typ, vergleicheGenerics: Boolean = true): Boolean {
-    if (vergleicheGenerics && typ is Typ.Generic && sollTyp is Typ.Generic) {
+  fun typIstTyp(typ: Typ, sollTyp: Typ): Boolean {
+    if (typ is Typ.Generic && sollTyp is Typ.Generic) {
       return typ == sollTyp
     }
 
@@ -465,12 +464,14 @@ class TypPrüfer(startDatei: File): PipelineKomponente(startDatei) {
     val indizierbar = findeIterierbares(zuweisung.singular).let { (typ, numerus) ->
       zuweisung.numerus = numerus
       typ
-    }
+    } as Typ.Compound
     val indizierbarSchnittstelle = prüfeImplementiertSchnittstelle(indizierbar, BuildIn.Schnittstellen.indizierbar)
         ?: throw GermanSkriptFehler.TypFehler.IndizierbarErwartet(zuweisung.singular.bezeichnerToken, indizierbar)
 
-    ausdruckMussTypSein(zuweisung.index, indizierbarSchnittstelle.typArgumente[0].typ!!, false)
-    ausdruckMussTypSein(zuweisung.wert, indizierbarSchnittstelle.typArgumente[1].typ!!, false)
+    ausdruckMussTypSein(zuweisung.index,
+       ersetzeGenerics(indizierbarSchnittstelle.typArgumente[0], null, indizierbar.typArgumente).typ!!)
+    ausdruckMussTypSein(zuweisung.wert,
+        ersetzeGenerics(indizierbarSchnittstelle.typArgumente[1], null, indizierbar.typArgumente).typ!!)
     return BuildIn.Klassen.nichts
   }
 
@@ -669,8 +670,9 @@ class TypPrüfer(startDatei: File): PipelineKomponente(startDatei) {
       val implementierung = funktionsSignatur.findNodeInParents<AST.Definition.Implementierung>()
       // anonyme Klassen und Lambdas haben kein Implementierungsblock und dort muss nicht überprüft werden
       if (implementierung != null) {
+        val klasse = ersetzeGenerics(implementierung.klasse, funktionsAufruf.typArgumente, methodenObjekt!!.typArgumente)
         for (paramIndex in implementierung.klasse.typArgumente.indices) {
-          if (!typIstTyp(methodenObjekt!!.typArgumente[paramIndex].typ!!, implementierung.klasse.typArgumente[paramIndex].typ!!, false)) {
+          if (!typIstTyp(methodenObjekt!!.typArgumente[paramIndex].typ!!, klasse.typArgumente[paramIndex].typ!!)) {
             throw GermanSkriptFehler.Undefiniert.Methode(funktionsAufruf.token, funktionsAufruf, methodenObjekt!!.name)
           }
         }
@@ -931,7 +933,8 @@ class TypPrüfer(startDatei: File): PipelineKomponente(startDatei) {
     val schnittstelle = prüfeImplementiertSchnittstelle(indizierTyp, BuildIn.Schnittstellen.indiziert)
         ?: throw GermanSkriptFehler.TypFehler.IndizierbarErwartet(indexZugriff.singular.bezeichnerToken, indizierTyp)
 
-    ausdruckMussTypSein(indexZugriff.index, schnittstelle.typArgumente[0].typ!!, false)
+    ausdruckMussTypSein(indexZugriff.index,
+        ersetzeGenerics(schnittstelle.typArgumente[0], null, indizierTyp.typArgumente).typ!!)
     return ersetzeGenerics(schnittstelle.typArgumente[1], null, indizierTyp.typArgumente).typ!!
   }
 
@@ -1165,7 +1168,12 @@ class TypPrüfer(startDatei: File): PipelineKomponente(startDatei) {
         ?: throw GermanSkriptFehler.TypFehler.SchnittstelleFürOperatorErwartet(
             ausdruck.links.holeErstesToken(), linkerTyp, zuImplementierendeSchnittstelle, operator)
 
-    ausdruckMussTypSein(ausdruck.rechts, schnittstelle.typArgumente[0].typ!!, false)
+    val rechterTyp = if (linkerTyp is Typ.Compound) {
+      ersetzeGenerics(schnittstelle.typArgumente[0], null, linkerTyp.typArgumente).typ!!
+    } else {
+      schnittstelle.typArgumente[0].typ!!
+    }
+    ausdruckMussTypSein(ausdruck.rechts, rechterTyp)
 
     return if (operator.klasse == OperatorKlasse.ARITHMETISCH) {
       schnittstelle.typArgumente[1].typ!!
