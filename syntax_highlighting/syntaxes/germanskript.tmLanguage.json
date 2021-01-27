@@ -532,7 +532,7 @@
       ]
       },
       "typeparams": {
-        "begin": "<\\s*(([A-ZÖÄÜ][a-zöäüß]*)+)?",
+        "begin": "<\\s*(([A-ZÖÄÜ][a-zöäüß]*)+|[a-zöäüß]+)?",
         "beginCaptures": {
           "1": {
             "name": "entity.name.type.germanskript"
