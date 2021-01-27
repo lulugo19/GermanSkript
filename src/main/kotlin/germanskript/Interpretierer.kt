@@ -161,14 +161,14 @@ class Interpretierer(startDatei: File): PipelineKomponente(startDatei), IInterpr
         variablenDeklaration.name,
         interpretiereAusdruck(variablenDeklaration.wert), variablenDeklaration.überschreibe
     )
-    return Nichts
+    return if (fehlerGeworfen()) Niemals else Nichts
   }
 
   private fun interpretiereSetzeEigenschaft(setzeEigenschaft: IMM_AST.Satz.SetzeEigenschaft): Objekt {
-    val objekt = interpretiereAusdruck(setzeEigenschaft.objekt)
+    val objekt = interpretiereAusdruck(setzeEigenschaft.objekt).also { if (fehlerGeworfen()) return Niemals}
     objekt.setzeEigenschaft(
         setzeEigenschaft.name,
-        interpretiereAusdruck(setzeEigenschaft.ausdruck)
+        interpretiereAusdruck(setzeEigenschaft.ausdruck).also { if (fehlerGeworfen()) return Niemals}
     )
     return Nichts
   }
@@ -176,7 +176,8 @@ class Interpretierer(startDatei: File): PipelineKomponente(startDatei), IInterpr
   private fun interpretiereSolangeSchleife(schleife: IMM_AST.Satz.SolangeSchleife): Objekt {
     while (!flags.contains(Flag.SCHLEIFE_ABBRECHEN) &&
         !flags.contains(Flag.ZURÜCK) &&
-        (interpretiereAusdruck(schleife.bedingungsTerm.bedingung) as germanskript.intern.Boolean).boolean
+        (interpretiereAusdruck(schleife.bedingungsTerm.bedingung).also { if (fehlerGeworfen()) return Niemals}
+            as germanskript.intern.Boolean).boolean
     ) {
       flags.remove(Flag.SCHLEIFE_FORTFAHREN)
       interpretiereBereich(schleife.bedingungsTerm.bereich, true)
@@ -203,7 +204,7 @@ class Interpretierer(startDatei: File): PipelineKomponente(startDatei), IInterpr
 
   // region Ausdrücke
   private fun interpretiereAusdruck(ausdruck: IMM_AST.Satz.Ausdruck): Objekt {
-    if (sollteStackAufrollen()) {
+    if (fehlerGeworfen()) {
       return Niemals
     }
     return when (ausdruck) {
@@ -226,7 +227,7 @@ class Interpretierer(startDatei: File): PipelineKomponente(startDatei), IInterpr
       is IMM_AST.Satz.Ausdruck.Werfe -> interpretiereWerfe(ausdruck)
       is IMM_AST.Satz.Ausdruck.TypÜberprüfung -> interpretiereTypÜberprüfung(ausdruck)
       is IMM_AST.Satz.Ausdruck.TypCast -> interpretiereTypCast(ausdruck)
-    }
+    }.let { if (fehlerGeworfen()) {Niemals} else it }
   }
 
   private fun interpretiereObjektInstanziierung(instanziierung: IMM_AST.Satz.Ausdruck.ObjektInstanziierung): Objekt {
@@ -249,7 +250,7 @@ class Interpretierer(startDatei: File): PipelineKomponente(startDatei), IInterpr
   }
 
   private fun interpretiereBedingungsTerm(term: IMM_AST.Satz.BedingungsTerm): Objekt? {
-    return if (!sollteStackAufrollen() && (interpretiereAusdruck(term.bedingung) as germanskript.intern.Boolean).boolean) {
+    return if (!fehlerGeworfen() && (interpretiereAusdruck(term.bedingung) as germanskript.intern.Boolean).boolean) {
       interpretiereBereich(term.bereich, true)
     } else {
       null
@@ -353,7 +354,7 @@ class Interpretierer(startDatei: File): PipelineKomponente(startDatei), IInterpr
         flags.contains(Flag.ZURÜCK)
   }
 
-  private fun sollteStackAufrollen(): Boolean = flags.contains(Flag.FEHLER_GEWORFEN)
+  private fun fehlerGeworfen(): Boolean = flags.contains(Flag.FEHLER_GEWORFEN)
 
   private fun interpretiereBereich(bereich: IMM_AST.Satz.Ausdruck.Bereich, neuerBereich: Boolean): Objekt {
     if (neuerBereich) {
@@ -364,7 +365,7 @@ class Interpretierer(startDatei: File): PipelineKomponente(startDatei), IInterpr
       if (sollteAbbrechen()) {
         return Nichts
       }
-      if (sollteStackAufrollen()) {
+      if (fehlerGeworfen()) {
         return Nichts
       }
       rückgabe = when (satz) {
@@ -399,7 +400,7 @@ class Interpretierer(startDatei: File): PipelineKomponente(startDatei), IInterpr
           interpretiereAusdruck(argumente[index]),
           false
       )
-      if (sollteStackAufrollen()) {
+      if (fehlerGeworfen()) {
         return Niemals
       }
     }
@@ -424,10 +425,7 @@ class Interpretierer(startDatei: File): PipelineKomponente(startDatei), IInterpr
   }
 
   private fun interpretiereMethodenAufruf(methodenAufruf: IMM_AST.Satz.Ausdruck.MethodenAufruf): Objekt {
-    val objekt = interpretiereAusdruck(methodenAufruf.objekt)
-    if (sollteStackAufrollen()) {
-      return Niemals
-    }
+    val objekt = interpretiereAusdruck(methodenAufruf.objekt).also { if (fehlerGeworfen()) return Niemals }
     val aufrufUmgebung = if (objekt is Objekt.ClosureObjekt) objekt.umgebung else Umgebung()
     val funktionsDefinition = methodenAufruf.funktion ?: objekt.klasse.methoden.getValue(methodenAufruf.name)
     return interpretiereAufruf(aufrufUmgebung, methodenAufruf, funktionsDefinition, objekt)
