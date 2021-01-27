@@ -203,6 +203,9 @@ class Interpretierer(startDatei: File): PipelineKomponente(startDatei), IInterpr
 
   // region Ausdrücke
   private fun interpretiereAusdruck(ausdruck: IMM_AST.Satz.Ausdruck): Objekt {
+    if (sollteStackAufrollen()) {
+      return Niemals
+    }
     return when (ausdruck) {
       is IMM_AST.Satz.Ausdruck.LogischesUnd -> interpretiereLogischesUnd(ausdruck)
       is IMM_AST.Satz.Ausdruck.LogischesOder -> interpretiereLogischesOder(ausdruck)
@@ -311,7 +314,7 @@ class Interpretierer(startDatei: File): PipelineKomponente(startDatei), IInterpr
       wert
     } else {
       val fehlerMeldung = "Ungültige Konvertierung!\n" +
-          "Die Klasse '${wert}' kann nicht nach '${typCast.zielTyp}' konvertiert werden."
+          "Die Klasse '${wert.klasse.name}' kann nicht nach '${typCast.zielTyp}' konvertiert werden."
       werfeFehler(fehlerMeldung, "KonvertierungsFehler", typCast.token)
     }
   }
@@ -396,6 +399,9 @@ class Interpretierer(startDatei: File): PipelineKomponente(startDatei), IInterpr
           interpretiereAusdruck(argumente[index]),
           false
       )
+      if (sollteStackAufrollen()) {
+        return Niemals
+      }
     }
 
     if (aufrufObjekt != null) {
@@ -419,6 +425,9 @@ class Interpretierer(startDatei: File): PipelineKomponente(startDatei), IInterpr
 
   private fun interpretiereMethodenAufruf(methodenAufruf: IMM_AST.Satz.Ausdruck.MethodenAufruf): Objekt {
     val objekt = interpretiereAusdruck(methodenAufruf.objekt)
+    if (sollteStackAufrollen()) {
+      return Niemals
+    }
     val aufrufUmgebung = if (objekt is Objekt.ClosureObjekt) objekt.umgebung else Umgebung()
     val funktionsDefinition = methodenAufruf.funktion ?: objekt.klasse.methoden.getValue(methodenAufruf.name)
     return interpretiereAufruf(aufrufUmgebung, methodenAufruf, funktionsDefinition, objekt)
