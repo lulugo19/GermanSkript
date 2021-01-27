@@ -958,6 +958,7 @@ private sealed class SubParser<T: AST>() {
           AST.Satz.Zurückgabe(zurück.toUntyped(), AST.Satz.Ausdruck.Nichts(zurück.changeType(TokenTyp.NICHTS)))
         } else {
           val gebe = parseKleinesSchlüsselwort("gebe")
+          überspringeLeereZeilen()
           val ausdruck = parseAusdruck(mitVornomen = true, optionalesIstNachVergleich = false)
           überspringeLeereZeilen()
           expect<TokenTyp.ZURÜCK>("'zurück'")
