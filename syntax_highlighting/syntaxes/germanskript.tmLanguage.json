@@ -299,10 +299,21 @@
       "classdef": {
         "name": "meta.class.germanskript",
         "begin": "\\s*(Nomen)\\b",
-        "end": ":",
         "beginCaptures": {
           "1": {
             "name": "storage.type.class.germanskript"
+          }
+        },
+        "end": ":|\\b(als)\\s+(([A-ZÖÄÜ][a-zöäüß]*)+)\\s+(mit)?",
+        "endCaptures": {
+          "1": {
+            "name": "keyword.other.als.germanskript"
+          },
+          "2": {
+            "name": "entity.other.inherited-class.germanskript"
+          },
+          "4": {
+            "name": "keyword.other.mit.germanskript"
           }
         },
         "patterns": [
@@ -315,18 +326,6 @@
           {
             "name": "keyword.other.mit.germanskript",
             "match": "\\bmit\\b"
-          },
-          {
-            "name": "meta.constructor.parent.germanskript",
-            "match": "\\b(als)\\s+(([A-ZÖÄÜ][a-zöäüß]*)+)",
-            "captures": {
-              "1": {
-                "name": "keyword.other.als.germanskript"
-              },
-              "2": {
-                "name": "entity.other.inherited-class.germanskript"
-              }
-            }
           },
           {
             "name": "entity.name.type.class.germanskript",
