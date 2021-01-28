@@ -88,8 +88,9 @@ data class Zeichenfolge(val zeichenfolge: String): Objekt(BuildIn.IMMKlassen.zei
 
   private fun trenneMichZwischenDemSeperator(injection: Interpretierer.InterpretInjection): Objekt {
     val separator = injection.umgebung.leseVariable("Separator") as Zeichenfolge
-
     return Liste(Typ.Compound.Klasse(BuildIn.Klassen.liste ,listOf(zeichenFolgenTypArgument)),
-        zeichenfolge.split(separator.zeichenfolge).map { Zeichenfolge(it) }.toMutableList())
+        (if (separator.zeichenfolge == "") zeichenfolge.toCharArray().map {Zeichenfolge(it.toString())}.toMutableList()
+        else zeichenfolge.split(separator.zeichenfolge).map { Zeichenfolge(it) }.toMutableList()) as MutableList<Objekt>
+    )
   }
 }
