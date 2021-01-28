@@ -1,0 +1,71 @@
+/*
+7kyu
+https://www.codewars.com/kata/577bd8d4ae2807c64b00045b
+
+Create a function that returns the name of the winner in a fight between two fighters.
+
+Each fighter takes turns attacking the other and whoever kills the other first is victorious. Death is defined as having health <= 0.
+
+Each fighter will be a Fighter object/instance. See the Fighter class below in your chosen language.
+
+Both health and damagePerAttack (damage_per_attack for python) will be integers larger than 0. You can mutate the Fighter objects.
+*/
+
+Deklination Maskulinum Singular(Name, Namens, Namen, Namen) Plural(Namen)
+Deklination Femininum Singular(Gesundheit) Plural(Gesundheit)
+Deklination Maskulinum Singular(Schaden, Schadens, Schaden, Schaden) Plural(Schäden)
+Deklination Maskulinum Singular(Kämpfer, Kämpfers, Kämpfer, Kämpfer) Plural(Kämpfer, Kämpfer, Kämpfern, Kämpfer)
+Deklination Maskulinum Singular(Gewinner, Gewinners, Gewinner, Gewinner) Plural(Gewinner, Gewinner, Gewinnern, Gewinner)
+Deklination Maskulinum Singular(Kampf, Kampfs, Kampf, Kampf) Plural(Kämpfe, Kämpfe, Kämpfen, Kämpfe)
+
+Nomen Kämpfer mit
+  der Zeichenfolge Name,
+  einer Zahl Gesundheit,
+  der Zahl AngriffsSchaden:.
+
+Implementiere den Kämpfer:
+  Verb attackiere den Kämpfer:
+    schreibe die Zeile "Der Kämpfer #{mein Name} attackiert den Kämpfer #{der Name des Kämpfers}."
+    Kämpfer: nehme meinen AngriffsSchaden!
+  .
+
+  Verb nehme die Zahl Schaden:
+    meine Gesundheit ist Mathe::maximum von der Zahl (meine Gesundheit - den Schaden), der Zahl 0
+    schreibe die Zeile "Der Kämpfer #{mein Name} nimmt #{der Schaden} Schaden und die Gesundheit fällt auf #{meine Gesundheit}."
+    wenn lebt != wahr ist:
+      schreibe die Zeile "Der Kämpfer #{mein Name} wurde besiegt!"
+    .
+  .
+
+  Verb(Boolean) lebt:
+    gebe meine Gesundheit > 0 zurück
+  .
+.
+
+Nomen Kampf mit
+  dem erstenKämpfer,
+  dem zweitenKämpfer:.
+
+Implementiere den Kampf:
+  Verb starte mich:
+    solange mein ersterKämpfer lebt und mein zweiterKämpfer lebt:
+      // Der erste Kämpfer beginnt immer mit dem Kampf
+      mein ersterKämpfer: attackiere meinen zweitenKämpfer!
+      wenn mein zweiterKämpfer lebt:
+        mein zweiterKämpfer: attackiere meinen erstenKämpfer!
+      .
+    .
+    der Gewinner ist wenn mein ersterKämpfer lebt: mein ersterKämpfer. sonst: mein zweiterKämpfer.
+    schreibe die Zeile "Der Gewinner ist #{der Name des Gewinners}!"
+  .
+.
+
+starte einen Kampf mit 
+  dem erstenKämpfer (ein Kämpfer mit 
+    dem Namen "Bruce Lee",
+    der Gesundheit 120,
+    dem AngriffsSchaden 20),
+  dem zweitenKämpfer (ein Kämpfer mit
+    dem Namen "Chuck Norris",
+    der Gesundheit 150,
+    dem AngriffsSchaden 16)

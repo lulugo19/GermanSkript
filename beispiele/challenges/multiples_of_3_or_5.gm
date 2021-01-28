@@ -1,0 +1,27 @@
+/*
+6 kyu
+https://www.codewars.com/kata/514b92a657cdc65150000006
+If we list all the natural numbers below 10 that are multiples of 3 or 5, we get 3, 5, 6 and 9. The sum of these multiples is 23.
+
+Finish the solution so that it returns the sum of all the multiples of 3 or 5 below the number passed in.
+
+    Note: If the number is a multiple of both 3 and 5, only count it once. Also, if a number is negative, return 0(for languages that do have them)
+
+Courtesy of projecteuler.net
+
+*/
+
+Verb(Zahl) vielfache_von_drei_oder_fünf zu der Zahl:
+  eine Summe ist 0
+  für jede Zahl von 1 bis zur Zahl:
+    wenn die Zahl mod 3 gleich 0 ist oder die Zahl mod 5 gleich 0 ist:
+      eine Summe ist die Summe + die Zahl
+    .
+  .
+  gebe die Summe zurück
+.
+
+schreibe die Zeile ((vielfache_von_drei_oder_fünf zur Zahl -4) gleich 0) als Zeichenfolge
+schreibe die Zeile ((vielfache_von_drei_oder_fünf zur Zahl 4) gleich 3) als Zeichenfolge
+schreibe die Zeile ((vielfache_von_drei_oder_fünf zur Zahl 10) gleich 23) als Zeichenfolge
+schreibe die Zeile ((vielfache_von_drei_oder_fünf zur Zahl 30) gleich 195) als Zeichenfolge

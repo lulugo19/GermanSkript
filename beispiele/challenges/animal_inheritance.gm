@@ -1,0 +1,103 @@
+/*
+7kyu
+https://www.codewars.com/kata/56f935002e6c0d55fa000d92
+
+Task
+
+Define the following classes that inherit from Animal.
+I. Shark
+
+The constructor function for Shark should accept 3 arguments in total in the following order: name, age, status. All sharks should have a leg count of **0 (since they obviously do not have any legs) and should have a species of "shark".**
+II. Cat
+
+The constructor function for Cat should accept the same 3 arguments as with Shark: name, age, status. Cats should always have a leg count of 4 and a species of "cat".
+
+Furthermore, the introduce/Introduce method for Cat should be identical to the original except there should be exactly 2 spaces and the words "Meow meow!" after the phrase. For example:
+
+Cat example = new Cat("Example", 10, "Happy);
+example.Introduce() => "Hello, my name is Example and I am 10 years old.  Meow meow!"; // Notice the TWO spaces - very important
+
+III. Dog
+
+The Dog constructor should accept 4 arguments in the specified order: name, age, status, master. master is the name of the dog's master which will be a string. Furthermore, dogs should have 4 legs and a species of "dog".
+
+Dogs have an identical introduce/Introduce method as any other animal, but they have their own method called greetMaster/GreetMaster which accepts no arguments and returns "Hello (insert_master_name_here)" (of course not the literal string but replace the (insert_master_name_here) with the name of the dog's master).
+*/
+
+Deklination Neutrum Singular(Tier, Tieres, Tier, Tier) Plural(Tiere, Tiere, Tieren, Tiere)
+Deklination Maskulinum Singular(Name, Namens, Namen, Namen) Plural(Namen)
+Deklination Femininum Singular(Spezies) Plural(Spezies)
+Deklination Maskulinum Singular(Status) Plural(Status)
+Deklination Neutrum Singular(Alter, Alters, Alter, Alter) Plural(Alter)
+Deklination Maskulinum Singular(Hai, Haies, Hai, Hai) Plural(Haie, Haie, Haien, Haie)
+Deklination Femininum Singular(Katze) Plural(Katzen)
+Deklination Maskulinum Singular(Hund, Hundes, Hund, Hund) Plural(Hunde, Hunde, Hunden, Hunde)
+Deklination Neutrum Singular(Herrchen, Herrchens, Herrchen, Herrchen) Plural(Herrchen)
+
+Nomen Tier mit
+  der Zahl Alter,
+  der BeinAnZahl,
+  der Zeichenfolge Name,
+  der Zeichenfolge Spezies,
+  der Zeichenfolge Status:.
+
+Implementiere das Tier:
+  Verb stelle mich vor:
+    schreibe die Zeile "Hallo, mein Name ist #{mein Name} und Ich bin #{mein Alter} Jahre alt."
+  .
+.
+
+Nomen Hai mit
+  der Zeichenfolge Name,
+  der Zahl Alter,
+  der Zeichenfolge Status
+  als Tier mit 
+    der BeinAnZahl 0,
+    der Spezies "Hai":.
+
+Nomen Katze mit
+  der Zeichenfolge Name,
+  der Zahl Alter,
+  der Zeichenfolge Status
+  als Tier mit
+    der BeinAnZahl 4,
+    der Spezies "Katze":.
+
+Implementiere die Katze:
+  Verb stelle mich vor:
+    Super: stelle mich vor!
+    schreibe die Zeile "Meow, Meow!"
+  .
+.
+
+Nomen Hund mit
+  der Zeichenfolge Name,
+  der Zahl Alter,
+  der Zeichenfolge Status,
+  der Zeichenfolge Herrchen
+  als Tier mit
+    der BeinAnZahl 4,
+    der Spezies "Hund":.
+
+Implementiere den Hund:
+  Verb grüße (das Nichts Herrchen):
+    schreibe die Zeile "Hallo, oh mächtiger #{mein Herrchen}."
+  .
+.
+
+die Tiere sind einige Tiere [
+  (ein Hai mit dem Namen "Sharky", dem Alter 19, dem Status "hungrig"),
+  (eine Katze mit dem Namen "Blacky", dem Alter 7, dem Status "neugierig"),
+  (ein Hund mit dem Namen "Kira", dem Alter 14, dem Status "entspannt", dem Herrchen "Lukas")
+]
+
+für jedes Tier:
+  Tier: stelle dich vor!
+  wenn das Tier ein Hund ist:
+    das Tier als Hund: grüße das Herrchen!
+  .
+.
+
+schreibe die Zeile (der Name eines Haies mit dem Namen "Bowy", dem Alter 10, dem Status "schläfrig")
+
+

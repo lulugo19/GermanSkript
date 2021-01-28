@@ -1,0 +1,27 @@
+/*
+6 kyu
+https://www.codewars.com/kata/541c8630095125aba6000c00/train/javascript
+Digital root is the recursive sum of all the digits in a number.
+Given n, take the sum of the digits of n. If that value has more than one digit, continue reducing in this way until a single-digit number is produced. The input will be a non-negative integer.
+*/
+Deklination Femininum Singular(Wurzel) Plural(Wurzeln)
+Deklination Femininum Singular(Ziffer) Plural(Ziffern)
+
+Verb berechne (die Zahl digitaleWurzel) von der Zahl:
+  wenn die Zahl < 10 ist: gebe die Zahl zurück.
+
+  die Zeichenfolge ist die Zahl als Zeichenfolge
+
+  die Ziffern sind trenne die Zeichenfolge zwischen dem Separator "" 
+
+  die ZiffernSumme ist Ziffern:
+    transformiere<Zahl> euch mit etwas Transformierendem: die Zeichenfolge als Zahl.!:
+    summiere euch!
+
+  gebe berechne die digitaleWurzel von der Zahl ZiffernSumme zurück
+.
+
+schreibe die Zahl "Hallo" als Zahl
+
+schreibe die Zahl (berechne die digitaleWurzel von der Zahl 16)  // 7
+schreibe die Zahl (berechne die digitaleWurzel von der Zahl 456) // 6
