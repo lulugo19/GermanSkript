@@ -82,7 +82,7 @@ class Interpretierer(startDatei: File): PipelineKomponente(startDatei), IInterpr
         true, geworfenerFehler!!
     ) as Zeichenfolge
 
-    throw GermanSkriptFehler.UnbehandelterFehler(geworfenerFehlerToken!!, aufrufStapel.toString(), zeichenfolge.zeichenfolge, geworfenerFehler!!)
+    throw GermanSkriptFehler.UnbehandelterFehler(geworfenerFehlerToken!!, aufrufStapel.toString(), zeichenfolge.zeichenfolge)
   }
 
   private enum class Flag {

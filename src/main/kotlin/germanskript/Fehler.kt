@@ -386,6 +386,6 @@ sealed class GermanSkriptFehler(private val fehlerName: String, val token: Token
       get() = "$fehlerMeldung\n$aufrufStapelString"
   }
 
-  class UnbehandelterFehler(token: Token, aufrufStapelString: String, fehlerMeldung: String, val fehlerObjekt: Objekt):
+  class UnbehandelterFehler(token: Token, aufrufStapelString: String, fehlerMeldung: String):
       LaufzeitFehler(token, aufrufStapelString, "Unbehandelter Fehler. $fehlerMeldung")
 }

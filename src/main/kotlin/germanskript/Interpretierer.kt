@@ -119,6 +119,9 @@ class Interpretierer(startDatei: File): PipelineKomponente(startDatei), IInterpr
     interpretInjection = InterpretInjection(aufrufStapel, ::werfeFehler)
     try {
       interpretiereFunktionsAufruf(programm)
+      if (flags.contains(Flag.FEHLER_GEWORFEN)) {
+        werfeLaufZeitFehler()
+      }
     }
     catch (fehler: Throwable) {
       when (fehler) {
@@ -152,6 +155,26 @@ class Interpretierer(startDatei: File): PipelineKomponente(startDatei), IInterpr
     geworfenerFehlerToken = token
     flags.add(Flag.FEHLER_GEWORFEN)
     return Niemals
+  }
+
+  private fun werfeLaufZeitFehler() {
+    flags.remove(Flag.FEHLER_GEWORFEN)
+    val alsZeichenfolge = geworfenerFehler!!.klasse.methoden.getValue("als Zeichenfolge")
+
+    val aufruf = object : IMM_AST.Satz.Ausdruck.IAufruf {
+      override val token: Token = geworfenerFehler!!.typ.definition.konvertierungen.getValue("Zeichenfolge").typ.name.bezeichnerToken
+      override val name = "als Zeichenfolge"
+      override val argumente: List<IMM_AST.Satz.Ausdruck> = emptyList()
+    }
+
+    val zeichenfolge = interpretiereAufruf(
+        Umgebung(),
+        aufruf,
+        alsZeichenfolge,
+        geworfenerFehler
+    ) as Zeichenfolge
+
+    throw GermanSkriptFehler.UnbehandelterFehler(geworfenerFehlerToken!!, aufrufStapel.toString(), zeichenfolge.zeichenfolge)
   }
 
   // region Sätze
