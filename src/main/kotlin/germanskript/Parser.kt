@@ -562,7 +562,7 @@ private sealed class SubParser<T: AST>() {
         is TokenTyp.OFFENE_ECKIGE_KLAMMER -> subParse(Satz.Ausdruck.NomenAusdruck.IndexZugriff(nomen, inBedingungsTerm))
         is TokenTyp.VORNOMEN.ARTIKEL -> {
           when (nächstesToken.wert) {
-            "des", "der", "meiner", "meines", "deiner", "deines" ->
+            "des", "der", "eines", "einer", "meiner", "meines", "deiner", "deines" ->
               subParse(Satz.Ausdruck.NomenAusdruck.EigenschaftsZugriff(nomen, inBinärenAusdruck, inBedingungsTerm))
             else -> AST.Satz.Ausdruck.Variable(nomen)
           }
