@@ -65,11 +65,11 @@ object Duden {
   }
 
   fun dudenGrammatikAnfrage(wort: String): Deklination {
-      logger.addLine("Grammatikanfrage für: $wort")
+      //logger.addLine("Grammatikanfrage für: $wort")
 
       val anfrage = frageAn("$DUDEN_RECHTSCHREIBUNGS_URL/$wort")
       if (anfrage.responseCode.absoluteValue == 404) {
-        logger.addLine("Grammatikseite nicht gefunden!")
+        //logger.addLine("Grammatikseite nicht gefunden!")
         return dudenSuchAnfrage(wort)
       }
 
@@ -102,7 +102,7 @@ object Duden {
           throw DudenFehler.ParseFehler()
         }
       }
-      logger.addLine("Anfrage für '$wort' erfolgreich: " + deklination.toString())
+      //logger.addLine("Anfrage für '$wort' erfolgreich: " + deklination.toString())
       return deklination
   }
 
@@ -116,26 +116,26 @@ object Duden {
       EnumSet.of(RegexOption.DOT_MATCHES_ALL, RegexOption.MULTILINE))
 
   private fun dudenSuchAnfrage(wort: String): Deklination {
-    logger.addLine("Suchanfrage für: $wort")
+    //logger.addLine("Suchanfrage für: $wort")
     val url = "$DUDEN_SUCH_URL/$wort"
     val anfrage = frageAn(url)
 
 
     if (anfrage.responseCode.absoluteValue == 404) {
-      logger.addLine("Suchseite nicht gefunden.")
+      //logger.addLine("Suchseite nicht gefunden.")
       throw DudenFehler.NotFoundFehler(url)
     }
 
     val htmlDocument = InputStreamReader(anfrage.inputStream).readText()
 
     val matches = linkRegex.findAll(htmlDocument)
-    logger.addLine("Gehe Suchlinks durch...")
+    //logger.addLine("Gehe Suchlinks durch...")
     for (match in matches) {
       try {
         return dudenGrammatikAnfrage(match.groupValues[1])
       }
       catch (error: DudenFehler) {
-        logger.addLine("Linkaufruf für '${match.groupValues[1]}' fehlgeschlagen!")
+        //logger.addLine("Linkaufruf für '${match.groupValues[1]}' fehlgeschlagen!")
       }
     }
     throw DudenFehler.NotFoundFehler(url)

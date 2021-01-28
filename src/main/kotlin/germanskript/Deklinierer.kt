@@ -89,31 +89,34 @@ class Deklinierer(startDatei: File): PipelineKomponente(startDatei) {
         is AST.Programm, is AST.Definition.Modul -> return@visit true
         is AST.DefinitionsContainer -> {
           for (deklination in knoten.deklinationen) {
-            if (deklination is AST.Definition.DeklinationsDefinition.Definition) {
-              try {
-                knoten.wörterbuch.fügeDeklinationHinzu(deklination.deklination)
-              }
-              catch (fehler: Wörterbuch.DoppelteDeklinationFehler) {
-                // Doppelte Deklinationen werden einfach ingoriert
-                // TODO: Vielleicht sollte eine Warnung ausgegeben werden
-              }
-            }
-            else if (knoten is AST.Definition.DeklinationsDefinition.Duden) {
-              val anfrage = async(Dispatchers.IO) {
-                val wort = knoten.wort
+            when (deklination) {
+              is AST.Definition.DeklinationsDefinition.Definition ->
+              {
                 try {
-                  return@async Duden.dudenGrammatikAnfrage(wort.wert)
+                  knoten.wörterbuch.fügeDeklinationHinzu(deklination.deklination)
                 }
-                catch (fehler: Duden.DudenFehler) {
-                  when (fehler) {
-                    is Duden.DudenFehler.NotFoundFehler, is Duden.DudenFehler.ParseFehler ->
-                      throw GermanSkriptFehler.DudenFehler.WortNichtGefundenFehler(wort.toUntyped(), wort.wert)
-                    is Duden.DudenFehler.KeinInternetFehler, is Duden.DudenFehler.TimeoutFehler, is Duden.DudenFehler.DudenServerFehler ->
-                      throw GermanSkriptFehler.DudenFehler.Verbindungsfehler(wort.toUntyped(), wort.wert)
+                catch (fehler: Wörterbuch.DoppelteDeklinationFehler) {
+                  // Doppelte Deklinationen werden einfach ingoriert
+                  // TODO: Vielleicht sollte eine Warnung ausgegeben werden
+                }
+              }
+              is AST.Definition.DeklinationsDefinition.Duden -> {
+                val anfrage = async(Dispatchers.IO) {
+                  val wort = deklination.wort
+                  try {
+                    return@async Duden.dudenGrammatikAnfrage(wort.wert)
+                  }
+                  catch (fehler: Duden.DudenFehler) {
+                    when (fehler) {
+                      is Duden.DudenFehler.NotFoundFehler, is Duden.DudenFehler.ParseFehler ->
+                        throw GermanSkriptFehler.DudenFehler.WortNichtGefundenFehler(wort.toUntyped(), wort.wert)
+                      is Duden.DudenFehler.KeinInternetFehler, is Duden.DudenFehler.TimeoutFehler, is Duden.DudenFehler.DudenServerFehler ->
+                        throw GermanSkriptFehler.DudenFehler.Verbindungsfehler(wort.toUntyped(), wort.wert)
+                    }
                   }
                 }
+                dudenAnfragen.computeIfAbsent(deklination.wort.dateiPfad) { mutableListOf()} += DudenAnfrage(deklination, anfrage)
               }
-              dudenAnfragen.computeIfAbsent(knoten.wort.dateiPfad) { mutableListOf()} += DudenAnfrage(knoten, anfrage)
             }
           }
           for (typDefinition in knoten.definierteTypen.values) {
