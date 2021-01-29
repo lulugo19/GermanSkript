@@ -6,10 +6,6 @@ class HashSet(typ: Typ.Compound.Klasse): Objekt(BuildIn.IMMKlassen.hashSet, typ)
 
   private val set = mutableSetOf<Objekt>()
 
-  override fun setzeEigenschaft(eigenschaftsName: String, wert: Objekt) {
-
-  }
-
   override fun holeEigenschaft(eigenschaftsName: String): Objekt {
     return when (eigenschaftsName) {
       "Größe" -> Zahl(set.size.toDouble())
@@ -17,7 +13,7 @@ class HashSet(typ: Typ.Compound.Klasse): Objekt(BuildIn.IMMKlassen.hashSet, typ)
     }
   }
 
-  override fun rufeMethodeAuf(aufruf: IMM_AST.Satz.Ausdruck.IAufruf, injection: Interpretierer.InterpretInjection): Objekt {
+  override fun rufeMethodeAuf(aufruf: IM_AST.Satz.Ausdruck.IAufruf, injection: Interpretierer.InterpretInjection): Objekt {
     return when (aufruf.name) {
       "entferne den Wert" -> entferneDenWert(injection)
       "enthält den Wert" -> enthältDenWert(injection)

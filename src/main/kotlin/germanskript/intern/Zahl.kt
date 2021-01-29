@@ -1,7 +1,7 @@
 package germanskript.intern
 
 import germanskript.*
-import germanskript.IMM_AST
+import germanskript.IM_AST
 import germanskript.Interpretierer
 import java.math.MathContext
 import java.math.RoundingMode
@@ -59,7 +59,7 @@ class Zahl(val zahl: Double): Objekt(BuildIn.IMMKlassen.zahl, BuildIn.Klassen.za
 
   fun isZero() = this.zahl == 0.0
 
-  override fun rufeMethodeAuf(aufruf: IMM_AST.Satz.Ausdruck.IAufruf, injection: Interpretierer.InterpretInjection): Objekt {
+  override fun rufeMethodeAuf(aufruf: IM_AST.Satz.Ausdruck.IAufruf, injection: Interpretierer.InterpretInjection): Objekt {
     return when(aufruf.name) {
       "addiere mich mit dem Operanden",
       "addiere mich mit der Zahl" -> this + injection.umgebung.leseVariable("Zahl") as Zahl

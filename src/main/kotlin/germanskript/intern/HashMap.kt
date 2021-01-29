@@ -6,10 +6,6 @@ class HashMap(typ: Typ.Compound.Klasse): Objekt(BuildIn.IMMKlassen.hashMap, typ)
 
   private val map = mutableMapOf<Objekt, Objekt>()
 
-  override fun setzeEigenschaft(eigenschaftsName: String, wert: Objekt) {
-
-  }
-
   override fun holeEigenschaft(eigenschaftsName: String): Objekt {
     return when (eigenschaftsName) {
       "Größe" -> Zahl(map.size.toDouble())
@@ -17,7 +13,7 @@ class HashMap(typ: Typ.Compound.Klasse): Objekt(BuildIn.IMMKlassen.hashMap, typ)
     }
   }
 
-  override fun rufeMethodeAuf(aufruf: IMM_AST.Satz.Ausdruck.IAufruf, injection: Interpretierer.InterpretInjection): Objekt {
+  override fun rufeMethodeAuf(aufruf: IM_AST.Satz.Ausdruck.IAufruf, injection: Interpretierer.InterpretInjection): Objekt {
     return when (aufruf.name) {
       "entferne den Schlüssel" -> entferneDenSchlüssel(injection)
       "enthält den Schlüssel" -> enthältDenSchlüssel(injection)
@@ -47,7 +43,7 @@ class HashMap(typ: Typ.Compound.Klasse): Objekt(BuildIn.IMMKlassen.hashMap, typ)
     return Nichts
   }
 
-  private fun holeDenWertMitDemSchlüssel(aufruf: IMM_AST.Satz.Ausdruck.IAufruf, injection: Interpretierer.InterpretInjection): Objekt {
+  private fun holeDenWertMitDemSchlüssel(aufruf: IM_AST.Satz.Ausdruck.IAufruf, injection: Interpretierer.InterpretInjection): Objekt {
     val schlüssel = injection.umgebung.leseVariable("Schlüssel")
     return map.getOrElse(schlüssel) {
       injection.werfeFehler(

@@ -1,7 +1,7 @@
 package germanskript.intern
 
 import germanskript.*
-import germanskript.IMM_AST
+import germanskript.IM_AST
 import germanskript.Interpretierer
 
 class Liste(typ: Typ.Compound.Klasse, val elemente: MutableList<Objekt>): Objekt(BuildIn.IMMKlassen.liste, typ) {
@@ -18,11 +18,7 @@ class Liste(typ: Typ.Compound.Klasse, val elemente: MutableList<Objekt>): Objekt
     throw Exception("Die Eigenschaft ${eigenschaftsName} ist für den Typen Liste nicht definiert.")
   }
 
-  override fun setzeEigenschaft(eigenschaftsName: String, wert: Objekt) {
-    // vielleicht kommt hier später mal was, sieht aber nicht danach aus
-  }
-
-  override fun rufeMethodeAuf(aufruf: IMM_AST.Satz.Ausdruck.IAufruf, injection: Interpretierer.InterpretInjection): Objekt {
+  override fun rufeMethodeAuf(aufruf: IM_AST.Satz.Ausdruck.IAufruf, injection: Interpretierer.InterpretInjection): Objekt {
     return when (aufruf.name) {
       "addiere mich mit dem Operanden",
       "addiere mich mit der Liste" -> addiereMichMitDemOperanden(injection)
@@ -53,14 +49,14 @@ class Liste(typ: Typ.Compound.Klasse, val elemente: MutableList<Objekt>): Objekt
     return Nichts
   }
 
-  private fun holeDasElementMitDemIndex(aufruf: IMM_AST.Satz.Ausdruck.IAufruf, injection: Interpretierer.InterpretInjection): Objekt {
+  private fun holeDasElementMitDemIndex(aufruf: IM_AST.Satz.Ausdruck.IAufruf, injection: Interpretierer.InterpretInjection): Objekt {
     val index = (injection.umgebung.leseVariable("Index") as Zahl).toInt()
 
     return prüfeIndex(index, aufruf, injection) ?:
         this.elemente[index]
   }
 
-  private fun setzeDenIndexAufDenTyp(aufruf: IMM_AST.Satz.Ausdruck.IAufruf, injection: Interpretierer.InterpretInjection): Objekt {
+  private fun setzeDenIndexAufDenTyp(aufruf: IM_AST.Satz.Ausdruck.IAufruf, injection: Interpretierer.InterpretInjection): Objekt {
     val index = (injection.umgebung.leseVariable("Index") as Zahl).toInt()
     return prüfeIndex(index, aufruf, injection) ?: {
       val wert = injection.umgebung.leseVariable("Element")
@@ -69,7 +65,7 @@ class Liste(typ: Typ.Compound.Klasse, val elemente: MutableList<Objekt>): Objekt
     }()
   }
 
-  private fun prüfeIndex(index: Int, aufruf: IMM_AST.Satz.Ausdruck.IAufruf, injection: Interpretierer.InterpretInjection): Objekt? {
+  private fun prüfeIndex(index: Int, aufruf: IM_AST.Satz.Ausdruck.IAufruf, injection: Interpretierer.InterpretInjection): Objekt? {
     return if (index >= elemente.size) {
       injection.werfeFehler(
           "Index außerhalb des Bereichs. Der Index ist $index, doch die Länge der Liste ist ${elemente.size}.\n", "IndexFehler", aufruf.token)

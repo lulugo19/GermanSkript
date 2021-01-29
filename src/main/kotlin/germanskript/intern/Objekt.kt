@@ -1,20 +1,20 @@
 package germanskript.intern
 
 import germanskript.*
-import germanskript.IMM_AST
+import germanskript.IM_AST
 import germanskript.Interpretierer
 
-open class Objekt(val klasse: IMM_AST.Definition.Klasse, internal val typ: Typ.Compound.Klasse) {
+open class Objekt(val klasse: IM_AST.Definition.Klasse, internal val typ: Typ.Compound.Klasse) {
   override fun toString() = "${typ.name}@${this.hashCode()}"
 
   protected val eigenschaften: MutableMap<String, Objekt> = mutableMapOf()
 
   open fun holeEigenschaft(eigenschaftsName: String): Objekt {
-    TODO("Not yet implemented")
+    return eigenschaften.getValue(eigenschaftsName)
   }
 
   open fun setzeEigenschaft(eigenschaftsName: String, wert: Objekt){
-    TODO("Not yet implemented")
+    eigenschaften[eigenschaftsName] = wert
   }
 
   companion object {
@@ -29,24 +29,19 @@ open class Objekt(val klasse: IMM_AST.Definition.Klasse, internal val typ: Typ.C
   }
 
   open class SkriptObjekt(
-      klasse: IMM_AST.Definition.Klasse,
+      klasse: IM_AST.Definition.Klasse,
       typ: Typ.Compound.Klasse
-  ) : Objekt(klasse, typ) {
-    override fun holeEigenschaft(eigenschaftsName: String) = eigenschaften.getValue(eigenschaftsName)
-    override fun setzeEigenschaft(eigenschaftsName: String, wert: Objekt) {
-      eigenschaften[eigenschaftsName] = wert
-    }
-  }
+  ) : Objekt(klasse, typ)
 
   class ClosureObjekt(
-      klasse: IMM_AST.Definition.Klasse,
+      klasse: IM_AST.Definition.Klasse,
       typ: Typ.Compound.Klasse,
       val umgebung: Interpretierer.Umgebung,
-      val objektArt: IMM_AST.Satz.Ausdruck.ObjektArt
+      val objektArt: IM_AST.Satz.Ausdruck.ObjektArt
   ): SkriptObjekt(klasse, typ)
 
   open fun rufeMethodeAuf(
-      aufruf: IMM_AST.Satz.Ausdruck.IAufruf,
+      aufruf: IM_AST.Satz.Ausdruck.IAufruf,
       injection: Interpretierer.InterpretInjection): Objekt {
     return when (aufruf.name) {
       "gleicht dem Objekt" -> gleichtDemObjekt(injection)

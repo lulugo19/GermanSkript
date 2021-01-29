@@ -18,18 +18,18 @@ object BuildIn {
   }
 
   object IMMKlassen {
-    lateinit var objekt: IMM_AST.Definition.Klasse
-    lateinit var nichts: IMM_AST.Definition.Klasse
-    lateinit var niemals: IMM_AST.Definition.Klasse
-    lateinit var zahl: IMM_AST.Definition.Klasse
-    lateinit var zeichenfolge: IMM_AST.Definition.Klasse
-    lateinit var boolean: IMM_AST.Definition.Klasse
-    lateinit var datei: IMM_AST.Definition.Klasse
-    lateinit var hashMap: IMM_AST.Definition.Klasse
-    lateinit var hashSet: IMM_AST.Definition.Klasse
-    lateinit var schreiber: IMM_AST.Definition.Klasse
-    lateinit var liste: IMM_AST.Definition.Klasse
-    lateinit var paar: IMM_AST.Definition.Klasse
+    lateinit var objekt: IM_AST.Definition.Klasse
+    lateinit var nichts: IM_AST.Definition.Klasse
+    lateinit var niemals: IM_AST.Definition.Klasse
+    lateinit var zahl: IM_AST.Definition.Klasse
+    lateinit var zeichenfolge: IM_AST.Definition.Klasse
+    lateinit var boolean: IM_AST.Definition.Klasse
+    lateinit var datei: IM_AST.Definition.Klasse
+    lateinit var hashMap: IM_AST.Definition.Klasse
+    lateinit var hashSet: IM_AST.Definition.Klasse
+    lateinit var schreiber: IM_AST.Definition.Klasse
+    lateinit var liste: IM_AST.Definition.Klasse
+    lateinit var paar: IM_AST.Definition.Klasse
   }
 
   object Schnittstellen {

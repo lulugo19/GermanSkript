@@ -1,6 +1,6 @@
 package germanskript
 
-sealed class IMM_AST {
+sealed class IM_AST {
   sealed class Definition {
     class Funktion(val parameter: List<String>) {
       var körper: Satz.Ausdruck.Bereich? = null
@@ -8,7 +8,7 @@ sealed class IMM_AST {
     class Klasse(val name: String, val methoden: HashMap<String, Funktion>)
   }
 
-  sealed class Satz: IMM_AST() {
+  sealed class Satz: IM_AST() {
     object Intern: Satz()
     object Fortfahren: Satz()
     object Abbrechen: Satz()
@@ -19,7 +19,7 @@ sealed class IMM_AST {
 
     data class SetzeEigenschaft(val objekt: Ausdruck, val name: String, val ausdruck: Ausdruck): Satz()
 
-    data class BedingungsTerm(val bedingung: Ausdruck, val bereich: Ausdruck.Bereich): IMM_AST()
+    data class BedingungsTerm(val bedingung: Ausdruck, val bereich: Ausdruck.Bereich): IM_AST()
 
     data class SolangeSchleife(val bedingungsTerm: BedingungsTerm): Satz()
 
@@ -93,7 +93,7 @@ sealed class IMM_AST {
           val param: String,
           val typ: Typ.Compound,
           val bereich: Bereich
-      ): IMM_AST()
+      ): IM_AST()
 
       data class Werfe (
         val werfe: TypedToken<TokenTyp.WERFE>,

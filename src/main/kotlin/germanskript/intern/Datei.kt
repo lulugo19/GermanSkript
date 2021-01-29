@@ -1,7 +1,7 @@
 package germanskript.intern
 
 import germanskript.*
-import germanskript.IMM_AST
+import germanskript.IM_AST
 import germanskript.Interpretierer
 import java.io.BufferedWriter
 import java.io.File
@@ -11,26 +11,20 @@ class Datei(): Objekt(BuildIn.IMMKlassen.datei, BuildIn.Klassen.datei) {
   lateinit var file: File
 
   override fun rufeMethodeAuf(
-      aufruf: IMM_AST.Satz.Ausdruck.IAufruf,
+      aufruf: IM_AST.Satz.Ausdruck.IAufruf,
       injection: Interpretierer.InterpretInjection): Objekt {
 
     return when (aufruf.name) {
-      "erstelle die Datei" -> konstruktor()
+      "erstelle Datei" -> konstruktor()
       "lese die Zeilen" -> leseZeilen()
       "hole den Schreiber" -> holeSchreiber()
       else -> throw Exception("Die Methode '${aufruf.name}' ist nicht definiert!")
     }
   }
 
-  override fun holeEigenschaft(eigenschaftsName: String): Objekt {
-    return eigenschaften.getValue(eigenschaftsName)
-  }
-
-  override fun setzeEigenschaft(eigenschaftsName: String, wert: Objekt) {
-
-  }
-
   private fun konstruktor(): Nichts {
+    System.err.println(eigenschaften)
+    // TODO: handle hier mögliche Datei-Fehler
     file = File((eigenschaften.getValue("DateiName") as Zeichenfolge).zeichenfolge)
     return Nichts
   }
@@ -46,7 +40,7 @@ class Datei(): Objekt(BuildIn.IMMKlassen.datei, BuildIn.Klassen.datei) {
 }
 
 class Schreiber(private val writer: BufferedWriter): Objekt(BuildIn.IMMKlassen.schreiber, BuildIn.Klassen.schreiber) {
-  override fun rufeMethodeAuf(aufruf: IMM_AST.Satz.Ausdruck.IAufruf, injection: Interpretierer.InterpretInjection): Objekt {
+  override fun rufeMethodeAuf(aufruf: IM_AST.Satz.Ausdruck.IAufruf, injection: Interpretierer.InterpretInjection): Objekt {
     return when(aufruf.name) {
       "schreibe die Zeile" -> schreibeDieZeile(injection)
       "schreibe die Zeichenfolge" -> schreibeDieZeichenfolge(injection)

@@ -1,14 +1,14 @@
 package germanskript.intern
 
 import germanskript.*
-import germanskript.IMM_AST
+import germanskript.IM_AST
 import germanskript.Interpretierer
 import java.text.ParseException
 import kotlin.Boolean
 
 data class Zeichenfolge(val zeichenfolge: String): Objekt(BuildIn.IMMKlassen.zeichenfolge, BuildIn.Klassen.zeichenfolge), Comparable<Zeichenfolge> {
 
-  override fun rufeMethodeAuf(aufruf: IMM_AST.Satz.Ausdruck.IAufruf, injection: Interpretierer.InterpretInjection): Objekt {
+  override fun rufeMethodeAuf(aufruf: IM_AST.Satz.Ausdruck.IAufruf, injection: Interpretierer.InterpretInjection): Objekt {
     return when (aufruf.name) {
       "addiere mich mit dem Operanden",
       "addiere mich mit der Zeichenfolge" -> addiereMichMitDemOperanden(injection)
@@ -45,7 +45,7 @@ data class Zeichenfolge(val zeichenfolge: String): Objekt(BuildIn.IMMKlassen.zei
     }
   }
 
-  private fun holeDenTypMitDemIndex(aufruf: IMM_AST.Satz.Ausdruck.IAufruf, injection: Interpretierer.InterpretInjection): Objekt {
+  private fun holeDenTypMitDemIndex(aufruf: IM_AST.Satz.Ausdruck.IAufruf, injection: Interpretierer.InterpretInjection): Objekt {
     val index = (injection.umgebung.leseVariable("Index") as Zahl).zahl.toInt()
     return if (index >= zeichenfolge.length) {
       injection.werfeFehler(
@@ -60,7 +60,7 @@ data class Zeichenfolge(val zeichenfolge: String): Objekt(BuildIn.IMMKlassen.zei
     return this + zeichenfolge
   }
 
-  private fun konvertiereInZahl(aufruf: IMM_AST.Satz.Ausdruck.IAufruf, injection: Interpretierer.InterpretInjection): Objekt {
+  private fun konvertiereInZahl(aufruf: IM_AST.Satz.Ausdruck.IAufruf, injection: Interpretierer.InterpretInjection): Objekt {
     return try {
       Zahl(zeichenfolge)
     }
@@ -74,7 +74,7 @@ data class Zeichenfolge(val zeichenfolge: String): Objekt(BuildIn.IMMKlassen.zei
     return Zahl(this.zeichenfolge.compareTo(zeichenfolge.zeichenfolge).toDouble())
   }
 
-  private fun codeAnDemIndex(aufruf: IMM_AST.Satz.Ausdruck.IAufruf, injection: Interpretierer.InterpretInjection): Objekt {
+  private fun codeAnDemIndex(aufruf: IM_AST.Satz.Ausdruck.IAufruf, injection: Interpretierer.InterpretInjection): Objekt {
     val index = (injection.umgebung.leseVariable("Index") as Zahl).toInt()
     if (index < 0 || index >= zeichenfolge.length)
       throw GermanSkriptFehler.LaufzeitFehler(aufruf.token, injection.aufrufStapel.toString(),
