@@ -118,7 +118,7 @@ class CodeGenerator(startDatei: File): PipelineKomponente(startDatei) {
       is AST.Satz.Bereich -> generiereBereich(satz)
       is AST.Satz.SolangeSchleife -> generiereSolangeSchleife(satz)
       is AST.Satz.FürJedeSchleife -> generiereFürJedeSchleife(satz)
-      is AST.Satz.SuperBlock -> generiereBereich(satz.bereich)
+      is AST.Satz.SuperBereich -> generiereBereich(satz.bereich)
       is AST.Satz.Zurückgabe -> generiereZurückgabe(satz)
       is AST.Satz.Ausdruck -> generiereAusdruck(satz)
     }

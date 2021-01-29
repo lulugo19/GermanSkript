@@ -308,7 +308,7 @@ class TypPrüfer(startDatei: File): PipelineKomponente(startDatei) {
         is AST.Satz.VariablenDeklaration -> durchlaufeVariablenDeklaration(satz)
         is AST.Satz.IndexZuweisung -> durchlaufeIndexZuweisung(satz)
         is AST.Satz.Bereich -> durchlaufeBereich(satz, true)
-        is AST.Satz.SuperBlock -> {
+        is AST.Satz.SuperBereich -> {
           val prevInSuperBlock = inSuperBlock
           inSuperBlock = true
           durchlaufeBereich(satz.bereich, true).also {

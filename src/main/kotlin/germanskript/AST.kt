@@ -540,7 +540,7 @@ sealed class AST {
       override val children = sequenceOf(anfang, ende)
     }
 
-    data class SuperBlock(val bereich: Bereich): Satz() {
+    data class SuperBereich(val bereich: Bereich): Satz() {
       override val children = sequenceOf(bereich)
     }
 

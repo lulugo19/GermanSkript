@@ -169,7 +169,7 @@ class Interpretierer(startDatei: File): PipelineKomponente(startDatei), IInterpr
         is AST.Satz.VariablenDeklaration -> durchlaufeVariablenDeklaration(satz)
         is AST.Satz.IndexZuweisung -> durchlaufeIndexZuweisung(satz)
         is AST.Satz.Bereich -> durchlaufeBereich(satz, true)
-        is AST.Satz.SuperBlock -> durchlaufeBereich(satz.bereich, true)
+        is AST.Satz.SuperBereich -> durchlaufeBereich(satz.bereich, true)
         is AST.Satz.Zurückgabe -> durchlaufeZurückgabe(satz)
         is AST.Satz.SolangeSchleife -> durchlaufeSolangeSchleife(satz)
         is AST.Satz.Ausdruck.VersucheFange -> durchlaufeVersucheFange(satz)

@@ -921,7 +921,7 @@ private sealed class SubParser<T: AST>() {
       }
     }
 
-    object SuperBlock: Satz<AST.Satz.SuperBlock>() {
+    object SuperBlock: Satz<AST.Satz.SuperBereich>() {
       override val id: ASTKnotenID = ASTKnotenID.SUPER_BLOCK
 
       override fun bewacheKnoten() {
@@ -931,10 +931,10 @@ private sealed class SubParser<T: AST>() {
         }
       }
 
-      override fun parseImpl(): AST.Satz.SuperBlock {
+      override fun parseImpl(): AST.Satz.SuperBereich {
         expect<TokenTyp.SUPER>("'Super'")
         val bereich = parseSätze(TokenTyp.AUSRUFEZEICHEN)
-        return AST.Satz.SuperBlock(bereich)
+        return AST.Satz.SuperBereich(bereich)
       }
     }
 

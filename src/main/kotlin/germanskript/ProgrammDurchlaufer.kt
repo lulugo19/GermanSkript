@@ -42,7 +42,7 @@ abstract  class ProgrammDurchlaufer<T>(startDatei: File): PipelineKomponente(sta
         is AST.Satz.Ausdruck.FunktionsAufruf -> durchlaufeFunktionsAufruf(satz, false)
         is AST.Satz.Bereich -> durchlaufeBereich(satz, true)
         is AST.Satz.Ausdruck.MethodenBereich -> durchlaufeMethodenBereich(satz)
-        is AST.Satz.SuperBlock -> {
+        is AST.Satz.SuperBereich -> {
           val prevInSuperBlock = inSuperBlock
           inSuperBlock = true
           durchlaufeBereich(satz.bereich, true).also {
