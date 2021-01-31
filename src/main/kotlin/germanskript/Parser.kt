@@ -851,7 +851,7 @@ private sealed class SubParser<T: AST>() {
   sealed class Satz<T: AST.Satz>(): SubParser<T>() {
     override fun bewacheKnoten() {
       if (parentNodeId == ASTKnotenID.MODUL) {
-        throw GermanSkriptFehler.SyntaxFehler.ParseFehler(next(), null, "In einem Modul sind nur weitere Definitioen und keine Sätze erlaubt.")
+        throw GermanSkriptFehler.SyntaxFehler.ParseFehler(next(), null, "In einem Modul sind nur weitere Definitionen und keine Sätze erlaubt.")
       }
     }
 

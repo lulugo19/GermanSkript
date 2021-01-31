@@ -12,7 +12,7 @@ class CodeGenerator(startDatei: File): PipelineKomponente(startDatei) {
 
   companion object {
     const val SELBST_VAR_NAME = "_Selbst"
-    const val METHODEN_BLOCK_VAR_NAME = "_MBObjekt"
+    const val METHODEN_BEREICH_VAR_NAME = "_MBObjekt"
     const val ITERATOR_VAR_NAME= "_Iterator"
     const val INIT_OBJEKT_VAR_NAME = "_Init_Objekt"
     const val LISTE_VAR_NAME = "_Liste"
@@ -239,11 +239,11 @@ class CodeGenerator(startDatei: File): PipelineKomponente(startDatei) {
       is AST.Satz.Ausdruck.EigenschaftsZugriff ->
         generiereEigenschaftsZugriff(ausdruck, generiereAusdruck(ausdruck.objekt))
       is AST.Satz.Ausdruck.MethodenBereichEigenschaftsZugriff ->
-        generiereEigenschaftsZugriff(ausdruck, IM_AST.Satz.Ausdruck.Variable(METHODEN_BLOCK_VAR_NAME))
+        generiereEigenschaftsZugriff(ausdruck, IM_AST.Satz.Ausdruck.Variable(METHODEN_BEREICH_VAR_NAME))
       is AST.Satz.Ausdruck.SelbstEigenschaftsZugriff ->
         generiereEigenschaftsZugriff(ausdruck, IM_AST.Satz.Ausdruck.Variable(SELBST_VAR_NAME))
       is AST.Satz.Ausdruck.SelbstReferenz -> IM_AST.Satz.Ausdruck.Variable(SELBST_VAR_NAME)
-      is AST.Satz.Ausdruck.MethodenBereichReferenz -> IM_AST.Satz.Ausdruck.Variable(METHODEN_BLOCK_VAR_NAME)
+      is AST.Satz.Ausdruck.MethodenBereichReferenz -> IM_AST.Satz.Ausdruck.Variable(METHODEN_BEREICH_VAR_NAME)
       is AST.Satz.Ausdruck.VersucheFange -> generiereVersucheFange(ausdruck)
       is AST.Satz.Ausdruck.Werfe -> generiereWerfe(ausdruck)
     }
@@ -269,7 +269,7 @@ class CodeGenerator(startDatei: File): PipelineKomponente(startDatei) {
     } else {
       val objekt = when(aufruf.aufrufTyp) {
         FunktionsAufrufTyp.METHODEN_SELBST_AUFRUF -> IM_AST.Satz.Ausdruck.Variable(SELBST_VAR_NAME)
-        FunktionsAufrufTyp.METHODEN_BEREICHS_AUFRUF -> IM_AST.Satz.Ausdruck.Variable(METHODEN_BLOCK_VAR_NAME)
+        FunktionsAufrufTyp.METHODEN_BEREICHS_AUFRUF -> IM_AST.Satz.Ausdruck.Variable(METHODEN_BEREICH_VAR_NAME)
         FunktionsAufrufTyp.METHODEN_REFLEXIV_AUFRUF -> generiereAusdruck(aufruf.objekt!!.ausdruck)
         FunktionsAufrufTyp.METHODEN_SUBJEKT_AUFRUF -> generiereAusdruck(aufruf.subjekt!!)
         else -> throw Exception("Dieser Fall sollte nie auftreten!")
@@ -289,7 +289,7 @@ class CodeGenerator(startDatei: File): PipelineKomponente(startDatei) {
   }
 
   private fun generiereMethodenBereich(methodenBereich: AST.Satz.Ausdruck.MethodenBereich): IM_AST.Satz.Ausdruck {
-    val deklaration = IM_AST.Satz.VariablenDeklaration(METHODEN_BLOCK_VAR_NAME, generiereAusdruck(methodenBereich.objekt), false)
+    val deklaration = IM_AST.Satz.VariablenDeklaration(METHODEN_BEREICH_VAR_NAME, generiereAusdruck(methodenBereich.objekt), false)
     val bereich = generiereBereich(methodenBereich.bereich)
     val sätze = bereich.sätze.toMutableList()
     sätze.add(0, deklaration)

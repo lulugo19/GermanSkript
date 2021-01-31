@@ -7,6 +7,8 @@ Deklination Femininum Singular(Breite) Plural(Breiten)
 Deklination Femininum Singular(Fläche) Plural(Flächen)
 Deklination Femininum Singular(Länge) Plural(Längen)
 
+verwende Mathe::PI
+
 Adjektiv flächig:
     Verb(Zahl) berechne_fläche
 .
@@ -29,7 +31,7 @@ Nomen Kreis mit der Zahl Radius:.
 
 Implementiere den flächigen Kreis:
     Verb(Zahl) berechne_fläche:
-        gebe Mathe::PI * (meinen Radius) hoch 2 zurück
+        gebe PI * (meinen Radius) hoch 2 zurück
     .
 .
 
