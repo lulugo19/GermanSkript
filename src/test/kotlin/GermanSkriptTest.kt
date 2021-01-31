@@ -478,8 +478,8 @@ class GermanSkriptTest {
   }
 
   @Test
-  @DisplayName("verwende Module (komplexer)")
-  fun verwendeModuleKomplexer() {
+  @DisplayName("verwende Module (komplexer) 1")
+  fun verwendeModuleKomplexer1() {
     val source = """
       Modul A:
         Deklination Neutrum Singular(Bar) Plural(Bars)
@@ -488,15 +488,15 @@ class GermanSkriptTest {
         verwende C
         Modul B:
           Nomen Foo mit dem Bar:.
+        .
+        Modul C:
+          Nomen Bar:.
           
           Implementiere das Bar:
             Verb test:
               schreibe die Zeile "Bar"
             .
           .
-        .
-        Modul C:
-          Nomen Bar:.
         .
       .
       
@@ -507,12 +507,66 @@ class GermanSkriptTest {
       Bar: test!
     """.trimIndent()
 
-    val expectedOutput = """
+    val erwarteteAusgabe = "Bar\n"
+
+    testeGermanSkriptCode(source, erwarteteAusgabe)
+  }
+
+  @Test
+  @DisplayName("verwende Module (komplexer) 2")
+  fun verwendeModuleKomplexer2() {
+    val source = """
+      Deklination Neutrum Singular(Bar) Plural(Bars)
+      Deklination Neutrum Singular(Foo) Plural(Foos)
+      
+      Modul A:
+        Modul B:
+          Nomen Bar:.
+        .
+        
+        verwende B
+        
+        Verb teste das Bar:
+          schreibe die Zeile "Bar"
+        .
+      .
+      
+      Modul C:
+        Modul B:
+          Nomen Bar:.
+        .
+      
+        verwende A::B
+
+        Nomen Foo mit dem Bar:.
+        
+        Implementiere das Foo:
+          
+          Verb teste mich mit dem Bar:
+            A::teste das Bar
+            schreibe die Zeile "Foo"
+          .
+        .
+      .
+      
+      verwende A
+      verwende C::Foo
+      
+      das Bar ist ein B::Bar
+      das Foo ist ein Foo
+      
+      teste das Bar
+      teste das Foo mit dem Bar
+    """.trimIndent()
+
+    val erwarteteAusgabe = """
       Bar
+      Bar
+      Foo
       
     """.trimIndent()
 
-    testeGermanSkriptCode(source, expectedOutput)
+    testeGermanSkriptCode(source, erwarteteAusgabe)
   }
 
   @Test
