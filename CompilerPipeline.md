@@ -4,7 +4,7 @@ Die Pipeline definiert welche Schritte das Programm vom Programm-Code bis zum in
 durchläuft. Bei GermanSkript besteht die Pipeline aus 9 Komponenten:
 1. [Lexer](#lexer)
 2. [Parser](#parser)
-3. [Deklanierer](#deklanierer)
+3. [Deklinierer](#deklinierer)
 4. [Grammatik Prüfer](#grammatik-prüfer)
 5. [Definierer](#definierer)
 6. [Typisierer](#typisierer)
@@ -44,7 +44,7 @@ Kombiniere die Tokens nach der Grammatik der German-Script-Sprache in die einzel
 Bestandteile der Sprache.
 
 
-## Deklanierer
+## Deklinierer
 ### Endergebnis:
 Es liegt eine Datenstruktur `Wörterbuch` vor, wo alle Bezeichner, die verwendet werden sollen mit dem Genus 
 (Maskulinum, Femininum, Neutrum) und den 4 Fällen der deutschen Grammatik (Nominativ, Genitiv, Dativ, Akkusativ) im Singular 
@@ -65,7 +65,7 @@ Es müssen alle Deklinations-Anweisungen durchlaufen werden.
 Die Deklinationen müssen dem Wörterbuch hinzugefügt werden.
 Falls `Duden(Wort)` verwendet wurde, muss im Online-Duden nachgeschaut werden.
 
-Für Interfaces müssen die `Adjektive` auch als Nomen deklaniert werden. Dafür gibt es feste [Regeln](https://deutsch.lingolia.com/de/grammatik/adjektive/deklination).
+Für Interfaces müssen die `Adjektive` auch als Nomen dekliniert werden. Dafür gibt es feste [Regeln](https://deutsch.lingolia.com/de/grammatik/adjektive/deklination).
 
 #### Wie sieht die Datenstruktur `Wörterbuch` aus?
 Die Daten werden nach dem NominativS sortiert in einer Tabelle gespeichert.

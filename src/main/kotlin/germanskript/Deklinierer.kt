@@ -5,6 +5,7 @@ import kotlinx.coroutines.*
 import java.io.File
 import java.lang.Integer.min
 import java.util.*
+import kotlin.collections.ArrayList
 
 data class Deklination(
     val genus: Genus,
@@ -203,7 +204,7 @@ class Wörterbuch {
   class WortNichtGefunden(wort: String): Error("Wort '$wort' nicht gefunden!")
   class DoppelteDeklinationFehler(deklination: Deklination): Error("Doppelte Deklination: $deklination!")
   
-  private val tabelle = LinkedList<Deklination>()
+  private val tabelle: MutableList<Deklination> = ArrayList()
 
   // gibt Wörterbuch zurück
 
