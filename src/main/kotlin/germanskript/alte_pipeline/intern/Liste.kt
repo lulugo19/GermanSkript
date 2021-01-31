@@ -11,14 +11,11 @@ class Liste(typ: Typ.Compound.Klasse, val elemente: MutableList<Objekt>): Objekt
   }
 
   override fun holeEigenschaft(eigenschaftsName: String): Objekt {
-    if (eigenschaftsName == "AnZahl") {
-      return Zahl(elemente.size.toDouble())
+    return if (eigenschaftsName == "AnZahl") {
+      Zahl(elemente.size.toDouble())
+    } else {
+      super.holeEigenschaft(eigenschaftsName)
     }
-    throw Exception("Die Eigenschaft ${eigenschaftsName} ist für den Typen Liste nicht definiert.")
-  }
-
-  override fun setzeEigenschaft(eigenschaftsName: String, wert: Objekt) {
-    // vielleicht kommt hier später mal was, sieht aber nicht danach aus
   }
 
   override fun rufeMethodeAuf(aufruf: AST.IAufruf, injection: InterpretInjection): Objekt {

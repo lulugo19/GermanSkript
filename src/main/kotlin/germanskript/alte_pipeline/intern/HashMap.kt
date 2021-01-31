@@ -1,16 +1,14 @@
 package germanskript.alte_pipeline.intern
 
 import germanskript.AST
+import germanskript.BuildIn
 import germanskript.alte_pipeline.InterpretInjection
 import germanskript.Typ
+import germanskript.intern.Liste
 
-class HashMap(typ: Typ.Compound.Klasse, val eigenschaften: MutableMap<String, Objekt>): Objekt(typ) {
+class HashMap(typ: Typ.Compound.Klasse): Objekt(typ) {
 
   private val map = mutableMapOf<Objekt, Objekt>()
-
-  override fun setzeEigenschaft(eigenschaftsName: String, wert: Objekt) {
-
-  }
 
   override fun holeEigenschaft(eigenschaftsName: String): Objekt {
     return when (eigenschaftsName) {
@@ -27,6 +25,7 @@ class HashMap(typ: Typ.Compound.Klasse, val eigenschaften: MutableMap<String, Ob
       "hole den Wert mit dem Schlüssel" -> holeDenWertMitDemSchlüssel(aufruf, injection)
       "hole den Wert mit dem Schlüssel, dem Wert" -> holeDenWertMitDemSchlüsselUndDemStandardWert(aufruf, injection)
       "lösche alles" -> löscheAlles(aufruf, injection)
+      "SchlüsselWertePaare von HashMap" -> schlüsselWertePaarEigenschaft()
       else -> super.rufeMethodeAuf(aufruf, injection)
     }
   }
@@ -69,5 +68,15 @@ class HashMap(typ: Typ.Compound.Klasse, val eigenschaften: MutableMap<String, Ob
   private fun löscheAlles(aufruf: AST.IAufruf, injection: InterpretInjection): Objekt {
     map.clear()
     return Nichts
+  }
+
+  private fun schlüsselWertePaarEigenschaft(): Objekt {
+    val typ = Typ.Compound.Klasse(BuildIn.Klassen.liste, emptyList())
+    return germanskript.alte_pipeline.intern.Liste(typ, map.entries.map { entry ->
+      SkriptObjekt(Typ.Compound.Klasse(BuildIn.Klassen.paar, typ.typArgumente)).also {
+        it.setzeEigenschaft("ersteWert", entry.key)
+        it.setzeEigenschaft("zweiteWert", entry.value)
+      }
+    }.toMutableList())
   }
 }

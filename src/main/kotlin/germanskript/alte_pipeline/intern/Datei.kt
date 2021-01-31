@@ -5,7 +5,7 @@ import germanskript.alte_pipeline.InterpretInjection
 import java.io.BufferedWriter
 import java.io.File
 
-class Datei(typ: Typ.Compound.Klasse, val eigenschaften: MutableMap<String, Objekt>): Objekt(typ) {
+class Datei(typ: Typ.Compound.Klasse): Objekt(typ) {
 
   lateinit var file: File
 
@@ -19,14 +19,6 @@ class Datei(typ: Typ.Compound.Klasse, val eigenschaften: MutableMap<String, Obje
       "hole den Schreiber" -> holeSchreiber()
       else -> throw Exception("Die Methode '${aufruf.vollerName!!}' ist nicht definiert!")
     }
-  }
-
-  override fun holeEigenschaft(eigenschaftsName: String): Objekt {
-    return eigenschaften.getValue(eigenschaftsName)
-  }
-
-  override fun setzeEigenschaft(eigenschaftsName: String, wert: Objekt) {
-
   }
 
   private fun konstruktor(): Nichts {

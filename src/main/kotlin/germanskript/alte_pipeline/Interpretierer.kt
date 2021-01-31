@@ -169,7 +169,6 @@ class Interpretierer(startDatei: File): PipelineKomponente(startDatei), IInterpr
         is AST.Satz.VariablenDeklaration -> durchlaufeVariablenDeklaration(satz)
         is AST.Satz.IndexZuweisung -> durchlaufeIndexZuweisung(satz)
         is AST.Satz.Bereich -> durchlaufeBereich(satz, true)
-        is AST.Satz.SuperBereich -> durchlaufeBereich(satz.bereich, true)
         is AST.Satz.Zurückgabe -> durchlaufeZurückgabe(satz)
         is AST.Satz.SolangeSchleife -> durchlaufeSolangeSchleife(satz)
         is AST.Satz.Ausdruck.VersucheFange -> durchlaufeVersucheFange(satz)
@@ -397,6 +396,7 @@ class Interpretierer(startDatei: File): PipelineKomponente(startDatei), IInterpr
       is AST.Satz.Ausdruck.Konstante -> evaluiereKonstante(ausdruck)
       is AST.Satz.Ausdruck.TypÜberprüfung -> evaluiereTypÜberprüfung(ausdruck)
       is AST.Satz.Ausdruck.MethodenBereich -> durchlaufeMethodenBereich(ausdruck)
+      is AST.Satz.Ausdruck.SuperBereich -> durchlaufeBereich(ausdruck.bereich, true)
       is AST.Satz.Ausdruck.Bedingung -> durchlaufeBedingungsSatz(ausdruck)
       is AST.Satz.Ausdruck.Nichts -> Nichts
       is AST.Satz.Ausdruck.VersucheFange -> durchlaufeVersucheFange(ausdruck)
@@ -446,14 +446,13 @@ class Interpretierer(startDatei: File): PipelineKomponente(startDatei), IInterpr
   }
 
   private fun evaluiereObjektInstanziierung(instanziierung: AST.Satz.Ausdruck.ObjektInstanziierung): Objekt {
-    val eigenschaften = hashMapOf<String, Objekt>()
     val klassenTyp = (instanziierung.klasse.typ!! as Typ.Compound.Klasse)
     // TODO: Wie löse ich das Problem, dass hier interne Objekte instanziiert werden können?
     val objekt = when(instanziierung.klasse.name.nominativ) {
-      "Datei" -> Datei(klassenTyp, eigenschaften)
-      "HashMap" -> germanskript.alte_pipeline.intern.HashMap(klassenTyp, eigenschaften)
+      "Datei" -> Datei(klassenTyp)
+      "HashMap" -> germanskript.alte_pipeline.intern.HashMap(klassenTyp)
       "HashSet" -> TODO("interne HashSet für alte Pipeline")
-      else -> Objekt.SkriptObjekt(klassenTyp, eigenschaften)
+      else -> Objekt.SkriptObjekt(klassenTyp)
     }
 
     fun führeKonstruktorAus(instanziierung: AST.Satz.Ausdruck.ObjektInstanziierung) {
@@ -475,7 +474,7 @@ class Interpretierer(startDatei: File): PipelineKomponente(startDatei), IInterpr
       for (index in eigenschaftsZuweisungen.indices) {
         //val eigenschaftsName = typPrüfer.holeParamName(definition.eigenschaften[index], klassenTyp.typArgumente)
         //eigenschaften[eigenschaftsName.nominativ] = evaluierteAusdrücke[index]
-        eigenschaften[instanziierung.eigenschaftsNamen[index].nominativ] = evaluierteAusdrücke[index]
+        objekt.eigenschaften[instanziierung.eigenschaftsNamen[index].nominativ] = evaluierteAusdrücke[index]
       }
       durchlaufeAufruf(instanziierung, definition.konstruktor, Umgebung(), true, objekt)
     }
@@ -678,10 +677,14 @@ class Interpretierer(startDatei: File): PipelineKomponente(startDatei), IInterpr
   }
 
   private fun evaluiereAnonymeKlasse(anonymeKlasse: AST.Satz.Ausdruck.AnonymeKlasse): Objekt {
-    val eigenschaften = anonymeKlasse.bereich.eigenschaften
-        .map { it.name.nominativ to evaluiereAusdruck(it.wert) }
-        .toMap().toMutableMap()
-    return Objekt.AnonymesSkriptObjekt(anonymeKlasse.klasse, eigenschaften, umgebung)
+    val objekt = Objekt.AnonymesSkriptObjekt(anonymeKlasse.klasse, umgebung)
+
+    anonymeKlasse.bereich.eigenschaften.forEach {
+      objekt.setzeEigenschaft(it.name.nominativ, evaluiereAusdruck(it.wert))
+      it.name.nominativ to evaluiereAusdruck(it.wert)
+    }
+
+    return objekt
   }
 
   private fun evaluiereTypÜberprüfung(typÜberprüfung: AST.Satz.Ausdruck.TypÜberprüfung): Objekt {
@@ -805,10 +808,8 @@ class Interpretierer(startDatei: File): PipelineKomponente(startDatei), IInterpr
   }
 
   private fun werfeFehler(fehlerMeldung: String, fehlerKlassenName: String, token: Token): Objekt {
-    geworfenerFehler = Objekt.SkriptObjekt(Typ.Compound.Klasse(klassenDefinitionen.getValue(fehlerKlassenName), emptyList()),
-        mutableMapOf(
-            "FehlerMeldung" to Zeichenfolge(fehlerMeldung)
-        ))
+    geworfenerFehler = Objekt.SkriptObjekt(Typ.Compound.Klasse(klassenDefinitionen.getValue(fehlerKlassenName), emptyList()))
+    geworfenerFehler!!.eigenschaften["FehlerMeldung"] = Zeichenfolge(fehlerMeldung)
     geworfenerFehlerToken = token
     flags.add(Flag.FEHLER_GEWORFEN)
     return Niemals

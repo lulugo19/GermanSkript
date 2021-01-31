@@ -6,12 +6,14 @@ import germanskript.alte_pipeline.InterpretInjection
 open class Objekt(internal val klasse: Typ.Compound.Klasse) {
   override fun toString() = "${klasse.name}@${this.hashCode()}"
 
+  val eigenschaften: MutableMap<String, Objekt> = mutableMapOf()
+
   open fun holeEigenschaft(eigenschaftsName: String): Objekt {
-    TODO("Not yet implemented")
+    return eigenschaften.getValue(eigenschaftsName)
   }
 
   open fun setzeEigenschaft(eigenschaftsName: String, wert: Objekt){
-    TODO("Not yet implemented")
+    eigenschaften[eigenschaftsName] = wert
   }
 
   companion object {
@@ -26,8 +28,7 @@ open class Objekt(internal val klasse: Typ.Compound.Klasse) {
   }
 
   open class SkriptObjekt(
-      typ: Typ.Compound.Klasse,
-      val eigenschaften: MutableMap<String, Objekt>
+      typ: Typ.Compound.Klasse
   ) : Objekt(typ) {
     override fun holeEigenschaft(eigenschaftsName: String) = eigenschaften.getValue(eigenschaftsName)
     override fun setzeEigenschaft(eigenschaftsName: String, wert: Objekt) {
@@ -37,14 +38,13 @@ open class Objekt(internal val klasse: Typ.Compound.Klasse) {
 
   class AnonymesSkriptObjekt(
       typ: Typ.Compound.Klasse,
-      eigenschaften: MutableMap<String, Objekt>,
       val umgebung: Umgebung<Objekt>
-  ): SkriptObjekt(typ, eigenschaften)
+  ): SkriptObjekt(typ)
 
   class Lambda(
       typ: Typ.Compound.Klasse,
       val umgebung: Umgebung<Objekt>
-  ): SkriptObjekt(typ, mutableMapOf())
+  ): SkriptObjekt(typ)
 
   open fun rufeMethodeAuf(
       aufruf: AST.IAufruf,
