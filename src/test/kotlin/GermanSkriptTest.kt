@@ -17,7 +17,7 @@ class GermanSkriptTest {
 
   private fun führeGermanSkriptCodeAus(
       germanSkriptSource: String,
-      version: CompilerPipelineVersion = CompilerPipelineVersion.VERALTET
+      version: CompilerPipelineVersion = CompilerPipelineVersion.AKTUELL
   ) {
     // erstelle temporäre Datei mit dem Source-Code
     val tempFile = createTempFile("germanskript_test_temp", ".gm")

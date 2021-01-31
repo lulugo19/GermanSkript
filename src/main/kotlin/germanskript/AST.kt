@@ -540,10 +540,6 @@ sealed class AST {
       override val children = sequenceOf(anfang, ende)
     }
 
-    data class SuperBereich(val bereich: Bereich): Satz() {
-      override val children = sequenceOf(bereich)
-    }
-
     data class Zurückgabe(val erstesToken: Token, var ausdruck: Ausdruck): Satz() {
       override val children = sequenceOf(ausdruck)
     }
@@ -571,6 +567,7 @@ sealed class AST {
           is AnonymeKlasse -> schnittstelle.name.bezeichnerToken
           is Konstante -> name.toUntyped()
           is MethodenBereich -> objekt.holeErstesToken()
+          is SuperBereich -> token.toUntyped()
           is Nichts -> nichts.toUntyped()
           is Bedingung -> bedingungen[0].token
           is TypÜberprüfung -> ausdruck.holeErstesToken()
@@ -655,6 +652,10 @@ sealed class AST {
 
       data class MethodenBereich(val objekt: Ausdruck, val bereich: Bereich): Ausdruck() {
         override val children = sequenceOf(objekt, bereich)
+      }
+
+      data class SuperBereich(val token: TypedToken<TokenTyp.SUPER>,val bereich: Bereich): Ausdruck() {
+        override val children = sequenceOf(bereich)
       }
 
       data class Konstante(

@@ -399,6 +399,7 @@ private sealed class SubParser<T: AST>() {
         is TokenTyp.WENN -> subParse(Satz.Ausdruck.Bedingung)
         is TokenTyp.VERSUCHE -> subParse(Satz.Ausdruck.VersucheFange)
         is TokenTyp.WERFE -> subParse(Satz.Ausdruck.Werfe)
+        is TokenTyp.SUPER -> subParse(Satz.Ausdruck.SuperBereich)
         is TokenTyp.VORNOMEN -> {
           val subjekt = parseNomenAusdruck<TokenTyp.VORNOMEN>("Vornomen", true, inBedingungsTerm, false).third
           val nächterTokenTyp = peekType()
@@ -727,7 +728,6 @@ private sealed class SubParser<T: AST>() {
           }
         }
         is TokenTyp.DOPPELPUNKT -> AST.Satz.Bereich(parseSätze(TokenTyp.PUNKT).sätze)
-        is TokenTyp.SUPER -> subParse(Satz.SuperBlock)
         is TokenTyp.SOLANGE -> subParse(Satz.SolangeSchleife)
         is TokenTyp.FORTFAHREN, is TokenTyp.ABBRECHEN -> subParse(Satz.SchleifenKontrolle)
         is TokenTyp.ZURÜCK -> subParse(Satz.Zurückgabe)
@@ -918,23 +918,6 @@ private sealed class SubParser<T: AST>() {
           val wert = parseAusdruck(mitVornomen = true, optionalesIstNachVergleich = false)
           AST.Satz.IndexZuweisung(name, index, zuweisung, wert)
         }
-      }
-    }
-
-    object SuperBlock: Satz<AST.Satz.SuperBereich>() {
-      override val id: ASTKnotenID = ASTKnotenID.SUPER_BLOCK
-
-      override fun bewacheKnoten() {
-        if (!hierarchyContainsAnyNode(ASTKnotenID.IMPLEMENTIERUNG, ASTKnotenID.KLASSEN_DEFINITION)) {
-          throw GermanSkriptFehler.SyntaxFehler.UngültigerBereich(next(),
-              "Ein Super-Block kann nur innerhalb einer Klassen-Implementierung verwendet werden.")
-        }
-      }
-
-      override fun parseImpl(): AST.Satz.SuperBereich {
-        expect<TokenTyp.SUPER>("'Super'")
-        val bereich = parseSätze(TokenTyp.AUSRUFEZEICHEN)
-        return AST.Satz.SuperBereich(bereich)
       }
     }
 
@@ -1246,6 +1229,23 @@ private sealed class SubParser<T: AST>() {
           } else {
             methodenBereich
           }
+        }
+      }
+
+      object SuperBereich: Satz<AST.Satz.Ausdruck.SuperBereich>() {
+        override val id: ASTKnotenID = ASTKnotenID.SUPER_BLOCK
+
+        override fun bewacheKnoten() {
+          if (!hierarchyContainsAnyNode(ASTKnotenID.IMPLEMENTIERUNG, ASTKnotenID.KLASSEN_DEFINITION)) {
+            throw GermanSkriptFehler.SyntaxFehler.UngültigerBereich(next(),
+                "Ein Super-Block kann nur innerhalb einer Klassen-Implementierung verwendet werden.")
+          }
+        }
+
+        override fun parseImpl(): AST.Satz.Ausdruck.SuperBereich {
+          val superToken = expect<TokenTyp.SUPER>("'Super'")
+          val bereich = parseSätze(TokenTyp.AUSRUFEZEICHEN)
+          return AST.Satz.Ausdruck.SuperBereich(superToken, bereich)
         }
       }
 

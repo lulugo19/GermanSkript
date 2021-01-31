@@ -308,13 +308,6 @@ class TypPrüfer(startDatei: File): PipelineKomponente(startDatei) {
         is AST.Satz.VariablenDeklaration -> durchlaufeVariablenDeklaration(satz)
         is AST.Satz.IndexZuweisung -> durchlaufeIndexZuweisung(satz)
         is AST.Satz.Bereich -> durchlaufeBereich(satz, true)
-        is AST.Satz.SuperBereich -> {
-          val prevInSuperBlock = inSuperBlock
-          inSuperBlock = true
-          durchlaufeBereich(satz.bereich, true).also {
-            inSuperBlock = prevInSuperBlock
-          }
-        }
         is AST.Satz.Zurückgabe -> durchlaufeZurückgabe(satz)
         is AST.Satz.Ausdruck.Bedingung -> durchlaufeBedingungsSatz(satz, false)
         is AST.Satz.SolangeSchleife -> durchlaufeSolangeSchleife(satz)
@@ -354,6 +347,7 @@ class TypPrüfer(startDatei: File): PipelineKomponente(startDatei) {
       is AST.Satz.Ausdruck.Konstante -> evaluiereKonstante(ausdruck)
       is AST.Satz.Ausdruck.TypÜberprüfung -> evaluiereTypÜberprüfung(ausdruck)
       is AST.Satz.Ausdruck.MethodenBereich -> durchlaufeMethodenBereich(ausdruck)
+      is AST.Satz.Ausdruck.SuperBereich -> durchlaufeSuperBereich(ausdruck)
       is AST.Satz.Ausdruck.Bedingung -> durchlaufeBedingungsSatz(ausdruck, true)
       is AST.Satz.Ausdruck.Nichts -> BuildIn.Klassen.nichts
       is AST.Satz.Ausdruck.VersucheFange -> durchlaufeVersucheFange(ausdruck, true)
@@ -365,6 +359,14 @@ class TypPrüfer(startDatei: File): PipelineKomponente(startDatei) {
     val wert = evaluiereAusdruck(methodenBereich.objekt)
     umgebung.pushBereich(wert)
     return durchlaufeBereich(methodenBereich.bereich, false).also { umgebung.popBereich() }
+  }
+
+  private fun durchlaufeSuperBereich(superBereich: AST.Satz.Ausdruck.SuperBereich): Typ {
+    val prevInSuperBlock = inSuperBlock
+    inSuperBlock = true
+    return durchlaufeBereich(superBereich.bereich, true).also {
+      inSuperBlock = prevInSuperBlock
+    }
   }
 
   private fun evaluiereVariable(variable: AST.Satz.Ausdruck.Variable): Typ {

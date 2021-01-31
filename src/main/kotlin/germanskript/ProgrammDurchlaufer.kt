@@ -18,7 +18,7 @@ abstract  class ProgrammDurchlaufer<T>(startDatei: File): PipelineKomponente(sta
   protected abstract val nichts: T
   protected abstract val niemals: T
   protected abstract val umgebung: Umgebung<T>
-  protected var inSuperBlock = false
+  protected var inSuperBereich = false
     private set
 
   // region Sätze
@@ -41,14 +41,6 @@ abstract  class ProgrammDurchlaufer<T>(startDatei: File): PipelineKomponente(sta
         is AST.Satz.IndexZuweisung -> durchlaufeIndexZuweisung(satz)
         is AST.Satz.Ausdruck.FunktionsAufruf -> durchlaufeFunktionsAufruf(satz, false)
         is AST.Satz.Bereich -> durchlaufeBereich(satz, true)
-        is AST.Satz.Ausdruck.MethodenBereich -> durchlaufeMethodenBereich(satz)
-        is AST.Satz.SuperBereich -> {
-          val prevInSuperBlock = inSuperBlock
-          inSuperBlock = true
-          durchlaufeBereich(satz.bereich, true).also {
-            inSuperBlock = prevInSuperBlock
-          }
-        }
         is AST.Satz.Zurückgabe -> durchlaufeZurückgabe(satz)
         is AST.Satz.Ausdruck.Bedingung -> durchlaufeBedingungsSatz(satz, false)
         is AST.Satz.SolangeSchleife -> durchlaufeSolangeSchleife(satz)
@@ -124,6 +116,13 @@ abstract  class ProgrammDurchlaufer<T>(startDatei: File): PipelineKomponente(sta
       is AST.Satz.Ausdruck.Konstante -> evaluiereKonstante(ausdruck)
       is AST.Satz.Ausdruck.TypÜberprüfung -> evaluiereTypÜberprüfung(ausdruck)
       is AST.Satz.Ausdruck.MethodenBereich -> durchlaufeMethodenBereich(ausdruck)
+      is AST.Satz.Ausdruck.SuperBereich -> {
+        val prevInSuperBlock = inSuperBereich
+        inSuperBereich = true
+        durchlaufeBereich(ausdruck.bereich, true).also {
+          inSuperBereich = prevInSuperBlock
+        }
+      }
       is AST.Satz.Ausdruck.Bedingung -> durchlaufeBedingungsSatz(ausdruck, true)
       is AST.Satz.Ausdruck.Nichts -> nichts
       is AST.Satz.Ausdruck.VersucheFange -> durchlaufeVersucheFange(ausdruck)

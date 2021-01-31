@@ -118,7 +118,6 @@ class CodeGenerator(startDatei: File): PipelineKomponente(startDatei) {
       is AST.Satz.Bereich -> generiereBereich(satz)
       is AST.Satz.SolangeSchleife -> generiereSolangeSchleife(satz)
       is AST.Satz.FürJedeSchleife -> generiereFürJedeSchleife(satz)
-      is AST.Satz.SuperBereich -> generiereBereich(satz.bereich)
       is AST.Satz.Zurückgabe -> generiereZurückgabe(satz)
       is AST.Satz.Ausdruck -> generiereAusdruck(satz)
     }
@@ -225,6 +224,7 @@ class CodeGenerator(startDatei: File): PipelineKomponente(startDatei) {
       is AST.Satz.Ausdruck.Variable -> generiereVariable(ausdruck)
       is AST.Satz.Ausdruck.FunktionsAufruf -> generiereFunktionsAufruf(ausdruck)
       is AST.Satz.Ausdruck.MethodenBereich -> generiereMethodenBereich(ausdruck)
+      is AST.Satz.Ausdruck.SuperBereich -> generiereBereich(ausdruck.bereich)
       is AST.Satz.Ausdruck.Konstante -> generiereKonstante(ausdruck)
       is AST.Satz.Ausdruck.Liste -> generiereListe(ausdruck)
       is AST.Satz.Ausdruck.IndexZugriff -> generiereIndexZugriff(ausdruck)
