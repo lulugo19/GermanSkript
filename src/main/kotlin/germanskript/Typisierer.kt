@@ -242,6 +242,8 @@ class Typisierer(startDatei: File): PipelineKomponente(startDatei) {
    }
 
   private fun typisiereFunktionsSignatur(signatur: AST.Definition.FunktionsSignatur, klassenTypParameter: List<AST.Definition.TypParam>?) {
+    typisiereTypParameter(signatur.typParameter, TypParamKontext.Funktion)
+
     // kombiniere die Typparameter
     bestimmeTyp(signatur.rückgabeTyp, signatur.typParameter, klassenTypParameter,true)
     for (parameter in signatur.parameter) {
@@ -249,17 +251,21 @@ class Typisierer(startDatei: File): PipelineKomponente(startDatei) {
     }
   }
 
-  private fun typisiereTypParameter(typParameter: List<AST.Definition.TypParam>) {
+  private fun typisiereTypParameter(typParameter: List<AST.Definition.TypParam>, kontext: TypParamKontext) {
     for (param in typParameter) {
       param.schnittstellen.forEach {
-        bestimmeTyp(it, null, listOf(param), true)
+        when (kontext) {
+          TypParamKontext.Klasse -> bestimmeTyp(it, null, listOf(param), true)
+          TypParamKontext.Funktion -> bestimmeTyp(it, listOf(param), null, true)
+        }
+
       }
       param.elternKlasse?.also { bestimmeTyp(it, null, listOf(param), true) }
     }
   }
 
   private fun typisiereKlasse(klasse: AST.Definition.Typdefinition.Klasse) {
-    typisiereTypParameter(klasse.typParameter)
+    typisiereTypParameter(klasse.typParameter, TypParamKontext.Klasse)
     for (eigenschaft in klasse.eigenschaften) {
       bestimmeTyp(eigenschaft.typKnoten, null, klasse.typParameter, true)
     }
@@ -295,7 +301,7 @@ class Typisierer(startDatei: File): PipelineKomponente(startDatei) {
   }
 
   private fun typisiereImplementierung(implementierung: AST.Definition.Implementierung, klasse: AST.Definition.Typdefinition.Klasse) {
-    typisiereTypParameter(implementierung.typParameter)
+    typisiereTypParameter(implementierung.typParameter, TypParamKontext.Klasse)
     bestimmeTyp(implementierung.klasse, null, implementierung.typParameter, true)
     typisiereImplementierungsBereich(implementierung.bereich, implementierung.typParameter)
     implementierung.schnittstellen.forEach { schnittstelle ->
@@ -406,7 +412,7 @@ class Typisierer(startDatei: File): PipelineKomponente(startDatei) {
   }
 
   private fun typisiereSchnittstelle(schnittstelle: AST.Definition.Typdefinition.Schnittstelle) {
-    typisiereTypParameter(schnittstelle.typParameter)
+    typisiereTypParameter(schnittstelle.typParameter, TypParamKontext.Klasse)
     schnittstelle.methodenSignaturen.forEach { signatur ->
       typisiereFunktionsSignatur(signatur, schnittstelle.typParameter)
     }

@@ -2084,4 +2084,20 @@ class GermanSkriptTest {
 
     testeGermanSkriptCode(quellCode, erwarteteAusgabe)
   }
+
+  @Test
+  @DisplayName("Generic Constraints")
+  fun genericConstraints() {
+    val quellCode = """
+      Verb<addierbarer<Typ, Typ>, multiplizierbarer<Typ, Typ> Typ>(Typ) funktion von dem Typ:
+        gebe den Typ * den Typ + den Typ zurück
+      .
+      
+      schreibe die Zahl (funktion von dem Typ 5)
+    """.trimIndent()
+
+    val erwarteteAusgabe = "30\n"
+
+    testeGermanSkriptCode(quellCode, erwarteteAusgabe)
+  }
 }

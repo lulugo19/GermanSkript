@@ -1171,10 +1171,11 @@ class TypPrüfer(startDatei: File): PipelineKomponente(startDatei) {
             ausdruck.links.holeErstesToken(), linkerTyp, zuImplementierendeSchnittstelle, operator)
 
     val rechterTyp = if (linkerTyp is Typ.Compound) {
-      ersetzeGenerics(schnittstelle.typArgumente[0], null, linkerTyp.typArgumente).typ!!
+      ersetzeGenerics(schnittstelle.typArgumente[0], letzterFunktionsAufruf?.typArgumente, linkerTyp.typArgumente).typ!!
     } else {
       schnittstelle.typArgumente[0].typ!!
     }
+
     ausdruckMussTypSein(ausdruck.rechts, rechterTyp)
 
     return if (operator.klasse == OperatorKlasse.ARITHMETISCH) {
