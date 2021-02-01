@@ -96,3 +96,11 @@ schreibe die Zeile ""
 schreibe die Zeile "Brüche: #{die Brüche}"
 schreibe die Zeile "Summe: #{die Summe der Brüche}"
 schreibe die Zeile "Produkt: #{das Produkt der Brüche}"
+
+Verb<addierbarer<Typ, Typ>, multiplizierbarer<Typ, Typ> Typ>(Typ) funktion von dem Typ:
+  gebe den Typ * den Typ + den Typ zurück
+.
+
+der Bruch ist "1/4" als Bruch
+schreibe die Zeile (funktion von dem Typ Bruch) als Zeichenfolge // 1/4 * 1/4 + 1/4 = 1/16 + 4/16 = 5/16
+schreibe die Zeile (funktion von dem Typ 5) als Zeichenfolge     // 5 * 5 + 5 = 25 + 5 = 30
