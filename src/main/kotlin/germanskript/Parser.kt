@@ -395,6 +395,7 @@ private sealed class SubParser<T: AST>() {
         is TokenTyp.ZEICHENFOLGE -> AST.Satz.Ausdruck.Zeichenfolge(next().toTyped())
         is TokenTyp.ZAHL -> AST.Satz.Ausdruck.Zahl(next().toTyped())
         is TokenTyp.BOOLEAN -> AST.Satz.Ausdruck.Boolean(next().toTyped())
+        is TokenTyp.NICHTS -> AST.Satz.Ausdruck.Nichts(next().toTyped())
         is TokenTyp.BEZEICHNER_KLEIN -> subParse(Satz.Ausdruck.FunktionsAufruf(emptyList(), inBedingungsTerm))
         is TokenTyp.WENN -> subParse(Satz.Ausdruck.Bedingung)
         is TokenTyp.VERSUCHE -> subParse(Satz.Ausdruck.VersucheFange)
@@ -1377,6 +1378,7 @@ private sealed class SubParser<T: AST>() {
 
       override fun parseImpl(): AST.Definition.DeklinationsDefinition {
         expect<TokenTyp.DEKLINATION>("Deklination")
+        überspringeLeereZeilen()
         return when (peekType()) {
           is TokenTyp.DUDEN -> parseDuden()
           else -> parseDeklination()
@@ -1416,8 +1418,10 @@ private sealed class SubParser<T: AST>() {
 
       private fun parseDeklination(): AST.Definition.DeklinationsDefinition.Definition {
         val genus = expect<TokenTyp.GENUS>("Genus").typ.genus
+        überspringeLeereZeilen()
         expect<TokenTyp.SINGULAR>("'Singular'")
         val singular = parseFälle()
+        überspringeLeereZeilen()
         val plural = if (peekType() is TokenTyp.PLURAL) {
           next()
           parseFälle()
