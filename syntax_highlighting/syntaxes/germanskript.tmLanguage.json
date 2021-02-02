@@ -84,6 +84,9 @@
             "include": "#booleans"
           },
           {
+            "include": "#nichts"
+          },
+          {
             "include": "#conversion"
           },
           {
@@ -111,7 +114,7 @@
       },
       "strings": {
         "name": "string.quoted.double.germanskript",
-        "begin": "(\\b(der|die|das|den|des|dem)\\s+([a-zöäüß]*([A-ZÖÄÜ][a-zöäüß]*)+)\\s+)?\"",
+        "begin": "(\\b(der|die|das|den|des|dem)\\s+([a-zöäüß]*([A-ZÖÄÜ][a-zöäüß]+)+[\\dA-ZÖÄÜ]*)\\s+)?\"",
         "beginCaptures": {
           "1": {
             "name": "variable.parameter.germanskript"
@@ -145,7 +148,7 @@
       },
       "numbers": {
         "name": "meta.expression.numeric",
-        "match": "(\\b(der|die|das|den|des|dem)\\s+([a-zöäüß]*([A-ZÖÄÜ][a-zöäüß]*)+)\\s+)?(\\b-?([1-9]\\d{1,2}|\\d)(?:\\.\\d{3})*(?:,\\d+)?)",
+        "match": "(\\b(der|die|das|den|des|dem)\\s+([a-zöäüß]*([A-ZÖÄÜ][a-zöäüß]+)+[\\dA-ZÖÄÜ]*)\\s+)?(\\b-?([1-9]\\d{1,2}|\\d)(?:\\.\\d{3})*(?:,\\d+)?)",
         "captures": {
           "1": {
             "name": "variable.parameter.germanskript"
@@ -158,19 +161,31 @@
       },
       "booleans": {
         "name": "meta.expression.boolean",
-        "match": "(\\b(der|die|das|den|des|dem)\\s+([a-zöäüß]*([A-ZÖÄÜ][a-zöäüß]*)+)\\s+)?\\b(wahr|falsch)\\b",
+        "match": "(\\b(der|die|das|den|des|dem)\\s+([a-zöäüß]*([A-ZÖÄÜ][a-zöäüß]+)+[\\dA-ZÖÄÜ]*)\\s+)?\\b(wahr|falsch)\\b",
         "captures": {
           "1": {
             "name": "variable.parameter.germanskript"
           },
           "5": {
-            "name": "constant.language.germanskript"
+            "name": "constant.language.boolean.germanskript"
+          }
+        }
+      },
+      "nichts": {
+        "name": "meta.expression.boolean",
+        "match": "(\\b(der|die|das|den|des|dem)\\s+([a-zöäüß]*([A-ZÖÄÜ][a-zöäüß]+)+[\\dA-ZÖÄÜ]*)\\s+)?\\b(nichts)\\b",
+        "captures": {
+          "1": {
+            "name": "variable.parameter.germanskript"
+          },
+          "5": {
+            "name": "constant.language.nichts.germanskript"
           }
         }
       },
       "objects": {
         "name": "meta.expression.object",
-        "match": "(\\b(der|die|das|den|des|dem)\\s+([a-zöäüß]*([A-ZÖÄÜ][a-zöäüß]*)+)\\s+)?\\b(ein|eine|eines|einer|einen|einem)\\s+(([A-ZÖÄÜ][a-zöäüß]*)+)(\\s+(mit))?",
+        "match": "(\\b(der|die|das|den|des|dem)\\s+([a-zöäüß]*([A-ZÖÄÜ][a-zöäüß]+)+[\\dA-ZÖÄÜ]*)\\s+)?\\b(ein|eine|eines|einer|einen|einem)\\s+(([A-ZÖÄÜ][a-zöäüß]*)+)(\\s+(mit))?",
         "captures": {
           "1": {
             "name": "variable.parameter.germanskript"
@@ -190,7 +205,7 @@
         "patterns": [
         {
           "name": "meta.expression.variable",
-          "match": "(\\b(der|die|das|den|des|dem)\\s+([a-zöäüß]*([A-ZÖÄÜ][a-zöäüß]*)+)\\s+)?(\\b((der|die|das|den|des|dem|mein|meine|meines|meiner|meinem|meinen|dein|deine|deines|deiner|deinem|deinen)\\s+)?([a-zöäüß]*([A-ZÖÄÜ][a-zöäüß]*)+))",
+          "match": "(\\b(der|die|das|den|des|dem)\\s+([a-zöäüß]*([A-ZÖÄÜ][a-zöäüß]+)+[\\dA-ZÖÄÜ]*)\\s+)?(\\b((der|die|das|den|des|dem|mein|meine|meines|meiner|meinem|meinen|dein|deine|deines|deiner|deinem|deinen)\\s+)?([a-zöäüß]*([A-ZÖÄÜ][a-zöäüß]+)+[\\dA-ZÖÄÜ]*))",
           "captures": {
             "1": {
               "name": "variable.parameter.germanskript"
@@ -202,7 +217,7 @@
         },
         {
           "name": "meta.expression.variable.special",
-          "match": "(\\b(der|die|das|den|des|dem)\\s+([a-zöäüß]*([A-ZÖÄÜ][a-zöäüß]*)+)\\s+)?\\s+(Ich|Du)",
+          "match": "(\\b(der|die|das|den|des|dem)\\s+([a-zöäüß]*([A-ZÖÄÜ][a-zöäüß]+)+[\\dA-ZÖÄÜ]*)\\s+)?\\s+(Ich|Du)",
           "captures": {
             "1": {
               "name": "variable.parameter.germanskript"
@@ -216,7 +231,7 @@
       },
       "list": {
         "name": "meta.expression.list",
-        "match": "(\\b(der|die|das|den|des|dem)\\s+([a-zöäüß]*([A-ZÖÄÜ][a-zöäüß]*)+)\\s+)?\\s+((einige|einigen|einiger)\\s+(([A-ZÖÄÜ][a-zöäüß]*)+))",
+        "match": "(\\b(der|die|das|den|des|dem)\\s+([a-zöäüß]*([A-ZÖÄÜ][a-zöäüß]+)+[\\dA-ZÖÄÜ]*)\\s+)?\\s+((einige|einigen|einiger)\\s+(([A-ZÖÄÜ][a-zöäüß]*)+))",
         "captures": {
           "1": {
             "name": "variable.parameter.germanskript"
@@ -231,7 +246,7 @@
       },
       "lambda": {
         "name": "meta.expression.lambda",
-        "begin": "(\\b(der|die|das|den|des|dem)\\s+([a-zöäüß]*([A-ZÖÄÜ][a-zöäüß]*)+)\\s+)?\\s+(etwas\\s+(([A-ZÖÄÜ][a-zöäüß]*)+))",
+        "begin": "(\\b(der|die|das|den|des|dem)\\s+([a-zöäüß]*([A-ZÖÄÜ][a-zöäüß]+)+[\\dA-ZÖÄÜ]*)\\s+)?\\s+(etwas\\s+(([A-ZÖÄÜ][a-zöäüß]*)+))",
         "beginCaptures": {
           "1": {
             "name": "variable.parameter.germanskript"
@@ -275,7 +290,7 @@
       },
       "parenthesized": {
         "name": "meta.expression.parenthesized",
-        "match": "(\\b(der|die|das|den|des|dem)\\s+([a-zöäüß]*([A-ZÖÄÜ][a-zöäüß]*)+)\\s+)?\\s*\\(",
+        "match": "(\\b(der|die|das|den|des|dem)\\s+([a-zöäüß]*([A-ZÖÄÜ][a-zöäüß]+)+[\\dA-ZÖÄÜ]*)\\s+)?\\s*\\(",
         "captures": {
           "1": {
             "name": "variable.parameter.germanskript"
@@ -283,7 +298,7 @@
         }
       },
       "params": {
-        "match": "\\b(der|die|das|den|des|dem|ein|eine|eines|einer|einige|einigen|einiger)\\s+([a-zöäüß]*([A-ZÖÄÜ][a-zöäüß]*)+)(\\s+([a-zöäüß]*([A-ZÖÄÜ][a-zöäüß]*)+))?",
+        "match": "\\b(der|die|das|den|des|dem|ein|eine|eines|einer|einige|einigen|einiger)\\s+([a-zöäüß]*([A-ZÖÄÜ][a-zöäüß]+)+[\\dA-ZÖÄÜ]*)(\\s+([a-zöäüß]*([A-ZÖÄÜ][a-zöäüß]+)+[\\dA-ZÖÄÜ]*))?",
         "captures": {
         "1": {
           "name": "entity.name.type.germanskript"
@@ -304,7 +319,7 @@
             "name": "storage.type.class.germanskript"
           }
         },
-        "end": ":|\\b(als)\\s+(([A-ZÖÄÜ][a-zöäüß]*)+)\\s+(mit)?",
+        "end": ":|\\b(als)\\s+(([A-ZÖÄÜ][a-zöäüß]*)+)(\\s+(mit))?",
         "endCaptures": {
           "1": {
             "name": "keyword.other.als.germanskript"
@@ -312,7 +327,7 @@
           "2": {
             "name": "entity.other.inherited-class.germanskript"
           },
-          "4": {
+          "5": {
             "name": "keyword.other.mit.germanskript"
           }
         },
@@ -483,7 +498,7 @@
       },
       "vardecl": {
         "name": "meta.vardecl.germanskript",
-        "match": "(?<=(^|;))\\s*(der|die|das|ein|eine|einige|mein|meine|jener|jene|jenes|dieser|diese|dieses)\\s+((neue|neuer|neues)\\s+)?([a-zöäüß]*([A-ZÖÄÜ][a-zöäüß]*)+)\\s+(ist|sind)",
+        "match": "(?<=(^|;))\\s*(der|die|das|ein|eine|einige|mein|meine|jener|jene|jenes|dieser|diese|dieses)\\s+((neue|neuer|neues)\\s+)?([a-zöäüß]*([A-ZÖÄÜ][a-zöäüß]+)+[\\dA-ZÖÄÜ]*)\\s+(ist|sind)",
         "captures": {
           "2": {
             "name": "storage.type.var.germanskript"
@@ -550,7 +565,7 @@
       },
       "args": {
         "name": "meta.argument",
-        "match": "\\b(der|die|das|den|des|dem|ein|eine|eines|einer|einige|einigen|einiger|mein|meine|meines|meiner|meinem|meinen|dein|deine|deines|deiner|deinem|deinen)\\s+([a-zöäüß]*([A-ZÖÄÜ][a-zöäüß]*)+)\\s+([a-zöäüß]*([A-ZÖÄÜ][a-zöäüß]*)+)?",
+        "match": "\\b(der|die|das|den|des|dem|ein|eine|eines|einer|einige|einigen|einiger|mein|meine|meines|meiner|meinem|meinen|dein|deine|deines|deiner|deinem|deinen)\\s+([a-zöäüß]*([A-ZÖÄÜ][a-zöäüß]+)+[\\dA-ZÖÄÜ]*)\\s+([a-zöäüß]*([A-ZÖÄÜ][a-zöäüß]+)+[\\dA-ZÖÄÜ]*)?",
         "captures": {
         "1": {
           "name": "variable.parameter.germanskript"
