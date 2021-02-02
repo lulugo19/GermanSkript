@@ -2100,4 +2100,16 @@ class GermanSkriptTest {
 
     testeGermanSkriptCode(quellCode, erwarteteAusgabe)
   }
+
+  @Test
+  @DisplayName("Verwende: importiere Konstante")
+  fun verwendeImportiereKonstante() {
+    val quellCode = """
+      verwende Mathe
+      
+      schreibe die Zahl (runde die Zahl PI ab)
+    """.trimIndent()
+
+    führeGermanSkriptCodeAus(quellCode)
+  }
 }

@@ -139,7 +139,7 @@ class Definierer(startDatei: File): PipelineKomponente(startDatei) {
                 gefundeneDefinition)
           }
           konstantenDef = gefundeneDefinition
-
+        }
         for (verwendetesModul in definitionen.verwendeteModule) {
           if (verwendetesModul.konstanten.containsKey(konstName)) {
             val gefundeneDefinition = verwendetesModul.konstanten.getValue(konstName)
@@ -149,7 +149,6 @@ class Definierer(startDatei: File): PipelineKomponente(startDatei) {
             }
             konstantenDef = gefundeneDefinition
           }
-        }
         }
       }
       return konstantenDef ?:
