@@ -1296,6 +1296,7 @@ class TypPrüfer(startDatei: File): PipelineKomponente(startDatei) {
     )
     klassenDefinition.methoden[signatur.vollerName!!] = AST.Definition.Funktion(signatur, lambda.körper)
     klassenDefinition.implementierteSchnittstellen.add(schnittstelle)
+    typisierer.fügeElternKlassenMethodenHinzu(klassenDefinition, BuildIn.Klassen.objekt.definition)
 
     val klasse = Typ.Compound.Klasse(klassenDefinition, schnittstelle.typArgumente)
     lambda.klasse = klasse
@@ -1339,6 +1340,8 @@ class TypPrüfer(startDatei: File): PipelineKomponente(startDatei) {
         schnittstelle,
         anonymeKlasse.bereich
     )
+    // Anonyme Objekt erbt auch von der Klasse Objekt
+    typisierer.fügeElternKlassenMethodenHinzu(klassenDefinition, BuildIn.Klassen.objekt.definition)
 
     val typArgumente = if (anonymeKlasse.schnittstelle.typArgumente.isNotEmpty()) {
       anonymeKlasse.schnittstelle.typArgumente

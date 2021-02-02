@@ -264,6 +264,22 @@ class Typisierer(startDatei: File): PipelineKomponente(startDatei) {
     }
   }
 
+  fun fügeElternKlassenMethodenHinzu(klasse: AST.Definition.Typdefinition.Klasse, elternKlasse: AST.Definition.Typdefinition.Klasse) {
+    for ((methodenName, methode) in elternKlasse.methoden) {
+      klasse.methoden.putIfAbsent(methodenName, methode)
+    }
+    for ((konvertierungsTyp, konvertierung) in elternKlasse.konvertierungen) {
+      klasse.konvertierungen.putIfAbsent(konvertierungsTyp, konvertierung)
+    }
+    klasse.implementierteSchnittstellen.addAll(elternKlasse.implementierteSchnittstellen)
+    if (elternKlasse.elternKlasse != null) {
+      fügeElternKlassenMethodenHinzu(klasse, (elternKlasse.elternKlasse.klasse.typ as Typ.Compound.Klasse).definition)
+    } else {
+      if (elternKlasse !== BuildIn.Klassen.objekt.definition)
+        fügeElternKlassenMethodenHinzu(klasse, BuildIn.Klassen.objekt.definition)
+    }
+  }
+
   private fun typisiereKlasse(klasse: AST.Definition.Typdefinition.Klasse) {
     typisiereTypParameter(klasse.typParameter, TypParamKontext.Klasse)
     for (eigenschaft in klasse.eigenschaften) {
@@ -274,29 +290,13 @@ class Typisierer(startDatei: File): PipelineKomponente(startDatei) {
       typisiereImplementierung(implementierung, klasse)
     }
 
-    fun fügeElternKlassenMethodenHinzu(elternKlasse: AST.Definition.Typdefinition.Klasse) {
-      for ((methodenName, methode) in elternKlasse.methoden) {
-        klasse.methoden.putIfAbsent(methodenName, methode)
-      }
-      for ((konvertierungsTyp, konvertierung) in elternKlasse.konvertierungen) {
-        klasse.konvertierungen.putIfAbsent(konvertierungsTyp, konvertierung)
-      }
-      klasse.implementierteSchnittstellen.addAll(elternKlasse.implementierteSchnittstellen)
-      if (elternKlasse.elternKlasse != null) {
-        fügeElternKlassenMethodenHinzu((elternKlasse.elternKlasse.klasse.typ as Typ.Compound.Klasse).definition)
-      } else {
-        if (elternKlasse !== BuildIn.Klassen.objekt.definition)
-          fügeElternKlassenMethodenHinzu(BuildIn.Klassen.objekt.definition)
-      }
-    }
-
     if (klasse.elternKlasse != null) {
       bestimmeTyp(klasse.elternKlasse.klasse, null, klasse.typParameter, true)
       typisiereKlasse((klasse.elternKlasse.klasse.typ!! as Typ.Compound.Klasse).definition)
-      fügeElternKlassenMethodenHinzu((klasse.elternKlasse.klasse.typ as Typ.Compound.Klasse).definition)
+      fügeElternKlassenMethodenHinzu(klasse, (klasse.elternKlasse.klasse.typ as Typ.Compound.Klasse).definition)
     } else if (klasse !== BuildIn.Klassen.objekt.definition) {
       // Kopiere die Definitionen der Objekt-Hierarchie-Wurzel runter
-      fügeElternKlassenMethodenHinzu(BuildIn.Klassen.objekt.definition)
+      fügeElternKlassenMethodenHinzu(klasse, BuildIn.Klassen.objekt.definition)
     }
   }
 
