@@ -35,8 +35,7 @@ Nomen Student mit
     der Zeichenfolge NachName,
     der Zeichenfolge VorName,
     einer Zahl Alter,
-    einer Zeichenfolge StudienGang
-    als Person:.
+    einer Zeichenfolge StudienGang als Person:.
 
 Implementiere den Student:
     Verb stelle mich vor:

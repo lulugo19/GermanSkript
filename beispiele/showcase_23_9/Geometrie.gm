@@ -5,42 +5,93 @@ Deklination Maskulinum Singular(Radius) Plural(Radien)
 Deklination Femininum Singular(Höhe) Plural(Höhen)
 Deklination Femininum Singular(Breite) Plural(Breiten)
 Deklination Femininum Singular(Fläche) Plural(Flächen)
+Deklination Maskulinum Singular(Umfang, Umfanges, Umfang, Umfang) Plural(Umf)
 Deklination Femininum Singular(Länge) Plural(Längen)
+Deklination Maskulinum Singular(Durchmesser, Durchmessers, Durchmesser, Durchmesser) Plural(Durchmesser, Durchmesser, Durchmessern, Durchmesser)
+Deklination Neutrum Singular(Polygon, Polygons, Polygon, Polygon) Plural(Polygone, Polygone, Polygonen, Polygone)
 
-verwende Mathe::PI
+// verwende das Mathe-Modul
+verwende Mathe
 
-Adjektiv flächig:
-    Verb(Zahl) berechne_fläche
+Adjektiv geometrisch:
+    Verb berechne (die Zahl Fläche)
+
+    Verb berechne (die Zahl Umfang)
 .
 
+// Kreis
+Nomen Kreis mit
+    der Zahl Radius:.
+
+Implementiere den geometrischen Kreis:
+    Verb berechne (die Zahl Fläche):
+        gebe PI * meinen Radius ^ 2 zurück
+    .
+
+    Eigenschaft(Zahl) Durchmesser:
+        gebe 2 * meinen Radius zurück
+    .
+
+    Verb berechne (die Zahl Umfang):
+        gebe meinen Durchmesser * PI zurück
+    .
+.
+
+
+// Rechteck
 Nomen RechtEck mit
     der Zahl Breite,
     der Zahl Höhe:.
 
-Implementiere das flächige RechtEck:
-    Verb(Zahl) berechne_fläche:
-        gebe meine Breite mal meine Höhe zurück
+Implementiere das geometrische RechtEck:
+    Verb berechne (die Zahl Fläche):
+        gebe  meine Breite * meine Höhe zurück
+    .
+
+    Verb berechne (die Zahl Umfang):
+        gebe 2 * (meine Breite + meine Höhe) zurück
     .
 .
 
+// Quadrat
+Nomen Quadrat mit der Zahl Länge
+    als RechtEck mit der Breite Länge, der Höhe Länge:.
 
+// regelmäßiges Polygon
+Verb generiere (das geometrische regelmäßigePolygon) mit der EckenAnZahl, der Zahl SeitenLänge:
+    gebe etwas Geometrisches:
+        Verb berechne (die Zahl Fläche):
+            // (n * a^2) / (4 * tan(pi/n) )
+            das N ist die EckenAnZahl
+            das A ist die SeitenLänge
 
-Nomen Quadrat mit der Zahl Länge als RechtEck mit der Breite Länge, der Höhe Länge:.
+            gebe (das N * das A^2) / (4* tangens von der Zahl (PI / das N)) zurück
+        .
 
-Nomen Kreis mit der Zahl Radius:.
-
-Implementiere den flächigen Kreis:
-    Verb(Zahl) berechne_fläche:
-        gebe PI * (meinen Radius) hoch 2 zurück
-    .
+        Verb berechne (die Zahl Umfang):
+            // n * a
+            gebe die EckenAnZahl * die SeitenLänge zurück
+        .
+    . zurück
 .
 
-die Flächigen sind einige Flächige [
+
+Verb schreibe das Geometrische:
+    Geometrisches:
+        schreibe die Zeile (Du als Zeichenfolge)
+        schreibe die Zeile "Fläche: #{berechne die Fläche}"
+        schreibe die Zeile "Umfang: #{berechne den Umfang}"
+        schreibe die Zeile ""
+    !
+.
+
+die Geometrischen sind einige Geometrische [
     (ein Kreis mit dem Radius 1),
-    (ein RechtEck mit der Breite 5, der Höhe 6),
-    (ein Quadrat mit der Länge 5),
-    (ein RechtEck mit der Breite 4, der Höhe 6)]
+    (ein RechtEck mit der Breite 2, der Höhe 3),
+    (ein Quadrat mit der Länge 2),
+    (generiere das regelmäßigePolygon mit der EckenAnZahl 4, der Länge 2)
+]
 
-für jedes Flächige:
-    schreibe die Zahl (Flächiges: berechne_fläche!)
+für jedes Geometrische:
+    schreibe das Geometrische
 .

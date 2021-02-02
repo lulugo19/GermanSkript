@@ -1,0 +1,53 @@
+Deklination Maskulinum Singular(Name, Namens, Namen, Namen) Plural(Namen)
+Deklination Femininum Singular(Person) Plural(Personen)
+Deklination Neutrum Singular(Alter, Alters, Alter, Alter) Plural(Alter)
+Deklination Maskulinum Singular(Freund, Freundes, Freund, Freund) Plural(Freunde, Freunde, Freunden, Freunde)
+
+Nomen Person mit 
+  der Zeichenfolge Name,
+  der Zahl Alter:
+    diese Freunde sind einige Personen[]
+    schreibe die Zeile "Die Person mit dem Namen \"#{mein Name}\" und dem Alter #{mein Alter} wurde erstellt!"
+  .
+
+Implementiere die Person:
+  Verb stelle mich vor:
+    schreibe die Zeile "Hallo ich bin #{mein Name} und ich bin #{mein Alter} Jahre alt!"
+  .
+
+  Verb befreunde mich mit der Person:
+    schreibe die Zeile "#{mein Name} ist nun mit #{der Name der Person} befreundet!"
+    meine Freunde: füge die Person hinzu!
+    die Freunde der Person: füge die Person Ich hinzu!
+  .
+
+  Verb(Boolean) hat die Person befreundet:
+    gebe meine Freunde: enthalten die Person! zurück
+  .
+.
+
+die PersonJ ist eine Person mit dem Namen "John", dem Alter 17
+die PersonS ist eine Person mit dem Namen "Sonja", dem Alter 18
+
+befreunde die PersonJ mit der PersonS
+
+// Methoden-Objekt-Aufruf
+wenn die PersonJ die PersonS befreundet hat:
+  schreibe die Zeile "#{der Name der PersonJ} und #{der Name der PersonS} sind Freunde!"
+.
+sonst:
+  schreibe die Zeile "#{der Name der PersonJ} und #{der Name der PersonS} sind keine Freunde!"
+.
+
+
+
+/*
+Person: 
+  stelle dich vor
+  schreibe die Zeile (dein Name)
+  schreibe die Zeile (dein Alter als Zeichenfolge)
+!
+
+// Methoden Reflexiv-Aufruf
+stelle die Person vor
+*/
