@@ -1,6 +1,7 @@
 Modul Mathe:
     Deklination Neutrum Singular(Minimum, Minimums, Minimum, Minimum) Plural(Maxima)
     Deklination Neutrum Singular(Maximum, Maximums, Maximum, Maximum) Plural(Maxima)
+    Deklination Femininum Singular(Wurzel) Plural(Wurzeln)
 
     Konstante PI ist 3,1415926
 
@@ -11,6 +12,7 @@ Modul Mathe:
     Verb(Zahl) sinus von der Zahl: intern.
     Verb(Zahl) cosinus von der Zahl: intern.
     Verb(Zahl) tangens von der Zahl: intern.
+    Verb(Zahl) wurzel von der Zahl: intern.
 
     Verb(Zahl) maximum von der ZahlA, der ZahlB:
         wenn die ZahlA > (die ZahlB) ist: gebe die ZahlA zurück.

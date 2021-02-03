@@ -777,6 +777,11 @@ class Interpretierer(startDatei: File): PipelineKomponente(startDatei), IInterpr
       Zahl(tan(zahl.zahl))
     },
 
+    "wurzel von der Zahl" to {
+      val zahl = umgebung.leseVariable("Zahl")!!.wert as Zahl
+      Zahl(sqrt(zahl.zahl))
+    },
+
     "randomisiere" to {
       Zahl(Random.nextDouble())
     },
