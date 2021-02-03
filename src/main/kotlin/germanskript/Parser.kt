@@ -507,6 +507,7 @@ private sealed class SubParser<T: AST>() {
         if (linkeBindungsKraft < minBindungskraft) {
           break
         }
+
         val operatorToken = expect<TokenTyp.OPERATOR>("Operator")
 
         // Hinter den Operatoren 'kleiner' und 'größer' kann optional das Wort 'als' kommen
@@ -627,7 +628,12 @@ private sealed class SubParser<T: AST>() {
       is TokenTyp.OPERATOR -> {
          val operatorAusdruck  =
              if (inBinärenAusdruck) ausdruck
-             else parseAusdruck(mitVornomen = true, optionalesIstNachVergleich = false, linkerAusdruck = ausdruck)
+             else parseAusdruck(
+                 mitVornomen = true,
+                 optionalesIstNachVergleich = false,
+                 linkerAusdruck = ausdruck,
+                 inBedingungsTerm = inBedingungsTerm
+             )
         Triple(adjektiv, nomen, operatorAusdruck)
       }
       else -> Triple(adjektiv, nomen, ausdruck)
