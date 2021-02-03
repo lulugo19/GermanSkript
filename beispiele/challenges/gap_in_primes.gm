@@ -1,0 +1,67 @@
+/*
+5kyu
+Gap in Primes
+The prime numbers are not regularly spaced. For example from 2 to 3 the gap is 1. From 3 to 5 the gap is 2. From 7 to 11 it is 4. Between 2 and 50 we have the following pairs of 2-gaps primes: 3-5, 5-7, 11-13, 17-19, 29-31, 41-43
+
+A prime gap of length n is a run of n-1 consecutive composite numbers between two successive primes (see: http://mathworld.wolfram.com/PrimeGaps.html).
+
+We will write a function gap with parameters:
+
+    g (integer >= 2) which indicates the gap we are looking for
+
+    m (integer > 2) which gives the start of the search (m inclusive)
+
+    n (integer >= m) which gives the end of the search (n inclusive)
+
+    n won't go beyond 1100000.
+
+In the example above gap(2, 3, 50) will return [3, 5] or (3, 5) or {3, 5} which is the first pair between 3 and 50 with a 2-gap.
+
+So this function should return the first pair of two prime numbers spaced with a gap of g between the limits m, n if these numbers exist otherwise `nil or null or None or Nothing (or ... depending on the language).
+
+In C++: return in such a case {0, 0}. In F#: return [||]. In Kotlin, Dart and Prolog: return []. In Pascal: return Type TGap (0, 0).
+*/
+verwende Mathe
+
+Verb(Boolean) ist_primzahl für die Zahl:
+  // eine Primzahl hat keine Teiler außer 1 und sich selbst
+  die ZahlBIS ist runde die Zahl (wurzel von der Zahl) auf + 1
+
+  für jede ZahlT von 2 bis zur ZahlBIS:
+    wenn die Zahl mod die ZahlT gleich 0 ist:
+      gebe falsch zurück
+    .
+  .
+
+  gebe wahr zurück
+.
+
+Verb(Zahlen) lücke von der ZahlG, der ZahlM, der ZahlN:
+  eine erstePrimZahl ist -1
+  für jede Zahl von der ZahlM bis zur ZahlN + 1:
+    wenn ist_primzahl für die Zahl:
+      wenn die erstePrimZahl ungleich -1 ist und 
+        die Zahl - die erstePrimZahl gleich der ZahlG ist:
+        
+        gebe einige Zahlen [die erstePrimZahl, die Zahl] zurück
+      .
+      eine erstePrimZahl ist die Zahl
+    .
+  .
+  gebe einige Zahlen[] zurück
+.
+
+
+schreibe die Zeile ((lücke von der Zahl 2, der Zahl 100, der Zahl 110) als Zeichenfolge) // [101, 103]
+
+schreibe die Zeile ((lücke von der Zahl 4, der Zahl 100, der Zahl 110) als Zeichenfolge) // [103, 107]
+
+schreibe die Zeile ((lücke von der Zahl 2, der Zahl 100, der Zahl 103) als Zeichenfolge) // [101, 103]
+
+schreibe die Zeile ((lücke von der Zahl 2, der Zahl 100, der Zahl 110) als Zeichenfolge) // [101, 103]
+
+schreibe die Zeile ((lücke von der Zahl 6, der Zahl 100, der Zahl 110) als Zeichenfolge) // []
+
+schreibe die Zeile ((lücke von der Zahl 8, der Zahl 300, der Zahl 400) als Zeichenfolge) // [359, 367]
+
+schreibe die Zeile ((lücke von der Zahl 10, der Zahl 300, der Zahl 400) als Zeichenfolge) // [337, 347]
