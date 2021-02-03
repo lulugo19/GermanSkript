@@ -15,3 +15,6 @@ schreibe die Zeichenfolge R2D2
 Verb test:
   gebe nichts zurück
 .
+
+das Y ist 
+  wenn 3 > 5 ist: "Ja". sonst: "Nein".

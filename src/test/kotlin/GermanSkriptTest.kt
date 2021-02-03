@@ -1458,8 +1458,8 @@ class GermanSkriptTest {
   }
 
   @Test
-  @DisplayName("Methodenblock als Ausdruck")
-  fun methodenBlockAlsAusdruck() {
+  @DisplayName("Kontextbereich als Ausdruck")
+  fun kontextBereichAlsAusdruck() {
     val quellCode = """
       die Zahlen sind einige Zahlen [1, 2, 3]
       das ENTHÄLT ist Zahlen: enthalten die Zahl 4!

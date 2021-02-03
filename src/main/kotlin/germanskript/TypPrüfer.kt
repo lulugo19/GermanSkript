@@ -339,14 +339,14 @@ class TypPrüfer(startDatei: File): PipelineKomponente(startDatei) {
       is AST.Satz.Ausdruck.ObjektInstanziierung -> evaluiereObjektInstanziierung(ausdruck)
       is AST.Satz.Ausdruck.EigenschaftsZugriff -> evaluiereEigenschaftsZugriff(ausdruck)
       is AST.Satz.Ausdruck.SelbstEigenschaftsZugriff -> evaluiereSelbstEigenschaftsZugriff(ausdruck)
-      is AST.Satz.Ausdruck.MethodenBereichEigenschaftsZugriff -> evaluiereMethodenBlockEigenschaftsZugriff(ausdruck)
+      is AST.Satz.Ausdruck.KontextObjektEigenschaftsZugriff -> evaluiereKontextObjektEigenschaftsZugriff(ausdruck)
       is AST.Satz.Ausdruck.SelbstReferenz -> evaluiereSelbstReferenz()
-      is AST.Satz.Ausdruck.MethodenBereichReferenz -> evaluiereMethodenBlockReferenz()
+      is AST.Satz.Ausdruck.KontextObjektReferenz -> evaluiereKontextObjektReferenz()
       is AST.Satz.Ausdruck.Lambda -> evaluiereLambda(ausdruck)
       is AST.Satz.Ausdruck.AnonymeKlasse -> evaluiereAnonymeKlasse(ausdruck)
       is AST.Satz.Ausdruck.Konstante -> evaluiereKonstante(ausdruck)
       is AST.Satz.Ausdruck.TypÜberprüfung -> evaluiereTypÜberprüfung(ausdruck)
-      is AST.Satz.Ausdruck.MethodenBereich -> durchlaufeMethodenBereich(ausdruck)
+      is AST.Satz.Ausdruck.KontextBereich -> durchlaufeKontextBereich(ausdruck)
       is AST.Satz.Ausdruck.SuperBereich -> durchlaufeSuperBereich(ausdruck)
       is AST.Satz.Ausdruck.Bedingung -> durchlaufeBedingungsSatz(ausdruck, true)
       is AST.Satz.Ausdruck.Nichts -> BuildIn.Klassen.nichts
@@ -355,10 +355,10 @@ class TypPrüfer(startDatei: File): PipelineKomponente(startDatei) {
     }
   }
 
-  private fun durchlaufeMethodenBereich(methodenBereich: AST.Satz.Ausdruck.MethodenBereich): Typ {
-    val wert = evaluiereAusdruck(methodenBereich.objekt)
+  private fun durchlaufeKontextBereich(kontextBereich: AST.Satz.Ausdruck.KontextBereich): Typ {
+    val wert = evaluiereAusdruck(kontextBereich.objekt)
     umgebung.pushBereich(wert)
-    return durchlaufeBereich(methodenBereich.bereich, false).also { umgebung.popBereich() }
+    return durchlaufeBereich(kontextBereich.bereich, false).also { umgebung.popBereich() }
   }
 
   private fun durchlaufeSuperBereich(superBereich: AST.Satz.Ausdruck.SuperBereich): Typ {
@@ -405,8 +405,8 @@ class TypPrüfer(startDatei: File): PipelineKomponente(startDatei) {
     return umgebung.leseVariable(variable)?.wert
   }
 
-  private fun evaluiereMethodenBlockReferenz(): Typ {
-    return umgebung.holeMethodenBlockObjekt()!!
+  private fun evaluiereKontextObjektReferenz(): Typ {
+    return umgebung.holeKontextBereichObjekt()!!
   }
 
   private fun durchlaufeAufruf(token: Token, bereich: AST.Satz.Bereich, umgebung: Umgebung<Typ>, neuerBereich: Boolean, rückgabeTyp: Typ, impliziteRückgabe: Boolean): Typ {
@@ -547,7 +547,7 @@ class TypPrüfer(startDatei: File): PipelineKomponente(startDatei) {
       funktionsAufruf.vollerName = definierer.holeVollenNamenVonFunktionsAufruf(funktionsAufruf, null)
     }
     var funktionsSignatur: AST.Definition.FunktionsSignatur? = null
-    val methodenBlockObjekt = umgebung.holeMethodenBlockObjekt()
+    val kontextBereichObjekt = umgebung.holeKontextBereichObjekt()
 
     if (funktionsAufruf.subjekt != null) {
       val subjekt = evaluiereAusdruck(funktionsAufruf.subjekt)
@@ -565,13 +565,13 @@ class TypPrüfer(startDatei: File): PipelineKomponente(startDatei) {
 
     // ist Methodenaufruf von Bereich-Variable
     if (funktionsSignatur == null &&
-        methodenBlockObjekt != null &&
+        kontextBereichObjekt != null &&
         funktionsAufruf.reflexivPronomen?.typ !is TokenTyp.REFLEXIV_PRONOMEN.ERSTE_FORM
     ) {
       val fund = findeMethode(
           funktionsAufruf,
-          methodenBlockObjekt,
-          FunktionsAufrufTyp.METHODEN_BEREICHS_AUFRUF
+          kontextBereichObjekt,
+          FunktionsAufrufTyp.METHODEN_KONTEXT_OBJEKT_AUFRUF
       )
       funktionsSignatur = fund?.first
       methodenObjekt = fund?.second
@@ -956,7 +956,7 @@ class TypPrüfer(startDatei: File): PipelineKomponente(startDatei) {
         evaluiereVariable(plural)?.let{ it to Numerus.PLURAL } ?: evaluiereVariable(singular) to Numerus.SINGULAR
       TokenTyp.VORNOMEN.POSSESSIV_PRONOMEN.MEIN -> holeEigenschaftAusKlasseSingularOderPlural(zuÜberprüfendeKlasse!!)
       TokenTyp.VORNOMEN.POSSESSIV_PRONOMEN.DEIN -> holeEigenschaftAusKlasseSingularOderPlural(
-          umgebung.holeMethodenBlockObjekt()!! as Typ.Compound.Klasse)
+          umgebung.holeKontextBereichObjekt()!! as Typ.Compound.Klasse)
       else -> throw Exception("Dieser Fall sollte nie eintreten.")
     }
   }
@@ -969,7 +969,7 @@ class TypPrüfer(startDatei: File): PipelineKomponente(startDatei) {
       TokenTyp.VORNOMEN.POSSESSIV_PRONOMEN.MEIN ->
         holeNormaleEigenschaftAusKlasse(singular, zuÜberprüfendeKlasse!!, Numerus.PLURAL).typKnoten.typ!!
       TokenTyp.VORNOMEN.POSSESSIV_PRONOMEN.DEIN -> holeNormaleEigenschaftAusKlasse(
-          singular, umgebung.holeMethodenBlockObjekt()!! as Typ.Compound.Klasse, Numerus.PLURAL).typKnoten.typ!!
+          singular, umgebung.holeKontextBereichObjekt()!! as Typ.Compound.Klasse, Numerus.PLURAL).typKnoten.typ!!
       else -> throw Exception("Dieser Fall sollte nie eintreten.")
     }
     return (liste as Typ.Compound.Klasse).typArgumente[0].typ!!
@@ -1079,9 +1079,9 @@ class TypPrüfer(startDatei: File): PipelineKomponente(startDatei) {
   }
 
 
-  private fun evaluiereMethodenBlockEigenschaftsZugriff(eigenschaftsZugriff: AST.Satz.Ausdruck.MethodenBereichEigenschaftsZugriff): Typ {
-    val methodenBlockObjekt = umgebung.holeMethodenBlockObjekt() as Typ.Compound.Klasse
-    return holeEigenschaftAusKlasse(eigenschaftsZugriff, methodenBlockObjekt)
+  private fun evaluiereKontextObjektEigenschaftsZugriff(eigenschaftsZugriff: AST.Satz.Ausdruck.KontextObjektEigenschaftsZugriff): Typ {
+    val kontextBereichObjekt = umgebung.holeKontextBereichObjekt() as Typ.Compound.Klasse
+    return holeEigenschaftAusKlasse(eigenschaftsZugriff, kontextBereichObjekt)
   }
 
   private fun holeNormaleEigenschaftAusKlasse(

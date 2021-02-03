@@ -52,8 +52,8 @@ class Entsüßer(startDatei: File): PipelineKomponente(startDatei) {
     )
 
     holeIteratorAufruf.vollerName = "hole den Iterator"
-    holeIteratorAufruf.aufrufTyp = FunktionsAufrufTyp.METHODEN_BEREICHS_AUFRUF
-    val holeIterator = AST.Satz.Ausdruck.MethodenBereich(iterierbar, AST.Satz.Bereich(mutableListOf(holeIteratorAufruf)))
+    holeIteratorAufruf.aufrufTyp = FunktionsAufrufTyp.METHODEN_KONTEXT_OBJEKT_AUFRUF
+    val holeIterator = AST.Satz.Ausdruck.KontextBereich(iterierbar, AST.Satz.Bereich(mutableListOf(holeIteratorAufruf)))
 
     val unsichtbaresIteratorNomen = AST.WortArt.Nomen(
         null,

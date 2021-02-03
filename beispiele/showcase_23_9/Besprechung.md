@@ -12,7 +12,7 @@
 - Expressions (Ausdrücke) sind jetzt Statements (Sätze)
     - wie bei Kotlin
     - Bedingung kann jetzt als Ausdruck stehen
-    - genauso wie Methodenbereiche
+    - genauso wie Kontextbereiche
     - bei Lambdas wird das letze Statement implizit als Rückgabewert gewertet
 - Bedingungs-Aufrufweise einer Methode
 

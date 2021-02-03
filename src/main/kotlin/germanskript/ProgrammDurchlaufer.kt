@@ -64,14 +64,14 @@ abstract  class ProgrammDurchlaufer<T>(startDatei: File): PipelineKomponente(sta
     return rückgabe
   }
 
-  private fun durchlaufeMethodenBereich(methodenBereich: AST.Satz.Ausdruck.MethodenBereich): T {
-    val wert = evaluiereAusdruck(methodenBereich.objekt)
-    bevorDurchlaufeMethodenBereich(methodenBereich, wert)
+  private fun durchlaufeKontextBereich(kontextBereich: AST.Satz.Ausdruck.KontextBereich): T {
+    val wert = evaluiereAusdruck(kontextBereich.objekt)
+    bevorDurchlaufeKontextBereich(kontextBereich, wert)
     umgebung.pushBereich(wert)
-    return durchlaufeBereich(methodenBereich.bereich, false).also { umgebung.popBereich() }
+    return durchlaufeBereich(kontextBereich.bereich, false).also { umgebung.popBereich() }
   }
 
-  protected abstract fun bevorDurchlaufeMethodenBereich(methodenBereich: AST.Satz.Ausdruck.MethodenBereich, blockObjekt: T?)
+  protected abstract fun bevorDurchlaufeKontextBereich(kontextBereich: AST.Satz.Ausdruck.KontextBereich, blockObjekt: T?)
   protected abstract fun sollteAbbrechen(): Boolean
   protected abstract fun sollteStackAufrollen(): Boolean
   protected abstract fun durchlaufeFunktionsAufruf(funktionsAufruf: AST.Satz.Ausdruck.FunktionsAufruf, istAusdruck: Boolean): T
@@ -108,14 +108,14 @@ abstract  class ProgrammDurchlaufer<T>(startDatei: File): PipelineKomponente(sta
       is AST.Satz.Ausdruck.ObjektInstanziierung -> evaluiereObjektInstanziierung(ausdruck)
       is AST.Satz.Ausdruck.EigenschaftsZugriff -> evaluiereEigenschaftsZugriff(ausdruck)
       is AST.Satz.Ausdruck.SelbstEigenschaftsZugriff -> evaluiereSelbstEigenschaftsZugriff(ausdruck)
-      is AST.Satz.Ausdruck.MethodenBereichEigenschaftsZugriff -> evaluiereMethodenBlockEigenschaftsZugriff(ausdruck)
+      is AST.Satz.Ausdruck.KontextObjektEigenschaftsZugriff -> evaluiereKontextObjektEigenschaftsZugriff(ausdruck)
       is AST.Satz.Ausdruck.SelbstReferenz -> evaluiereSelbstReferenz()
-      is AST.Satz.Ausdruck.MethodenBereichReferenz -> evaluiereMethodenBlockReferenz()
+      is AST.Satz.Ausdruck.KontextObjektReferenz -> evaluiereKontextObjektReferenz()
       is AST.Satz.Ausdruck.Lambda -> evaluiereLambda(ausdruck)
       is AST.Satz.Ausdruck.AnonymeKlasse -> evaluiereAnonymeKlasse(ausdruck)
       is AST.Satz.Ausdruck.Konstante -> evaluiereKonstante(ausdruck)
       is AST.Satz.Ausdruck.TypÜberprüfung -> evaluiereTypÜberprüfung(ausdruck)
-      is AST.Satz.Ausdruck.MethodenBereich -> durchlaufeMethodenBereich(ausdruck)
+      is AST.Satz.Ausdruck.KontextBereich -> durchlaufeKontextBereich(ausdruck)
       is AST.Satz.Ausdruck.SuperBereich -> {
         val prevInSuperBlock = inSuperBereich
         inSuperBereich = true
@@ -146,8 +146,8 @@ abstract  class ProgrammDurchlaufer<T>(startDatei: File): PipelineKomponente(sta
     return umgebung.leseVariable(variable)?.wert
   }
 
-  private fun evaluiereMethodenBlockReferenz(): T {
-    return umgebung.holeMethodenBlockObjekt()!!
+  private fun evaluiereKontextObjektReferenz(): T {
+    return umgebung.holeKontextBereichObjekt()!!
   }
 
   protected abstract fun evaluiereZeichenfolge(ausdruck: AST.Satz.Ausdruck.Zeichenfolge): T
@@ -161,7 +161,7 @@ abstract  class ProgrammDurchlaufer<T>(startDatei: File): PipelineKomponente(sta
   protected abstract fun evaluiereObjektInstanziierung(instanziierung: AST.Satz.Ausdruck.ObjektInstanziierung): T
   protected abstract fun evaluiereEigenschaftsZugriff(eigenschaftsZugriff: AST.Satz.Ausdruck.EigenschaftsZugriff): T
   protected abstract fun evaluiereSelbstEigenschaftsZugriff(eigenschaftsZugriff: AST.Satz.Ausdruck.SelbstEigenschaftsZugriff): T
-  protected abstract fun evaluiereMethodenBlockEigenschaftsZugriff(eigenschaftsZugriff: AST.Satz.Ausdruck.MethodenBereichEigenschaftsZugriff): T
+  protected abstract fun evaluiereKontextObjektEigenschaftsZugriff(eigenschaftsZugriff: AST.Satz.Ausdruck.KontextObjektEigenschaftsZugriff): T
   protected abstract fun evaluiereSelbstReferenz(): T
   protected abstract fun evaluiereLambda(lambda: AST.Satz.Ausdruck.Lambda): T
   protected abstract fun evaluiereAnonymeKlasse(anonymeKlasse: AST.Satz.Ausdruck.AnonymeKlasse): T

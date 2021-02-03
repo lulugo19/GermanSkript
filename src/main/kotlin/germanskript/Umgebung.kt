@@ -5,7 +5,7 @@ import kotlin.collections.HashMap
 
 data class Variable<T>(val name: AST.WortArt.Nomen, val wert: T)
 
-class Bereich<T>(val methodenBlockObjekt: T?) {
+class Bereich<T>(val kontextBereichObjekt: T?) {
   val variablen: HashMap<String, Variable<T>> = HashMap()
 
   override fun toString(): String {
@@ -53,13 +53,13 @@ class Umgebung<T>() {
         wert)
   }
 
-  fun pushBereich(methodenBlockObjekt: T? = null) {
-    bereiche.push(Bereich(methodenBlockObjekt))
+  fun pushBereich(kontextBereichObjekt: T? = null) {
+    bereiche.push(Bereich(kontextBereichObjekt))
   }
 
   fun popBereich() {
     bereiche.pop()
   }
 
-  fun holeMethodenBlockObjekt(): T? = bereiche.findLast { it.methodenBlockObjekt != null }?.methodenBlockObjekt
+  fun holeKontextBereichObjekt(): T? = bereiche.findLast { it.kontextBereichObjekt != null }?.kontextBereichObjekt
 }

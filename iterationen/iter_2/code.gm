@@ -54,13 +54,13 @@ Verb begrüße die Person mit der Zeichenfolge Begrüßung, der Zeichenfolge Abs
 begrüße die Person mit der Begrüßung "Hey", dem Abschied "Tschüss"
 
 // Methodendefinition
-schreibe den Bereich "Methodendefinition und Methodenblock"
+schreibe den Bereich "Methodendefinition und Kontextbereich"
 
 Verb für Person stelle mich vor:
     schreibe die Zeile "Hallo, ich bin " + meinen Namen + "."
 .
 
-// Methodenblock
+// Kontextbereich
 Person:
     stelle dich vor
     schreibe die Zeile "Hey wie geht's denn " + deinen Namen + "?"
@@ -90,7 +90,7 @@ schreibe den Bereich "Funktionsaufrufweise einer Methode"
 stelle die Person vor
 
 // Wenn es eine Funktion gibt, die genauso heißt wie die Methode, dann wird diese bevorzugt
-// und ich brauche für den Methodenaufruf einen Methodenblock
+// und ich brauche für den Methodenaufruf einen Kontextbereich
 Person:
     begrüße die Person mit der Begrüßung "Hallo", dem Abschied "Mach's gut" // Funktionsaufruf
     begrüße mich mit der Begrüßung "Hallo", dem Abschied "Mach's gut"
@@ -181,8 +181,8 @@ als Zeichenfolge für Person:
 .
 schreibe die Zeile Person als Zeichenfolge
 
-// SelbstReferenz und Methodenblock Referenz
-schreibe den Bereich "Selbstreferenz und Methodenblockreferenz"
+// SelbstReferenz und Kontextbereich Referenz
+schreibe den Bereich "Selbstreferenz und Kontextbereichreferenz"
 Verb für Person drucke mich:
     schreibe die Zeile Ich als Zeichenfolge
 .
