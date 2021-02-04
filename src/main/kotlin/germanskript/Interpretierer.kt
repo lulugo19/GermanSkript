@@ -317,7 +317,7 @@ class Interpretierer(startDatei: File): PipelineKomponente(startDatei), IInterpr
     if (versucheFange.schlussendlich != null) {
       val fehlerGeworfen = flags.contains(Flag.FEHLER_GEWORFEN)
       flags.remove(Flag.FEHLER_GEWORFEN)
-      rückgabe = interpretiereBereich(versucheFange.schlussendlich, true)
+      interpretiereBereich(versucheFange.schlussendlich, true)
       if (fehlerGeworfen) {
         flags.add(Flag.FEHLER_GEWORFEN)
       }

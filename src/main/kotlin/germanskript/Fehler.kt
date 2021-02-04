@@ -104,8 +104,8 @@ sealed class GermanSkriptFehler(private val fehlerName: String, val token: Token
         "ansonsten kann er nicht als Ausdruck verwendet werden."
   }
 
-  class VersucheFangeAusdruckBrauchtFangeOderSchlussendlich(token: Token): GermanSkriptFehler("Versuche-Fange-Ausdruck-Fehler", token) {
-    override val nachricht: String = "Der Versuche-Fange-Ausdruck braucht mindestens ein 'Fange' oder ein 'Schlussendlich',\n" +
+  class VersucheFangeAusdruckBrauchtFange(token: Token): GermanSkriptFehler("Versuche-Fange-Ausdruck-Fehler", token) {
+    override val nachricht: String = "Der Versuche-Fange-Ausdruck braucht mindestens ein 'Fange',\n" +
         "ansonsten kann er nicht als Ausdruck verwendet werden."
   }
 
