@@ -1173,7 +1173,7 @@ class GermanSkriptTest {
   @DisplayName("Versuche-Fange als Ausdruck")
   fun versucheFangeAlsAusdruck() {
     val quellCode = """
-      die Zahl ist versuche:
+      eine Zahl ist versuche:
         "Erster Versuch" als Zahl
       .
       fange den Fehler:
@@ -1182,8 +1182,8 @@ class GermanSkriptTest {
       
       schreibe die Zahl
       
-      // wenn schlussendlich verwendet wird, dann ist Wert, das, was in Schlussendlich steht
-      die Zeile ist versuche:
+      // der Wert in Schlussendlich wird ignoriert
+      eine Zahl ist versuche:
         "Zweiter Versuch" als Zahl
       .
       fange den Fehler:
@@ -1193,12 +1193,12 @@ class GermanSkriptTest {
         "Das Beste kommt zum Schluss!"
       .
       
-      schreibe die Zeile
+      schreibe die Zahl
     """.trimIndent()
 
     val erwarteteAusgabe = """
       42
-      Das Beste kommt zum Schluss!
+      7
       
     """.trimIndent()
 
@@ -2111,5 +2111,66 @@ class GermanSkriptTest {
     """.trimIndent()
 
     führeGermanSkriptCodeAus(quellCode)
+  }
+
+  @Test
+  @DisplayName("Zurückgabe vergessen: Bedingung")
+  fun zurückgabeVergessenBedingung() {
+    val quellCode = """
+      Verb(Boolean) teste die Zahl:
+        wenn die Zahl < 10 ist:
+          wenn die Zahl < 3 ist:
+            gebe wahr zurück
+          . 
+          sonst:
+            gebe wahr zurück
+          .
+        . 
+        sonst:
+          wenn die Zahl < 15 ist:
+            gebe wahr zurück
+          .
+          sonst wenn die Zahl < 25 ist:
+            // hier fehlt die Rückgabe!
+          .
+          sonst:
+            gebe wahr zurück
+          .
+        .
+      .
+    """.trimIndent()
+
+    assertThatExceptionOfType(GermanSkriptFehler.RückgabeFehler.RückgabeVergessen::class.java).isThrownBy {
+      führeGermanSkriptCodeAus(quellCode)
+    }
+  }
+
+  @Test
+  @DisplayName("Zurückgabe Vergessen: Versuche-Fange")
+  fun bedingteZurückgabeVersucheFange() {
+    val quellCode = """
+      Verb(Boolean) test:
+        versuche:
+          versuche:
+            gebe wahr zurück
+          .
+          fange den Fehler:
+            gebe falsch zurück
+          .
+        .
+        fange den Fehler:
+          versuche:
+            // hier die Rückgabe vergessen!
+          .
+          fange den Fehler:
+            gebe falsch zurück
+          .
+        .
+      .
+    """.trimIndent()
+
+    assertThatExceptionOfType(GermanSkriptFehler.RückgabeFehler.RückgabeVergessen::class.java).isThrownBy {
+      führeGermanSkriptCodeAus(quellCode)
+    }
   }
 }

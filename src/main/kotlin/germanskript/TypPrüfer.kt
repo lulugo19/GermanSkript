@@ -21,6 +21,9 @@ class TypPrüfer(startDatei: File): PipelineKomponente(startDatei) {
   private var klassenTypParams: List<AST.Definition.TypParam>? = null
   private var letzterFunktionsAufruf: AST.Satz.Ausdruck.FunktionsAufruf? = null
   private var rückgabeErreicht = false
+  private var rückgabeErreichbar = true
+  private var bedingteRückgabeErreicht = false
+  private var inBedingterRückgabe = false
   private var evaluiereKonstante = false
   private var erwarteterTyp: Typ? = null
   private var methodenObjekt: Typ.Compound? = null
@@ -412,6 +415,7 @@ class TypPrüfer(startDatei: File): PipelineKomponente(startDatei) {
   private fun durchlaufeAufruf(token: Token, bereich: AST.Satz.Bereich, umgebung: Umgebung<Typ>, neuerBereich: Boolean, rückgabeTyp: Typ, impliziteRückgabe: Boolean): Typ {
     this.rückgabeTyp = rückgabeTyp
     this.umgebung = umgebung
+    rückgabeErreichbar = true
     rückgabeErreicht = false
     return durchlaufeBereich(bereich, neuerBereich).also {
       if (!impliziteRückgabe && !rückgabeErreicht && rückgabeTyp != BuildIn.Klassen.nichts) {
@@ -812,9 +816,11 @@ class TypPrüfer(startDatei: File): PipelineKomponente(startDatei) {
     methodenObjekt = zuÜberprüfendeKlasse
     ausdruckMussTypSein(zurückgabe.ausdruck, rückgabeTyp)
     methodenObjekt = null
-    // Die Rückgabe ist nur auf alle Fälle erreichbar, wenn sie an keine Bedingung und in keiner Schleife ist
-    rückgabeErreicht = zurückgabe.findNodeInParents<AST.Satz.BedingungsTerm>() == null &&
-        zurückgabe.findNodeInParents<AST.Satz.FürJedeSchleife>() == null
+    // Die Rückgabe ist nur auf alle Fälle erreichbar, wenn sie in keiner Bedingung und in keiner Schleife ist
+    if (rückgabeErreichbar) {
+      if (inBedingterRückgabe) bedingteRückgabeErreicht = true
+      else rückgabeErreicht = true
+    }
     return rückgabeTyp
   }
 
@@ -828,21 +834,38 @@ class TypPrüfer(startDatei: File): PipelineKomponente(startDatei) {
       throw GermanSkriptFehler.WennAusdruckBrauchtSonst(bedingungsSatz.bedingungen[0].token)
     }
 
+    val prevRückgabeErreichbar = rückgabeErreichbar
+    val prevInBedingterRückgabe = inBedingterRückgabe
+    inBedingterRückgabe = true
+
     val typen = mutableListOf<Typ>()
 
     for (bedingung in bedingungsSatz.bedingungen) {
+      bedingteRückgabeErreicht = false
       typen.add(prüfeBedingung(bedingung))
+      if (!bedingteRückgabeErreicht) {
+        rückgabeErreichbar = false
+      }
     }
+
+    bedingteRückgabeErreicht = false
 
     if (bedingungsSatz.sonst != null) {
+      bedingteRückgabeErreicht = false
       typen.add(durchlaufeBereich(bedingungsSatz.sonst!!.bereich, true))
+      if (!prevInBedingterRückgabe && bedingteRückgabeErreicht)
+        rückgabeErreicht = true
     }
-
+    inBedingterRückgabe = prevInBedingterRückgabe
+    rückgabeErreichbar = prevRückgabeErreichbar
     return vereineAlleTypen(typen)
   }
 
   private fun durchlaufeSolangeSchleife(schleife: AST.Satz.SolangeSchleife): Typ {
+    val prevRückgabeErreichbar = rückgabeErreichbar
+    rückgabeErreichbar = false
     prüfeBedingung(schleife.bedingung)
+    rückgabeErreichbar = prevRückgabeErreichbar
     return BuildIn.Klassen.nichts
   }
 
@@ -868,31 +891,61 @@ class TypPrüfer(startDatei: File): PipelineKomponente(startDatei) {
 
     umgebung.pushBereich()
     umgebung.schreibeVariable(schleife.binder, elementTyp, false)
+    val prevRückgabeErreichbar = rückgabeErreichbar
+    rückgabeErreichbar = false
     durchlaufeBereich(schleife.bereich, true)
+    rückgabeErreichbar = prevRückgabeErreichbar
     umgebung.popBereich()
     return BuildIn.Klassen.nichts
   }
 
   private fun durchlaufeVersucheFange(versucheFange: AST.Satz.Ausdruck.VersucheFange, istAusdruck: Boolean): Typ {
     if (istAusdruck && versucheFange.fange.isEmpty() && versucheFange.schlussendlich == null) {
-      throw GermanSkriptFehler.VersucheFangeAusdruckBrauchtFangeOderSchlussendlich(versucheFange.versuche.toUntyped())
+      throw GermanSkriptFehler.VersucheFangeAusdruckBrauchtFange(versucheFange.versuche.toUntyped())
     }
+    val prevRückgabeErreichbar = rückgabeErreichbar
+    val prevInBedingterRückgabe = inBedingterRückgabe
+    inBedingterRückgabe = true
     val typen = mutableListOf<Typ>()
+
+    bedingteRückgabeErreicht = false
     typen.add(durchlaufeBereich(versucheFange.bereich, true))
+    if (!bedingteRückgabeErreicht) {
+      rückgabeErreichbar = false
+    }
+
     for (fange in versucheFange.fange) {
       umgebung.pushBereich()
       // TODO: hole aus dem Kontext die Typparameter
       val typ = typisierer.bestimmeTyp(
           fange.param.typKnoten, funktionsTypParams, klassenTypParams, istAliasErlaubt = true, erlaubeLeereTypArgumente = false)!!
+
+      bedingteRückgabeErreicht = false
       umgebung.schreibeVariable(fange.param.name, typ, true)
       typen.add(durchlaufeBereich(fange.bereich, true))
       umgebung.popBereich()
+      if (!bedingteRückgabeErreicht) {
+        rückgabeErreichbar = false
+      }
     }
-    return if (versucheFange.schlussendlich != null) {
+
+    if (!prevInBedingterRückgabe && bedingteRückgabeErreicht) {
+      rückgabeErreicht = true
+    }
+
+    if (versucheFange.schlussendlich != null) {
+      bedingteRückgabeErreicht = false
+      rückgabeErreichbar = prevRückgabeErreichbar
       durchlaufeBereich(versucheFange.schlussendlich, true)
-    } else {
-      vereineAlleTypen(typen)
+      if (!prevInBedingterRückgabe && bedingteRückgabeErreicht) {
+        rückgabeErreicht = true
+      }
     }
+
+    rückgabeErreichbar = prevRückgabeErreichbar
+    inBedingterRückgabe = prevInBedingterRückgabe
+
+    return vereineAlleTypen(typen)
   }
 
   private fun evaluiereWerfe(werfe: AST.Satz.Ausdruck.Werfe): Typ {
