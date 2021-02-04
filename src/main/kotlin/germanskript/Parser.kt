@@ -901,6 +901,7 @@ private sealed class SubParser<T: AST>() {
         val name = expect<TokenTyp.BEZEICHNER_GROSS>("Bezeichner")
         val nomen = AST.WortArt.Nomen(artikel, name)
         val zuweisung = expect<TokenTyp.ZUWEISUNG>("Zuweisung")
+        überspringeLeereZeilen()
         val ausdruck = parseAusdruck(mitVornomen = true, optionalesIstNachVergleich = false)
         return AST.Satz.VariablenDeklaration(nomen, neu, zuweisung, ausdruck)
       }
@@ -1206,7 +1207,7 @@ private sealed class SubParser<T: AST>() {
           val bedingungen = mutableListOf<AST.Satz.BedingungsTerm>()
 
           val wenn = expect<TokenTyp.WENN>("'wenn'")
-
+          überspringeLeereZeilen()
           bedingungen += subParse(BedingungsTerm(wenn.toUntyped()))
 
           überspringeLeereZeilen()
