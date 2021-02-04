@@ -339,7 +339,7 @@ class GermanSkriptTest {
       
       // implementiere eine Eigenschaft
       Implementiere die Person:
-        Eigenschaft(Zeichenfolge) Name:
+        Eigenschaft(Zeichenfolge) der Name:
           gebe meinen VorNamen + " " + meinen NachNamen zurück
         .
       .
@@ -915,7 +915,7 @@ class GermanSkriptTest {
       Nomen Person mit der Zeichenfolge VorName, der Zeichenfolge NachName:.
       
       Implementiere die Person:
-        Eigenschaft(Zeichenfolge) Name:
+        Eigenschaft(Zeichenfolge) der Name:
           gebe meinen VorNamen + " " + meinen NachNamen zurück
         .
       .

@@ -21,7 +21,7 @@ Implementiere<Schlüssel, Wert> die HashMap<Schlüssel, Wert>:
 
     Verb lösche alles: intern.
 
-    Eigenschaft(Liste<Paar<Schlüssel, Wert>>) SchlüsselWertePaare: intern.
+    Eigenschaft(Liste<Paar<Schlüssel, Wert>>) die SchlüsselWertePaare: intern.
 .
 
 Implementiere<Schlüssel, Wert> die

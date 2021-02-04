@@ -213,7 +213,7 @@ Implementiere die vergleichbare<Zeichenfolge> Zeichenfolge:
         gebe das Ergebnis zurück
     .
 
-    Eigenschaft(Zeichenfolgen) Zeichen:
+    Eigenschaft(Zeichenfolgen) die Zeichen:
         die Zeichen sind einige Zeichenfolgen[]
         die Zeichenfolge ist Ich
         ein I ist 0

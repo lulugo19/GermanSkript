@@ -53,6 +53,24 @@ Nomen Person mit
        mein Status ist "energisch"
     .
 
+Implementiere die Person:
+  Verb werde älter:
+    mein Alter ist mein Alter + 1
+  .
+
+  Eigenschaft(Zeichenfolge) der ganzeName:
+    gebe "Hallo" zurück
+  .
+.
+
 die Person ist eine Person mit dem Namen "Lukas", dem Alter 23
 
+schreibe die Zeile (der Name der Person)
+schreibe die Zeile (der ganzeName der Person)
+
 schreibe die Zeile (der Status der Person)
+
+die PersonJ ist (eine Person mit dem Namen "John", dem Alter 22):
+  werde älter
+  werde älter
+!

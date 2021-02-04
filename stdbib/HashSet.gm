@@ -14,5 +14,5 @@ Implementiere<Wert> das HashSet<Wert>:
 
   Verb lösche alles: intern.
 
-  Eigenschaft(Liste<Wert>) Werte: intern.
+  Eigenschaft(Liste<Wert>) die Werte: intern.
 .

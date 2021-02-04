@@ -1695,7 +1695,7 @@ private sealed class SubParser<T: AST>() {
             adjektivErlaubt = true
         )
         expect<TokenTyp.GESCHLOSSENE_KLAMMER>("')'")
-        val name = parseNomenOhneVornomen(false)
+        val name = parseNomenMitVornomen<TokenTyp.VORNOMEN.ARTIKEL.BESTIMMT>("bestimmter Artikel", true)
         val definition = parseSätze()
         return AST.Definition.Eigenschaft(rückgabeTyp, name, definition)
       }

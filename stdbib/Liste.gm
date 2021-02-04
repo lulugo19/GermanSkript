@@ -163,7 +163,7 @@ Modul Standard::Collections:
             gebe (reduziere<Element> uns mit etwas Reduzierendem: der Akkumulator plus das Addierbare.) zurück
         .
 
-        Eigenschaft(Element) Summe:
+        Eigenschaft(Element) die Summe:
             gebe summiere uns zurück
         .
     .
@@ -173,7 +173,7 @@ Modul Standard::Collections:
             gebe (reduziere<Element> uns mit etwas Reduzierendem: der Akkumulator mal das Multiplizierbare.) zurück
         .
 
-        Eigenschaft(Element) Produkt:
+        Eigenschaft(Element) das Produkt:
             gebe multipliziere uns zurück
         .
     .
