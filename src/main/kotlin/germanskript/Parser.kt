@@ -41,7 +41,7 @@ enum class ASTKnotenID {
   TYP_ÜBERPRÜFUNG,
   ANONYME_KLASSE,
   SelbstEigenschaftsZugriff,
-  KontextBereichsEigenschaftsZugriff
+  NachrichtenBereichsEigenschaftsZugriff
 }
 
 class Parser(startDatei: File): PipelineKomponente(startDatei) {
@@ -135,7 +135,7 @@ private sealed class SubParser<T: AST>() {
   protected inline fun<reified VornomenT: TokenTyp.VORNOMEN> parseNomenMitVornomen(erwartetesVornomen: String, symbolErlaubt: Boolean): AST.WortArt.Nomen {
     val vornomen = expect<VornomenT>(erwartetesVornomen)
     if (vornomen is TokenTyp.VORNOMEN.POSSESSIV_PRONOMEN) {
-      // 'mein' darf nur in Methodendefinition vorkommen und 'dein' nur in Kontextbereich
+      // 'mein' darf nur in Methodendefinition vorkommen und 'dein' nur in Nachrichtenbereich
       when (vornomen.typ) {
         is TokenTyp.VORNOMEN.POSSESSIV_PRONOMEN.MEIN -> {
           if (!hierarchyContainsAnyNode(ASTKnotenID.IMPLEMENTIERUNG, ASTKnotenID.KLASSEN_DEFINITION)) {
@@ -146,7 +146,7 @@ private sealed class SubParser<T: AST>() {
         is TokenTyp.VORNOMEN.POSSESSIV_PRONOMEN.DEIN -> {
           if (!hierarchyContainsNode(ASTKnotenID.NACHRICHTEN_BEREICH)) {
             throw GermanSkriptFehler.SyntaxFehler.ParseFehler(vornomen.toUntyped(), null,
-                "Das Possessivpronomen '${vornomen.wert}' darf nur in Kontextbereichen verwendet werden.")
+                "Das Possessivpronomen '${vornomen.wert}' darf nur in Nachrichtenbereichen verwendet werden.")
           }
         }
         is TokenTyp.VORNOMEN.JEDE -> {
@@ -421,9 +421,9 @@ private sealed class SubParser<T: AST>() {
         is TokenTyp.REFERENZ.DU -> {
           if (!hierarchyContainsNode(ASTKnotenID.NACHRICHTEN_BEREICH)) {
             throw GermanSkriptFehler.SyntaxFehler.ParseFehler(next(), null,
-                "Die Kontextbereichreferenz 'Du' darf nur in einem Kontextbereich verwendet werden.")
+                "Die Nachrichtenbereichreferenz 'Du' darf nur in einem Nachrichtenbereich verwendet werden.")
           }
-          AST.Satz.Ausdruck.KontextObjektReferenz(next().toTyped())
+          AST.Satz.Ausdruck.NachrichtenObjektReferenz(next().toTyped())
         }
         is TokenTyp.OFFENE_KLAMMER -> {
           next()
@@ -446,14 +446,14 @@ private sealed class SubParser<T: AST>() {
         }
         is TokenTyp.BEZEICHNER_GROSS ->
           if (mitArtikel) when (peekType(1)) {
-            is TokenTyp.DOPPELPUNKT -> subParse(Satz.Ausdruck.KontextBereich(
+            is TokenTyp.DOPPELPUNKT -> subParse(Satz.Ausdruck.NachrichtenBereich(
                 AST.Satz.Ausdruck.Variable(parseNomenOhneVornomen(true))
             ))
             else -> parseFunktionOderKonstante()
           }
           else {
             if (!hierarchyContainsAnyNode(ASTKnotenID.KLASSEN_DEFINITION) && peekType(1) is TokenTyp.DOPPELPUNKT) {
-              subParse(Satz.Ausdruck.KontextBereich(
+              subParse(Satz.Ausdruck.NachrichtenBereich(
                   AST.Satz.Ausdruck.Variable(parseNomenOhneVornomen(true))
               ))
             }
@@ -479,11 +479,11 @@ private sealed class SubParser<T: AST>() {
           is TokenTyp.DOPPELPUNKT -> {
             if (
                 ausdruck !is AST.Satz.Ausdruck.Bedingung &&
-                ausdruck !is AST.Satz.Ausdruck.KontextBereich &&
+                ausdruck !is AST.Satz.Ausdruck.NachrichtenBereich &&
                 !inBedingungsTerm &&
                 !hierarchyContainsNode(ASTKnotenID.KLASSEN_DEFINITION)
             ) {
-              subParse(Satz.Ausdruck.KontextBereich(ausdruck))
+              subParse(Satz.Ausdruck.NachrichtenBereich(ausdruck))
             }
             else return  ausdruck
           }
@@ -573,7 +573,7 @@ private sealed class SubParser<T: AST>() {
         else -> when(vornomen.typ) {
           TokenTyp.VORNOMEN.ARTIKEL.BESTIMMT -> AST.Satz.Ausdruck.Variable(nomen)
           TokenTyp.VORNOMEN.POSSESSIV_PRONOMEN.MEIN -> subParse(Satz.Ausdruck.NomenAusdruck.SelbstEigenschaftsZugriff(nomen))
-          TokenTyp.VORNOMEN.POSSESSIV_PRONOMEN.DEIN -> subParse(Satz.Ausdruck.NomenAusdruck.KontextBereichsEigenschaftsZugriff(nomen))
+          TokenTyp.VORNOMEN.POSSESSIV_PRONOMEN.DEIN -> subParse(Satz.Ausdruck.NomenAusdruck.NachrichtenBereichsEigenschaftsZugriff(nomen))
           else -> throw GermanSkriptFehler.SyntaxFehler.ParseFehler(vornomen.toUntyped(), "bestimmter Artikel oder Possessivpronomen")
         }
       }
@@ -610,7 +610,7 @@ private sealed class SubParser<T: AST>() {
         else subParse(Satz.Ausdruck.NomenAusdruck.SelbstEigenschaftsZugriff(nomen))
       TokenTyp.VORNOMEN.POSSESSIV_PRONOMEN.DEIN ->
         if (nächstesToken.typ is TokenTyp.OFFENE_ECKIGE_KLAMMER) subParse(Satz.Ausdruck.NomenAusdruck.IndexZugriff(nomen, inBedingungsTerm))
-        else subParse(Satz.Ausdruck.NomenAusdruck.KontextBereichsEigenschaftsZugriff(nomen))
+        else subParse(Satz.Ausdruck.NomenAusdruck.NachrichtenBereichsEigenschaftsZugriff(nomen))
       is TokenTyp.VORNOMEN.DEMONSTRATIV_PRONOMEN -> throw GermanSkriptFehler.SyntaxFehler.ParseFehler(vornomen.toUntyped(), null,
           "Die Demonstrativpronomen 'diese' und 'jene' dürfen nicht in Ausdrücken verwendet werden.")
       else -> throw Exception("Dieser Fall sollte nie ausgeführt werden.")
@@ -1124,21 +1124,21 @@ private sealed class SubParser<T: AST>() {
 
         }
 
-        class KontextBereichsEigenschaftsZugriff(val eigenschaftsName: AST.WortArt.Nomen):
-            NomenAusdruck<AST.Satz.Ausdruck.KontextObjektEigenschaftsZugriff>(eigenschaftsName, false) {
+        class NachrichtenBereichsEigenschaftsZugriff(val eigenschaftsName: AST.WortArt.Nomen):
+            NomenAusdruck<AST.Satz.Ausdruck.NachrichtenObjektEigenschaftsZugriff>(eigenschaftsName, false) {
 
-          override val id: ASTKnotenID = ASTKnotenID.KontextBereichsEigenschaftsZugriff
+          override val id: ASTKnotenID = ASTKnotenID.NachrichtenBereichsEigenschaftsZugriff
 
           override fun bewacheKnoten() {
             if (!hierarchyContainsNode(ASTKnotenID.NACHRICHTEN_BEREICH)) {
               val vornomen = eigenschaftsName.vornomen!!
               throw GermanSkriptFehler.SyntaxFehler.ParseFehler(vornomen.toUntyped(), null,
-                  "Das Possessivpronomen '${vornomen.wert}' darf nur in Kontextbereichen verwendet werden.")
+                  "Das Possessivpronomen '${vornomen.wert}' darf nur in Nachrichtenbereichen verwendet werden.")
             }
           }
 
-          override fun parseImpl(): AST.Satz.Ausdruck.KontextObjektEigenschaftsZugriff {
-            return AST.Satz.Ausdruck.KontextObjektEigenschaftsZugriff(eigenschaftsName)
+          override fun parseImpl(): AST.Satz.Ausdruck.NachrichtenObjektEigenschaftsZugriff {
+            return AST.Satz.Ausdruck.NachrichtenObjektEigenschaftsZugriff(eigenschaftsName)
           }
 
         }
@@ -1190,7 +1190,7 @@ private sealed class SubParser<T: AST>() {
             is TokenTyp.REFLEXIV_PRONOMEN.ZWEITE_FORM -> {
               if (!hierarchyContainsAnyNode(ASTKnotenID.NACHRICHTEN_BEREICH)) {
                 throw GermanSkriptFehler.SyntaxFehler.UngültigerBereich(reflexivPronomen.toUntyped(),
-                    "Das Reflexivpronomen '${reflexivPronomen.typ.pronomen}' kann nur in einem Kontextbereich verwendet werden.")
+                    "Das Reflexivpronomen '${reflexivPronomen.typ.pronomen}' kann nur in einem Nachrichtenbereich verwendet werden.")
               }
             }
           }
@@ -1225,17 +1225,17 @@ private sealed class SubParser<T: AST>() {
         }
       }
 
-      class KontextBereich(private val objektAusdruck: AST.Satz.Ausdruck): Ausdruck<AST.Satz.Ausdruck.KontextBereich>() {
+      class NachrichtenBereich(private val objektAusdruck: AST.Satz.Ausdruck): Ausdruck<AST.Satz.Ausdruck.NachrichtenBereich>() {
         override val id: ASTKnotenID = ASTKnotenID.NACHRICHTEN_BEREICH
 
-        override fun parseImpl(): AST.Satz.Ausdruck.KontextBereich {
+        override fun parseImpl(): AST.Satz.Ausdruck.NachrichtenBereich {
           val sätze = parseSätze(TokenTyp.AUSRUFEZEICHEN)
-          val kontextBereich = AST.Satz.Ausdruck.KontextBereich(objektAusdruck, sätze)
+          val nachrichtenBereich = AST.Satz.Ausdruck.NachrichtenBereich(objektAusdruck, sätze)
           return if (peekType() is TokenTyp.DOPPELPUNKT) {
-            // verkette mehrere Kontextbereiche hintereinander
-            subParse(KontextBereich(kontextBereich))
+            // verkette mehrere Nachrichtenbereiche hintereinander
+            subParse(NachrichtenBereich(nachrichtenBereich))
           } else {
-            kontextBereich
+            nachrichtenBereich
           }
         }
       }

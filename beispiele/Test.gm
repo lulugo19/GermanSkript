@@ -18,3 +18,41 @@ Verb test:
 
 das Y ist 
   wenn 3 > 5 ist: "Ja". sonst: "Nein".
+
+die ZahlenX sind einige Zahlen[1, 2, 3]
+
+für jede ZahlX:
+  schreibe die ZahlX
+.
+
+Verb funktion mit der AnZahlX:
+  schreibe die AnZahlX * die AnZahlX
+.
+
+funktion mit der AnZahlX 3
+funktion mit der Zahl 2
+
+Verb(Zahl) funktion mit der ZahlA nach der ZahlB unter der ZahlC:
+    gebe die ZahlA * die ZahlB * die ZahlC zurück
+.
+
+funktion mit der Zahl 2 nach der Zahl 3 unter der Zahl 4
+
+
+Deklination Femininum Singular(Person)
+Deklination Neutrum Singular(Alter)
+Deklination Maskulinum Singular(Name, Namens, Namen, Name) Plural(Namen)
+Deklination Maskulinum Singular(Status)
+
+
+
+Nomen Person mit
+    der Zeichenfolge Name,
+    einer Zahl Alter:
+       jener Status ist "wach"
+       mein Status ist "energisch"
+    .
+
+die Person ist eine Person mit dem Namen "Lukas", dem Alter 23
+
+schreibe die Zeile (der Status der Person)

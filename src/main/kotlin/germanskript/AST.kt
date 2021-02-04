@@ -13,7 +13,7 @@ fun <T: AST> List<T>.visit(onVisit: (AST) -> Boolean): Boolean {
 enum class FunktionsAufrufTyp {
   FUNKTIONS_AUFRUF,
   METHODEN_SELBST_AUFRUF,
-  METHODEN_KONTEXT_OBJEKT_AUFRUF,
+  METHODEN_NACHRICHTEN_OBJEKT_AUFRUF,
   METHODEN_REFLEXIV_AUFRUF,
   METHODEN_SUBJEKT_AUFRUF,
 }
@@ -560,13 +560,13 @@ sealed class AST {
           is ObjektInstanziierung -> klasse.name.bezeichnerToken
           is EigenschaftsZugriff -> eigenschaftsName.bezeichner.toUntyped()
           is SelbstEigenschaftsZugriff -> eigenschaftsName.bezeichner.toUntyped()
-          is KontextObjektEigenschaftsZugriff -> eigenschaftsName.bezeichner.toUntyped()
+          is NachrichtenObjektEigenschaftsZugriff -> eigenschaftsName.bezeichner.toUntyped()
           is SelbstReferenz -> ich.toUntyped()
-          is KontextObjektReferenz -> du.toUntyped()
+          is NachrichtenObjektReferenz -> du.toUntyped()
           is Lambda -> schnittstelle.name.bezeichnerToken
           is AnonymeKlasse -> schnittstelle.name.bezeichnerToken
           is Konstante -> name.toUntyped()
-          is KontextBereich -> objekt.holeErstesToken()
+          is NachrichtenBereich -> objekt.holeErstesToken()
           is SuperBereich -> token.toUntyped()
           is Nichts -> nichts.toUntyped()
           is Bedingung -> bedingungen[0].token
@@ -650,7 +650,7 @@ sealed class AST {
         }
       }
 
-      data class KontextBereich(val objekt: Ausdruck, val bereich: Bereich): Ausdruck() {
+      data class NachrichtenBereich(val objekt: Ausdruck, val bereich: Bereich): Ausdruck() {
         override val children = sequenceOf(objekt, bereich)
       }
 
@@ -801,7 +801,7 @@ sealed class AST {
         override val vollerName get() = aufrufName
       }
 
-      data class KontextObjektEigenschaftsZugriff(
+      data class NachrichtenObjektEigenschaftsZugriff(
           override val eigenschaftsName: WortArt.Nomen
       ): Ausdruck(), IEigenschaftsZugriff {
         override val children = sequenceOf(eigenschaftsName)
@@ -820,7 +820,7 @@ sealed class AST {
       }
 
       data class SelbstReferenz(val ich: TypedToken<TokenTyp.REFERENZ.ICH>): Ausdruck()
-      data class KontextObjektReferenz(val du: TypedToken<TokenTyp.REFERENZ.DU>): Ausdruck()
+      data class NachrichtenObjektReferenz(val du: TypedToken<TokenTyp.REFERENZ.DU>): Ausdruck()
 
       data class VersucheFange(
           val versuche: TypedToken<TokenTyp.VERSUCHE>,

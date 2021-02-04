@@ -186,10 +186,10 @@ class Interpretierer(startDatei: File): PipelineKomponente(startDatei), IInterpr
     return rückgabe
   }
 
-  private fun durchlaufeKontextBereich(kontextBereich: AST.Satz.Ausdruck.KontextBereich): Objekt {
-    val wert = evaluiereAusdruck(kontextBereich.objekt)
+  private fun durchlaufeNachrichtenBereich(nachrichtenBereich: AST.Satz.Ausdruck.NachrichtenBereich): Objekt {
+    val wert = evaluiereAusdruck(nachrichtenBereich.objekt)
     umgebung.pushBereich(wert)
-    return durchlaufeBereich(kontextBereich.bereich, false).also { umgebung.popBereich() }
+    return durchlaufeBereich(nachrichtenBereich.bereich, false).also { umgebung.popBereich() }
   }
   
   private fun durchlaufeBedingung(bedingung: AST.Satz.BedingungsTerm): Objekt? {
@@ -271,7 +271,7 @@ class Interpretierer(startDatei: File): PipelineKomponente(startDatei), IInterpr
         FunktionsAufrufTyp.METHODEN_SUBJEKT_AUFRUF -> evaluiereAusdruck(funktionsAufruf.subjekt!!)
         FunktionsAufrufTyp.METHODEN_REFLEXIV_AUFRUF -> evaluiereAusdruck(funktionsAufruf.objekt!!.ausdruck)
         FunktionsAufrufTyp.METHODEN_SELBST_AUFRUF -> aufrufStapel.top().objekt!!
-        else -> umgebung.holeKontextBereichObjekt()!!
+        else -> umgebung.holeNachrichtenBereichObjekt()!!
       }
       if (funktionsAufruf.funktionsDefinition != null) {
         val definition = funktionsAufruf.funktionsDefinition!!
@@ -388,14 +388,14 @@ class Interpretierer(startDatei: File): PipelineKomponente(startDatei), IInterpr
       is AST.Satz.Ausdruck.ObjektInstanziierung -> evaluiereObjektInstanziierung(ausdruck)
       is AST.Satz.Ausdruck.EigenschaftsZugriff -> evaluiereEigenschaftsZugriff(ausdruck)
       is AST.Satz.Ausdruck.SelbstEigenschaftsZugriff -> evaluiereSelbstEigenschaftsZugriff(ausdruck)
-      is AST.Satz.Ausdruck.KontextObjektEigenschaftsZugriff -> evaluiereKontextObjektEigenschaftsZugriff(ausdruck)
+      is AST.Satz.Ausdruck.NachrichtenObjektEigenschaftsZugriff -> evaluiereNachrichtenObjektEigenschaftsZugriff(ausdruck)
       is AST.Satz.Ausdruck.SelbstReferenz -> evaluiereSelbstReferenz()
-      is AST.Satz.Ausdruck.KontextObjektReferenz -> evaluiereKontextObjektReferenz()
+      is AST.Satz.Ausdruck.NachrichtenObjektReferenz -> evaluiereNachrichtenObjektReferenz()
       is AST.Satz.Ausdruck.Lambda -> evaluiereLambda(ausdruck)
       is AST.Satz.Ausdruck.AnonymeKlasse -> evaluiereAnonymeKlasse(ausdruck)
       is AST.Satz.Ausdruck.Konstante -> evaluiereKonstante(ausdruck)
       is AST.Satz.Ausdruck.TypÜberprüfung -> evaluiereTypÜberprüfung(ausdruck)
-      is AST.Satz.Ausdruck.KontextBereich -> durchlaufeKontextBereich(ausdruck)
+      is AST.Satz.Ausdruck.NachrichtenBereich -> durchlaufeNachrichtenBereich(ausdruck)
       is AST.Satz.Ausdruck.SuperBereich -> durchlaufeBereich(ausdruck.bereich, true)
       is AST.Satz.Ausdruck.Bedingung -> durchlaufeBedingungsSatz(ausdruck)
       is AST.Satz.Ausdruck.Nichts -> Nichts
@@ -420,8 +420,8 @@ class Interpretierer(startDatei: File): PipelineKomponente(startDatei), IInterpr
     return umgebung.leseVariable(variable)?.wert
   }
 
-  private fun evaluiereKontextObjektReferenz(): Objekt {
-    return umgebung.holeKontextBereichObjekt()!!
+  private fun evaluiereNachrichtenObjektReferenz(): Objekt {
+    return umgebung.holeNachrichtenBereichObjekt()!!
   }
   
   private fun evaluiereZeichenfolge(ausdruck: AST.Satz.Ausdruck.Zeichenfolge): Objekt {
@@ -502,8 +502,8 @@ class Interpretierer(startDatei: File): PipelineKomponente(startDatei), IInterpr
     return holeEigenschaft(eigenschaftsZugriff, objekt)
   }
 
-  private fun evaluiereKontextObjektEigenschaftsZugriff(eigenschaftsZugriff: AST.Satz.Ausdruck.KontextObjektEigenschaftsZugriff): Objekt {
-    val objekt = umgebung.holeKontextBereichObjekt()!!
+  private fun evaluiereNachrichtenObjektEigenschaftsZugriff(eigenschaftsZugriff: AST.Satz.Ausdruck.NachrichtenObjektEigenschaftsZugriff): Objekt {
+    val objekt = umgebung.holeNachrichtenBereichObjekt()!!
     return holeEigenschaft(eigenschaftsZugriff, objekt)
   }
 
@@ -642,7 +642,7 @@ class Interpretierer(startDatei: File): PipelineKomponente(startDatei), IInterpr
       is TokenTyp.VORNOMEN.POSSESSIV_PRONOMEN -> {
         val objekt = when (vornomenTyp) {
           TokenTyp.VORNOMEN.POSSESSIV_PRONOMEN.MEIN -> aufrufStapel.top().objekt!!
-          TokenTyp.VORNOMEN.POSSESSIV_PRONOMEN.DEIN -> umgebung.holeKontextBereichObjekt()!!
+          TokenTyp.VORNOMEN.POSSESSIV_PRONOMEN.DEIN -> umgebung.holeNachrichtenBereichObjekt()!!
         }
         objekt.holeEigenschaft(singular.ganzesWort(Kasus.NOMINATIV, numerus, true))
       }

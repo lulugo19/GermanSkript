@@ -12,7 +12,7 @@ class CodeGenerator(startDatei: File): PipelineKomponente(startDatei) {
 
   companion object {
     const val SELBST_VAR_NAME = "_Selbst"
-    const val KONTEXT_OBJEKT_VAR_NAME = "_KontextObjekt"
+    const val NACHRICHTEN_OBJEKT_VAR_NAME = "_NachrichtenObjekt"
     const val ITERATOR_VAR_NAME= "_Iterator"
     const val INIT_OBJEKT_VAR_NAME = "_Init_Objekt"
     const val LISTE_VAR_NAME = "_Liste"
@@ -223,7 +223,7 @@ class CodeGenerator(startDatei: File): PipelineKomponente(startDatei) {
       is AST.Satz.Ausdruck.Boolean -> IM_AST.Satz.Ausdruck.Konstante.Boolean(ausdruck.boolean.typ.boolean)
       is AST.Satz.Ausdruck.Variable -> generiereVariable(ausdruck)
       is AST.Satz.Ausdruck.FunktionsAufruf -> generiereFunktionsAufruf(ausdruck)
-      is AST.Satz.Ausdruck.KontextBereich -> generiereKontextBereich(ausdruck)
+      is AST.Satz.Ausdruck.NachrichtenBereich -> generiereNachrichtenBereich(ausdruck)
       is AST.Satz.Ausdruck.SuperBereich -> generiereBereich(ausdruck.bereich)
       is AST.Satz.Ausdruck.Konstante -> generiereKonstante(ausdruck)
       is AST.Satz.Ausdruck.Liste -> generiereListe(ausdruck)
@@ -238,12 +238,12 @@ class CodeGenerator(startDatei: File): PipelineKomponente(startDatei) {
       is AST.Satz.Ausdruck.TypÜberprüfung -> generiereTypÜberprüfung(ausdruck)
       is AST.Satz.Ausdruck.EigenschaftsZugriff ->
         generiereEigenschaftsZugriff(ausdruck, generiereAusdruck(ausdruck.objekt))
-      is AST.Satz.Ausdruck.KontextObjektEigenschaftsZugriff ->
-        generiereEigenschaftsZugriff(ausdruck, IM_AST.Satz.Ausdruck.Variable(KONTEXT_OBJEKT_VAR_NAME))
+      is AST.Satz.Ausdruck.NachrichtenObjektEigenschaftsZugriff ->
+        generiereEigenschaftsZugriff(ausdruck, IM_AST.Satz.Ausdruck.Variable(NACHRICHTEN_OBJEKT_VAR_NAME))
       is AST.Satz.Ausdruck.SelbstEigenschaftsZugriff ->
         generiereEigenschaftsZugriff(ausdruck, IM_AST.Satz.Ausdruck.Variable(SELBST_VAR_NAME))
       is AST.Satz.Ausdruck.SelbstReferenz -> IM_AST.Satz.Ausdruck.Variable(SELBST_VAR_NAME)
-      is AST.Satz.Ausdruck.KontextObjektReferenz -> IM_AST.Satz.Ausdruck.Variable(KONTEXT_OBJEKT_VAR_NAME)
+      is AST.Satz.Ausdruck.NachrichtenObjektReferenz -> IM_AST.Satz.Ausdruck.Variable(NACHRICHTEN_OBJEKT_VAR_NAME)
       is AST.Satz.Ausdruck.VersucheFange -> generiereVersucheFange(ausdruck)
       is AST.Satz.Ausdruck.Werfe -> generiereWerfe(ausdruck)
     }
@@ -269,7 +269,7 @@ class CodeGenerator(startDatei: File): PipelineKomponente(startDatei) {
     } else {
       val objekt = when(aufruf.aufrufTyp) {
         FunktionsAufrufTyp.METHODEN_SELBST_AUFRUF -> IM_AST.Satz.Ausdruck.Variable(SELBST_VAR_NAME)
-        FunktionsAufrufTyp.METHODEN_KONTEXT_OBJEKT_AUFRUF -> IM_AST.Satz.Ausdruck.Variable(KONTEXT_OBJEKT_VAR_NAME)
+        FunktionsAufrufTyp.METHODEN_NACHRICHTEN_OBJEKT_AUFRUF -> IM_AST.Satz.Ausdruck.Variable(NACHRICHTEN_OBJEKT_VAR_NAME)
         FunktionsAufrufTyp.METHODEN_REFLEXIV_AUFRUF -> generiereAusdruck(aufruf.objekt!!.ausdruck)
         FunktionsAufrufTyp.METHODEN_SUBJEKT_AUFRUF -> generiereAusdruck(aufruf.subjekt!!)
         else -> throw Exception("Dieser Fall sollte nie auftreten!")
@@ -288,9 +288,9 @@ class CodeGenerator(startDatei: File): PipelineKomponente(startDatei) {
     }
   }
 
-  private fun generiereKontextBereich(kontextBereich: AST.Satz.Ausdruck.KontextBereich): IM_AST.Satz.Ausdruck {
-    val deklaration = IM_AST.Satz.VariablenDeklaration(KONTEXT_OBJEKT_VAR_NAME, generiereAusdruck(kontextBereich.objekt), false)
-    val bereich = generiereBereich(kontextBereich.bereich)
+  private fun generiereNachrichtenBereich(nachrichtenBereich: AST.Satz.Ausdruck.NachrichtenBereich): IM_AST.Satz.Ausdruck {
+    val deklaration = IM_AST.Satz.VariablenDeklaration(NACHRICHTEN_OBJEKT_VAR_NAME, generiereAusdruck(nachrichtenBereich.objekt), false)
+    val bereich = generiereBereich(nachrichtenBereich.bereich)
     val sätze = bereich.sätze.toMutableList()
     sätze.add(0, deklaration)
     return IM_AST.Satz.Ausdruck.Bereich(sätze)

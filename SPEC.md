@@ -444,7 +444,7 @@ schreibe die Zeichenfolge (der Name der Person) // Max Mustermann
 Das Verb einer Methode sollte im Imperativ stehen. Außerdem kann das Verb optional noch einen Suffix bekommen,
 der dann bei dem Methodenaufruf am Ende stehen muss.
 
-Innerhalb einer Methode kann man direkt ohne Kontextbereich auf eigene Methoden zugreifen.
+Innerhalb einer Methode kann man direkt ohne Nachrichtenbereich auf eigene Methoden zugreifen.
 Auf die Eigenschaften des eigenen Objekts kann innerhalb einer Methode mit `mein` zugegriffen werden.
 
 Beispiel:
@@ -453,16 +453,16 @@ Verb(Zeichenfolge) für Person stelle mich mit der Zeichenfolge Begrüßung, der
     zurück Begrüßung + ", " + "mein Name ist " + mein Name " und ich bin " + mein Alter " Jahre alt." + LetzterSatz.
 ```
 
-### Kontextbereich
+### Nachrichtenbereich
 
 `Bezeichner: Sätze!`
 
-Um eine Methode aufzurufen gibt es den sogenannten Kontextbereich. Man startet einen neuen Block mit dem Bezeichner
+Um eine Methode aufzurufen gibt es den sogenannten Nachrichtenbereich. Man startet einen neuen Block mit dem Bezeichner
 des Objekts, auf den man die Methode/n aufrufen möchte. Innerhalb des Blocks kann man jetzt die Methoden ganz normal wie Funktionen
 aufrufen. Hat eine Funktion die gleiche Signatur wie eine Methode, wird die Funktion überschattet. Der Block endet diesmal nicht
 mit einem `.` sondern einem `!`.
 
-In Kontextbereichen kann auf Eigenschaften des Objekts mit `dein` zugegriffen werden. Wenn das Objekt eine Liste ist wird stattdessen `eure` verwendet.
+In Nachrichtenbereichen kann auf Eigenschaften des Objekts mit `dein` zugegriffen werden. Wenn das Objekt eine Liste ist wird stattdessen `eure` verwendet.
 
 Wenn in einer Methodendefinition `mir` (Dativ) oder `mich` (Akkusativ) verwendet wurde, wird diese bei allen Objekten mit `dir`
 oder `dich` und bei Listen mit `euch` oder `euren` ersetzt.

@@ -476,7 +476,7 @@ wie genau Methoden, berechnete Eigenschaften und Konvertierungen definiert werde
 
 Methoden werden genau so wie Funktionen definiert werden. Innerhalb einer Methode hat man Zugriff
 auf die Eigenschaften der Klasse über das Possesivpronomen `mein`. Für Methodenaufrufe der eigenen Klasse
-braucht man außerdem innerhalb der Klasse keinen Kontextbereich.
+braucht man außerdem innerhalb der Klasse keinen Nachrichtenbereich.
 
 ```
 Implementiere die Person:
@@ -500,12 +500,12 @@ implementiere die Person:
 .
 ```
 
-Um die Methoden aufzurufen gibt es die sogenannten Kontextbereiche.
-Innerhalb eines Kontextbereichs, kann eine Methode genauso wie eine Funktion
-aufgerufen werden. Außerdem kann man innerhalb eines Kontextbereiches mit dem
+Um die Methoden aufzurufen gibt es die sogenannten Nachrichtenbereiche.
+Innerhalb eines Nachrichtenbereichs, kann eine Methode genauso wie eine Funktion
+aufgerufen werden. Außerdem kann man innerhalb eines Nachrichtenbereiches mit dem
 Personalpronomen `dein` auch ohne den Genitiv auf die Eigenschaften eines Objekts zugreifen.
 
-Kontextbereiche starten mit dem Objekt, dann mit einem `:`, und enden mit einem Ausrufezeichen `!`, 
+Nachrichtenbereiche starten mit dem Objekt, dann mit einem `:`, und enden mit einem Ausrufezeichen `!`, 
 anstatt wie normale Bereiche mit einem Punkt.
 
 ```
@@ -514,7 +514,7 @@ die Person ist eine Person mit
     dem NachNamen "Gobelet", 
     dem Alter 22
 
-// beginne den Kontextbereich
+// beginne den Nachrichtenbereich
 Person:
     schreibe die Zahl (dein Alter) // 22
     werde älter
@@ -525,14 +525,14 @@ Person:
 ```
 
 Bei `begrüße dich` kann man sehen, dass das Reflexivpronomen `mich` in der Definition
-in dem Kontextbereich mit `dich` ersetzt wurde.
+in dem Nachrichtenbereich mit `dich` ersetzt wurde.
 
 Über diesen rein kosmetischen Nutzen hinaus, haben Reflexivpronomen jedoch noch einen anderen Nutzen.
-Methoden mit Reflexivpronomen kann man auch außerhalb eines Kontextbereichs wie eine ganz normale
+Methoden mit Reflexivpronomen kann man auch außerhalb eines Nachrichtenbereichs wie eine ganz normale
 Funktion aufrufen. Dafür wird das Pronomen mit dem Namen der Klasse ersetzt:
 
 ```
-// außerhalb des Kontextbereichs
+// außerhalb des Nachrichtenbereichs
 begrüße die Person mit der Begrüßung "Yieepiee" // Yieepiee Lukas!
 ```
 

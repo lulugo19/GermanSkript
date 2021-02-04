@@ -66,7 +66,7 @@ class KonstantenFalter(startDatei: File): ProgrammDurchlaufer<Objekt?>(startDate
     }
   }
 
-  override fun bevorDurchlaufeKontextBereich(kontextBereich: AST.Satz.Ausdruck.KontextBereich, blockObjekt: Objekt?) {
+  override fun bevorDurchlaufeNachrichtenBereich(nachrichtenBereich: AST.Satz.Ausdruck.NachrichtenBereich, blockObjekt: Objekt?) {
     // hier muss nichts gemacht werden
   }
 
@@ -274,7 +274,7 @@ class KonstantenFalter(startDatei: File): ProgrammDurchlaufer<Objekt?>(startDate
 
   override fun evaluiereSelbstEigenschaftsZugriff(eigenschaftsZugriff: AST.Satz.Ausdruck.SelbstEigenschaftsZugriff): Objekt? = null
 
-  override fun evaluiereKontextObjektEigenschaftsZugriff(eigenschaftsZugriff: AST.Satz.Ausdruck.KontextObjektEigenschaftsZugriff): Objekt? = null
+  override fun evaluiereNachrichtenObjektEigenschaftsZugriff(eigenschaftsZugriff: AST.Satz.Ausdruck.NachrichtenObjektEigenschaftsZugriff): Objekt? = null
 
   override fun evaluiereSelbstReferenz(): Objekt? = null
 

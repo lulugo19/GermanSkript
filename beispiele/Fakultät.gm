@@ -1,7 +1,9 @@
-Verb(Zahl) fakultät von der Zahl:
-    wenn die Zahl gleich 0 ist: gebe 1 zurück.
-    sonst: gebe die Zahl * (fakultät von der Zahl -1) zurück.
+Deklination Femininum Singular(Fakultät) Plural(Fakultäten)
+
+Verb berechne (die Zahl Fakultät) von der Zahl:
+    wenn die Zahl kleiner gleich 0 ist: gebe 1 zurück.
+    sonst: gebe die Zahl * (berechne die Fakultät von der Zahl - 1) zurück.
 .
 
-die Zahl ist fakultät von der Zahl 5
+die Zahl ist berechne die Fakultät von der Zahl 5
 schreibe die Zeile "Die Fakultät von der Zahl 5 ist: #{die Zahl}"
