@@ -395,13 +395,6 @@ class CodeGenerator(startDatei: File): PipelineKomponente(startDatei) {
       val definition = (instanziierung.klasse.typ!! as Typ.Compound.Klasse).definition
       val sätze: MutableList<IM_AST.Satz> = mutableListOf()
       val generierteEigenschaftsAusdrücke = eigenschaftsZuweisungen.map { generiereAusdruck(it.ausdruck) }
-      if (definition.elternKlasse != null) {
-        sätze.add(IM_AST.Satz.Ausdruck.Bereich(
-            eigenschaftsZuweisungen.withIndex()
-                .map { (index, zuweisung) -> IM_AST.Satz.VariablenDeklaration(zuweisung.name.nominativ, generierteEigenschaftsAusdrücke[index], false) } +
-                generiereKonstruktor(definition.elternKlasse))
-        )
-      }
 
       for (index in eigenschaftsZuweisungen.indices) {
         val eigenschaftsName = typPrüfer.holeParamName(definition.eigenschaften[index], klassenTyp.typArgumente).nominativ
@@ -409,6 +402,14 @@ class CodeGenerator(startDatei: File): PipelineKomponente(startDatei) {
             IM_AST.Satz.Ausdruck.Variable(INIT_OBJEKT_VAR_NAME),
             eigenschaftsName,
             generierteEigenschaftsAusdrücke[index])
+        )
+      }
+
+      if (definition.elternKlasse != null) {
+        sätze.add(IM_AST.Satz.Ausdruck.Bereich(
+            eigenschaftsZuweisungen.withIndex()
+                .map { (index, zuweisung) -> IM_AST.Satz.VariablenDeklaration(zuweisung.name.nominativ, generierteEigenschaftsAusdrücke[index], false) } +
+                generiereKonstruktor(definition.elternKlasse))
         )
       }
 
