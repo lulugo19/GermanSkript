@@ -57,8 +57,8 @@ class Parser(startDatei: File): PipelineKomponente(startDatei) {
 }
 
 private sealed class SubParser<T: AST>() {
-  private var stack: Stack<ASTKnotenID>? = null
-  private var tokens: Peekable<Token>? = null
+  protected var stack: Stack<ASTKnotenID>? = null
+  protected var tokens: Peekable<Token>? = null
   protected var currentToken: Token? = null
 
   fun parse(tokens: Peekable<Token>, stack: Stack<ASTKnotenID>): T {
@@ -155,14 +155,6 @@ private sealed class SubParser<T: AST>() {
             "Das Vornomen 'jeden', 'jeder', 'jedes' darf nur in einer Für-Jede-Schleife verwendet werden.")
           }
         }
-      }
-    }
-    if (vornomen is TokenTyp.VORNOMEN.DEMONSTRATIV_PRONOMEN) {
-      // Demonstrativpronomen dürfen nur in Konstruktoren und nur in Variablendeklarationen vorkommen
-      if (!hierarchyContainsNode(ASTKnotenID.VARIABLEN_DEKLARATION) && !hierarchyContainsNode(ASTKnotenID.KLASSEN_DEFINITION)) {
-        throw GermanSkriptFehler.SyntaxFehler.ParseFehler(vornomen.toUntyped(), null,
-            "Die Demonstrativpronomen 'diese' und 'jene' dürfen nur in Konstruktoren (Klassendefinitionen) verwendet werden,\n" +
-                "um weitere Eigenschaften zu erstellen.")
       }
     }
     val nomen = parseNomenOhneVornomen(symbolErlaubt)
@@ -892,6 +884,12 @@ private sealed class SubParser<T: AST>() {
         if (artikel.typ == TokenTyp.VORNOMEN.POSSESSIV_PRONOMEN.DEIN) {
           throw GermanSkriptFehler.SyntaxFehler.ParseFehler(artikel.toUntyped(), null, "Neuzuweisungen mit 'dein' funktionieren nicht.\n" +
               "Man kann die Eigenschaften eines anderen Objekts nur lesen.")
+        }
+
+        if (artikel.typ is TokenTyp.VORNOMEN.DEMONSTRATIV_PRONOMEN && stack!![stack!!.size-2] != ASTKnotenID.IMPLEMENTIERUNG) {
+          throw GermanSkriptFehler.SyntaxFehler.ParseFehler(artikel.toUntyped(), null,
+              "Die Demonstrativpronomen 'diese' und 'jene' dürfen nur in Konstruktoren (Klassendefinitionen) verwendet werden,\n" +
+                  "um weitere Eigenschaften zu erstellen.\nAußerdem dürfen sie im Konstruktor nicht verschachtelt bspw. in Bedingungen oder Schleifen stehen.")
         }
         val neu = if (artikel.typ == TokenTyp.VORNOMEN.ARTIKEL.UNBESTIMMT) {
           parseOptional<TokenTyp.NEU>()

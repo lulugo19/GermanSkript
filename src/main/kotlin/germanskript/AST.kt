@@ -249,7 +249,7 @@ sealed class AST {
         val typKnoten: TypKnoten,
         val name: WortArt.Nomen
     ): AST() {
-      val istPrivat get() = typKnoten.name.vornomen!!.typ is TokenTyp.VORNOMEN.DEMONSTRATIV_PRONOMEN
+      val istZusätzlicheEigenschaft get() = typKnoten.name.vornomen!!.typ is TokenTyp.VORNOMEN.DEMONSTRATIV_PRONOMEN
       val typIstName get() = typKnoten.name === name
       override val children = sequenceOf(typKnoten, name)
 

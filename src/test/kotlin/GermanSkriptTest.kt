@@ -254,16 +254,18 @@ class GermanSkriptTest {
       Deklination Maskulinum Singular(Name, Namens, Namen, Namen) Plural(Namen)
       Deklination Neutrum Singular(Alter, Alters, Alter, Alter) Plural(Alter)
       Deklination Femininum Singular(Person) Plural(Personen)
+      Deklination Maskulinum Singular(Freund, Freunds, Freund, Freund) Plural(Freunde)
 
       Nomen Person mit
           der Zeichenfolge VorName,
           der Zeichenfolge NachName,
           einer Zahl Alter:
 
+          diese Freunde sind einige Personen[]
           dieser Name ist "#{mein VorName} #{mein NachName}"
           schreibe die Zeile "#{mein Name} (#{mein Alter} Jahre alt) wurde erstellt!"
       .
-      
+
       die Person ist eine Person mit dem VorNamen "Max", dem NachNamen "Mustermann", dem Alter 23
       die PersonJANE ist eine Person mit dem VorNamen "Jane", dem NachNamen "Doe", dem Alter 41
     """.trimIndent()
@@ -2170,6 +2172,27 @@ class GermanSkriptTest {
     """.trimIndent()
 
     assertThatExceptionOfType(GermanSkriptFehler.RückgabeFehler.RückgabeVergessen::class.java).isThrownBy {
+      führeGermanSkriptCodeAus(quellCode)
+    }
+  }
+
+  @Test
+  @DisplayName("Demonstrativpronomen Syntax-Fehler")
+  fun demonstrativPronomenParseFehler() {
+
+    val quellCode = """
+      Deklination Femininum Singular(Person) Plural(Personen)
+      Deklination Neutrum Singular(Alter, Alters, Alter, Alter) Plural(Alter)
+      
+      Nomen Person:
+        wenn die Zahl > 3 ist:
+          jenes Alter ist 5
+        .
+      .
+      
+    """.trimIndent()
+
+    assertThatExceptionOfType(GermanSkriptFehler.SyntaxFehler::class.java).isThrownBy {
       führeGermanSkriptCodeAus(quellCode)
     }
   }
