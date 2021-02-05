@@ -34,8 +34,11 @@ class TypPrüfer(startDatei: File): PipelineKomponente(startDatei) {
     definierer.konstanten.forEach(::prüfeKonstante)
     // Die Objekt-Klasse ist die Wurzel der Typ-Hierarchie in Germanskript und muss zuerst definiert werden
     prüfeKlasse(BuildIn.Klassen.objekt.definition)
-    // zuerst die Klassendefinitionen, damit noch private Eigenschaften definiert werden können
-    definierer.holeDefinitionen<AST.Definition.Typdefinition.Klasse>().forEach(::prüfeKlasse)
+    val klassenDefinitionen = definierer.holeDefinitionen<AST.Definition.Typdefinition.Klasse>()
+    // Hier werden nur die Konstruktoren ausgeführt, sodass die privaten Klasseneigenschaften noch hinzugefügt werden können
+    klassenDefinitionen.forEach(::prüfeKlasse)
+    // Hier werden die Implementierungen der Klassen ausgeführt
+    klassenDefinitionen.forEach(::prüfeKlassenImplementierungen)
     definierer.funktionsDefinitionen.forEach {funktion ->
       prüfeFunktion(funktion, Umgebung())
     }
@@ -265,9 +268,16 @@ class TypPrüfer(startDatei: File): PipelineKomponente(startDatei) {
     zuÜberprüfendeKlasse = Typ.Compound.Klasse(klasse, erstelleGenerischeTypArgumente(klasse.typParameter))
     klassenTypParams = klasse.typParameter
     durchlaufeAufruf(klasse.name.bezeichner.toUntyped(), klasse.konstruktor, Umgebung(), true, BuildIn.Klassen.nichts, false)
-    klasse.implementierungen.forEach {implementierung -> prüfeImplementierung(klasse, implementierung)}
     klassenTypParams = null
 
+    zuÜberprüfendeKlasse = null
+  }
+
+  private fun prüfeKlassenImplementierungen(klasse: AST.Definition.Typdefinition.Klasse) {
+    zuÜberprüfendeKlasse = Typ.Compound.Klasse(klasse, erstelleGenerischeTypArgumente(klasse.typParameter))
+    klassenTypParams = klasse.typParameter
+    klasse.implementierungen.forEach{implementierung -> prüfeImplementierung(klasse, implementierung)}
+    klassenTypParams = null
     zuÜberprüfendeKlasse = null
   }
 
@@ -1057,7 +1067,7 @@ class TypPrüfer(startDatei: File): PipelineKomponente(startDatei) {
       val eigenschaftsName = holeParamName(eigenschaft, instanziierung.klasse.typArgumente)
       instanziierung.eigenschaftsNamen.add(eigenschaftsName)
 
-      if (eigenschaft.istPrivat) {
+      if (eigenschaft.istZusätzlicheEigenschaft) {
         j++
         continue
       }
