@@ -2213,7 +2213,6 @@ class GermanSkriptTest {
     testeGermanSkriptCode(quellCode, erwarteteAusgabe)
   }
 
-  /*
   @Test
   @DisplayName("Binärbaum Implementierung")
   fun binärbaum() {
@@ -2224,21 +2223,30 @@ class GermanSkriptTest {
       Deklination Maskulinum Singular (Wert, Werts, Wert, Wert) Plural(Werte)
       Deklination Maskulinum Singular(Ast, Asts, Ast, Ast) Plural(Äste, Äste, Ästen, Äste)
 
+
+      Adjektiv<Wert> konsumierend:
+        Verb konsumiere den Wert
+      .
+
       // Das ist die Top Datenstruktur welche den Wurzelknoten verwaltet
       Nomen<vergleichbarer<Wert> Wert> BinärBaum:
         // Der Baum ist am Anfang nur ein Blatt
-        jener WurzelKnoten ist ein Blatt<Wert>
+        jener WurzelKnoten ist ein Blatt<Wert> als Knoten<Wert>
       .
 
       Implementiere<vergleichbarer<Wert> Wert> den BinärBaum<Wert>:
         
         Verb füge den Wert hinzu:
           wenn mein WurzelKnoten ein Blatt<Wert> ist:
-            mein WurzelKnoten ist ein Ast mit dem Wert
+            mein WurzelKnoten ist ein Ast<Wert> mit dem Wert
           .
           sonst:
             mein WurzelKnoten: füge den Wert hinzu!
           .
+        .
+
+        Verb durchlaufe mich mit dem Konsumierenden<Wert>:
+            durchlaufe meinen WurzelKnoten mit dem Konsumierenden
         .
       .
 
@@ -2248,24 +2256,75 @@ class GermanSkriptTest {
       Implementiere<vergleichbarer<Wert> Wert> den Knoten<Wert>:
 
         Verb füge den Wert hinzu:
-          // überschreibe diese Methode in den Kindklassen
+          // überschreibe diese Methode in der Kindklasse "Ast"
+        .
+
+        Verb(Boolean) enthält den Wert:
+          // überschreibe diese Methode in der Kindklasse "Ast"
+          gebe falsch zurück
+        .
+
+        Verb durchlaufe mich mit dem Konsumierenden<Wert>:
+          // überschreibe diese Methode in der Kindklasse "Ast"
         .
       .
 
+      // Ein Ast hat einen Wert, einen linken Knoten und einen rechten Knoten
       Nomen<Wert> Ast mit dem Wert
         als Knoten<Wert>:
-          jener linkeKnoten ist ein Blatt<Wert>
-          jener rechteKnoten ist ein Blatt<Wert>
+          jener linkeKnoten ist ein Blatt<Wert> als Knoten<Wert>
+          jener rechteKnoten ist ein Blatt<Wert> als Knoten<Wert>
         .
 
       Implementiere<vergleichbarer<Wert> Wert> den Ast<Wert>:
+        Verb füge den Wert hinzu:
+          wenn der Wert kleiner als mein Wert ist:
+            wenn mein linkerKnoten ein Blatt<Wert> ist:
+              mein linkerKnoten ist ein Ast<Wert> mit dem Wert
+            . sonst:
+              mein linkerKnoten: füge den Wert hinzu!
+            .
+          . sonst:
+            wenn mein rechterKnoten ein Blatt<Wert> ist:
+              mein rechterKnoten ist ein Ast<Wert> mit dem Wert
+            . sonst:
+              mein rechterKnoten: füge den Wert hinzu!
+            .
+          .
+        .
 
+        Verb durchlaufe mich mit dem Konsumierenden<Wert>:
+          durchlaufe meinen linkenKnoten mit dem Konsumierenden
+          Konsumierendes: konsumiere meinen Wert!
+          durchlaufe meinen rechtenKnoten mit dem Konsumierenden
+        .
       .
 
+      // Ein Blatt ist einfach ein leerer Knoten
       Nomen<Wert> Blatt als Knoten<Wert>:.
+
+      // teste hier den geschriebenen Binärbaum
+      ein BinärBaum<Zahl>:
+        füge die Zahl 5 hinzu
+        füge die Zahl 2 hinzu
+        füge die Zahl 1 hinzu
+        füge die Zahl 4 hinzu
+        füge die Zahl 3 hinzu
+
+        // gibt die Zahlen der Reihenfolge nach aus
+        durchlaufe dich mit etwas Konsumierendem: schreibe die Zahl.
+      !
     """.trimIndent()
 
-    führeGermanSkriptCodeAus(quellCode)
+    val erwarteteAusgabe = """
+      1
+      2
+      3
+      4
+      5
+      
+    """.trimIndent()
+
+    testeGermanSkriptCode(quellCode, erwarteteAusgabe)
   }
-  */
 }
