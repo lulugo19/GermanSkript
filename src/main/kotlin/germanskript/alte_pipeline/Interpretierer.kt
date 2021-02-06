@@ -17,7 +17,8 @@ typealias WerfeFehler = (String, String, Token) -> Objekt
 class InterpretInjection(
     val aufrufStapel: Interpretierer.AufrufStapel,
     val schnittstellenAufruf: SchnittstellenAufruf,
-    val werfeFehler: WerfeFehler
+    val werfeFehler: WerfeFehler,
+    val startDatei: File
 ) {
   val umgebung: Umgebung<Objekt> get() = aufrufStapel.top().umgebung
 }
@@ -46,7 +47,7 @@ class Interpretierer(startDatei: File): PipelineKomponente(startDatei), IInterpr
     initKlassenDefinitionen()
     try {
       aufrufStapel.push(ast, Umgebung())
-      interpretInjection = InterpretInjection(aufrufStapel, ::durchlaufeInternenSchnittstellenAufruf, ::werfeFehler)
+      interpretInjection = InterpretInjection(aufrufStapel, ::durchlaufeInternenSchnittstellenAufruf, ::werfeFehler, startDatei)
       rückgabeWert = Nichts
       durchlaufeBereich(ast.programm, true)
       if (flags.contains(Flag.FEHLER_GEWORFEN)) {

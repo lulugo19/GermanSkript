@@ -14,15 +14,17 @@ class Datei(typ: Typ.Compound.Klasse): Objekt(typ) {
       injection: InterpretInjection): Objekt {
 
     return when (aufruf.vollerName!!) {
-      "erstelle die Datei" -> konstruktor()
+      "erstelle die Datei" -> konstruktor(injection)
       "lese die Zeilen" -> leseZeilen()
       "hole den Schreiber" -> holeSchreiber()
       else -> throw Exception("Die Methode '${aufruf.vollerName!!}' ist nicht definiert!")
     }
   }
 
-  private fun konstruktor(): Nichts {
-    file = File((eigenschaften.getValue("DateiName") as Zeichenfolge).zeichenfolge)
+  private fun konstruktor(injection: InterpretInjection): Nichts {
+    // Der Dateiname wird relativ zur Startdatei aufgelöst
+    file = injection.startDatei.parentFile
+        .resolve(File((eigenschaften.getValue("DateiName") as germanskript.intern.Zeichenfolge).zeichenfolge))
     return Nichts
   }
 

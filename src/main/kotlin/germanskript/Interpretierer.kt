@@ -113,7 +113,8 @@ class Interpretierer(startDatei: File): PipelineKomponente(startDatei), IInterpr
 
   class InterpretInjection(
       val aufrufStapel: AufrufStapel,
-      val werfeFehler: WerfeFehler
+      val werfeFehler: WerfeFehler,
+      val startDatei: File
   ) {
     val umgebung: Umgebung get() = aufrufStapel.stapel.peek()!!.umgebung
   }
@@ -122,7 +123,7 @@ class Interpretierer(startDatei: File): PipelineKomponente(startDatei), IInterpr
   override fun interpretiere() {
     val programm = codeGenerator.generiere()
     initKlassenDefinitionen()
-    interpretInjection = InterpretInjection(aufrufStapel, ::werfeFehler)
+    interpretInjection = InterpretInjection(aufrufStapel, ::werfeFehler, startDatei)
     try {
       interpretiereFunktionsAufruf(programm)
       if (flags.contains(Flag.FEHLER_GEWORFEN)) {

@@ -15,16 +15,19 @@ class Datei(): Objekt(BuildIn.IMMKlassen.datei, BuildIn.Klassen.datei) {
       injection: Interpretierer.InterpretInjection): Objekt {
 
     return when (aufruf.name) {
-      "erstelle Datei" -> konstruktor()
+      "erstelle Datei" -> konstruktor(injection)
       "lese die Zeilen" -> leseZeilen()
       "hole den Schreiber" -> holeSchreiber()
       else -> throw Exception("Die Methode '${aufruf.name}' ist nicht definiert!")
     }
   }
 
-  private fun konstruktor(): Nichts {
+  private fun konstruktor(injection: Interpretierer.InterpretInjection): Nichts {
     // TODO: handle hier mögliche Datei-Fehler
-    file = File((eigenschaften.getValue("DateiName") as Zeichenfolge).zeichenfolge)
+
+    // Der Dateiname wird relativ zur Startdatei aufgelöst
+    file = injection.startDatei.parentFile
+        .resolve(File((eigenschaften.getValue("DateiName") as Zeichenfolge).zeichenfolge))
     return Nichts
   }
 
