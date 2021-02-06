@@ -36,3 +36,9 @@ die Zahlen sind einige Zahlen[1,2,3]
 wenn die Zahlen einige Zahlen sind:
     schreibe die Zeile "Es sind Zahlen!"
 .
+
+Implementiere<
+    addierbares<Element, Element>, 
+    multiplizierbares<Element, Element> Element> die Liste<Element>:
+
+.

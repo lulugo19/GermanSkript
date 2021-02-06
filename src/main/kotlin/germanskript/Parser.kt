@@ -192,6 +192,7 @@ private sealed class SubParser<T: AST>() {
     val kleinerZeichen = peek()
     if (kleinerZeichen.wert == "<") {
       next()
+      überspringeLeereZeilen()
       liste = parseListeMitEnde<T, TokenTyp.KOMMA, TokenTyp.OPERATOR>(
           false
       ) {
@@ -225,12 +226,14 @@ private sealed class SubParser<T: AST>() {
         schnittstellen += adjektiv
         if (peekType() == TokenTyp.KOMMA) {
           next()
+          überspringeLeereZeilen()
         } else {
           break
         }
       }
     }
     val binder = parseNomenOhneVornomen(false)
+    überspringeLeereZeilen()
     val elternKlasse = if (peekType() is TokenTyp.ALS_KLEIN) {
       next()
       parseTypOhneArtikel(
