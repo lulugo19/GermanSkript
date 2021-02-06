@@ -75,6 +75,8 @@ sealed class AST {
       get() = vornomen == null || vornomen!!.typ ==
           TokenTyp.VORNOMEN.ARTIKEL.BESTIMMT || vornomen!!.typ == TokenTyp.VORNOMEN.DEMONSTRATIV_PRONOMEN.DIESE
 
+    abstract val teilwörterAnzahl: Int
+
     open fun hauptWort(kasus: Kasus, numerus: Numerus): String = deklination!!.holeForm(kasus, numerus)
     abstract fun ganzesWort(kasus: Kasus, numerus: Numerus, mitErweiterung: Boolean, maxAnzahlTeilWörter: Int = Int.MAX_VALUE): String
 
@@ -87,7 +89,7 @@ sealed class AST {
       override var numera: EnumSet<Numerus> = EnumSet.noneOf(Numerus::class.java)
       override var fälle: Array<EnumSet<Kasus>> = arrayOf(EnumSet.noneOf(Kasus::class.java), EnumSet.noneOf(Kasus::class.java))
 
-      val teilwörterAnzahl get() = bezeichner.typ.teilWörter.size
+      override val teilwörterAnzahl get() = bezeichner.typ.teilWörter.size
 
       private var _adjektiv: Adjektiv? = null
       var adjektiv: Adjektiv?
@@ -145,6 +147,8 @@ sealed class AST {
       override var fälle: Array<EnumSet<Kasus>> = arrayOf(EnumSet.noneOf(Kasus::class.java), EnumSet.noneOf(Kasus::class.java))
       override val bezeichnerToken = bezeichner.toUntyped()
       var normalisierung: String = ""
+
+      override val teilwörterAnzahl = 1
 
       override val hauptWort = bezeichner.wert.capitalize()
       override fun ganzesWort(kasus: Kasus, numerus: Numerus, mitErweiterung: Boolean, maxAnzahlTeilWörter: Int): String

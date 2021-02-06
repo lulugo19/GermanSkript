@@ -293,7 +293,8 @@ class Definierer(startDatei: File): PipelineKomponente(startDatei) {
       typTypParams: List<AST.Definition.TypParam>,
       typTypArgs: List<AST.TypKnoten>
   ): AST.WortArt.Nomen {
-    val ersetzeArgIndex = typTypArgs.indexOfFirst { arg -> arg.name.nominativ == argument.name.nominativ }
+    val ersetzeArgIndex = typTypArgs.indexOfFirst { arg -> arg.name.nominativ ==
+        argument.name.ganzesWort(arg.name.kasus, arg.name.numerus, false, arg.name.teilwörterAnzahl) }
     if (ersetzeArgIndex != -1) {
       return typTypParams[ersetzeArgIndex].binder
     }
