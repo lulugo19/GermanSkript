@@ -303,7 +303,7 @@ class CodeGenerator(startDatei: File): PipelineKomponente(startDatei) {
   private fun generiereListe(liste: AST.Satz.Ausdruck.Liste): IM_AST.Satz.Ausdruck {
     val sätze = mutableListOf<IM_AST.Satz>()
     val erstelleListe = IM_AST.Satz.Ausdruck.ObjektInstanziierung(
-        Typ.Compound.Klasse(BuildIn.Klassen.liste, listOf(liste.pluralTyp)),
+        liste.pluralTyp.typ as Typ.Compound.Klasse,
         klassen.getValue(BuildIn.Klassen.liste),
         IM_AST.Satz.Ausdruck.ObjektArt.Klasse
     )

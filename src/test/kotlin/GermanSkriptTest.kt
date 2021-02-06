@@ -2196,4 +2196,20 @@ class GermanSkriptTest {
       führeGermanSkriptCodeAus(quellCode)
     }
   }
+
+  @Test
+  @DisplayName("Typ-Überprüfung bei Listen")
+  fun typÜberprüfungListen() {
+    val quellCode = """
+      die Zahlen sind einige Zahlen [1, 2, 3, 4]
+      
+      wenn die Zahlen eine Liste<Zahl> ist:
+        schreibe die Zeile "Es ist eine Liste!"
+      .
+    """.trimIndent()
+
+    val erwarteteAusgabe = "Es ist eine Liste!\n"
+
+    testeGermanSkriptCode(quellCode, erwarteteAusgabe)
+  }
 }

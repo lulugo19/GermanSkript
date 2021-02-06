@@ -440,7 +440,7 @@ class Interpretierer(startDatei: File): PipelineKomponente(startDatei), IInterpr
 
   private fun evaluiereListe(ausdruck: AST.Satz.Ausdruck.Liste): Objekt {
     return Liste(
-        Typ.Compound.Klasse(BuildIn.Klassen.liste, listOf(ausdruck.pluralTyp)),
+        ausdruck.pluralTyp.typ as Typ.Compound.Klasse,
         ausdruck.elemente.map(::evaluiereAusdruck).toMutableList()
     )
   }
