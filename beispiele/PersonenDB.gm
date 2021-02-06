@@ -18,7 +18,7 @@ Nomen Person mit
     der Adresse:.
 
 Implementiere die Person:
-    Eigenschaft(Zeichenfolge) Name:
+    Eigenschaft(Zeichenfolge) der Name:
         gebe "#{mein VorName} #{mein NachName}" zurück
     .
 

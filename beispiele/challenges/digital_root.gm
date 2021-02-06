@@ -21,7 +21,5 @@ Verb berechne (die Zahl digitaleWurzel) von der Zahl:
   gebe berechne die digitaleWurzel von der Zahl ZiffernSumme zurück
 .
 
-schreibe die Zahl "Hallo" als Zahl
-
 schreibe die Zahl (berechne die digitaleWurzel von der Zahl 16)  // 7
 schreibe die Zahl (berechne die digitaleWurzel von der Zahl 456) // 6

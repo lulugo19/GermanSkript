@@ -1,9 +1,0 @@
-importiere "./Nützlich.gm"
-
-Verb(Zahl) ggt von der ZahlA, der ZahlB:
-    wenn die ZahlB = 0 ist: gebe die ZahlA zurück.
-
-    gebe (ggt von der ZahlB, der ZahlA mod die ZahlB) zurück
-.
-
-schreibe die Zahl (ggt von der Zahl 120, der Zahl 76)

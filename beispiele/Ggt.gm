@@ -1,0 +1,12 @@
+importiere "./Nützliches.gm"
+
+Verb(Zahl) ggt von der ZahlA, der ZahlB:
+    wenn die ZahlB = 0 ist: gebe die ZahlA zurück.
+
+    gebe (ggt von der ZahlB, der ZahlA mod die ZahlB) zurück
+.
+
+schreibe die Zeile "Berechnung des größten gemeinsamen Teilers:"
+die ZahlA ist zahlen_eingabe mit dem Prompt "Gebe die erste Zahl ein: "
+die ZahlB ist zahlen_eingabe mit dem Prompt "Gebe die zweite Zahl ein: "
+schreibe die Zeile "Der GGT von #{die ZahlA} und #{die ZahlB} ist #{ggt von der ZahlA , der ZahlB}."

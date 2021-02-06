@@ -1,6 +1,21 @@
 Deklination Maskulinum Singular(Bereich, Bereichs, Bereich, Bereich) Plural(Bereiche)
+Deklination Maskulinum Singular(Prompt, Prompts, Prompt, Prompt) Plural(Prompts)
 
 Verb schreibe die Zeichenfolge Bereich:
     schreibe die Zeile ""
     schreibe die Zeile "----------------- " + den Bereich + " -----------------"
+.
+
+// lässt den Benutzer solange eine Zahl eingeben, bis er eine gültige Zahl eingegeben hat und gibt diese zurück
+Verb(Zahl) zahlen_eingabe mit der Zeichenfolge Prompt:
+    solange wahr:
+        schreibe die Zeichenfolge Prompt
+        versuche:
+            gebe (lese als Zahl) zurück
+        .
+        fange den KonvertierungsFehler:
+            schreibe die Zeile (die FehlerMeldung des KonvertierungsFehlers)
+        .
+    .
+    gebe 0 zurück
 .

@@ -6,7 +6,7 @@ solange die Zahl <= 100 ist:
     eine Ausgabe ist ""
     
     wenn die Zahl mod 3 gleich 0 ist: eine Ausgabe ist die Ausgabe + "Fizz".
-    wenn die Zahl mod 5 gleich 0:eine Ausgabe ist die Ausgabe + "Buzz".
+    wenn die Zahl mod 5 gleich 0: eine Ausgabe ist die Ausgabe + "Buzz".
 
     // leere Zeichenfolge als Boolean ist 'falsch'
     wenn die Ausgabe als Boolean: schreibe die Zeile Ausgabe.

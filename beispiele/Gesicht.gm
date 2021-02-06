@@ -1,0 +1,27 @@
+Deklination Neutrum Singular(Gesicht, Gesichts, Gesicht, Gesicht) Plural(Gesichter, Gesichter, Gesichtern, Gesichter)
+Deklination Neutrum Singular(Auge, Auges, Auge, Auge) Plural(Augen)
+Deklination Femininum Singular(Nase) Plural(Nasen)
+Deklination Maskulinum Singular(Mund, Munds, Mund, Mund) Plural(Münder, Münder, Mündern, Münder)
+Deklination Neutrum Singular(Haar, Haares, Haar, Haar) Plural(Haare, Haare, Haaren, Haare)
+
+Nomen Gesicht mit
+  der Zeichenfolge Haar,
+  der Zeichenfolge Auge,
+  der Zeichenfolge Nase,
+  der Zeichenfolge Mund:.
+
+
+Implementiere das Gesicht:
+  Verb zeichne mich:
+    schreibe die Zeile "#{mein Haar}#{mein Haar}#{mein Haar}"
+    schreibe die Zeile "#{mein Auge} #{mein Auge}"
+    schreibe die Zeile " #{meine Nase} "
+    schreibe die Zeile " #{mein Mund} "
+  .
+.
+
+zeichne ein Gesicht mit
+  dem Haar "|",
+  dem Auge "o",
+  der Nase "L",
+  dem Mund "-"

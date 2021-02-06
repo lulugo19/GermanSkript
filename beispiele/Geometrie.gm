@@ -28,7 +28,7 @@ Implementiere den geometrischen Kreis:
         gebe PI * meinen Radius ^ 2 zurück
     .
 
-    Eigenschaft(Zahl) Durchmesser:
+    Eigenschaft(Zahl) der Durchmesser:
         gebe 2 * meinen Radius zurück
     .
 

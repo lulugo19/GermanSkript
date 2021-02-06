@@ -1,0 +1,38 @@
+Verb<Typ> schreibe den Typ:
+    schreibe die Zeile (der Typ als Zeichenfolge)
+.
+
+schreibe den Typ 5
+schreibe den Typ "Hallo Welt"
+schreibe den Typ wahr
+
+importiere "./Geometrie.gm"
+
+Verb<Typ> überprüfe den Typ:
+    wenn der Typ eine Zeichenfolge ist:
+        schreibe die Zeile "Der Typ ist eine Zeichenfolge!"
+    .
+    sonst wenn der Typ eine Zahl ist:
+        schreibe die Zeile "Der Typ ist eine Zahl!"
+    .
+    sonst wenn der Typ ein Boolean ist:
+        schreibe die Zeile "Der Typ ist ein Boolean!"
+    .
+    
+    // es können auch Adjektive überprüft werden
+    wenn der Typ geometrisch ist:
+        schreibe die Zeile "Der Typ ist geometrisch!"
+    .
+.
+
+
+überprüfe den Typ "Hallo Welt" // Der Typ ist eine Zeichenfolge!
+überprüfe den Typ 4 // Der Typ ist eine Zahl!
+überprüfe den Typ wahr // Der Typ ist ein Boolean!
+überprüfe den Typ (ein Kreis mit dem Radius 4) // Der Typ ist geometrisch!
+
+
+die Zahlen sind einige Zahlen[1,2,3]
+wenn die Zahlen einige Zahlen sind:
+    schreibe die Zeile "Es sind Zahlen!"
+.

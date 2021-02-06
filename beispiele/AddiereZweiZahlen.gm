@@ -1,6 +1,8 @@
 Deklination Femininum Singular(Summe) Plural(Summen)
 
+schreibe die Zeichenfolge "Gebe die erste Zahl ein: "
 die ZahlA ist lese als Zahl
+schreibe die Zeichenfolge "Gebe die zweite Zahl ein: "
 die ZahlB ist lese als Zahl
 die Summe ist die ZahlA plus die ZahlB
-schreibe die Zeile Summe als Zeichenfolge
+schreibe die Zeile "#{die ZahlA} + #{die ZahlB} = #{die Summe}"

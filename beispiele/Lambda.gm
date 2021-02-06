@@ -1,0 +1,30 @@
+Adjektiv funktional:
+  Verb(Zahl) funktion von der Zahl X
+.
+
+
+Verb wiederhole mit der Zahl X, der AnZahl von dem Funktionalen:
+  wenn die AnZahl kleiner gleich 0 ist: zurück.
+
+  das Y ist Funktionales: funktion von dem X!
+
+  schreibe die Zeile "f(#{das X}) = #{das Y}"
+
+  wiederhole
+    mit dem X Y,
+    der AnZahl - 1
+    von dem Funktionalen
+.
+
+wiederhole mit dem X 2, der AnZahl 3
+  von etwas Funktionalem: das X ^ 2.
+
+Adjektiv binär:
+  Verb(Zahl) evaluiere die Zahl A mit der Zahl B
+.
+
+das Binäre1 ist etwas Binäres: das A + das B.
+
+das Binäre2 ist etwas Binäres(ZahlA): die ZahlA + das B.
+
+das Binäre3 ist etwas Binäres(X): das X + das B.

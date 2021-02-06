@@ -23,7 +23,6 @@ class Datei(): Objekt(BuildIn.IMMKlassen.datei, BuildIn.Klassen.datei) {
   }
 
   private fun konstruktor(): Nichts {
-    System.err.println(eigenschaften)
     // TODO: handle hier mögliche Datei-Fehler
     file = File((eigenschaften.getValue("DateiName") as Zeichenfolge).zeichenfolge)
     return Nichts
