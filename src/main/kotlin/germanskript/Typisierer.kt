@@ -140,13 +140,15 @@ class Typisierer(startDatei: File): PipelineKomponente(startDatei) {
   fun bestimmeTyp(
       nomen: AST.WortArt.Nomen,
       funktionsTypParams: List<AST.Definition.TypParam>?,
-      klassenTypParameter: List<AST.Definition.TypParam>?
+      klassenTypParameter: List<AST.Definition.TypParam>?,
+      istAliasErlaubt: Boolean = true,
+      erlaubeLeereTypArgumente: Boolean = false
   ): Typ {
     val typKnoten = AST.TypKnoten(emptyList(), nomen, emptyList())
     // setze den Parent hier manuell vom Nomen
     typKnoten.setParentNode(nomen.parent!!)
     return bestimmeTyp(typKnoten, funktionsTypParams, klassenTypParameter,
-        istAliasErlaubt = true, erlaubeLeereTypArgumente = false)!!
+        istAliasErlaubt, erlaubeLeereTypArgumente)!!
   }
 
   private fun holeTypDefinition(
@@ -220,6 +222,9 @@ class Typisierer(startDatei: File): PipelineKomponente(startDatei) {
   ): Typ? {
     if (typKnoten == null) {
       return null
+    }
+    if (typKnoten.typ != null) {
+      return typKnoten.typ
     }
     typKnoten.typArgumente.forEach {typKnoten -> bestimmeTyp(typKnoten, funktionsTypParameter, klassenTypParameter, true, erlaubeLeereTypArgumente)}
     val singularTyp = holeTypDefinition(typKnoten, funktionsTypParameter, klassenTypParameter, istAliasErlaubt, erlaubeLeereTypArgumente)

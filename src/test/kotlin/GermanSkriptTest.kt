@@ -2212,4 +2212,60 @@ class GermanSkriptTest {
 
     testeGermanSkriptCode(quellCode, erwarteteAusgabe)
   }
+
+  /*
+  @Test
+  @DisplayName("Binärbaum Implementierung")
+  fun binärbaum() {
+    val quellCode = """
+      Deklination Maskulinum Singular(Baum, Baums, Baum, Baum) Plural(Bäume)
+      Deklination Maskulinum Singular(Knoten, Knotens, Knoten, Knoten) Plural(Knoten)
+      Deklination Neutrum Singular (Blatt, Blatts, Blatt, Blatt) Plural(Blätter)
+      Deklination Maskulinum Singular (Wert, Werts, Wert, Wert) Plural(Werte)
+      Deklination Maskulinum Singular(Ast, Asts, Ast, Ast) Plural(Äste, Äste, Ästen, Äste)
+
+      // Das ist die Top Datenstruktur welche den Wurzelknoten verwaltet
+      Nomen<vergleichbarer<Wert> Wert> BinärBaum:
+        // Der Baum ist am Anfang nur ein Blatt
+        jener WurzelKnoten ist ein Blatt<Wert>
+      .
+
+      Implementiere<vergleichbarer<Wert> Wert> den BinärBaum<Wert>:
+        
+        Verb füge den Wert hinzu:
+          wenn mein WurzelKnoten ein Blatt<Wert> ist:
+            mein WurzelKnoten ist ein Ast mit dem Wert
+          .
+          sonst:
+            mein WurzelKnoten: füge den Wert hinzu!
+          .
+        .
+      .
+
+      // Das ist die Elternklasse der zwei Knotenarten: Ast und Blatt
+      Nomen<Wert> Knoten:.
+
+      Implementiere<vergleichbarer<Wert> Wert> den Knoten<Wert>:
+
+        Verb füge den Wert hinzu:
+          // überschreibe diese Methode in den Kindklassen
+        .
+      .
+
+      Nomen<Wert> Ast mit dem Wert
+        als Knoten<Wert>:
+          jener linkeKnoten ist ein Blatt<Wert>
+          jener rechteKnoten ist ein Blatt<Wert>
+        .
+
+      Implementiere<vergleichbarer<Wert> Wert> den Ast<Wert>:
+
+      .
+
+      Nomen<Wert> Blatt als Knoten<Wert>:.
+    """.trimIndent()
+
+    führeGermanSkriptCodeAus(quellCode)
+  }
+  */
 }

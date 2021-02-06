@@ -150,31 +150,16 @@ class TypPrüfer(startDatei: File): PipelineKomponente(startDatei) {
   /**
    * inferiert Typargumente basierend auf den erwarteten Typen
    */
-  private fun inferiereTypArgumente(typ: Typ.Compound, token: Token) {
+  private fun inferiereTypArgumente(typ: Typ.Compound) {
     if (erwarteterTyp is Typ.Compound && typ.definition === (erwarteterTyp as Typ.Compound).definition) {
       if (typ.typArgumente.isEmpty()) {
         typ.typArgumente = (erwarteterTyp as Typ.Compound).typArgumente.map { arg ->
-          when (val argTyp = arg.typ) {
-            is Typ.Generic -> when (argTyp.kontext) {
-              TypParamKontext.Klasse -> {
-                if (methodenObjekt == null || methodenObjekt!!.typArgumente.size <= argTyp.index) {
-                  throw GermanSkriptFehler.TypFehler.TypArgumentInferierFehler(token)
-                }
-                methodenObjekt!!.typArgumente[argTyp.index]
-              }
-              TypParamKontext.Funktion -> {
-                if (letzterFunktionsAufruf == null || letzterFunktionsAufruf!!.typArgumente.size <= argTyp.index) {
-                  throw GermanSkriptFehler.TypFehler.TypArgumentInferierFehler(token)
-                }
-                letzterFunktionsAufruf!!.typArgumente[argTyp.index]
-              }
-            }
-            else -> arg
-          }
+          ersetzeGenerics(arg, letzterFunktionsAufruf?.typArgumente, methodenObjekt?.typArgumente)
         }
       } else {
-        typ.typArgumente.forEach {arg ->
-          typisierer.bestimmeTyp(arg, funktionsTypParams, klassenTypParams, true, false)}
+        typ.typArgumente.forEach { arg ->
+          typisierer.bestimmeTyp(arg, funktionsTypParams, klassenTypParams, true, false)
+        }
       }
     }
   }
@@ -638,11 +623,13 @@ class TypPrüfer(startDatei: File): PipelineKomponente(startDatei) {
       fehler
     }
 
-    // ist Methoden-Objekt-Aufruf als letzte Möglichkeit
+    // ist Methoden-Reflexiv-Aufruf als letzte Möglichkeit
     // das bedeutet Funktionsnamen gehen vor Methoden-Objekt-Aufrufen
     if (funktionsSignatur == null && funktionsAufruf.objekt != null) {
       val objektTyp = try {
-        typisierer.bestimmeTyp(funktionsAufruf.objekt.name, funktionsTypParams, klassenTypParams)
+        typisierer.bestimmeTyp(
+            funktionsAufruf.objekt.name, funktionsTypParams, klassenTypParams, erlaubeLeereTypArgumente = true
+        )
       }
       catch (fehler: GermanSkriptFehler.Undefiniert.Typ) {
         null
@@ -658,7 +645,12 @@ class TypPrüfer(startDatei: File): PipelineKomponente(startDatei) {
         )
         funktionsSignatur = fund?.first
         methodenObjekt = fund?.second
-        evaluiereAusdruck(funktionsAufruf.objekt.ausdruck)
+
+        // evaluiere den Objekttypen
+        val objektTyp = evaluiereAusdruck(funktionsAufruf.objekt.ausdruck)
+        if (objektTyp is Typ.Compound) {
+          methodenObjekt = objektTyp
+        }
       }
     }
 
@@ -709,6 +701,14 @@ class TypPrüfer(startDatei: File): PipelineKomponente(startDatei) {
     val inferierteGenerics: MutableList<AST.TypKnoten?> = MutableList(funktionsSignatur.typParameter.size) {null}
 
     if (!genericsMüssenInferiertWerden) {
+      if (funktionsAufruf.typArgumente.size != funktionsSignatur.typParameter.size) {
+        throw GermanSkriptFehler.TypFehler.TypArgumentFehler(
+            funktionsAufruf.token,
+            funktionsAufruf.typArgumente.size,
+            funktionsSignatur.typParameter.size
+        )
+      }
+
       funktionsAufruf.typArgumente.forEach { arg ->
         typisierer.bestimmeTyp(arg, funktionsTypParams, klassenTypParams,
             istAliasErlaubt = true, erlaubeLeereTypArgumente = false)
@@ -736,7 +736,13 @@ class TypPrüfer(startDatei: File): PipelineKomponente(startDatei) {
       }
     }
     if (genericsMüssenInferiertWerden) {
-      funktionsAufruf.typArgumente = inferierteGenerics.map { it!! }
+      funktionsAufruf.typArgumente = inferierteGenerics.map {
+        it ?: throw GermanSkriptFehler.TypFehler.TypArgumentFehler(
+            funktionsAufruf.token,
+            funktionsAufruf.typArgumente.size,
+            funktionsSignatur.typParameter.size
+        )
+      }
     }
 
     val rückgabeTyp = ersetzeGenerics(funktionsSignatur.rückgabeTyp, funktionsAufruf.typArgumente, typKontext)
@@ -1050,12 +1056,20 @@ class TypPrüfer(startDatei: File): PipelineKomponente(startDatei) {
     if (klasse !is Typ.Compound.Klasse) {
       TODO("Werfe Fehler")
     }
-    inferiereTypArgumente(klasse, instanziierung.klasse.name.bezeichnerToken)
+    inferiereTypArgumente(klasse)
 
     val definition = klasse.definition
 
     val genericsMüssenInferiertWerden = definition.typParameter.isNotEmpty()
         && klasse.typArgumente.isEmpty()
+
+    if (!genericsMüssenInferiertWerden && definition.typParameter.size != klasse.typArgumente.size) {
+      throw GermanSkriptFehler.TypFehler.TypArgumentFehler(
+          instanziierung.klasse.name.bezeichnerToken,
+          klasse.typArgumente.size,
+          definition.typParameter.size
+      )
+    }
 
     val inferierteGenerics: MutableList<AST.TypKnoten?> = MutableList(definition.typParameter.size) {null}
 
@@ -1064,7 +1078,15 @@ class TypPrüfer(startDatei: File): PipelineKomponente(startDatei) {
     for (i in definition.eigenschaften.indices) {
       val eigenschaft = definition.eigenschaften[i]
       // Wenn es es sich um eine generische Eigenschaft handelt, verwende den Namen des Typarguments
-      val eigenschaftsName = holeParamName(eigenschaft, instanziierung.klasse.typArgumente)
+      val eigenschaftsName = try {
+        holeParamName(eigenschaft, instanziierung.klasse.typArgumente)
+      } catch (e: IndexOutOfBoundsException) {
+        throw GermanSkriptFehler.TypFehler.TypArgumentFehler(
+            instanziierung.klasse.name.bezeichnerToken,
+            klasse.typArgumente.size,
+            definition.typParameter.size
+        )
+      }
       instanziierung.eigenschaftsNamen.add(eigenschaftsName)
 
       if (eigenschaft.istZusätzlicheEigenschaft) {
@@ -1117,7 +1139,13 @@ class TypPrüfer(startDatei: File): PipelineKomponente(startDatei) {
     }
 
     if (genericsMüssenInferiertWerden) {
-      klasse.typArgumente = inferierteGenerics.map { it!! }
+      klasse.typArgumente = inferierteGenerics.map {
+        it ?: throw GermanSkriptFehler.TypFehler.TypArgumentFehler(
+            instanziierung.klasse.name.bezeichnerToken,
+            klasse.typArgumente.size,
+            definition.typParameter.size
+        )
+      }
     }
 
     if (instanziierung.eigenschaftsZuweisungen.size > definition.eigenschaften.size-j) {
@@ -1259,7 +1287,7 @@ class TypPrüfer(startDatei: File): PipelineKomponente(startDatei) {
 
   private fun evaluiereKonvertierung(konvertierung: AST.Satz.Ausdruck.Konvertierung): Typ{
     val ausdruck = evaluiereAusdruck(konvertierung.ausdruck)
-    val konvertierungsTyp = typisierer.bestimmeTyp(konvertierung.typ, null, null,
+    val konvertierungsTyp = typisierer.bestimmeTyp(konvertierung.typ, funktionsTypParams, klassenTypParams,
         istAliasErlaubt = true, erlaubeLeereTypArgumente = false)!!
 
     if (!kannNachTypKonvertiertWerden(konvertierung, ausdruck, konvertierungsTyp)) {
@@ -1305,7 +1333,7 @@ class TypPrüfer(startDatei: File): PipelineKomponente(startDatei) {
     if (schnittstelle !is Typ.Compound.Schnittstelle) {
       throw GermanSkriptFehler.SchnittstelleErwartet(lambda.schnittstelle.name.bezeichnerToken)
     }
-    inferiereTypArgumente(schnittstelle, lambda.schnittstelle.name.bezeichnerToken)
+    inferiereTypArgumente(schnittstelle)
     if (schnittstelle.definition.methodenSignaturen.size != 1) {
       throw GermanSkriptFehler.LambdaFehler.UngültigeLambdaSchnittstelle(lambda.schnittstelle.name.bezeichnerToken, schnittstelle.definition)
     }
@@ -1378,7 +1406,7 @@ class TypPrüfer(startDatei: File): PipelineKomponente(startDatei) {
       throw GermanSkriptFehler.SchnittstelleErwartet(anonymeKlasse.schnittstelle.name.bezeichnerToken)
     }
 
-    inferiereTypArgumente(schnittstelle, anonymeKlasse.schnittstelle.name.bezeichnerToken)
+    inferiereTypArgumente(schnittstelle)
 
     val klassenDefinition = AST.Definition.Typdefinition.Klasse(
         emptyList(), anonymeKlasse.schnittstelle.name as AST.WortArt.Nomen,
