@@ -1,6 +1,7 @@
 package germanskript
 
 import germanskript.util.Peekable
+import kotlinx.coroutines.yield
 import java.io.File
 import java.lang.Integer.max
 import java.math.RoundingMode
@@ -449,12 +450,12 @@ class Lexer(startDatei: File): PipelineKomponente(startDatei) {
     private val bearbeiteteDateien = mutableSetOf<String>()
 
     fun tokeniziere(): Sequence<Token> = sequence {
-        importiereStandardBibliothek()
         yield(Token(
             TokenTyp.HAUPT_PROGRAMM_START,
             "Programmstart", startDatei.absolutePath,
             Token.Position(0, 0)
         ))
+        yieldAll(importiereStandardBibliothek())
         yieldAll(tokeniziereDatei(startDatei))
         yield(Token(
             TokenTyp.HAUPT_PROGRAMM_ENDE,
@@ -481,8 +482,10 @@ class Lexer(startDatei: File): PipelineKomponente(startDatei) {
         }
     }
 
-    private fun importiereStandardBibliothek() {
-        dateiSchlange.addAll(File(STANDARD_BIB_PATH).walkBottomUp().filter { it.isFile })
+    private fun importiereStandardBibliothek() = sequence {
+        for (file in File(STANDARD_BIB_PATH).walkBottomUp().filter { it.isFile }) {
+            yieldAll(tokeniziereDatei(file))
+        }
     }
 
     private fun tokeniziereDatei(datei: File) : Sequence<Token> = sequence {
