@@ -2327,4 +2327,33 @@ class GermanSkriptTest {
 
     testeGermanSkriptCode(quellCode, erwarteteAusgabe)
   }
+
+  @DisplayName("Liste: generische Ersetzung")
+  @Test
+  fun listeGenerischeErsetzung() {
+    val quellCode = """
+      die StringListe ist eine Liste<Zeichenfolge>
+      StringListe:
+          füge die Zeichenfolge "Hallo" hinzu
+          
+          die ZeichenfolgeGS ist "GermanSkript"
+          füge die ZeichenfolgeGS hinzu
+          
+          füge das Element "!" hinzu
+      !
+      
+      für jede Zeile in der StringListe:
+        schreibe die Zeile
+      .
+    """.trimIndent()
+
+    val erwarteteAusgabe = """
+      Hallo
+      GermanSkript
+      !
+      
+    """.trimIndent()
+
+    testeGermanSkriptCode(quellCode, erwarteteAusgabe)
+  }
 }
