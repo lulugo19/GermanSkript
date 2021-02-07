@@ -160,7 +160,11 @@ Modul Standard::Collections:
 
     Implementiere<Element> die Liste<Addierbar<Element, Element>>:
         Verb(Element) summiere uns:
-            gebe (reduziere uns mit etwas Reduzierendem: der Akkumulator plus das Addierbare.) zurück
+            gebe
+                reduziere uns mit etwas Reduzierendem:
+                    der Akkumulator plus das Addierbare
+                .
+            zurück
         .
 
         Eigenschaft(Element) die Summe:

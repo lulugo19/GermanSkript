@@ -11,7 +11,7 @@ Adjektiv<Wert> konsumierend:
 
 // Das ist die Top Datenstruktur welche den Wurzelknoten verwaltet
 Nomen<vergleichbarer<Wert> Wert> BinärBaum:
-  // Der Baum ist am Anfang nur ein Blatt
+  // Der Baum ist am Anfang nur ein Blate
   jener WurzelKnoten ist ein Blatt<Wert> als Knoten<Wert>
 .
 
