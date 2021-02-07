@@ -77,6 +77,14 @@ class TypPrüfer(startDatei: File): PipelineKomponente(startDatei) {
     }
   }
 
+  private fun prüfeGenericConstraints(typ: AST.TypKnoten, typParam: AST.Definition.TypParam) {
+    typParam.schnittstellen.forEach { typMussTypSein(typ.typ!!, it.typ!!, typ.name.bezeichnerToken) }
+    if (typParam.elternKlasse != null) {
+      typMussTypSein(typ.typ!!, typParam.elternKlasse.typ!!, typ.name.bezeichnerToken)
+    }
+  }
+
+
   fun typIstTyp(typ: Typ, sollTyp: Typ): Boolean {
     if (typ is Typ.Generic && sollTyp is Typ.Generic) {
       return typ == sollTyp
@@ -111,12 +119,8 @@ class TypPrüfer(startDatei: File): PipelineKomponente(startDatei) {
     }
 
     if (sollTyp is Typ.Generic) {
-      val schnittstellenKorrekt = sollTyp.typParam.schnittstellen.all { typIstTyp(typ, it.typ!!) }
-      return if (sollTyp.typParam.elternKlasse != null) {
-        typIstTyp(typ, sollTyp.typParam.elternKlasse.typ!!) && schnittstellenKorrekt
-      } else {
-        schnittstellenKorrekt
-      }
+      return sollTyp.typParam.schnittstellen.all { typIstTyp(typ, it.typ!!) } &&
+          (sollTyp.typParam.elternKlasse == null || typIstTyp(typ, sollTyp.typParam.elternKlasse.typ!!))
     }
 
     return when (sollTyp) {
@@ -485,8 +489,18 @@ class TypPrüfer(startDatei: File): PipelineKomponente(startDatei) {
       klassenTypArgumente: List<AST.TypKnoten>?): AST.TypKnoten {
     return when (val typ = typKnoten.typ!!) {
       is Typ.Generic -> when (typ.kontext) {
-        TypParamKontext.Funktion -> funktionsTypArgumente!![typ.index]
-        TypParamKontext.Klasse -> klassenTypArgumente!![typ.index]
+        TypParamKontext.Funktion -> {
+          // vor dem Einsetzen des Typarguments muss überprüft werden, ob der eingesetze Typ
+          // den Generic-Constraints entspricht
+          prüfeGenericConstraints(funktionsTypArgumente!![typ.index], typ.typParam)
+          funktionsTypArgumente[typ.index]
+        }
+        TypParamKontext.Klasse -> {
+          // vor dem Einsetzen des Typarguments muss überprüft werden, ob der eingesetze Typ
+          // den Generic-Constraints entspricht
+          prüfeGenericConstraints(klassenTypArgumente!![typ.index], typ.typParam)
+          klassenTypArgumente[typ.index]
+        }
       }
       is Typ.Compound -> {
         typKnoten.copy(typArgumente = typ.typArgumente.map {
@@ -678,7 +692,11 @@ class TypPrüfer(startDatei: File): PipelineKomponente(startDatei) {
       val implementierung = funktionsSignatur.findNodeInParents<AST.Definition.Implementierung>()
       // anonyme Klassen und Lambdas haben kein Implementierungsblock und dort muss nicht überprüft werden
       if (implementierung != null) {
-        val klasse = ersetzeGenerics(implementierung.klasse, funktionsAufruf.typArgumente, methodenObjekt!!.typArgumente)
+        val klasse = try{
+          ersetzeGenerics(implementierung.klasse, funktionsAufruf.typArgumente, methodenObjekt!!.typArgumente)
+        } catch (falscherTyp: GermanSkriptFehler.TypFehler.FalscherTyp) {
+          throw GermanSkriptFehler.Undefiniert.Methode(funktionsAufruf.token, funktionsAufruf, methodenObjekt!!.name)
+        }
         for (paramIndex in implementierung.klasse.typArgumente.indices) {
           if (!typIstTyp(methodenObjekt!!.typArgumente[paramIndex].typ!!, klasse.typArgumente[paramIndex].typ!!)) {
             throw GermanSkriptFehler.Undefiniert.Methode(funktionsAufruf.token, funktionsAufruf, methodenObjekt!!.name)
@@ -1152,6 +1170,12 @@ class TypPrüfer(startDatei: File): PipelineKomponente(startDatei) {
       throw GermanSkriptFehler.EigenschaftsFehler.UnerwarteteEigenschaft(
           instanziierung.eigenschaftsZuweisungen[definition.eigenschaften.size].name.bezeichner.toUntyped())
     }
+
+    // prüfe die Type-Costraints
+    for (index in definition.typParameter.indices) {
+      prüfeGenericConstraints(klasse.typArgumente[index], definition.typParameter[index])
+    }
+
     return klasse
   }
 

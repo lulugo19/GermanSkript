@@ -2328,8 +2328,8 @@ class GermanSkriptTest {
     testeGermanSkriptCode(quellCode, erwarteteAusgabe)
   }
 
-  @DisplayName("Liste: generische Ersetzung")
   @Test
+  @DisplayName("Liste: generische Ersetzung")
   fun listeGenerischeErsetzung() {
     val quellCode = """
       die StringListe ist eine Liste<Zeichenfolge>
@@ -2351,6 +2351,47 @@ class GermanSkriptTest {
       Hallo
       GermanSkript
       !
+      
+    """.trimIndent()
+
+    testeGermanSkriptCode(quellCode, erwarteteAusgabe)
+  }
+
+  @Test
+  @DisplayName("Personen sortieren")
+  fun personenSortieren() {
+    val quellCode = """
+      Deklination Maskulinum Singular(Name, Namens, Namen, Namen) Plural(Namen)
+      Deklination Femininum Singular(Person) Plural(Personen)
+      Deklination Neutrum Singular(Alter, Alters, Alter, Alter) Plural(Alter)
+      
+      Nomen Person mit
+        der Zeichenfolge Name,
+        der Zahl Alter:.
+        
+
+      die Personen sind einige Personen[
+        (eine Person mit dem Namen "John", dem Alter 43),
+        (eine Person mit dem Namen "Julia", dem Alter 23),
+        (eine Person mit dem Namen "Wilhelm", dem Alter 87),
+        (eine Person mit dem Namen "Luisa", dem Alter 12),
+        (eine Person mit dem Namen "Robin", dem Alter 17)
+      ]
+      
+      die sortiertenPersonen sind sortiere die Personen 
+        mit etwas Vergleichendem: das Alter der PersonA - das Alter der PersonB.
+      
+      für jede sortiertePerson:
+        schreibe die Zeile (der Name der sortiertenPerson)
+      .
+    """.trimIndent()
+
+    val erwarteteAusgabe = """
+      Luisa
+      Robin
+      Julia
+      John
+      Wilhelm
       
     """.trimIndent()
 
