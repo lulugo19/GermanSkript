@@ -74,3 +74,45 @@ die PersonJ ist (eine Person mit dem Namen "John", dem Alter 22):
   werde älter
   werde älter
 !
+
+Implementiere die Liste<Zahl>:
+    
+    Verb(Zahl) summiere:
+        eine Summe ist 0
+        für jede Zahl in Ich:
+            eine Summe ist die Summe + die Zahl
+        .
+        gebe die Summe zurück
+    .
+.
+
+die ZahlenListe ist eine Liste<Zahl>
+
+ZahlenListe:
+    füge die Zahl 3 hinzu
+    
+    die achteZahl ist 8
+    füge die achteZahl hinzu
+    
+    // Wir können jedoch auch noch den Parameternamen
+    // Element verwenden
+    füge das Element 12 hinzu
+!
+
+für jede Zahl in der ZahlenListe:
+  schreibe die Zahl
+.
+
+schreibe die Zeile "Summe: #{ZahlenListe: summiere!}"
+
+die StringListe ist eine Liste<Zeichenfolge>
+StringListe:
+    füge die Zeichenfolge "Hallo" hinzu
+    
+    die ZeichenfolgeGS ist "GermanSkript"
+    füge die ZeichenfolgeGS hinzu
+    
+    füge das Element "!" hinzu
+!
+
+schreibe die Zeile (die Summe der StringListe)

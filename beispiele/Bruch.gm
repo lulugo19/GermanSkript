@@ -1,67 +1,105 @@
+// Deklinationen
 Deklination Maskulinum Singular(Bruch, Bruchs, Bruch, Bruch) Plural(Brüche, Brüche, Brüchen, Brüche)
 Deklination Maskulinum Singular(Zähler, Zählers, Zähler, Zähler) Plural(Zähler)
 Deklination Maskulinum Singular(Nenner, Nenners, Nenner, Nenner) Plural(Nenner)
 Deklination Maskulinum Singular(Teiler, Teilers, Teiler, Teiler) Plural(Teiler, Teiler, Teilern, Teiler)
-Deklination Neutrum Singular(Vielfache, Vielfachen, Vielfachen, Vielfache) Plural(Vielfachen)
 
+// Hilfsfunktionen
 Verb(Zahl) ggt von der ZahlA, der ZahlB:
-  wenn die ZahlA gleich der ZahlB ist oder die ZahlB gleich 0 ist: gebe die ZahlA zurück.
-  sonst: gebe (ggt von der ZahlB, der ZahlA mod die ZahlB) zurück.
+    wenn die ZahlB gleich 0 ist: gebe die ZahlA zurück.
+
+    gebe (ggt von der ZahlB, der ZahlA mod die ZahlB) zurück
 .
 
 Verb(Zahl) kgv von der ZahlA, der ZahlB:
   gebe (die ZahlA * die ZahlB) / (ggt von der ZahlA, der ZahlB) zurück
 .
 
-Nomen Bruch mit 
-  einer Zahl Zähler,
-  einer Zahl Nenner:.
+// Klasse Bruch
+Nomen Bruch mit
+  der Zahl Zähler,
+  der Zahl Nenner:.
+
 
 Implementiere den Bruch:
+  
   Verb(Bruch) kürze mich:
-    der Teiler ist ggt von der Zahl mein Nenner, der Zahl mein Zähler
-    mein Zähler ist mein Zähler / den Teiler
-    mein Nenner ist mein Nenner / den Teiler
-    gebe Ich zurück
-  .
-
-  Verb(Boolean) gleicht dem Objekt:
-    wenn das Objekt ein Bruch ist:
-      der Bruch ist das Objekt als Bruch
-      gebe den Zähler des Bruchs gleich meinen Zähler und der Nenner des Bruchs gleich meinen Nenner zurück
-    .
-    sonst: gebe falsch zurück.
+    der Teiler ist ggt von der Zahl (mein Zähler), der Zahl (mein Nenner)
+    gebe einen Bruch mit 
+      meinem Zähler / den Teiler,
+      meinem Nenner / den Teiler
+    zurück
   .
 
   Als Zeichenfolge:
     gebe "#{mein Zähler}/#{mein Nenner}" zurück
   .
+
+  Als Zahl:
+    gebe meinen Zähler / meinen Nenner zurück
+  .
+
+  Verb(Boolean) gleicht dem Objekt:
+    gebe wenn das Objekt ein Bruch ist:
+        das Objekt als Bruch:
+          mein Zähler gleich deinem Zähler und
+          mein Nenner gleich deinem Nenner
+        !
+    . sonst: falsch. zurück
+  .
+
+  Verb(Zahl) hashe mich:
+    // https://stackoverflow.com/questions/892618/create-a-hashcode-of-two-numbers
+    // TODO: Füge Binäre Operatorn wie XOR, AND, OR, SHIFT_LEFT, SHIFT_RIGHT GermanSkript hinzu, 
+    // weil ein besserer Hash-Algortihmus mit XOR und SHIFT implementiert hätte werden können
+    gebe 23:
+      (multipliziere dich mit der Zahl 37) plus meinen Zähler!:
+      (multipliziere dich mit der Zahl 37) plus meinen Nenner!
+    zurück
+  .
 .
 
-Implementiere den 
-addierbaren<Bruch, Bruch>, 
-multiplizierbaren<Bruch, Bruch> Bruch:
+// Definiere den Plus-Operator
+Implementiere den addierbaren<Bruch, Bruch> Bruch:
 
   Verb(Bruch) addiere mich mit dem Bruch:
-    der gemeinsameNenner ist kgv von der Zahl (mein Nenner), der Zahl (der Nenner des Bruchs)
+    // berechne den gemeinsamen Nenner
+    der gemeinsameNenner ist kgv
+      von der Zahl (mein Nenner),
+          der Zahl (der Nenner des Bruchs)
 
+    // berechne die Erweiterung für meinen Zähler
     die ZahlA ist der gemeinsameNenner / meinen Nenner
-    die ZahlB ist der gemeinsameNenner / (den Nenner des Bruchs)
+
+    // berechne die Erweiterung für den anderen Zähler
+    die ZahlB ist der gemeinsameNenner / den Nenner des Bruchs
     
-    gebe kürze einen Bruch mit 
-      dem Zähler (mein Zähler * die ZahlA + den Zähler des Bruchs * die ZahlB),
+    // berechne den Zähler des Bruchs
+    der Zähler ist mein Zähler * die ZahlA +
+                   den Zähler des Bruchs * die ZahlB
+
+    // gebe den neuen Bruch gekürzt zurück
+    gebe kürze einen Bruch mit
+      dem Zähler,
       dem gemeinsamenNenner
     zurück
   .
+.
 
+// Definiere den Mal-Operator
+Implementiere den multiplizierbaren<Bruch, Bruch> Bruch:
   Verb(Bruch) multipliziere mich mit dem Bruch:
-    gebe kürze einen Bruch mit
-      dem Zähler (mein Zähler mal den Zähler des Bruchs),
-      dem Nenner (mein Nenner mal den Nenner des Bruchs)
+    gebe 
+      Bruch:
+        kürze einen Bruch mit
+          meinem Zähler * deinen Zähler,
+          meinem Nenner * deinen Nenner
+      !
     zurück
   .
 .
 
+// Füge eine Konvertierung von Zeichenfolge zu Bruch hinzu
 Implementiere die Zeichenfolge:
   Als Bruch:
     die Zeichenfolgen sind trenne mich zwischen dem Separator "/"
@@ -71,36 +109,39 @@ Implementiere die Zeichenfolge:
   .
 .
 
-der BruchA ist ein Bruch mit dem Zähler 1, dem Nenner 4
+// Teste die Bruch-Klasse hier
+der BruchA ist "1/4" als Bruch
 der BruchB ist "1/8" als Bruch
 
-der BruchC ist der BruchA + den BruchB
-schreibe die Zeile "#{der BruchA} + #{der BruchB} = #{der BruchC}"
+schreibe die Zeile "#{der BruchA} + #{der BruchB} = #{der BruchA + den BruchB}"
+schreibe die Zeile "#{der BruchA} * #{der BruchB} = #{der BruchA * den BruchB}"
 
-der erwarteteBruch ist ein Bruch mit dem Zähler 3, dem Nenner 8
-wenn der BruchC gleich dem erwartetenBruch ist:
-  schreibe die Zeile "Das Ergebnis ist richtig!"
+der berechneteBruch ist der BruchA + den BruchB
+der erwarteteBruch ist "3/8" als Bruch
+
+wenn der berechneteBruch gleich dem erwartetenBruch ist:
+  schreibe die Zeile "Die Rechnung ist richtig!"
 .
 sonst:
-  schreibe die Zeile "Das Ergebnis ist falsch!"
+  schreibe die Zeile "Die Rechnung ist falsch!"
 .
+
+die HashMap ist eine HashMap<Bruch, Zeichenfolge>
+HashMap:
+    füge den Bruch "1/2" als Bruch mit der Zeichenfolge "ein Halbes" hinzu
+    füge den Bruch "1/4" als Bruch mit der Zeichenfolge "ein Viertel" hinzu
+    füge den Bruch "1/8" als Bruch mit der Zeichenfolge "ein Achtel" hinzu
+    füge den Bruch "1/16" als Bruch mit der Zeichenfolge "ein Sechszehntel" hinzu
+!
+
+schreibe die Zeile HashMap["1/4" als Bruch]
+schreibe die Zeile HashMap[ein Bruch mit dem Zähler 1, dem Nenner 16]
 
 die Brüche sind einige Brüche [
-  "2/3" als Bruch,
-  "3/4" als Bruch,
-  "1/5" als Bruch,
-  "3/8" als Bruch
+  "1/4" als Bruch,
+  "1/8" als Bruch,
+  "1/8" als Bruch,
+  "1/2" als Bruch
 ]
 
-schreibe die Zeile ""
-schreibe die Zeile "Brüche: #{die Brüche}"
-schreibe die Zeile "Summe: #{die Summe der Brüche}"
-schreibe die Zeile "Produkt: #{das Produkt der Brüche}"
-
-Verb<addierbarer<Typ, Typ>, multiplizierbarer<Typ, Typ> Typ>(Typ) funktion von dem Typ:
-  gebe den Typ * den Typ + den Typ zurück
-.
-
-der Bruch ist "1/4" als Bruch
-schreibe die Zeile (funktion von dem Typ Bruch) als Zeichenfolge // 1/4 * 1/4 + 1/4 = 1/16 + 4/16 = 5/16
-schreibe die Zeile (funktion von dem Typ 5) als Zeichenfolge     // 5 * 5 + 5 = 25 + 5 = 30
+schreibe die Zeile (die Summe der Brüche) als Zeichenfolge

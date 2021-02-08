@@ -1,0 +1,45 @@
+einige Zahlen sind einige Zahlen[8, 10, 13, 5, 19, 28]
+
+die gefiltertenZahlen sind 
+  filter die Zahlen mit etwas Bedingtem: die Zahl mod 2 gleich 0.
+
+schreibe die Zeile (die gefiltertenZahlen) als Zeichenfolge
+
+einige Zahlen sind einige Zahlen[1, 2, 3, 4]
+die QuadratZahlen sind transformiere<Zahl> die Zahlen mit etwas Transformierendem:
+    die Zahl hoch 2
+.
+schreibe die Zeile (die QuadratZahlen) als Zeichenfolge
+
+die BooleansGERADE sind transformiere<Boolean> die Zahlen mit etwas Transformierendem:
+    die Zahl mod 2 gleich 0
+.
+
+schreibe die Zeile (die BooleansGERADE als Zeichenfolge) 
+
+die Summe ist reduziere die Zahlen 
+  mit etwas Reduzierendem: der Akkumulator + die Zahl.
+
+schreibe die Zahl Summe
+
+die ZahlenZeile ist reduziere<Zeichenfolge> die Zahlen
+  mit dem AnfangsWert "",
+    etwas Reduzierendem: der Akkumulator + die Zahl als Zeichenfolge.
+
+schreibe die ZahlenZeile
+
+einige Zahlen sind einige Zahlen [3, 6, 5, 4, 2, 1]
+
+die Zahl ist Zahlen:
+  // filtern
+  filter euch mit etwas Bedingtem: 
+    die Zahl mod 2 gleich 1.!: // [3, 5, 1]
+  // transformieren
+  transformiere<Zahl> euch mit etwas Transformierendem: 
+    die Zahl hoch 2.!: // [9, 25, 1]
+  // reduzieren
+  reduziere euch mit etwas Reduzierendem: 
+    der Akkumulator + die Zahl.! // 9 + 25 + 1 = 35
+
+// 35
+schreibe die Zahl

@@ -1,0 +1,12 @@
+importiere "./Bruch.gm"
+
+Verb<addierbarer<Typ, Typ>, 
+    multiplizierbarer<Typ, Typ> Typ>(Typ) funktion von dem Typ:
+    gebe den Typ * den Typ + den Typ zurück
+.
+
+// 1/2 * 1/2 + 1/2 = 1/4 + 2/4 = 3/4
+schreibe die Zeile (funktion von dem Typ "1/2" als Bruch) als Zeichenfolge
+
+// 0.5 * 0.5 + 0.5 = 0.75
+schreibe die Zeile (funktion von dem Typ 0,5) als Zeichenfolge
