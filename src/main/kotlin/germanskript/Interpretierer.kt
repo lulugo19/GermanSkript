@@ -7,6 +7,7 @@ import kotlin.math.*
 import kotlin.random.Random
 
 typealias WerfeFehler = (String, String, Token) -> Objekt
+typealias InterpretiereInjectionMethodenAufruf = (String, Token, Objekt, List<Objekt>) -> Objekt
 
 class Interpretierer(startDatei: File): PipelineKomponente(startDatei), IInterpretierer {
 
@@ -114,6 +115,7 @@ class Interpretierer(startDatei: File): PipelineKomponente(startDatei), IInterpr
   class InterpretInjection(
       val aufrufStapel: AufrufStapel,
       val werfeFehler: WerfeFehler,
+      val interpretiereInjectionMethodenAufruf: InterpretiereInjectionMethodenAufruf,
       val startDatei: File
   ) {
     val umgebung: Umgebung get() = aufrufStapel.stapel.peek()!!.umgebung
@@ -123,7 +125,12 @@ class Interpretierer(startDatei: File): PipelineKomponente(startDatei), IInterpr
   override fun interpretiere() {
     val programm = codeGenerator.generiere()
     initKlassenDefinitionen()
-    interpretInjection = InterpretInjection(aufrufStapel, ::werfeFehler, startDatei)
+    interpretInjection = InterpretInjection(
+        aufrufStapel,
+        ::werfeFehler,
+        ::interpretiereInjectionMethodenAufruf,
+        startDatei
+    )
     try {
       interpretiereFunktionsAufruf(programm)
       if (flags.contains(Flag.FEHLER_GEWORFEN)) {
@@ -459,6 +466,43 @@ class Interpretierer(startDatei: File): PipelineKomponente(startDatei), IInterpr
     val aufrufUmgebung = if (objekt is Objekt.ClosureObjekt) objekt.umgebung else Umgebung()
     val funktionsDefinition = methodenAufruf.funktion ?: objekt.klasse.methoden.getValue(methodenAufruf.name)
     return interpretiereAufruf(aufrufUmgebung, methodenAufruf, funktionsDefinition, objekt)
+  }
+
+  private fun interpretiereInjectionMethodenAufruf(methodenName: String, token: Token, objekt: Objekt, argumente: List<Objekt>): Objekt {
+    val aufrufUmgebung = if (objekt is Objekt.ClosureObjekt) objekt.umgebung else Umgebung()
+    val funktionsDefinition = objekt.klasse.methoden.getValue(methodenName)
+
+    aufrufUmgebung.pushBereich()
+    val parameter = funktionsDefinition.parameter
+    for (index in parameter.indices) {
+      aufrufUmgebung.schreibeVariable(
+          parameter[index],
+          argumente[index],
+          false
+      )
+      if (fehlerGeworfen()) {
+        return Niemals
+      }
+    }
+
+    aufrufUmgebung.schreibeVariable(CodeGenerator.SELBST_VAR_NAME, objekt, false)
+
+    aufrufStapel.push(object: IM_AST.Satz.Ausdruck.IAufruf {
+      override val name = methodenName
+      override val token = token
+      // TODO: Das sollte hier nicht leer sein!
+      override val argumente = emptyList<IM_AST.Satz.Ausdruck>()
+    }, aufrufUmgebung, objekt)
+
+    rückgabeWert = Nichts
+
+    return interpretiereBereich(funktionsDefinition.körper!!, false).let {
+      aufrufStapel.pop()
+      if (objekt is Objekt.ClosureObjekt
+          && objekt.objektArt == IM_AST.Satz.Ausdruck.ObjektArt.Lambda) it else rückgabeWert.also {
+        flags.remove(Flag.ZURÜCK)
+      }
+    }
   }
   // endregion
 
