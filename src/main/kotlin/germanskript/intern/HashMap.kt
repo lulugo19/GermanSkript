@@ -4,7 +4,12 @@ import germanskript.*
 
 class HashMap(typ: Typ.Compound.Klasse): Objekt(BuildIn.IMMKlassen.hashMap, typ) {
 
-  data class HashSchlüssel(val objekt: Objekt, val hash: Int) {
+  class HashSchlüssel(
+      val objekt: Objekt,
+      private val hash: Int,
+      private val interpretInjection: Interpretierer.InterpretInjection,
+      private val token: Token
+  ) {
     override fun hashCode(): Int {
       return hash
     }
@@ -13,7 +18,12 @@ class HashMap(typ: Typ.Compound.Klasse): Objekt(BuildIn.IMMKlassen.hashMap, typ)
       if (other !is HashSchlüssel)
         return false
 
-      return this.hash == other.hash
+      return (interpretInjection.interpretiereInjectionMethodenAufruf(
+          "gleicht dem Objekt",
+          token,
+          objekt,
+          listOf(other.objekt)
+      ) as Boolean).boolean
     }
   }
 
@@ -46,7 +56,9 @@ class HashMap(typ: Typ.Compound.Klasse): Objekt(BuildIn.IMMKlassen.hashMap, typ)
       HashSchlüssel {
     return HashSchlüssel(
         objekt,
-        (injection.interpretiereInjectionMethodenAufruf("hashe mich", aufruf.token, objekt, emptyList()) as Zahl).zahl.toInt()
+        (injection.interpretiereInjectionMethodenAufruf("hashe mich", aufruf.token, objekt, emptyList()) as Zahl).zahl.toInt(),
+        injection,
+        aufruf.token
     )
   }
 
