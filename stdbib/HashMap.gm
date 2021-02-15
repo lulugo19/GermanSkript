@@ -1,6 +1,6 @@
 Deklination Femininum Singular(Map) Plural(Maps)
-Deklination Maskulinum Singular(Wert, Werts, Wert, Wert) Plural(Werte)
-Deklination Maskulinum Singular(Schlüssel, Schlüssels, Schlüssel, Schlüssel) Plural(Schlüssel)
+Deklination Maskulinum Singular(Wert, Werts, Wert, Wert) Plural(Werte, Werte, Werten, Werte)
+Deklination Maskulinum Singular(Schlüssel, Schlüssels, Schlüssel, Schlüssel) Plural(Schlüssel, Schlüssel, Schlüsseln, Schlüssel)
 Deklination Femininum Singular(Größe) Plural(Größen)
 
 Nomen<Schlüssel, Wert> HashMap:

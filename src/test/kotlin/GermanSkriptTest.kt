@@ -2414,4 +2414,16 @@ class GermanSkriptTest {
     val erwarteteAusgabe = "5\n"
     testeGermanSkriptCode(quellCode, erwarteteAusgabe)
   }
+
+  @Test
+  @DisplayName("Teste mich")
+  fun testeMich() {
+    val quellCode = """
+      eine HashMap<Zeichenfolge, Zeichenfolgen>:
+        füge die Zeichenfolge "Hallo" mit einigen Zeichenfolgen["Hallo", "Welt"] hinzu
+      !
+    """.trimIndent()
+
+    führeGermanSkriptCodeAus(quellCode)
+  }
 }

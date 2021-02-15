@@ -274,17 +274,17 @@ class Definierer(startDatei: File): PipelineKomponente(startDatei) {
     val argName = holeArgName(argument)
     return if (argument.adjektiv != null) {
       val artikel = GrammatikPrüfer.holeVornomen(
-          TokenTyp.VORNOMEN.ARTIKEL.BESTIMMT, argument.name.kasus, Genus.NEUTRUM, argument.name.numerus)
-      " " + artikel + " " + argument.adjektiv.ganzesWort(argument.name.kasus, argument.name.numerus, true)
+          TokenTyp.VORNOMEN.ARTIKEL.BESTIMMT, argument.name.kasus, argName.genus, argName.numerus)
+      " " + artikel + " " + argument.adjektiv.ganzesWort(argument.name.kasus, argName.numerus, true)
     } else {
       val artikel = GrammatikPrüfer.holeVornomen(
           TokenTyp.VORNOMEN.ARTIKEL.BESTIMMT,
           argument.name.kasus,
           argName.genus,
-          argument.name.numerus
+          argName.numerus
       )
 
-      " " + artikel + " " + argName.hauptWort(argument.name.kasus, argument.name.numerus)
+      " " + artikel + " " + argName.hauptWort(argument.name.kasus, argName.numerus)
     }
   }
 
@@ -294,11 +294,12 @@ class Definierer(startDatei: File): PipelineKomponente(startDatei) {
       typTypArgs: List<AST.TypKnoten>
   ): AST.WortArt.Nomen {
     val ersetzeArgIndex = typTypArgs.indexOfFirst { arg -> arg.name.nominativ ==
-        argument.name.ganzesWort(arg.name.kasus, arg.name.numerus, false, arg.name.teilwörterAnzahl) }
-    if (ersetzeArgIndex != -1 && ersetzeArgIndex < typTypArgs.size) {
-      return typTypParams[ersetzeArgIndex].binder
+        argument.name.ganzesWort(arg.name.kasus, argument.name.numerus, false, arg.name.teilwörterAnzahl) }
+    return if (ersetzeArgIndex != -1 && ersetzeArgIndex < typTypArgs.size) {
+      typTypParams[ersetzeArgIndex].binder
+    } else {
+      argument.name
     }
-    return argument.name
   }
 
   /**

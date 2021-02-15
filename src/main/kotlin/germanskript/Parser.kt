@@ -490,7 +490,6 @@ private sealed class SubParser<T: AST>() {
     // pratt parsing: https://matklad.github.io/2020/04/13/simple-but-powerful-pratt-parsing.html
     fun parseBinärenAusdruck(minBindungskraft: Double, letzterOp: Operator?, mitVornomen: Boolean, linkerA: AST.Satz.Ausdruck? = null) : AST.Satz.Ausdruck {
       var links = linkerA?: parseEinzelnerAusdruck(mitVornomen)
-
       loop@ while (true) {
         val operator = when (val tokenTyp = peekType()) {
           is TokenTyp.OPERATOR -> tokenTyp.operator

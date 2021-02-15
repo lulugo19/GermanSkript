@@ -150,6 +150,18 @@ Modul Standard::Collections:
         Verb hole (das Element) mit der Zahl Index: intern.
 
         Verb setze die Zahl Index auf das Element: intern.
+
+        Verb hole (die Zahl Index) von dem Element:
+            ein Index ist 0
+            die Elemente sind Ich
+            solange der Index kleiner als meine AnZahl ist:
+                wenn das Element[Index] gleich dem Element ist:
+                    gebe den Index zurück
+                .
+                ein Index ist der Index + 1
+            .
+            gebe -1 zurück
+        .
     .
 
     // Überlade den Plus-Operator für die Liste
