@@ -22,6 +22,7 @@ class Interpretierer(startDatei: File): PipelineKomponente(startDatei), IInterpr
   private val klassenDefinitionen = HashMap<String, Pair<AST.Definition.Typdefinition.Klasse, IM_AST.Definition.Klasse>>()
 
   private val umgebung: Umgebung get() = aufrufStapel.top().umgebung
+  private val globaleVariablen: Bereich get() = aufrufStapel.stapel.firstElement().umgebung.bereiche.firstElement()
   private lateinit var interpretInjection: InterpretInjection
 
   companion object {
@@ -40,22 +41,30 @@ class Interpretierer(startDatei: File): PipelineKomponente(startDatei), IInterpr
     FEHLER_GEWORFEN,
   }
 
-  private class Bereich {
+  class Bereich {
     val variablen: HashMap<String, Objekt> = HashMap()
+
+    fun leseVariable(varName: String): Objekt? {
+      return variablen[varName]
+    }
+
+    fun schreibeVariable(varName: String, wert: Objekt) {
+      variablen[varName] = wert
+    }
   }
 
   class Umgebung() {
-    private val bereiche = Stack<Bereich>()
+    val bereiche = Stack<Bereich>()
 
-    fun leseVariable(varName: String): Objekt {
-      return bereiche.findLast { bereich -> bereich.variablen.containsKey(varName) }!!.variablen[varName]!!
+    fun leseVariable(varName: String): Objekt? {
+      return bereiche.findLast { bereich -> bereich.variablen.containsKey(varName) }?.leseVariable(varName)
     }
 
     fun schreibeVariable(varName: String, wert: Objekt, überschreibe: Boolean) {
       val bereich = if (überschreibe) {
         bereiche.findLast { it.variablen.containsKey(varName) } ?: bereiche.peek()!!
       } else bereiche.peek()!!
-      bereich.variablen[varName] = wert
+      bereich.schreibeVariable(varName, wert)
     }
 
     fun pushBereich() {
@@ -194,10 +203,12 @@ class Interpretierer(startDatei: File): PipelineKomponente(startDatei), IInterpr
   // region Sätze
 
   private fun interpretiereVariablenDeklaration(variablenDeklaration: IM_AST.Satz.VariablenDeklaration): Objekt {
+    val wert = interpretiereAusdruck(variablenDeklaration.wert)
     umgebung.schreibeVariable(
         variablenDeklaration.name,
-        interpretiereAusdruck(variablenDeklaration.wert), variablenDeklaration.überschreibe
+        wert, variablenDeklaration.überschreibe
     )
+
     return if (fehlerGeworfen()) Niemals else Nichts
   }
 
@@ -253,7 +264,7 @@ class Interpretierer(startDatei: File): PipelineKomponente(startDatei), IInterpr
       is IM_AST.Satz.Ausdruck.Bedingung -> interpretiereBedingung(ausdruck)
       is IM_AST.Satz.Ausdruck.FunktionsAufruf -> interpretiereFunktionsAufruf(ausdruck)
       is IM_AST.Satz.Ausdruck.MethodenAufruf -> interpretiereMethodenAufruf(ausdruck)
-      is IM_AST.Satz.Ausdruck.Variable -> umgebung.leseVariable(ausdruck.name)
+      is IM_AST.Satz.Ausdruck.Variable -> interpretiereVariable(ausdruck)
       is IM_AST.Satz.Ausdruck.Eigenschaft -> interpretiereEigenschaft(ausdruck)
       is IM_AST.Satz.Ausdruck.ObjektInstanziierung -> interpretiereObjektInstanziierung(ausdruck)
       is IM_AST.Satz.Ausdruck.Konstante.Zahl -> Zahl(ausdruck.zahl)
@@ -265,6 +276,11 @@ class Interpretierer(startDatei: File): PipelineKomponente(startDatei), IInterpr
       is IM_AST.Satz.Ausdruck.TypÜberprüfung -> interpretiereTypÜberprüfung(ausdruck)
       is IM_AST.Satz.Ausdruck.TypCast -> interpretiereTypCast(ausdruck)
     }.let { if (fehlerGeworfen()) {Niemals} else it }
+  }
+
+  private fun interpretiereVariable(variable: IM_AST.Satz.Ausdruck.Variable): Objekt {
+    return umgebung.leseVariable(variable.name) ?:
+      globaleVariablen.leseVariable(variable.name)!!
   }
 
   private fun interpretiereObjektInstanziierung(instanziierung: IM_AST.Satz.Ausdruck.ObjektInstanziierung): Objekt {

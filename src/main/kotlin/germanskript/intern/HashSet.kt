@@ -35,7 +35,7 @@ class HashSet(typ: Typ.Compound.Klasse): Objekt(BuildIn.IMMKlassen.hashSet, typ)
   }
 
   private fun fügeDenWertHinzu(injection: Interpretierer.InterpretInjection): Objekt {
-    val wert = injection.umgebung.leseVariable("Wert")
+    val wert = injection.umgebung.leseVariable("Wert")!!
     set.add(wert)
     return Nichts
   }

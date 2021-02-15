@@ -164,7 +164,7 @@ class CodeGenerator(startDatei: File): PipelineKomponente(startDatei) {
               IM_AST.Satz.VariablenDeklaration(INIT_OBJEKT_VAR_NAME, IM_AST.Satz.Ausdruck.ObjektInstanziierung(
                   BuildIn.Klassen.reichweite,
                   klassen.getValue(BuildIn.Klassen.reichweite.definition),
-                  IM_AST.Satz.Ausdruck.ObjektArt.Klasse), false),
+                  IM_AST.Satz.Ausdruck.ObjektArt.Klasse), überschreibe = false),
               IM_AST.Satz.SetzeEigenschaft(IM_AST.Satz.Ausdruck.Variable(INIT_OBJEKT_VAR_NAME), "Start", generiereAusdruck(schleife.reichweite.anfang)),
               IM_AST.Satz.SetzeEigenschaft(IM_AST.Satz.Ausdruck.Variable(INIT_OBJEKT_VAR_NAME), "Ende", generiereAusdruck(schleife.reichweite.ende)),
               IM_AST.Satz.Ausdruck.Variable(INIT_OBJEKT_VAR_NAME)
@@ -177,7 +177,11 @@ class CodeGenerator(startDatei: File): PipelineKomponente(startDatei) {
         "hole den Iterator", schleife.für.toUntyped(), emptyList(), iterierbar, null
     )
 
-    val iteratorDeklaration = IM_AST.Satz.VariablenDeklaration(ITERATOR_VAR_NAME, holeIterator, false)
+    val iteratorDeklaration = IM_AST.Satz.VariablenDeklaration(
+        ITERATOR_VAR_NAME,
+        holeIterator,
+        überschreibe =false
+    )
 
     val bedingung = IM_AST.Satz.Ausdruck.MethodenAufruf(
         "läuft weiter", schleife.für.toUntyped(), emptyList(), IM_AST.Satz.Ausdruck.Variable(ITERATOR_VAR_NAME), null
@@ -187,7 +191,8 @@ class CodeGenerator(startDatei: File): PipelineKomponente(startDatei) {
         "hole den Typ", schleife.für.toUntyped(), emptyList(), IM_AST.Satz.Ausdruck.Variable(ITERATOR_VAR_NAME), null
     )
 
-    val binderDeklaration = IM_AST.Satz.VariablenDeklaration(schleife.binder.nominativ, holeIteration, false)
+    val binderDeklaration = IM_AST.Satz.VariablenDeklaration(
+        schleife.binder.nominativ, holeIteration, überschreibe = false)
 
     val sätze = schleife.bereich.sätze.map(::generiereSatz).toMutableList()
     sätze.add(0, binderDeklaration)
@@ -289,7 +294,11 @@ class CodeGenerator(startDatei: File): PipelineKomponente(startDatei) {
   }
 
   private fun generiereNachrichtenBereich(nachrichtenBereich: AST.Satz.Ausdruck.NachrichtenBereich): IM_AST.Satz.Ausdruck {
-    val deklaration = IM_AST.Satz.VariablenDeklaration(NACHRICHTEN_OBJEKT_VAR_NAME, generiereAusdruck(nachrichtenBereich.objekt), false)
+    val deklaration = IM_AST.Satz.VariablenDeklaration(
+        NACHRICHTEN_OBJEKT_VAR_NAME,
+        generiereAusdruck(nachrichtenBereich.objekt),
+        überschreibe = false
+    )
     val bereich = generiereBereich(nachrichtenBereich.bereich)
     val sätze = bereich.sätze.toMutableList()
     sätze.add(0, deklaration)
@@ -307,7 +316,10 @@ class CodeGenerator(startDatei: File): PipelineKomponente(startDatei) {
         klassen.getValue(BuildIn.Klassen.liste),
         IM_AST.Satz.Ausdruck.ObjektArt.Klasse
     )
-    sätze.add(IM_AST.Satz.VariablenDeklaration(LISTE_VAR_NAME, erstelleListe, false))
+    sätze.add(IM_AST.Satz.VariablenDeklaration(
+        LISTE_VAR_NAME,
+        erstelleListe, überschreibe = false)
+    )
     for (element in liste.elemente) {
       sätze.add(IM_AST.Satz.Ausdruck.MethodenAufruf(
           "füge das Element hinzu",
@@ -408,7 +420,8 @@ class CodeGenerator(startDatei: File): PipelineKomponente(startDatei) {
       if (definition.elternKlasse != null) {
         sätze.add(IM_AST.Satz.Ausdruck.Bereich(
             eigenschaftsZuweisungen.withIndex()
-                .map { (index, zuweisung) -> IM_AST.Satz.VariablenDeklaration(zuweisung.name.nominativ, generierteEigenschaftsAusdrücke[index], false) } +
+                .map { (index, zuweisung) -> IM_AST.Satz.VariablenDeklaration(
+                    zuweisung.name.nominativ, generierteEigenschaftsAusdrücke[index], überschreibe = false) } +
                 generiereKonstruktor(definition.elternKlasse))
         )
       }
@@ -426,7 +439,11 @@ class CodeGenerator(startDatei: File): PipelineKomponente(startDatei) {
       return IM_AST.Satz.Ausdruck.Bereich(sätze)
     }
 
-    sätze.add(IM_AST.Satz.VariablenDeklaration(INIT_OBJEKT_VAR_NAME, objekt, false))
+    sätze.add(IM_AST.Satz.VariablenDeklaration(
+        INIT_OBJEKT_VAR_NAME,
+        objekt,
+        überschreibe = false)
+    )
     sätze.add(generiereKonstruktor(instanziierung))
     sätze.add(IM_AST.Satz.Ausdruck.Variable(INIT_OBJEKT_VAR_NAME))
     return IM_AST.Satz.Ausdruck.Bereich(sätze)
@@ -441,7 +458,11 @@ class CodeGenerator(startDatei: File): PipelineKomponente(startDatei) {
     val klasse = generiereKlasse(anonymeKlasse.klasse.definition, true)
     val objekt = IM_AST.Satz.Ausdruck.ObjektInstanziierung(anonymeKlasse.klasse, klasse, IM_AST.Satz.Ausdruck.ObjektArt.AnonymeKlasse)
     val sätze: MutableList<IM_AST.Satz> = mutableListOf()
-    sätze.add(IM_AST.Satz.VariablenDeklaration(INIT_OBJEKT_VAR_NAME, objekt, false))
+    sätze.add(IM_AST.Satz.VariablenDeklaration(
+        INIT_OBJEKT_VAR_NAME,
+        objekt,
+        überschreibe = false
+    ))
     sätze.addAll(anonymeKlasse.bereich.eigenschaften.map {
       IM_AST.Satz.SetzeEigenschaft(
           IM_AST.Satz.Ausdruck.Variable(INIT_OBJEKT_VAR_NAME),

@@ -10,6 +10,7 @@ class TypPrüfer(startDatei: File): PipelineKomponente(startDatei) {
   val logger = SimpleLogger()
   val ast: AST.Programm get() = typisierer.ast
 
+  private val globaleVariablen = Bereich<Typ>(null)
 
   // ganz viele veränderliche Variablen :(
   // Da wir von der abstrakten Klasse 'ProgrammDurchlaufer' erben und dieser die Funktionen vorgibt, brauchen wir sie leider.
@@ -39,12 +40,11 @@ class TypPrüfer(startDatei: File): PipelineKomponente(startDatei) {
     klassenDefinitionen.forEach(::prüfeKlasse)
     // Hier werden die Implementierungen der Klassen ausgeführt
     klassenDefinitionen.forEach(::prüfeKlassenImplementierungen)
+    // neue germanskript.Umgebung
+    durchlaufeAufruf(ast.programmStart!!, ast.programm, Umgebung(), true, BuildIn.Klassen.nichts, true)
     definierer.funktionsDefinitionen.forEach {funktion ->
       prüfeFunktion(funktion, Umgebung())
     }
-
-    // neue germanskript.Umgebung
-    durchlaufeAufruf(ast.programmStart!!, ast.programm, Umgebung(), true, BuildIn.Klassen.nichts, true)
   }
 
   private fun ausdruckMussTypSein(
@@ -400,11 +400,12 @@ class TypPrüfer(startDatei: File): PipelineKomponente(startDatei) {
   }
 
   private fun evaluiereVariable(name: AST.WortArt.Nomen): Typ {
-    return umgebung.leseVariable(name).wert
+    return evaluiereVariable(name.nominativ) ?:
+      throw GermanSkriptFehler.Undefiniert.Variable(name.bezeichner.toUntyped())
   }
 
   private fun evaluiereVariable(variable: String): Typ? {
-    return umgebung.leseVariable(variable)?.wert
+    return umgebung.leseVariable(variable)?.wert ?: globaleVariablen.leseVariable(variable)?.wert
   }
 
   private fun evaluiereNachrichtenObjektReferenz(): Typ {
@@ -445,12 +446,20 @@ class TypPrüfer(startDatei: File): PipelineKomponente(startDatei) {
     else {
       if (deklaration.name.unveränderlich || deklaration.neu != null) {
         val wert = evaluiereAusdruck(deklaration.wert)
-        umgebung.schreibeVariable(deklaration.name, wert, !deklaration.name.unveränderlich)
+        if (deklaration.istGlobal) {
+          globaleVariablen.schreibeVariable(deklaration.name, wert, !deklaration.name.unveränderlich)
+        } else {
+          umgebung.schreibeVariable(deklaration.name, wert, !deklaration.name.unveränderlich)
+        }
       }
       else {
         // hier müssen wir überprüfen ob der Typ der Variable, die überschrieben werden sollen gleich
         // dem neuen germanskript.intern.Wert ist
-        val vorherigerTyp = umgebung.leseVariable(deklaration.name.nominativ)
+        val vorherigerTyp = if (deklaration.istGlobal) {
+          globaleVariablen.leseVariable(deklaration.name.nominativ)
+        } else {
+          umgebung.leseVariable(deklaration.name.nominativ)
+        }
         val wert = if (vorherigerTyp != null) {
           if (vorherigerTyp.name.unveränderlich) {
             throw GermanSkriptFehler.Variablenfehler(deklaration.name.bezeichner.toUntyped(), vorherigerTyp.name)
@@ -459,7 +468,11 @@ class TypPrüfer(startDatei: File): PipelineKomponente(startDatei) {
         } else {
           evaluiereAusdruck(deklaration.wert)
         }
-        umgebung.überschreibeVariable(deklaration.name, wert)
+        if (deklaration.istGlobal) {
+          globaleVariablen.schreibeVariable(deklaration.name, wert, true)
+        } else {
+          umgebung.überschreibeVariable(deklaration.name, wert)
+        }
       }
     }
     return BuildIn.Klassen.nichts

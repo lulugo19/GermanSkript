@@ -44,7 +44,7 @@ class Liste(typ: Typ.Compound.Klasse, val elemente: MutableList<Objekt>): Objekt
   }
 
   private fun fügeDasElementHinzu(injection: Interpretierer.InterpretInjection): Objekt {
-    val element = injection.umgebung.leseVariable("Element")
+    val element = injection.umgebung.leseVariable("Element")!!
     elemente.add(element)
     return Nichts
   }
@@ -59,7 +59,7 @@ class Liste(typ: Typ.Compound.Klasse, val elemente: MutableList<Objekt>): Objekt
   private fun setzeDenIndexAufDenTyp(aufruf: IM_AST.Satz.Ausdruck.IAufruf, injection: Interpretierer.InterpretInjection): Objekt {
     val index = (injection.umgebung.leseVariable("Index") as Zahl).toInt()
     return prüfeIndex(index, aufruf, injection) ?: {
-      val wert = injection.umgebung.leseVariable("Element")
+      val wert = injection.umgebung.leseVariable("Element")!!
       this.elemente[index] = wert
       Nichts
     }()

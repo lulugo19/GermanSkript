@@ -11,6 +11,21 @@ class Bereich<T>(val nachrichtenBereichObjekt: T?) {
   override fun toString(): String {
     return variablen.entries.joinToString("\n", "[\n", "\n]") {"${it.key}: ${it.value}"}
   }
+
+  fun leseVariable(varName: AST.WortArt.Nomen): Variable<T> {
+    return  leseVariable(varName.nominativ)?: throw GermanSkriptFehler.Undefiniert.Variable(varName.bezeichner.toUntyped())
+  }
+
+  fun leseVariable(varName: String): Variable<T>? {
+    return variablen[varName]
+  }
+
+  fun schreibeVariable(varName: AST.WortArt.Nomen, wert: T, überschreibe: Boolean) {
+    if (!überschreibe && variablen.containsKey(varName.nominativ)) {
+      throw GermanSkriptFehler.Variablenfehler(varName.bezeichner.toUntyped(), variablen.getValue(varName.nominativ).name)
+    }
+    variablen[varName.nominativ] = Variable(varName, wert)
+  }
 }
 
 class Umgebung<T>() {
@@ -29,17 +44,13 @@ class Umgebung<T>() {
   }
 
   fun schreibeVariable(varName: AST.WortArt.Nomen, wert: T, überschreibe: Boolean) {
-    val variablen = bereiche.peek()!!.variablen
-    if (!überschreibe && variablen.containsKey(varName.nominativ)) {
-      throw GermanSkriptFehler.Variablenfehler(varName.bezeichner.toUntyped(), variablen.getValue(varName.nominativ).name)
-    }
-    variablen[varName.nominativ] = Variable(varName, wert)
+    bereiche.peek()!!.schreibeVariable(varName, wert, überschreibe)
   }
 
   fun überschreibeVariable(varName: AST.WortArt.Nomen, wert: T) {
     val bereich = bereiche.findLast {it.variablen.containsKey(varName.nominativ) }
     if (bereich != null) {
-      bereich.variablen[varName.nominativ] = Variable(varName, wert)
+      bereich.schreibeVariable(varName, wert, true)
     } else {
       // Fallback
       schreibeVariable(varName, wert, true)

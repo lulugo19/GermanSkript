@@ -63,27 +63,27 @@ class HashMap(typ: Typ.Compound.Klasse): Objekt(BuildIn.IMMKlassen.hashMap, typ)
   }
 
   private fun entferneDenSchlüssel(aufruf: IM_AST.Satz.Ausdruck.IAufruf, injection: Interpretierer.InterpretInjection): Objekt {
-    val schlüssel = injection.umgebung.leseVariable("Schlüssel")
+    val schlüssel = injection.umgebung.leseVariable("Schlüssel")!!
     val hashSchlüssel = holeHashSchlüssel(aufruf, injection, schlüssel)
     return Boolean(map.remove(hashSchlüssel) != null)
   }
 
   private fun enthältDenSchlüssel(aufruf: IM_AST.Satz.Ausdruck.IAufruf, injection: Interpretierer.InterpretInjection): Objekt {
-    val schlüssel = injection.umgebung.leseVariable("Schlüssel")
+    val schlüssel = injection.umgebung.leseVariable("Schlüssel")!!
     val hashSchlüssel = holeHashSchlüssel(aufruf, injection, schlüssel)
     return Boolean(map.containsKey(hashSchlüssel))
   }
 
   private fun fügeDenSchlüsselMitDemWertHinzu(aufruf: IM_AST.Satz.Ausdruck.IAufruf,injection: Interpretierer.InterpretInjection): Objekt {
-    val schlüssel = injection.umgebung.leseVariable("Schlüssel")
+    val schlüssel = injection.umgebung.leseVariable("Schlüssel")!!
     val hashSchlüssel = holeHashSchlüssel(aufruf, injection, schlüssel)
-    val wert = injection.umgebung.leseVariable("Wert")
+    val wert = injection.umgebung.leseVariable("Wert")!!
     map[hashSchlüssel] = wert
     return Nichts
   }
 
   private fun holeDenWertMitDemSchlüssel(aufruf: IM_AST.Satz.Ausdruck.IAufruf, injection: Interpretierer.InterpretInjection): Objekt {
-    val schlüssel = injection.umgebung.leseVariable("Schlüssel")
+    val schlüssel = injection.umgebung.leseVariable("Schlüssel")!!
     val hashSchlüssel = holeHashSchlüssel(aufruf, injection, schlüssel)
     return map.getOrElse(hashSchlüssel) {
       injection.werfeFehler(
@@ -98,9 +98,9 @@ class HashMap(typ: Typ.Compound.Klasse): Objekt(BuildIn.IMMKlassen.hashMap, typ)
       aufruf: IM_AST.Satz.Ausdruck.IAufruf,
       injection: Interpretierer.InterpretInjection
   ): Objekt {
-    val schlüssel = injection.umgebung.leseVariable("Schlüssel")
+    val schlüssel = injection.umgebung.leseVariable("Schlüssel")!!
     val hashSchlüssel = holeHashSchlüssel(aufruf, injection, schlüssel)
-    val standardWert = injection.umgebung.leseVariable("StandardWert")
+    val standardWert = injection.umgebung.leseVariable("StandardWert")!!
     return map.getOrDefault(hashSchlüssel, standardWert)
   }
 

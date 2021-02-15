@@ -555,7 +555,7 @@ class GermanSkriptTest {
       verwende C::Foo
       
       das Bar ist ein B::Bar
-      das Foo ist ein Foo
+      das Foo ist ein Foo mit dem Bar
       
       teste das Bar
       teste das Foo mit dem Bar
@@ -2395,6 +2395,23 @@ class GermanSkriptTest {
       
     """.trimIndent()
 
+    testeGermanSkriptCode(quellCode, erwarteteAusgabe)
+  }
+
+  @Test
+  @DisplayName("Globale Variablen")
+  fun globaleVariable() {
+    val quellCode = """
+      das GLOBALE ist 5
+      
+      Verb test:
+        schreibe die Zahl (das GLOBALE)
+      .
+      
+      test
+    """.trimIndent()
+
+    val erwarteteAusgabe = "5\n"
     testeGermanSkriptCode(quellCode, erwarteteAusgabe)
   }
 }

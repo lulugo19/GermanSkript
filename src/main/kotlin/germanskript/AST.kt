@@ -477,6 +477,7 @@ sealed class AST {
     ): Satz() {
       override val children = sequenceOf(name, wert)
 
+      val istGlobal get() = parent?.parent is Programm
       val istEigenschaftsNeuZuweisung = name.vornomen != null && name.vornomen!!.typ == TokenTyp.VORNOMEN.POSSESSIV_PRONOMEN.MEIN
       val istEigenschaft = name.vornomen != null && name.vornomen!!.typ is TokenTyp.VORNOMEN.DEMONSTRATIV_PRONOMEN
     }
