@@ -20,6 +20,7 @@ data class Zeichenfolge(val zeichenfolge: String): Objekt(BuildIn.IMMKlassen.zei
       "code an dem Index" -> codeAnDemIndex(aufruf, injection)
       "buchstabiere mich groß" -> buchstabiereMichGroß()
       "buchstabiere mich klein" -> buchstabierMichKlein()
+      "trimme mich" -> trimmeMich()
       "trenne mich zwischen dem Separator" -> trenneMichZwischenDemSeperator(injection)
       else -> super.rufeMethodeAuf(aufruf, injection)
     }
@@ -85,6 +86,8 @@ data class Zeichenfolge(val zeichenfolge: String): Objekt(BuildIn.IMMKlassen.zei
   private fun buchstabiereMichGroß() = Zeichenfolge(zeichenfolge.toUpperCase())
 
   private fun buchstabierMichKlein() = Zeichenfolge(zeichenfolge.toLowerCase())
+
+  private fun trimmeMich() = Zeichenfolge(zeichenfolge.trim())
 
   private fun trenneMichZwischenDemSeperator(injection: Interpretierer.InterpretInjection): Objekt {
     val separator = injection.umgebung.leseVariable("Separator") as Zeichenfolge

@@ -178,6 +178,8 @@ Implementiere die vergleichbare<Zeichenfolge> Zeichenfolge:
         gebe das Ergebnis zurück
     .
 
+    Verb(Zeichenfolge) trimme mich: intern.
+
     Verb(Boolean) endet mit der ZeichenfolgeENDE:
         wenn die Länge der ZeichenfolgeENDE > meine Länge ist: gebe falsch zurück.
         die Zeichenfolge ist Ich
