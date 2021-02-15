@@ -1,0 +1,98 @@
+/*
+6kyu
+https://www.codewars.com/kata/569651a2d6a620b72e000059
+
+To increase the odds of the old fashioned game (Rock, Paper, Scissors) 
+Sam Kass and Karen Bryla reinvented the game with 5 different items instead of 3: Rock, Paper, Scissor, Lizard, Spock. 
+It was later also featured in the sitcom "The Big Bang Theory".
+*/
+Deklination Femininum Singular(Eingabe) Plural(Eingaben)
+Deklination Maskulinum Singular(Spieler, Spielers, Spieler, Spieler) Plural(Spieler, Spieler, Spielern, Spieler)
+
+
+die SteinPapierSchereEchseSpockZeichenfolgen sind einige Zeichenfolgen["Stein", "Schere", "Papier", "Echse", "Spock"]
+
+Verb(Zeichenfolge) stein_papier_schere_echse_spock_eingabe mit der Zeichenfolge:
+  schreibe die Zeichenfolge
+  
+  eine Eingabe ist lese
+  solange die SteinPapierSchereEchseSpockZeichenfolgen die Zeichenfolge Eingabe enthalten ungleich wahr ist:
+    schreibe die Zeile "Ungültige Eingabe!"
+    schreibe die Zeichenfolge
+    eine Eingabe ist lese
+  .
+  gebe die Eingabe zurück
+.
+
+Verb stein_papier_schere_echse_spock 
+  mit der Zeichenfolge Eingabe1, der Zeichenfolge Eingabe2:
+
+  wenn die Eingabe1 gleich der Eingabe2 ist:
+    schreibe die Zeile "Unentschieden!"
+    zurück
+  .
+
+  (stein_papier_schere_echse_spock_gewinner mit der Eingabe1, der Eingabe2, dem Spieler "Spieler 1") oder
+  (stein_papier_schere_echse_spock_gewinner mit der Eingabe2, der Eingabe1, dem Spieler "Spieler 2")
+.
+
+Verb(Boolean) stein_papier_schere_echse_spock_gewinner
+  mit der Zeichenfolge Eingabe1, der Zeichenfolge Eingabe2, der Zeichenfolge Spieler:
+
+  die Zeichenfolge ist 
+  wenn die Eingabe1 gleich "Schere" und die Eingabe2 gleich "Papier" ist:
+    "schneidet"
+  .
+  sonst wenn die Eingabe1 gleich "Papier" und die Eingabe2 gleich "Stein" ist:
+    "bedeckt"
+  .
+  sonst wenn die Eingabe1 gleich "Stein" und die Eingabe2 gleich "Echse" ist:
+    "zerquetscht"
+  .
+  sonst wenn die Eingabe1 gleich "Echse" und die Eingabe2 gleich "Spock" ist:
+    "vergiftet"
+  .
+  sonst wenn die Eingabe1 gleich "Spock" und die Eingabe2 gleich "Schere" ist:
+    "zertrümmert"
+  .
+  sonst wenn die Eingabe1 gleich "Schere" und die Eingabe2 gleich "Echse" ist:
+    "köpft"
+  .
+  sonst wenn die Eingabe1 gleich "Echse" und die Eingabe2 gleich "Papier" ist:
+    "frisst"
+  . 
+  sonst wenn die Eingabe1 gleich "Papier" und die Eingabe2 gleich "Spock" ist:
+    "widerlegt"
+  .
+  sonst wenn die Eingabe1 gleich "Spock" und die Eingabe2 gleich "Stein" ist:
+    "verdampft"
+  .
+  sonst wenn die Eingabe1 gleich "Stein" und die Eingabe2 gleich "Schere" ist:
+    "schleift"
+  . 
+  sonst:
+    ""
+  .
+  wenn die Länge der Zeichenfolge gleich 0 ist:
+    gebe falsch zurück
+  .
+
+  schreibe die Zeile "#{die Eingabe1} #{die Zeichenfolge} #{die Eingabe2}!"
+  schreibe die Zeile "#{der Spieler} gewinnt!"
+  gebe wahr zurück
+.
+
+schreibe die Zeile "Stein, Papier, Schere, Echse, Spock"
+schreibe die Zeile ""
+
+solange wahr:
+  die EingabeP1 ist stein_papier_schere_echse_spock_eingabe mit der Zeichenfolge "Eingabe Spieler 1: "
+  die EingabeP2 ist stein_papier_schere_echse_spock_eingabe mit der Zeichenfolge "Eingabe Spieler 2: "
+  stein_papier_schere_echse_spock mit der EingabeP1, der EingabeP2
+  schreibe die Zeichenfolge "\nNochmal spielen (Ja/Nein): "
+  die Eingabe ist lese: buchstabiere dich klein!: trimme dich!
+  wenn die Eingabe ungleich "ja" ist:
+    abbrechen
+  .
+  schreibe die Zeile ""
+.
