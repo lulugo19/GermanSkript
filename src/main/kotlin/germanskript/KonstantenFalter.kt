@@ -238,12 +238,12 @@ class KonstantenFalter(startDatei: File): ProgrammDurchlaufer<Objekt?>(startDate
   }
 
   override fun evaluiereMinus(minus: AST.Satz.Ausdruck.Minus): Objekt? {
-    val zahl = evaluiereAusdruck(minus.ausdruck) as Zahl?
-    return if (zahl != null) {
-      -zahl
-    } else {
-      null
-    }
+    return (evaluiereAusdruck(minus.ausdruck) as Zahl?)?.let { -it }
+  }
+
+  override fun evaluiereNicht(nicht: AST.Satz.Ausdruck.Nicht): Objekt? {
+    return (evaluiereAusdruck(nicht.ausdruck) as germanskript.alte_pipeline.intern.Boolean?)
+        ?.let { germanskript.alte_pipeline.intern.Boolean(!it.boolean) }
   }
 
   override fun evaluiereKonvertierung(konvertierung: AST.Satz.Ausdruck.Konvertierung): Objekt? {

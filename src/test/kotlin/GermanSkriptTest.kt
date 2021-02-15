@@ -2416,8 +2416,8 @@ class GermanSkriptTest {
   }
 
   @Test
-  @DisplayName("Teste mich")
-  fun testeMich() {
+  @DisplayName("HashMap mit Liste als Wert")
+  fun hashMapMitListeAlsWert() {
     val quellCode = """
       eine HashMap<Zeichenfolge, Zeichenfolgen>:
         füge die Zeichenfolge "Hallo" mit einigen Zeichenfolgen["Hallo", "Welt"] hinzu
@@ -2425,5 +2425,27 @@ class GermanSkriptTest {
     """.trimIndent()
 
     führeGermanSkriptCodeAus(quellCode)
+  }
+
+  @Test
+  @DisplayName("Bedingungs-Ausdruck: Nicht")
+  fun bedingungsAusdruckNicht() {
+    val quellCode = """
+      die Zahlen sind einige Zahlen[2, 3, 5, 7, 11]
+      wenn die Zahlen die Zahl 4 nicht enthalten:
+        schreibe die Zeile "Die Zahl 4 ist nicht enthalten!"
+      .
+      wenn die Zahlen nicht die Zahl 8 enthalten:
+        schreibe die Zeile "Die Zahl 8 ist nicht enthalten!"
+      .
+    """.trimIndent()
+
+    val erwarteteAusgabe = """
+      Die Zahl 4 ist nicht enthalten!
+      Die Zahl 8 ist nicht enthalten!
+      
+    """.trimIndent()
+
+    testeGermanSkriptCode(quellCode, erwarteteAusgabe)
   }
 }

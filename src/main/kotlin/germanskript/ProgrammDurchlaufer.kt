@@ -51,7 +51,6 @@ abstract  class ProgrammDurchlaufer<T>(startDatei: File): PipelineKomponente(sta
         is AST.Satz.SchleifenKontrolle.Fortfahren -> durchlaufeFortfahren()
         is AST.Satz.Intern -> durchlaufeIntern(satz)
         is AST.Satz.Ausdruck -> evaluiereAusdruck(satz)
-        else -> throw Exception("Dieser Fall sollte nie eintreten!")
       }.let {
         @Suppress("UNCHECKED_CAST")
         if (it is Unit) nichts else it as T
@@ -104,6 +103,7 @@ abstract  class ProgrammDurchlaufer<T>(startDatei: File): PipelineKomponente(sta
       is AST.Satz.Ausdruck.FunktionsAufruf -> durchlaufeFunktionsAufruf(ausdruck, true)!!
       is AST.Satz.Ausdruck.BinärerAusdruck -> evaluiereBinärenAusdruck(ausdruck)
       is AST.Satz.Ausdruck.Minus -> evaluiereMinus(ausdruck)
+      is AST.Satz.Ausdruck.Nicht -> evaluiereNicht(ausdruck)
       is AST.Satz.Ausdruck.Konvertierung -> evaluiereKonvertierung(ausdruck)
       is AST.Satz.Ausdruck.ObjektInstanziierung -> evaluiereObjektInstanziierung(ausdruck)
       is AST.Satz.Ausdruck.EigenschaftsZugriff -> evaluiereEigenschaftsZugriff(ausdruck)
@@ -157,6 +157,7 @@ abstract  class ProgrammDurchlaufer<T>(startDatei: File): PipelineKomponente(sta
   protected abstract fun evaluiereIndexZugriff(indexZugriff: AST.Satz.Ausdruck.IndexZugriff): T
   protected abstract fun evaluiereBinärenAusdruck(ausdruck: AST.Satz.Ausdruck.BinärerAusdruck): T
   protected abstract fun evaluiereMinus(minus: AST.Satz.Ausdruck.Minus): T
+  abstract fun evaluiereNicht(nicht: AST.Satz.Ausdruck.Nicht): T
   protected abstract fun evaluiereKonvertierung(konvertierung: AST.Satz.Ausdruck.Konvertierung): T
   protected abstract fun evaluiereObjektInstanziierung(instanziierung: AST.Satz.Ausdruck.ObjektInstanziierung): T
   protected abstract fun evaluiereEigenschaftsZugriff(eigenschaftsZugriff: AST.Satz.Ausdruck.EigenschaftsZugriff): T

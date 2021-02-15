@@ -215,7 +215,8 @@ sealed class TokenTyp(val anzeigeName: String) {
     data class OPERATOR(val operator: Operator): TokenTyp("Operator")
     // imaginäres germanskript.Token
     object STRING_INTERPOLATION: TokenTyp("String-Interpolation")
-
+    // Logisches nicht
+    object NICHT: TokenTyp("'nicht'")
     // Identifier
     data class BEZEICHNER_KLEIN(val name: String): TokenTyp("bezeichner")
     data class BEZEICHNER_GROSS(val teilWörter: Array<String>, val symbol: String = "", val adjektiv: TypedToken<BEZEICHNER_KLEIN>? = null): TokenTyp("Bezeichner") {
@@ -351,6 +352,7 @@ private val WORT_MAPPING = mapOf<String, TokenTyp>(
     "hoch" to TokenTyp.OPERATOR(Operator.HOCH),
     "mod" to TokenTyp.OPERATOR(Operator.MODULO),
     "modulo" to TokenTyp.OPERATOR(Operator.MODULO),
+    "nicht" to TokenTyp.NICHT,
 
     // Spezielle Referenzen
     "Ich" to TokenTyp.REFERENZ.ICH,

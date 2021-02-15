@@ -385,6 +385,7 @@ class Interpretierer(startDatei: File): PipelineKomponente(startDatei), IInterpr
       is AST.Satz.Ausdruck.FunktionsAufruf -> durchlaufeFunktionsAufruf(ausdruck)
       is AST.Satz.Ausdruck.BinärerAusdruck -> evaluiereBinärenAusdruck(ausdruck)
       is AST.Satz.Ausdruck.Minus -> evaluiereMinus(ausdruck)
+      is AST.Satz.Ausdruck.Nicht -> evaluiereNicht(ausdruck)
       is AST.Satz.Ausdruck.Konvertierung -> evaluiereKonvertierung(ausdruck)
       is AST.Satz.Ausdruck.ObjektInstanziierung -> evaluiereObjektInstanziierung(ausdruck)
       is AST.Satz.Ausdruck.EigenschaftsZugriff -> evaluiereEigenschaftsZugriff(ausdruck)
@@ -636,6 +637,11 @@ class Interpretierer(startDatei: File): PipelineKomponente(startDatei), IInterpr
         Umgebung(), false,
         ausdruck
     )
+  }
+
+  private fun evaluiereNicht(nicht: AST.Satz.Ausdruck.Nicht): Objekt {
+    val ausdruck = evaluiereAusdruck(nicht.ausdruck) as germanskript.alte_pipeline.intern.Boolean
+    return Boolean(!ausdruck.boolean)
   }
 
   private fun evaluiereIndizierbarSingularOderPlural(singular: AST.WortArt.Nomen, numerus: Numerus): Objekt {

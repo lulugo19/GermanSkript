@@ -235,6 +235,7 @@ class CodeGenerator(startDatei: File): PipelineKomponente(startDatei) {
       is AST.Satz.Ausdruck.IndexZugriff -> generiereIndexZugriff(ausdruck)
       is AST.Satz.Ausdruck.BinärerAusdruck -> generiereBinärenAusdruck(ausdruck)
       is AST.Satz.Ausdruck.Minus -> generiereMinus(ausdruck)
+      is AST.Satz.Ausdruck.Nicht -> generiereNicht(ausdruck)
       is AST.Satz.Ausdruck.Konvertierung -> generiereKonvertierung(ausdruck)
       is AST.Satz.Ausdruck.ObjektInstanziierung -> generiereObjektInstanziierung(ausdruck)
       is AST.Satz.Ausdruck.Lambda -> generiereLambda(ausdruck)
@@ -377,6 +378,10 @@ class CodeGenerator(startDatei: File): PipelineKomponente(startDatei) {
   private fun generiereMinus(minus: AST.Satz.Ausdruck.Minus): IM_AST.Satz.Ausdruck {
     return IM_AST.Satz.Ausdruck.MethodenAufruf(minus.operator.typ.operator.methodenName!!, minus.operator.toUntyped(), emptyList(),
         generiereAusdruck(minus.ausdruck), null)
+  }
+
+  private fun generiereNicht(nicht: AST.Satz.Ausdruck.Nicht): IM_AST.Satz.Ausdruck {
+    return IM_AST.Satz.Ausdruck.LogischesNicht(generiereAusdruck(nicht.ausdruck))
   }
 
   private fun generiereKonvertierung(konvertierung: AST.Satz.Ausdruck.Konvertierung): IM_AST.Satz.Ausdruck {

@@ -400,7 +400,10 @@ private sealed class SubParser<T: AST>() {
           val subjekt = parseNomenAusdruck<TokenTyp.VORNOMEN>("Vornomen", true, inBedingungsTerm, false).third
           val nächterTokenTyp = peekType()
           // prüfe hier ob ein bedingter Aufruf geparst werden soll
-          if (inBedingungsTerm && (nächterTokenTyp is TokenTyp.VORNOMEN || nächterTokenTyp is TokenTyp.BEZEICHNER_KLEIN)) {
+          if (inBedingungsTerm && (
+                  nächterTokenTyp is TokenTyp.VORNOMEN ||
+                  nächterTokenTyp is TokenTyp.BEZEICHNER_KLEIN ||
+                  nächterTokenTyp == TokenTyp.NICHT)) {
             subParse(Satz.Ausdruck.BedingungsAusdruck(subjekt, inBedingungsTerm))
           } else {
             subjekt
@@ -1264,6 +1267,7 @@ private sealed class SubParser<T: AST>() {
         override val id: ASTKnotenID get() = _id
 
         override fun parseImpl(): AST.Satz.Ausdruck {
+          val nicht = parseOptional<TokenTyp.NICHT>()
           val objekt = parseOptional<AST.Argument, TokenTyp.VORNOMEN> {
             parseArgument(false)
           }
@@ -1274,8 +1278,9 @@ private sealed class SubParser<T: AST>() {
                 objektAusdruck.klasse.name == objekt.name &&
                 peekType() is TokenTyp.ZUWEISUNG) {
               AST.Satz.Ausdruck.TypÜberprüfung(subjekt, objektAusdruck.klasse, expect("'ist' oder 'sind'"))
+                  .let {verneineWennNichtVorhanden(it, nicht)}
             } else {
-              parseFunktionsAufruf(objekt)
+              parseFunktionsAufruf(objekt, nicht)
             }
           } else {
             val modulPfad = parseModulPfad()
@@ -1286,15 +1291,16 @@ private sealed class SubParser<T: AST>() {
               val typ = AST.TypKnoten(modulPfad, AST.WortArt.Adjektiv(null, adjektiv), typArgumente)
               AST.Satz.Ausdruck.TypÜberprüfung(subjekt, typ, expect("'ist' oder 'sind'"))
             } else {
-              parseFunktionsAufruf(null)
+              parseFunktionsAufruf(null, nicht)
             }
           }
         }
 
-        fun parseFunktionsAufruf(objekt: AST.Argument?): AST.Satz.Ausdruck.FunktionsAufruf {
+        fun parseFunktionsAufruf(objekt: AST.Argument?, nicht: TypedToken<TokenTyp.NICHT>?): AST.Satz.Ausdruck {
           _id = ASTKnotenID.FUNKTIONS_AUFRUF
           // Reflexivpronomen sind hier nicht erlaubt
           val präpositionen = parsePräpositionsArgumente(inBedingungsTerm)
+          val nicht = nicht?: parseOptional<TokenTyp.NICHT>()
           var suffix: TypedToken<TokenTyp.BEZEICHNER_KLEIN>? = expect("bezeichner")
           var verb = parseOptional<TokenTyp.BEZEICHNER_KLEIN>()
           if (verb == null) {
@@ -1302,9 +1308,21 @@ private sealed class SubParser<T: AST>() {
             suffix = null
           }
           val typArgumente = parseTypArgumente()
-          return AST.Satz.Ausdruck.FunktionsAufruf(typArgumente, emptyList(), subjekt, verb!!, objekt, null, präpositionen, suffix)
+          return AST.Satz.Ausdruck.FunktionsAufruf(
+              typArgumente,
+              emptyList(),
+              subjekt, verb!!,
+              objekt,
+              null,
+              präpositionen,
+              suffix)
+              .let {verneineWennNichtVorhanden(it, nicht)}
         }
 
+        private fun verneineWennNichtVorhanden(ausdruck: AST.Satz.Ausdruck, nicht: TypedToken<TokenTyp.NICHT>?)
+            : AST.Satz.Ausdruck {
+          return nicht?.let{ AST.Satz.Ausdruck.Nicht(nicht, ausdruck) } ?: ausdruck
+        }
       }
 
       object VersucheFange: Ausdruck<AST.Satz.Ausdruck.VersucheFange>() {

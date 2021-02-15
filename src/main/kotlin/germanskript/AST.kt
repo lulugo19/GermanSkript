@@ -561,6 +561,7 @@ sealed class AST {
           is IndexZugriff -> singular.bezeichner.toUntyped()
           is BinärerAusdruck -> links.holeErstesToken()
           is Minus -> operator.toUntyped()
+          is Nicht -> nicht.toUntyped()
           is Konvertierung -> ausdruck.holeErstesToken()
           is ObjektInstanziierung -> klasse.name.bezeichnerToken
           is EigenschaftsZugriff -> eigenschaftsName.bezeichner.toUntyped()
@@ -700,6 +701,10 @@ sealed class AST {
       }
 
       data class Minus(val operator: TypedToken<TokenTyp.OPERATOR>, val ausdruck: Ausdruck) : Ausdruck() {
+        override val children = sequenceOf(ausdruck)
+      }
+
+      data class Nicht(val nicht: TypedToken<TokenTyp.NICHT>, val ausdruck: Ausdruck): Ausdruck() {
         override val children = sequenceOf(ausdruck)
       }
 

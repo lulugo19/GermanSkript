@@ -337,6 +337,7 @@ class TypPrüfer(startDatei: File): PipelineKomponente(startDatei) {
       is AST.Satz.Ausdruck.FunktionsAufruf -> durchlaufeFunktionsAufruf(ausdruck)
       is AST.Satz.Ausdruck.BinärerAusdruck -> evaluiereBinärenAusdruck(ausdruck)
       is AST.Satz.Ausdruck.Minus -> evaluiereMinus(ausdruck)
+      is AST.Satz.Ausdruck.Nicht -> evaluiereNicht(ausdruck)
       is AST.Satz.Ausdruck.Konvertierung -> evaluiereKonvertierung(ausdruck)
       is AST.Satz.Ausdruck.ObjektInstanziierung -> evaluiereObjektInstanziierung(ausdruck)
       is AST.Satz.Ausdruck.EigenschaftsZugriff -> evaluiereEigenschaftsZugriff(ausdruck)
@@ -1320,6 +1321,11 @@ class TypPrüfer(startDatei: File): PipelineKomponente(startDatei) {
             minus.ausdruck.holeErstesToken(), ausdruck, BuildIn.Schnittstellen.negierbar, Operator.NEGATION)
 
     return schnittstelle.typArgumente[0].typ!!
+  }
+
+  private fun evaluiereNicht(nicht: AST.Satz.Ausdruck.Nicht): Typ {
+    ausdruckMussTypSein(nicht.ausdruck, BuildIn.Klassen.boolean)
+    return BuildIn.Klassen.boolean
   }
 
   private fun evaluiereKonvertierung(konvertierung: AST.Satz.Ausdruck.Konvertierung): Typ{
