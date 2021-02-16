@@ -1,0 +1,29 @@
+Deklination Maskulinum Singular(Schüler, Schülers, Schüler, Schüler) Plural(Schüler)
+Deklination Maskulinum Singular(Name, Namens, Namen, Namen) Plural(Namen)
+
+Nomen Schüler mit 
+  der Zeichenfolge Name,
+  der PunktAnZahl:.
+
+Implementiere die Liste<Schüler>:
+  Verb(Zeichenfolgen) bestanden mit der AkzeptanzPunktAnZahl:
+    gebe
+      filter uns mit etwas Bedingtem: die PunktAnZahl des Schülers größer gleich der AkzeptanzPunktAnZahl.:
+      transformiere<Zeichenfolge> euch mit etwas Transformierendem: der Name des Schülers.!:
+      sortiere euch!
+    zurück
+  .
+.
+
+einige Schüler [
+  (ein Schüler mit dem Namen "Peter", der PunktAnZahl 24),
+  (ein Schüler mit dem Namen "Lena", der PunktAnZahl 19),
+  (ein Schüler mit dem Namen "Linda", der PunktAnZahl 29),
+  (ein Schüler mit dem Namen "Maria", der PunktAnZahl 33),
+  (ein Schüler mit dem Namen "Oliver", der PunktAnZahl 15),
+  (ein Schüler mit dem Namen "Johanna", der PunktAnZahl 21)
+]:
+  schreibe die Zeile (bestanden mit der PunktAnZahl 20) als Zeichenfolge
+  schreibe die Zeile (bestanden mit der PunktAnZahl 25) als Zeichenfolge
+  schreibe die Zeile (bestanden mit der PunktAnZahl 16) als Zeichenfolge
+!
