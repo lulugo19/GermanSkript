@@ -723,7 +723,7 @@ private sealed class SubParser<T: AST>() {
       return when (nextToken.typ) {
         is TokenTyp.INTERN -> subParse(Satz.Intern)
         is TokenTyp.VORNOMEN -> {
-          if (peekType(2) is TokenTyp.OFFENE_ECKIGE_KLAMMER)
+          if (nextToken.typ is TokenTyp.VORNOMEN.ARTIKEL.BESTIMMT && peekType(2) is TokenTyp.OFFENE_ECKIGE_KLAMMER)
             subParse(Satz.IndexZuweisung)
           else {
             if (peekType(1) is TokenTyp.NEU || peekType(2) is TokenTyp.ZUWEISUNG)
