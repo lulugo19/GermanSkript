@@ -1,6 +1,5 @@
 import germanskript.GermanSkriptFehler
-import germanskript.IInterpretierer
-import germanskript.alte_pipeline.Interpretierer
+import germanskript.Interpretierer
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatExceptionOfType
 import org.junit.jupiter.api.DisplayName
@@ -10,23 +9,14 @@ import kotlin.Exception
 
 class GermanSkriptTest {
 
-  enum class CompilerPipelineVersion {
-    VERALTET,
-    AKTUELL,
-  }
-
   private fun führeGermanSkriptCodeAus(
-      germanSkriptSource: String,
-      version: CompilerPipelineVersion = CompilerPipelineVersion.AKTUELL
+      germanSkriptSource: String
   ) {
     // erstelle temporäre Datei mit dem Source-Code
     val tempFile = createTempFile("germanskript_test_temp", ".gm")
     tempFile.writeText(germanSkriptSource)
 
-    val interpretierer: IInterpretierer = when (version) {
-      CompilerPipelineVersion.VERALTET -> Interpretierer(tempFile)
-      CompilerPipelineVersion.AKTUELL -> germanskript.Interpretierer(tempFile)
-    }
+    val interpretierer = Interpretierer(tempFile)
     try {
       interpretierer.interpretiere()
     }

@@ -9,7 +9,7 @@ import kotlin.random.Random
 typealias WerfeFehler = (String, String, Token) -> Objekt
 typealias InterpretiereInjectionMethodenAufruf = (String, Token, Objekt, List<Objekt>) -> Objekt
 
-class Interpretierer(startDatei: File): PipelineKomponente(startDatei), IInterpretierer {
+class Interpretierer(startDatei: File): PipelineKomponente(startDatei) {
 
   private val codeGenerator = CodeGenerator(startDatei)
   private val typPrüfer = codeGenerator.typPrüfer
@@ -111,7 +111,7 @@ class Interpretierer(startDatei: File): PipelineKomponente(startDatei), IInterpr
     private fun aufrufStapelElementToString(element: AufrufStapelElement): String {
       val aufruf = element.funktionsAufruf
       var zeichenfolge = "'${aufruf.name}' in ${aufruf.token.position}"
-      if (element.objekt is germanskript.alte_pipeline.intern.Objekt) {
+      if (element.objekt != null) {
         val klassenName = element.objekt.typ.definition.name.hauptWort
         zeichenfolge = "'für $klassenName: ${aufruf.name}' in ${aufruf.token.position}"
       }
@@ -131,7 +131,7 @@ class Interpretierer(startDatei: File): PipelineKomponente(startDatei), IInterpr
   }
   // endregion
 
-  override fun interpretiere() {
+  fun interpretiere() {
     val programm = codeGenerator.generiere()
     initKlassenDefinitionen()
     interpretInjection = InterpretInjection(
