@@ -1,0 +1,20 @@
+// Fakultäts-Funktion
+Verb(Zahl) fakultät von der Zahl:
+  gebe 
+    wenn die Zahl <= 0 ist: 1.
+    sonst: die Zahl * fakultät von der Zahl - 1. // rekursiver Funktionsaufruf
+  zurück
+.
+
+
+// Hauptprogramm
+schreibe die Zeile "Fakultät von einer Zahl berechnen"
+schreibe die Zeile "---------------------------------"
+
+schreibe die Zeichenfolge "Gebe eine Zahl ein: "
+die Zahl ist lese als Zahl
+
+// Funktionsaufruf
+die ZahlFAK ist fakultät von der Zahl
+
+schreibe die Zeile "Die Fakultät von #{die Zahl} ist #{die ZahlFAK}\."

@@ -1,0 +1,46 @@
+importiere "./11_Vererbung.gm"
+
+die Datei ist eine IO::Datei mit dem DateiNamen "personen.csv"
+
+die Zeilen sind Datei: lese die Zeilen!
+
+die Personen sind Zeilen: transformiere<Person> euch mit etwas Transformierendem(Zeile):
+
+    die Zeichenfolgen sind Zeile: trenne dich zwischen dem Separator "|"!
+
+    der VorName ist die Zeichenfolge[0]
+    der NachName ist die Zeichenfolge[1]
+    das Alter ist die Zeichenfolge[2] als Zahl
+    die Straße ist die Zeichenfolge[3]
+    der Ort ist die Zeichenfolge[4]
+
+    eine Person mit
+            dem NachNamen,
+            dem VorNamen,
+            dem Alter,
+            einer Adresse mit der Straße, dem Ort
+.!
+
+// 1. Aufgabe: Gebe die Namen der Personen die älter als 40, doch jünger als 50 sind aus
+die PersonenNamen sind Personen:
+  filter euch mit etwas Bedingtem: 
+    Person: dein Alter > 40 und dein Alter < 50!
+  .!:
+  transformiere<Zeichenfolge> euch mit etwas Transformierendem:
+    der Name der Person
+  .!:
+    sortiere euch!
+
+schreibe die Zeile (die PersonenNamen als Zeichenfolge)
+
+
+// 2. Aufgabe: Addiere das Alter dieser Personen
+das summierteAlter ist Personen:
+  filter euch mit etwas Bedingtem:
+    Person: dein Alter > 40 und dein Alter < 50!
+  .!:
+  reduziere<Zahl> euch mit dem StartWert 0, etwas Reduzierendem:
+    der Akkumulator plus das Alter der Person
+  .!
+
+schreibe die Zeile "Alterssumme: #{das summierteAlter}"

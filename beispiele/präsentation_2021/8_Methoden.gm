@@ -1,0 +1,31 @@
+importiere "./7_Person.gm"
+
+Implementiere die Person:
+
+  // Methodendefinition
+  Verb stelle mich vor:
+    schreibe die Zeile "Hallo ich bin #{mein VorName} #{mein NachName} und ich bin #{mein Alter} Jahre alt."
+  .
+
+  Verb werde älter:
+    mein Alter ist mein Alter plus 1
+  .
+
+.
+
+die PersonSONJA ist eine Person mit
+  dem VorNamen "Sonja",
+  dem NachNamen "Sonnenschein",
+  dem Alter 22,
+  einer Adresse mit der Straße "Sonnenalee. 12", dem Ort "Jenau"
+
+// Methodenaufruf innerhalb eines Nachrichtenbereichs
+PersonSONJA: 
+  stelle dich vor
+  werde älter
+  stelle dich vor
+!
+
+
+// Methoden-objekt-aufruf
+stelle die PersonSONJA vor

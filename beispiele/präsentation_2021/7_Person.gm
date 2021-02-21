@@ -1,0 +1,41 @@
+Deklination Femininum Singular(Person) Plural(Personen)
+Deklination Maskulinum Singular(Name, Namens, Namen, Namen) Plural(Namen)
+Deklination Neutrum Singular(Alter, Alters, Alter, Alter) Plural(Alter)
+Deklination Femininum Singular(Adresse) Plural(Adressen)
+Deklination Femininum Singular(Straße) Plural(Straßen)
+Deklination Maskulinum Singular(Ort, Ortes, Ort, Ort) Plural(Orte, Orte, Orten, Orte)
+
+// Klasse Adresse
+Nomen Adresse mit
+  der Zeichenfolge Straße,
+  der Zeichenfolge Ort:.
+
+// Klasse Person
+Nomen Person mit
+  der Zeichenfolge VorName,
+  einer Zeichenfolge NachName,
+  einer Zahl Alter,
+  einer Adresse:
+    // Konstruktor
+    schreibe die Zeile "#{mein VorName} #{mein NachName} wurde erstellt!"
+  .
+
+
+die PersonFRANZ ist eine Person mit
+  dem VorNamen "Franz",
+  dem NachNamen "Müller",
+  dem Alter 22,
+  einer Adresse mit der Straße "Mühlenweg. 5", dem Ort "Rhade"
+
+// Eigenschaftzugriff über den Genitiv
+schreibe die Zeile (der VorName der PersonFRANZ)
+
+// kann beliebig tief verschachtelt werden
+schreibe die Zeile (die Straße der Adresse der PersonFRANZ)
+
+
+// oder Eigenschaftszugriff mit 'dein' innerhalb eines Nachrichtenbereichs
+PersonFRANZ:
+  schreibe die Zeile dein VorName
+  schreibe die Zeile die Straße deiner Adresse
+!

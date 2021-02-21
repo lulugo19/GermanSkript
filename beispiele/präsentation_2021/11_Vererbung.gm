@@ -1,0 +1,29 @@
+Deklination Maskulinum Singular(Student, Studenten, Studenten, Studenten) Plural(Studenten)
+Deklination Maskulinum Singular(Studiengang, Studienganges, Studiengang, Studiengang) Plural(Studieng)
+
+importiere "./10_Konvertierung.gm"
+
+Nomen Student mit
+  der Zeichenfolge VorName,
+  der Zeichenfolge NachName,
+  der Zahl Alter,
+  der Adresse,
+  einer Zeichenfolge Studiengang als Person:.
+
+
+Implementiere den Studenten:
+  Verb stelle mich vor:
+    Super: stelle mich vor!
+    schreibe die Zeile "Ich studiere #{mein Studiengang}!"
+  .
+.
+
+
+der Student ist ein Student mit
+  dem VorNamen "Lukas",
+  dem NachNamen "Gobelet",
+  dem Alter 23,
+  der Adresse (eine Adresse mit der Straße "Musterstraße. 11", dem Ort "Musterstadt"),
+  dem Studiengang "Informatik"
+
+stelle den Studenten vor

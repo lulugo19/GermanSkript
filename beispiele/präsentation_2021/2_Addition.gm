@@ -1,0 +1,21 @@
+Deklination Neutrum 
+  Singular(Ergebnis, Ergebnisses, Ergebnis, Ergebnis) 
+  Plural(Ergebnisse, Ergebnisse, Ergebnissen, Ergebnisse)
+
+// Überschrift
+schreibe die Zeile "Addition von zwei Zahlen: "
+schreibe die Zeile "--------------------------"
+
+// Einlesen der ersten Zahl
+schreibe die Zeichenfolge "Gebe die erste Zahl ein: "
+die ersteZahl ist lese als Zahl
+
+// Einlesen der zweiten Zahl
+schreibe die Zeichenfolge "Gebe die zweite Zahl ein: "
+die zweiteZahl ist lese als Zahl
+
+// Berechnung
+das Ergebnis ist die ersteZahl plus die zweiteZahl
+
+// Ausgabe
+schreibe die Zeile "#{die ersteZahl} + #{die zweiteZahl} = #{das Ergebnis}"

@@ -479,7 +479,7 @@ class Lexer(startDatei: File): PipelineKomponente(startDatei) {
             throw GermanSkriptFehler.ImportFehler.DateiNichtGefunden(import.dateiPfad.toUntyped(), import.pfad)
         }
         // füge Datei nur zur Schlange hinzu, wenn sie noch nicht bearbeitet wurden ist
-        if (!bearbeiteteDateien.contains(datei.path)) {
+        if (!bearbeiteteDateien.contains(datei.absolutePath)) {
             dateiSchlange.add(datei)
         }
     }

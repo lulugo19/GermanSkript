@@ -1,0 +1,8 @@
+// unveränderliche Variable
+die ZahlA ist 5
+
+// veränderliche Variable 
+eine ZahlB ist 12
+eine ZahlB ist 37
+
+schreibe die ZahlA plus die ZahlB

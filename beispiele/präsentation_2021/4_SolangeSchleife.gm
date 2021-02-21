@@ -1,0 +1,8 @@
+eine Zahl ist 10
+
+solange die Zahl größer als 0 ist:
+  schreibe die Zahl
+  eine Zahl ist die Zahl - 1
+.
+
+schreibe die Zeile "Los!"

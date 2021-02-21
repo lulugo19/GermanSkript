@@ -1,0 +1,17 @@
+importiere "./8_Methoden.gm"
+
+Implementiere die Person:
+
+  // implementiere eine berechnete Eigenschaft
+  Eigenschaft(Zeichenfolge) der Name:
+    gebe meinen VorNamen + " " + meinen NachNamen zurück
+  .
+.
+
+die PersonSONJA ist eine Person mit
+  dem VorNamen "Sonja",
+  dem NachNamen "Sonnenschein",
+  dem Alter 22,
+  einer Adresse mit der Straße "Sonnenalee. 12", dem Ort "Jenau"
+
+schreibe die Zeile (der Name der PersonSONJA)

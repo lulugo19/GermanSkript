@@ -1,0 +1,31 @@
+die Zahlen sind einige Zahlen[2, 3, 5, 7, 11]
+
+// 0-Index basiert
+schreibe die Zahl[0] // 2
+
+// Element mit Index 0 neu zuweisen
+die Zahl[0] ist 19
+schreibe die Zahl[0] // 19
+
+// die Anzahl der Zahlen ausgeben
+schreibe die Zeile "Anzahl: #{die AnZahl der Zahlen}"
+
+schreibe die Zeile "Zahl Hinzufügen:"
+// Beginn eines Nachrichtenbereichs
+Zahlen:
+  füge die Zahl 13 hinzu
+  schreibe die Zahl[5]
+
+  entferne an dem Index 0
+  schreibe die Zahl[4]
+!
+
+schreibe die Zeile "Für-Jede-Schleife:"
+// Für-Jede-Schleife um über Listen zu iterieren
+eine Summe ist 0
+für jede Zahl:
+  schreibe die Zahl
+  eine Summe ist die Summe plus die Zahl
+.
+
+schreibe die Zeile "Summe: #{die Summe}"

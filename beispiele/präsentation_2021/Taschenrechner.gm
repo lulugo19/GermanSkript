@@ -1,0 +1,80 @@
+Deklination Neutrum 
+  Singular(Ergebnis, Ergebnisses, Ergebnis, Ergebnis) 
+  Plural(Ergebnisse, Ergebnisse, Ergebnissen, Ergebnisse)
+
+Deklination Femininum
+  Singular(Überschrift) Plural(Überschriften)
+
+Deklination Maskulinum Singular(Operator, Operators, Operator, Operator) Plural(Operatoren)
+Deklination Femininum Singular(Eingabe) Plural(Eingaben)
+
+// Funktion zum Ausgeben von Überschrift
+Verb schreibe die Zeichenfolge Überschrift:
+  schreibe die Zeile Überschrift
+  schreibe die Zeile (wiederhole die Zeichenfolge "_" mit der AnZahl (die Länge der Überschrift))
+.
+
+// Funktion zum Einlesen von Zahlen
+Verb lese (die Zahl) mit der Zeichenfolge:
+  eine Zahl ist 0
+  solange wahr:
+    schreibe die Zeichenfolge
+    versuche:
+      eine Zahl ist lese als Zahl
+      abbrechen
+    .
+    fange den KonvertierungsFehler:
+      schreibe die Zeile (KonvertierungsFehler als Zeichenfolge)
+    .
+  .
+  gebe die Zahl zurück
+.
+
+// globale Variable
+die möglichenOperatoren sind einige Zeichenfolgen["+", "-", "*", "/"]
+
+// Funktion zum Einlesen von Operator
+Verb lese (die Zeichenfolge Operator):
+  ein Operator ist ""
+  solange wahr:
+    schreibe die Zeichenfolge "Gebe den Operator ein (+, -, *, /): "
+    ein Operator ist lese: trimme dich!
+    wenn die möglichenOperatoren nicht die Zeichenfolge Operator enthalten:
+      schreibe die Zeile "Ungültiger Operator. Muss '+', '-', '*' oder '/' sein!"
+    .
+    sonst:
+      abbrechen
+    .
+  .
+  gebe den Operator zurück
+.
+
+// Taschenrechner Funktion
+Verb rechne:
+  die ersteZahl ist lese die Zahl mit der Zeichenfolge "Gebe die erste Zahl ein: "
+  der Operator ist lese den Operator
+  die zweiteZahl ist lese die Zahl mit der Zeichenfolge "Gebe die zweite Zahl ein: "
+  das Ergebnis ist
+    wenn der Operator gleich "+" ist: die ersteZahl + die zweiteZahl.
+    sonst wenn der Operator gleich "-" ist: die ersteZahl - die zweiteZahl.
+    sonst wenn der Operator gleich "*" ist: die ersteZahl * die zweiteZahl.
+    sonst wenn der Operator gleich "/" ist: die ersteZahl / die zweiteZahl.
+    sonst: werfe einen Fehler mit der FehlerMeldung "Ungültiger Operator!".
+
+  schreibe die Überschrift "#{die ersteZahl} #{der Operator} #{die zweiteZahl} = #{das Ergebnis}"
+.
+
+// Hauptprogramm
+schreibe die Überschrift "Taschenrechner"
+schreibe die Zeile ""
+
+solange wahr:
+  rechne
+
+  schreibe die Zeichenfolge "Neue Rechnung starten oder beenden? ja/nein: "
+  die Eingabe ist lese: trimme dich!: buchstabiere dich klein!
+  wenn die Eingabe gleich "nein" ist:
+    abbrechen
+  .
+  schreibe die Zeile ""
+.

@@ -1,0 +1,16 @@
+importiere "./9_Eigenschaften.gm"
+
+Implementiere die Person:
+  
+  Als Zeichenfolge:
+    gebe "#{mein VorName} #{mein NachName} (#{mein Alter} Jahre alt)" zurück
+  .
+.
+
+die PersonSONJA ist eine Person mit
+  dem VorNamen "Sonja",
+  dem NachNamen "Sonnenschein",
+  dem Alter 22,
+  einer Adresse mit der Straße "Sonnenalee. 12", dem Ort "Jenau"
+
+schreibe die Zeile (PersonSONJA als Zeichenfolge)
