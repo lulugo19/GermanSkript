@@ -30,10 +30,16 @@ vorhanden. Diese kann dann über `java` direkt ausgeführt werden:
 java -jar GermanSkript-1.0-SNAPSHOT.jar <Dateipfad>
 ```
 
-Um es ein bisschen kürzer zu machen, wurde dieser Befehl in eine Batch Datei mit dem
-Namen `gms` geschrieben und man kann es folgendermaßen ausführen:
+Um es ein bisschen kürzer zu machen, wurde dieser Befehl für Windows in ein Batch-Skript mit dem
+Namen `gms.bat` geschrieben, welches folgendermaßen ausgeführt werden kann:
 ```
 .\gms <Dateipfad>
+```
+
+Für Linux gibt es eine äquivalentes Shell-Skript `gms.sh` und nachdem die Berechtigung für das Ausführen des Skripts gegeben wurde, kann GermanSkript dann ausgeführt werden:
+```
+chmod u+x gms.sh
+./gms.sh <Dateipfad>
 ```
 
 ### Die JAR neu erstellen
@@ -47,23 +53,9 @@ Die JAR wird dann in dem Ordner `./build/libs` erstellt.
 **GermanSkript** befindet sich momentan noch in der Entwicklung. Man kann sie schon
 verwenden, doch es wird sich wahrscheinlich noch einiges ändern.
 
-Die ganze Spezifikation kann man [hier](./SPEC.md) einsehen. Diese ist jedoch noch ziemlich
-in Bearbeitung und noch nicht vollständig.
-
-GermanSkript wird iterativ entwickelt. Neue Sprachfeatures werden in Iterationen nach und nach hinzugefügt.
-Für jede Iteration gibt es eine eigene Spezifikation, die auf die Gesamtspezifikation aufbaut und noch
-einige Details hinzufügt.
-
-Iterationen:
-- [Iteration 0](iterationen/iter_0/SPEC.md)
-- [Iteration 1](iterationen/iter_1/SPEC.md)
-- [Iteration 2](iterationen/iter_2/SPEC.md)
-- [Iteration 3](./iterationen/iter_3/SPEC.md)
-- [Iteration 4](./iterationen/iter_4/SPEC.md)
-- [Iteration 5](./iterationen/iter_5/SPEC.md)
-
-Wenn du Interesse daran hast, wie die Architektur des GermanSkript-Compilers aussieht, kannst
-du [hier](./CompilerPipeline.md) mehr Informationen zur Compiler-Pipeline finden.
+In dieser ReadMe wird nur ein grober Überblick über die Sprache gegeben.
+Eine ausführliche Dokumentation über die Sprache kann [hier (https://www.overleaf.com/read/xzxwjfqgsfdf)](https://www.overleaf.com/read/xzxwjfqgsfdf) gefunden werden.
+Die Dokumentation ist noch nicht vollständig und genauso in Bearbeitung wie die Sprache selbst.
 
 ### Typen
 
